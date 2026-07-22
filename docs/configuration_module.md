@@ -8,10 +8,11 @@ El **Módulo de Configuración** de Melosmile centraliza la administración de S
 ## 🏗️ Arquitectura de Base de Datos (Migración 005)
 
 ### Tablas Principales
-- **`clinics`**: Sedes de la clínica (Goya, Las Rozas, RyA). Almacena dirección, teléfono, email, color identificador hex y `base_commission_pct` (porcentaje base por defecto).
+- **`clinics`**: Sedes de la clínica (Goya, Las Rozas, RyA). Almacena dirección, teléfono, email, color identificador hex, `base_commission_pct` (porcentaje base por defecto) y `odoo_pricelist_id` (tarifa asociada en Odoo).
 - **`professionals`**: Doctoras y colaboradores del equipo. Se asocian a las sedes sin asignarles porcentaje individual (ya que el porcentaje es una regla de la sede).
 - **`treatment_families`**: Categorías de tratamientos (Ortodoncia, Implantología, Endodoncia, Periodoncia, Odontología General, Estética, Prostodoncia, Aparatología, Odontopediatría, Radiología).
-- **`treatments`**: Catálogo de 50+ procedimientos dentales. Contiene `service_name`, `abbreviation`, `default_price`, `typical_lab_cost` y `family_id`.
+- **`treatments`**: Catálogo de 50+ procedimientos dentales. Contiene `service_name`, `abbreviation`, `default_price`, `typical_lab_cost`, `family_id`, `odoo_product_id` y `odoo_product_tmpl_id`.
+- **`treatment_clinic_prices`**: Precios específicos de cada tratamiento por clínica (`treatment_id`, `clinic_id`, `price`, `odoo_pricelist_item_id`).
 - **`clinic_commission_rules`**: Reglas específicas por sede y familia de tratamiento (`commission_pct` y `lab_discount_pct`).
 - **`billing_records`**: Registro contable por cita. Incluye `actual_lab_cost` (coste real de laboratorio) y `profitability_status` (`ok` | `warning` | `loss`).
 

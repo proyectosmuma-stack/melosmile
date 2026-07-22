@@ -41,6 +41,19 @@ La plataforma utiliza el protocolo **JSON-RPC** nativo de Odoo para comunicarse 
    - Agrega las líneas de factura (`invoice_line_ids`) con el nombre del tratamiento, cantidad y precio.
    - Retorna el ID de la factura borrador generada.
 
+4. `searchProductByNameOrCode(name, code)`
+   - Busca en el modelo `product.template` un servicio existente por su nombre o su referencia interna (`default_code`).
+
+5. `createProductTemplate(data)`
+   - Crea un nuevo servicio (`type = 'service'`) en `product.template` con nombre, precio base y código.
+
+6. `getOdooPricelists()`
+   - Consulta las tarifas activas (`product.pricelist`) registradas en Odoo para permitir asociarlas a las clínicas.
+
+7. `updatePricelistItem(pricelistId, productTmplId, fixedPrice)`
+   - Busca si ya existe una regla fija (`product.pricelist.item`) para esa tarifa y producto.
+   - Si existe, la actualiza (`write`). Si no existe, la crea (`create`).
+
 ---
 
 ## 3. Endpoints API en Next.js
@@ -83,6 +96,15 @@ Recibe los datos del paciente y el registro de pago, ejecuta el `upsert` en Odoo
 }
 ```
 
+### `GET /api/odoo/pricelists`
+Retorna las tarifas (pricelists) configuradas en Odoo para seleccionarlas en las clínicas.
+
+### `POST /api/treatments/sync`
+Recibe los datos de un tratamiento y sus precios específicos por clínica.
+- Busca o crea el producto equivalente en Odoo (`product.template`).
+- Inserta/actualiza el tratamiento en Supabase.
+- Sincroniza las reglas de tarifa (`product.pricelist.item`) en Odoo asociando el ID de tarifa de cada clínica.
+
 ---
 
 ## 4. Esquema de Base de Datos Relacionado (Supabase)
@@ -95,3 +117,14 @@ Campos agregados en la tabla `patients`:
 Campos agregados en la tabla `billing_records`:
 - `odoo_invoice_id` (integer): ID del comprobante en Odoo.
 - `odoo_invoice_number` (text): Número de factura emitido (ej. `INV/2026/0001`).
+
+Campos agregados en la tabla `clinics`:
+- `odoo_pricelist_id` (integer): ID de la lista de precios / tarifa correspondiente en Odoo.
+
+Campos agregados en la tabla `treatments`:
+- `odoo_product_id` (integer): ID del variant en Odoo (`product.product`).
+- `odoo_product_tmpl_id` (integer): ID de la plantilla en Odoo (`product.template`).
+
+Campos agregados en la tabla `treatment_clinic_prices`:
+- `odoo_pricelist_item_id` (integer): ID del elemento de tarifa (`product.pricelist.item`) en Odoo.
+
