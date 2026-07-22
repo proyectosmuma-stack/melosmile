@@ -103,6 +103,96 @@ export async function getOdooProducts() {
 }
 
 /**
+ * Search for a product by name or default_code
+ */
+export async function searchProductByNameOrCode(name: string, code?: string) {
+  const domain: unknown[] = ['|', ['name', 'ilike', name]];
+  if (code) {
+    domain.push(['default_code', '=', code]);
+  } else {
+    // If no code, we just search by name (domain needs 3 elements minimum usually if not using |)
+    // Actually simpler: just search by name if code is missing
+  }
+  
+  const searchDomain = code ? ['|', ['name', 'ilike', name], ['default_code', '=', code]] : [['name', 'ilike', name]];
+  
+  const results = await odooExecute('product.template', 'search_read', [
+    searchDomain
+  ], {
+    fields: ['id', 'name', 'list_price', 'default_code'],
+    limit: 1,
+  });
+  
+  return results.length > 0 ? results[0] : null;
+}
+
+/**
+ * Create a new product.template (Service) in Odoo
+ */
+export async function createProductTemplate(data: { name: string; list_price: number; default_code?: string }) {
+  const vals: Record<string, unknown> = {
+    name: data.name,
+    list_price: data.list_price,
+    type: 'service',
+    purchase_ok: false,
+    sale_ok: true,
+  };
+  if (data.default_code) vals.default_code = data.default_code;
+  
+  const id = await odooExecute('product.template', 'create', [vals]);
+  return id as number;
+}
+
+/**
+ * Get available pricelists in Odoo
+ */
+export async function getOdooPricelists() {
+  return odooExecute('product.pricelist', 'search_read', [
+    [['active', '=', true]]
+  ], {
+    fields: ['id', 'name', 'currency_id'],
+    limit: 100,
+  });
+}
+
+/**
+ * Create or update a pricelist item (rule) for a specific product and pricelist
+ */
+export async function updatePricelistItem(pricelistId: number, productTmplId: number, fixedPrice: number) {
+  // First, check if an item already exists for this exact pricelist and product
+  const existing = await odooExecute('product.pricelist.item', 'search_read', [
+    [
+      ['pricelist_id', '=', pricelistId],
+      ['product_tmpl_id', '=', productTmplId],
+      ['compute_price', '=', 'fixed']
+    ]
+  ], {
+    fields: ['id'],
+    limit: 1,
+  });
+
+  if (existing.length > 0) {
+    // Update existing rule
+    await odooExecute('product.pricelist.item', 'write', [
+      [existing[0].id],
+      { fixed_price: fixedPrice }
+    ]);
+    return existing[0].id as number;
+  } else {
+    // Create new rule
+    const id = await odooExecute('product.pricelist.item', 'create', [{
+      pricelist_id: pricelistId,
+      product_tmpl_id: productTmplId,
+      applied_on: '1_product', // 1_product means Product Template
+      compute_price: 'fixed',
+      fixed_price: fixedPrice,
+      min_quantity: 1,
+    }]);
+    return id as number;
+  }
+}
+
+/**
  * Search or create a customer (res.partner) in Odoo from a patient record
  */
 export async function upsertOdooPartner(patient: {

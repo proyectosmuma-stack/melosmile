@@ -184,28 +184,28 @@ export default function DashboardPage() {
         </Button>
       )}
 
-      {/* Collapsible AI Agent Overlay */}
+      {/* Centered AI Agent Overlay */}
       {isAIAgentOpen && (
-        <div className="fixed bottom-6 right-6 w-full max-w-md z-50 animate-in slide-in-from-bottom-5 fade-in duration-200">
-          <div className="relative bg-slate-950 rounded-2xl shadow-2xl border border-slate-800 overflow-hidden">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="relative w-full max-w-2xl bg-slate-950 rounded-2xl shadow-2xl border border-slate-800 overflow-hidden animate-in zoom-in-95 duration-200">
             {/* Header for the overlay */}
             <div className="bg-slate-900 border-b border-slate-800 px-4 py-3 flex items-center justify-between">
               <div className="flex items-center gap-2 text-white">
-                <Sparkles className="h-4 w-4 text-violet-400" />
-                <span className="font-semibold text-sm">Asistente IA</span>
+                <Sparkles className="h-5 w-5 text-violet-400" />
+                <span className="font-semibold">Asistente IA</span>
               </div>
               <Button 
                 variant="ghost" 
                 size="icon" 
                 onClick={() => setIsAIAgentOpen(false)}
-                className="h-6 w-6 rounded-full text-slate-400 hover:text-white hover:bg-white/10"
+                className="h-8 w-8 rounded-full text-slate-400 hover:text-white hover:bg-white/10"
               >
-                <X className="h-4 w-4" />
+                <X className="h-5 w-5" />
               </Button>
             </div>
             
             {/* Embed the AIAgentBar inside */}
-            <div className="p-4 md:p-5">
+            <div className="p-4 md:p-6">
               <AIAgentBar />
             </div>
           </div>

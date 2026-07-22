@@ -152,31 +152,32 @@ export default function TreatmentsSettingsPage() {
       
       let treatmentId = editingTreatment?.id;
       
-      if (treatmentId) {
-        await (supabase as any).from("treatments").update(payload).eq("id", treatmentId);
-      } else {
-        const { data, error } = await (supabase as any).from("treatments").insert(payload).select().single();
-        if (error) throw error;
-        if (data) treatmentId = data.id;
+      const pricePayloads = Object.entries(fClinicPrices)
+        .filter(([_, priceStr]) => priceStr.trim() !== "")
+        .map(([clinicId, priceStr]) => ({
+          clinic_id: clinicId,
+          price: parseFloat(priceStr) || 0
+        }));
+
+      // Include odoo_product_tmpl_id in payload if editing and it exists
+      if (editingTreatment && (editingTreatment as any).odoo_product_tmpl_id) {
+        (payload as any).odoo_product_tmpl_id = (editingTreatment as any).odoo_product_tmpl_id;
       }
       
-      if (treatmentId) {
-        // Prepare clinic prices
-        const pricePayloads = Object.entries(fClinicPrices)
-          .filter(([_, priceStr]) => priceStr.trim() !== "")
-          .map(([clinicId, priceStr]) => ({
-            treatment_id: treatmentId,
-            clinic_id: clinicId,
-            price: parseFloat(priceStr) || 0
-          }));
-          
-        // Delete old prices
-        await (supabase as any).from("treatment_clinic_prices").delete().eq("treatment_id", treatmentId);
-        
-        // Insert new prices
-        if (pricePayloads.length > 0) {
-          await (supabase as any).from("treatment_clinic_prices").insert(pricePayloads);
-        }
+      const res = await fetch("/api/treatments/sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          treatmentId,
+          payload,
+          pricePayloads,
+          isNew: !treatmentId,
+        }),
+      });
+
+      const json = await res.json();
+      if (!json.success) {
+        throw new Error(json.error || "Error syncing treatment to Odoo/DB");
       }
       
       setTreatmentDialogOpen(false);
