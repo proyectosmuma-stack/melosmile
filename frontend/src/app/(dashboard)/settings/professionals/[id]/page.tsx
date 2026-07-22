@@ -1,0 +1,523 @@
+"use client";
+
+import React, { useState, useEffect, useCallback } from "react";
+import {
+  Stethoscope, Phone, Mail, Building2, Calendar as CalendarIcon, Clock,
+  ArrowLeft, Edit3, Loader2, AlertCircle, CheckCircle2, User, FileText,
+  Activity, Plus, Sparkles, MessageSquare, ChevronRight, ExternalLink
+} from "lucide-react";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { supabase } from "@/lib/supabase/client";
+import { triggerNewAppointmentModal } from "@/components/calendar/new-appointment-modal";
+
+type Professional = {
+  id: string;
+  first_name: string;
+  last_name: string;
+  specialty: string | null;
+  phone: string | null;
+  email: string | null;
+  clinic_id: string | null;
+  created_at: string;
+};
+
+type Clinic = {
+  id: string;
+  name: string;
+  address: string | null;
+  phone: string | null;
+};
+
+type AppointmentItem = {
+  id: string;
+  appointment_date: string;
+  reason: string;
+  status: string;
+  patient_id: string;
+  patient_first_name: string;
+  patient_last_name: string;
+  patient_historia_id: string;
+  clinic_name: string;
+};
+
+export default function ProfessionalDetailPage({ params }: { params: Promise<{ id: string }> | { id: string } }) {
+  const resolvedParams = React.use(params as any) as { id: string };
+  const targetId = resolvedParams?.id;
+
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [professional, setProfessional] = useState<Professional | null>(null);
+  const [clinic, setClinic] = useState<Clinic | null>(null);
+  const [allClinics, setAllClinics] = useState<Clinic[]>([]);
+  const [appointments, setAppointments] = useState<AppointmentItem[]>([]);
+  const [notes, setNotes] = useState<string>("");
+
+  // Edit dialog state
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [fFirstName, setFFirstName] = useState("");
+  const [fLastName, setFLastName] = useState("");
+  const [fSpecialty, setFSpecialty] = useState("");
+  const [fPhone, setFPhone] = useState("");
+  const [fEmail, setFEmail] = useState("");
+  const [fClinicId, setFClinicId] = useState("");
+
+  const fetchProfessionalData = useCallback(async () => {
+    if (!targetId) return;
+    setLoading(true);
+    try {
+      // 1. Fetch professional details
+      const { data: pData } = await supabase
+        .from("professionals")
+        .select("*")
+        .eq("id", targetId)
+        .maybeSingle();
+
+      if (pData) {
+        setProfessional(pData as any);
+        setFFirstName(pData.first_name);
+        setFLastName(pData.last_name);
+        setFSpecialty(pData.specialty || "");
+        setFPhone(pData.phone || "");
+        setFEmail(pData.email || "");
+        setFClinicId(pData.clinic_id || "");
+
+        // 2. Fetch associated clinic
+        if (pData.clinic_id) {
+          const { data: cData } = await (supabase as any)
+            .from("clinics")
+            .select("id, name, address, phone")
+            .eq("id", pData.clinic_id)
+            .maybeSingle();
+          if (cData) setClinic(cData);
+        }
+
+        // 3. Fetch all clinics for dropdown
+        const { data: clinicsData } = await (supabase as any)
+          .from("clinics")
+          .select("id, name, address, phone")
+          .order("name");
+        if (clinicsData) setAllClinics(clinicsData);
+
+        // 4. Fetch appointments for this professional
+        const { data: apptData } = await supabase
+          .from("appointments")
+          .select(`
+            id, appointment_date, reason, status, patient_id,
+            clinics ( name ),
+            patients ( first_name, last_name, historia_id )
+          `)
+          .eq("professional_id", targetId)
+          .order("appointment_date", { ascending: false })
+          .limit(30);
+
+        if (apptData) {
+          const mapped: AppointmentItem[] = apptData.map((a: any) => ({
+            id: a.id,
+            appointment_date: a.appointment_date,
+            reason: a.reason || "Consulta",
+            status: a.status || "Confirmada",
+            patient_id: a.patient_id,
+            patient_first_name: a.patients?.first_name || "Paciente",
+            patient_last_name: a.patients?.last_name || "",
+            patient_historia_id: a.patients?.historia_id || "PAC-",
+            clinic_name: a.clinics?.name || "Clínica",
+          }));
+          setAppointments(mapped);
+        }
+      }
+    } catch (e) {
+      console.error("Error fetching professional:", e);
+    } finally {
+      setLoading(false);
+    }
+  }, [targetId]);
+
+  useEffect(() => {
+    fetchProfessionalData();
+  }, [fetchProfessionalData]);
+
+  const handleSaveEdit = async () => {
+    if (!professional) return;
+    setSaving(true);
+    try {
+      await supabase
+        .from("professionals")
+        .update({
+          first_name: fFirstName,
+          last_name: fLastName,
+          specialty: fSpecialty || null,
+          phone: fPhone || null,
+          email: fEmail || null,
+          clinic_id: fClinicId || null,
+        } as any)
+        .eq("id", professional.id);
+
+      setEditDialogOpen(false);
+      await fetchProfessionalData();
+    } catch (e) {
+      console.error("Error updating professional:", e);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const SPECIALTIES = [
+    "Odontología General", "Ortodoncia", "Endodoncia", "Periodoncia",
+    "Implantología", "Estética Dental", "Prostodoncia", "Odontopediatría", "Cirugía Oral"
+  ];
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <Loader2 className="h-8 w-8 animate-spin text-rose-500" />
+        <span className="ml-3 text-slate-600 font-medium">Cargando ficha del profesional...</span>
+      </div>
+    );
+  }
+
+  if (!professional) {
+    return (
+      <div className="flex flex-col items-center justify-center h-96 gap-4">
+        <AlertCircle className="h-12 w-12 text-slate-300" />
+        <p className="text-slate-600 font-semibold">Profesional no encontrado en la base de datos</p>
+        <Link href="/settings/professionals">
+          <Button variant="outline">Volver a Profesionales</Button>
+        </Link>
+      </div>
+    );
+  }
+
+  const initials = `${professional.first_name[0] || ""}${professional.last_name[0] || ""}`;
+  const totalAppointments = appointments.length;
+
+  const currentMonthStr = new Date().toISOString().substring(0, 7);
+  const thisMonthAppointments = appointments.filter(a => a.appointment_date.startsWith(currentMonthStr)).length;
+  const uniquePatientsCount = new Set(appointments.map(a => a.patient_id)).size;
+
+  return (
+    <div className="flex flex-col gap-6 max-w-[1200px] mx-auto p-4 md:p-6">
+      {/* Top Breadcrumb */}
+      <div>
+        <Link
+          href="/settings/professionals"
+          className="inline-flex items-center gap-2 text-xs font-bold text-slate-500 hover:text-rose-600 transition-colors"
+        >
+          <ArrowLeft className="h-4 w-4" /> Volver a Profesionales
+        </Link>
+      </div>
+
+      {/* Hero Header Card (Notion-style) */}
+      <Card className="border-0 shadow-lg rounded-3xl bg-white overflow-hidden">
+        <div className="h-24 bg-gradient-to-r from-emerald-600 via-teal-600 to-rose-500 relative" />
+        <CardContent className="px-8 pb-8 pt-0 relative">
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 -mt-12">
+            <div className="flex items-end gap-5">
+              <div className="h-24 w-24 rounded-3xl bg-slate-900 border-4 border-white shadow-xl flex items-center justify-center text-white font-black text-2xl bg-gradient-to-tr from-emerald-500 to-teal-500 shrink-0">
+                {initials}
+              </div>
+              <div className="mb-1">
+                <div className="flex items-center gap-3 flex-wrap">
+                  <h1 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight">
+                    Dra. {professional.first_name} {professional.last_name}
+                  </h1>
+                  <Badge className="bg-emerald-100 text-emerald-800 border-emerald-200 font-bold px-3 py-1 text-xs rounded-full">
+                    {professional.specialty || "Odontología General"}
+                  </Badge>
+                </div>
+                <div className="flex items-center gap-4 text-xs text-slate-500 mt-2 font-medium flex-wrap">
+                  {professional.phone && (
+                    <span className="flex items-center gap-1.5">
+                      <Phone className="h-3.5 w-3.5 text-slate-400" />
+                      {professional.phone}
+                    </span>
+                  )}
+                  {professional.email && (
+                    <span className="flex items-center gap-1.5">
+                      <Mail className="h-3.5 w-3.5 text-slate-400" />
+                      {professional.email}
+                    </span>
+                  )}
+                  <span className="flex items-center gap-1.5">
+                    <Building2 className="h-3.5 w-3.5 text-slate-400" />
+                    {clinic?.name || "Todas las sedes"}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <Button
+                variant="outline"
+                onClick={() => setEditDialogOpen(true)}
+                className="rounded-xl border-slate-200 hover:bg-slate-50 gap-2 font-semibold text-xs h-10 px-4"
+              >
+                <Edit3 className="h-4 w-4 text-slate-500" />
+                <span>Editar Ficha</span>
+              </Button>
+              <Button
+                onClick={() => triggerNewAppointmentModal()}
+                className="rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-bold text-xs h-10 px-4 gap-2 shadow-md shadow-rose-500/20"
+              >
+                <Plus className="h-4 w-4" />
+                <span>Agendar Cita</span>
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Quick KPI Stats Row */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Card className="rounded-2xl border-0 shadow-sm bg-white p-5 flex items-center justify-between">
+          <div>
+            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">Citas Atendidas</span>
+            <span className="text-2xl font-black text-slate-900 mt-0.5 block">{totalAppointments}</span>
+          </div>
+          <div className="h-11 w-11 rounded-2xl bg-emerald-50 flex items-center justify-center text-emerald-600">
+            <CalendarIcon className="h-5 w-5" />
+          </div>
+        </Card>
+
+        <Card className="rounded-2xl border-0 shadow-sm bg-white p-5 flex items-center justify-between">
+          <div>
+            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">Citas Este Mes</span>
+            <span className="text-2xl font-black text-rose-600 mt-0.5 block">{thisMonthAppointments}</span>
+          </div>
+          <div className="h-11 w-11 rounded-2xl bg-rose-50 flex items-center justify-center text-rose-500">
+            <Activity className="h-5 w-5" />
+          </div>
+        </Card>
+
+        <Card className="rounded-2xl border-0 shadow-sm bg-white p-5 flex items-center justify-between">
+          <div>
+            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">Pacientes Distintos</span>
+            <span className="text-2xl font-black text-slate-900 mt-0.5 block">{uniquePatientsCount}</span>
+          </div>
+          <div className="h-11 w-11 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-600">
+            <User className="h-5 w-5" />
+          </div>
+        </Card>
+      </div>
+
+      {/* Main Layout Grid: Left Details & Right Appointments History */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left Column: Info & Notes */}
+        <div className="space-y-6">
+          {/* General Info Card */}
+          <Card className="border-0 shadow-md rounded-2xl bg-white overflow-hidden">
+            <CardHeader className="pb-3 border-b border-slate-100">
+              <CardTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
+                <Stethoscope className="h-5 w-5 text-emerald-500" />
+                Información del Profesional
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-6 space-y-4">
+              <div>
+                <Label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Nombre Completo</Label>
+                <p className="text-sm font-semibold text-slate-800 mt-0.5">
+                  Dra. {professional.first_name} {professional.last_name}
+                </p>
+              </div>
+
+              <div>
+                <Label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Especialidad Principal</Label>
+                <p className="text-sm font-semibold text-slate-800 mt-0.5">
+                  {professional.specialty || "Odontología General"}
+                </p>
+              </div>
+
+              <div>
+                <Label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Sede Principal</Label>
+                <p className="text-sm font-semibold text-slate-800 mt-0.5 flex items-center gap-1.5">
+                  <Building2 className="h-4 w-4 text-slate-400" />
+                  {clinic?.name || "Todas las sedes asignadas"}
+                </p>
+              </div>
+
+              <div className="pt-2 border-t border-slate-100 space-y-3">
+                {professional.phone && (
+                  <div>
+                    <Label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Teléfono de Contacto</Label>
+                    <p className="text-sm font-semibold text-slate-800 mt-0.5">{professional.phone}</p>
+                  </div>
+                )}
+
+                {professional.email && (
+                  <div>
+                    <Label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Email Corporativo</Label>
+                    <p className="text-sm font-semibold text-slate-800 mt-0.5">{professional.email}</p>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Professional Notes (Notion-style) */}
+          <Card className="border-0 shadow-md rounded-2xl bg-white overflow-hidden">
+            <CardHeader className="pb-3 border-b border-slate-100 flex flex-row items-center justify-between">
+              <CardTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
+                <FileText className="h-5 w-5 text-slate-400" />
+                Notas & Observaciones (Notion-style)
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-6">
+              <Textarea
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder="Anota acuerdos de horario, disponibilidad por sedes u observaciones internas..."
+                className="min-h-[140px] bg-slate-50/50 border-slate-200 resize-y text-sm rounded-xl"
+              />
+              <p className="text-[11px] text-slate-400 mt-2">
+                Estas notas sirven como guía interna y contexto para la gestión de la agenda.
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Right Column: Appointments History */}
+        <div className="lg:col-span-2 space-y-6">
+          <Card className="border-0 shadow-md rounded-2xl bg-white overflow-hidden">
+            <CardHeader className="pb-3 border-b border-slate-100 flex flex-row items-center justify-between">
+              <CardTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
+                <CalendarIcon className="h-5 w-5 text-rose-500" />
+                Historial de Citas Atendidas ({appointments.length})
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              {appointments.length === 0 ? (
+                <div className="p-12 text-center text-slate-400">
+                  <AlertCircle className="h-8 w-8 mx-auto mb-2 opacity-40" />
+                  <p className="text-sm font-semibold">No se registran citas previas para este profesional.</p>
+                </div>
+              ) : (
+                <div className="divide-y divide-slate-100">
+                  {appointments.map((a) => {
+                    const dateObj = new Date(a.appointment_date);
+                    return (
+                      <div key={a.id} className="p-4 hover:bg-slate-50/80 transition-colors flex items-center justify-between gap-4">
+                        <div className="flex items-center gap-3">
+                          <div className="h-10 w-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-500 font-bold text-xs shrink-0">
+                            {dateObj.toLocaleDateString("es-ES", { day: "2-digit", month: "short" })}
+                          </div>
+                          <div>
+                            <Link href={`/patients/${a.patient_id}`} className="font-bold text-sm text-slate-900 hover:text-rose-600 transition-colors flex items-center gap-1.5">
+                              {a.patient_first_name} {a.patient_last_name}
+                              <span className="text-xs text-rose-600 font-bold">({a.patient_historia_id})</span>
+                            </Link>
+                            <div className="flex items-center gap-3 text-xs text-slate-500 mt-0.5 font-medium">
+                              <span>{a.reason}</span>
+                              <span>•</span>
+                              <span className="flex items-center gap-1">
+                                <Building2 className="h-3 w-3 text-slate-400" />
+                                {a.clinic_name}
+                              </span>
+                              <span>•</span>
+                              <span className="flex items-center gap-1">
+                                <Clock className="h-3 w-3 text-slate-400" />
+                                {dateObj.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" })}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-3 shrink-0">
+                          <Badge className={
+                            a.status === "Realizada" ? "bg-emerald-100 text-emerald-800 border-emerald-200" :
+                            a.status === "Confirmada" ? "bg-blue-100 text-blue-800 border-blue-200" :
+                            a.status === "Cancelada" ? "bg-rose-100 text-rose-800 border-rose-200" :
+                            "bg-slate-100 text-slate-700 border-slate-200"
+                          }>
+                            {a.status}
+                          </Badge>
+
+                          <Link href={`/appointments/${a.id}`}>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg text-slate-400 hover:text-slate-900">
+                              <ChevronRight className="h-4 w-4" />
+                            </Button>
+                          </Link>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      {/* Edit Professional Dialog */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent className="sm:max-w-md rounded-2xl p-6 bg-white shadow-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-bold text-slate-900 flex items-center gap-2">
+              <Stethoscope className="h-5 w-5 text-emerald-500" />
+              Editar Ficha del Profesional
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold text-slate-700">Nombre</Label>
+                <Input value={fFirstName} onChange={(e) => setFFirstName(e.target.value)} className="rounded-lg" />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold text-slate-700">Apellido</Label>
+                <Input value={fLastName} onChange={(e) => setFLastName(e.target.value)} className="rounded-lg" />
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold text-slate-700">Especialidad</Label>
+              <Select value={fSpecialty} onValueChange={(v) => setFSpecialty(v ?? "")}>
+                <SelectTrigger className="rounded-lg text-sm"><SelectValue placeholder="Seleccionar especialidad..." /></SelectTrigger>
+                <SelectContent>
+                  {SPECIALTIES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold text-slate-700 flex items-center gap-1"><Phone className="h-3 w-3" />Teléfono</Label>
+                <Input value={fPhone} onChange={(e) => setFPhone(e.target.value)} className="rounded-lg" />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold text-slate-700 flex items-center gap-1"><Mail className="h-3 w-3" />Email</Label>
+                <Input value={fEmail} onChange={(e) => setFEmail(e.target.value)} className="rounded-lg" />
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold text-slate-700">Sede Principal</Label>
+              <Select value={fClinicId} onValueChange={(v) => setFClinicId(v ?? "")}>
+                <SelectTrigger className="rounded-lg text-sm"><SelectValue placeholder="Todas las sedes" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Todas las sedes</SelectItem>
+                  {allClinics.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <DialogFooter className="pt-2 gap-2">
+            <Button variant="outline" onClick={() => setEditDialogOpen(false)} className="rounded-xl">Cancelar</Button>
+            <Button onClick={handleSaveEdit} disabled={saving} className="bg-rose-500 hover:bg-rose-600 text-white rounded-xl gap-2">
+              {saving && <Loader2 className="h-4 w-4 animate-spin" />}
+              Guardar Cambios
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}

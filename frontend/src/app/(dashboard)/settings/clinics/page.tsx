@@ -53,6 +53,8 @@ export default function ClinicsSettingsPage() {
 
   // Dialog state
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [clinicToDelete, setClinicToDelete] = useState<Clinic | null>(null);
   const [editingClinic, setEditingClinic] = useState<Clinic | null>(null);
   const [expandedClinic, setExpandedClinic] = useState<string | null>(null);
 
@@ -127,10 +129,24 @@ export default function ClinicsSettingsPage() {
     }
   };
 
-  const handleDeleteClinic = async (id: string) => {
-    if (!confirm("¿Eliminar esta clínica? Se perderán sus reglas de comisión.")) return;
-    await (supabase as any).from("clinics").delete().eq("id", id);
-    await fetchData();
+  const promptDeleteClinic = (clinic: Clinic) => {
+    setClinicToDelete(clinic);
+    setDeleteConfirmOpen(true);
+  };
+
+  const confirmDeleteClinic = async () => {
+    if (!clinicToDelete) return;
+    setSaving(true);
+    try {
+      await (supabase as any).from("clinics").delete().eq("id", clinicToDelete.id);
+      setDeleteConfirmOpen(false);
+      setClinicToDelete(null);
+      await fetchData();
+    } catch (e) {
+      console.error("Error deleting clinic:", e);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const toggleExpand = (id: string) => {
@@ -243,7 +259,7 @@ export default function ClinicsSettingsPage() {
                   <Button variant="ghost" size="icon" onClick={() => openEdit(clinic)} className="h-9 w-9 rounded-xl text-slate-500 hover:text-slate-900">
                     <Edit2 className="h-4 w-4" />
                   </Button>
-                  <Button variant="ghost" size="icon" onClick={() => handleDeleteClinic(clinic.id)} className="h-9 w-9 rounded-xl text-rose-400 hover:text-rose-600 hover:bg-rose-50">
+                  <Button variant="ghost" size="icon" onClick={() => promptDeleteClinic(clinic)} className="h-9 w-9 rounded-xl text-rose-400 hover:text-rose-600 hover:bg-rose-50">
                     <Trash2 className="h-4 w-4" />
                   </Button>
                   <Button variant="ghost" size="sm" onClick={() => toggleExpand(clinic.id)} className="text-xs gap-1 rounded-xl text-slate-600">
@@ -403,6 +419,31 @@ export default function ClinicsSettingsPage() {
             <Button onClick={handleSaveClinic} disabled={saving} className="bg-rose-500 hover:bg-rose-600 text-white rounded-xl shadow-md shadow-rose-500/20 gap-2">
               {saving && <Loader2 className="h-4 w-4 animate-spin" />}
               Guardar Clínica
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Modal */}
+      <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <DialogContent className="sm:max-w-md rounded-2xl p-6 bg-white shadow-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-bold text-slate-900 flex items-center gap-2">
+              <AlertCircle className="h-5 w-5 text-rose-500" />
+              Confirmar Eliminación
+            </DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-slate-600 py-2">
+            ¿Estás seguro de que deseas eliminar la clínica <span className="font-bold text-slate-900">&quot;{clinicToDelete?.name}&quot;</span>?
+            Se eliminarán también sus reglas de comisión configuradas.
+          </p>
+          <DialogFooter className="pt-2 gap-2">
+            <Button variant="outline" onClick={() => setDeleteConfirmOpen(false)} className="rounded-xl">
+              Cancelar
+            </Button>
+            <Button onClick={confirmDeleteClinic} disabled={saving} className="bg-rose-600 hover:bg-rose-700 text-white rounded-xl gap-2 font-bold shadow-md shadow-rose-600/20">
+              {saving && <Loader2 className="h-4 w-4 animate-spin" />}
+              Sí, Eliminar Clínica
             </Button>
           </DialogFooter>
         </DialogContent>

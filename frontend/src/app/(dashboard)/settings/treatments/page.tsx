@@ -40,6 +40,8 @@ export default function TreatmentsSettingsPage() {
 
   // Treatment dialog
   const [treatmentDialogOpen, setTreatmentDialogOpen] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [treatmentToDelete, setTreatmentToDelete] = useState<Treatment | null>(null);
   const [editingTreatment, setEditingTreatment] = useState<Treatment | null>(null);
   const [fName, setFName] = useState("");
   const [fAbbrev, setFAbbrev] = useState("");
@@ -123,10 +125,24 @@ export default function TreatmentsSettingsPage() {
     }
   };
 
-  const handleDeleteTreatment = async (id: string) => {
-    if (!confirm("¿Eliminar este tratamiento?")) return;
-    await (supabase as any).from("treatments").delete().eq("id", id);
-    await fetchData();
+  const promptDeleteTreatment = (t: Treatment) => {
+    setTreatmentToDelete(t);
+    setDeleteConfirmOpen(true);
+  };
+
+  const confirmDeleteTreatment = async () => {
+    if (!treatmentToDelete) return;
+    setSaving(true);
+    try {
+      await (supabase as any).from("treatments").delete().eq("id", treatmentToDelete.id);
+      setDeleteConfirmOpen(false);
+      setTreatmentToDelete(null);
+      await fetchData();
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const SERVICE_TYPES = ["Consulta", "Restauración", "Cirugía", "Ortodoncia", "Endodoncia", "Periodoncia",
@@ -251,7 +267,7 @@ export default function TreatmentsSettingsPage() {
                             <Button variant="ghost" size="icon" onClick={() => openEditTreatment(t)} className="h-7 w-7 rounded-lg text-slate-500">
                               <Edit2 className="h-3.5 w-3.5" />
                             </Button>
-                            <Button variant="ghost" size="icon" onClick={() => handleDeleteTreatment(t.id)} className="h-7 w-7 rounded-lg text-rose-400">
+                            <Button variant="ghost" size="icon" onClick={() => promptDeleteTreatment(t)} className="h-7 w-7 rounded-lg text-rose-400">
                               <Trash2 className="h-3.5 w-3.5" />
                             </Button>
                           </div>
@@ -347,6 +363,30 @@ export default function TreatmentsSettingsPage() {
             <Button onClick={handleSaveTreatment} disabled={saving} className="bg-rose-500 hover:bg-rose-600 text-white rounded-xl gap-2">
               {saving && <Loader2 className="h-4 w-4 animate-spin" />}
               Guardar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Modal */}
+      <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <DialogContent className="sm:max-w-md rounded-2xl p-6 bg-white shadow-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-bold text-slate-900 flex items-center gap-2">
+              <AlertCircle className="h-5 w-5 text-rose-500" />
+              Confirmar Eliminación
+            </DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-slate-600 py-2">
+            ¿Estás seguro de que deseas eliminar el tratamiento <span className="font-bold text-slate-900">&quot;{treatmentToDelete?.service_name}&quot;</span>?
+          </p>
+          <DialogFooter className="pt-2 gap-2">
+            <Button variant="outline" onClick={() => setDeleteConfirmOpen(false)} className="rounded-xl">
+              Cancelar
+            </Button>
+            <Button onClick={confirmDeleteTreatment} disabled={saving} className="bg-rose-600 hover:bg-rose-700 text-white rounded-xl gap-2 font-bold shadow-md shadow-rose-600/20">
+              {saving && <Loader2 className="h-4 w-4 animate-spin" />}
+              Sí, Eliminar Tratamiento
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -1,13 +1,14 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Stethoscope, Plus, Edit2, Trash2, Loader2, AlertCircle, Percent, Phone, Mail } from "lucide-react";
+import { Stethoscope, Plus, Edit2, Trash2, Loader2, AlertCircle, Phone, Mail, UserCheck, ExternalLink } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
 
 type Professional = {
@@ -17,7 +18,6 @@ type Professional = {
   specialty: string | null;
   phone: string | null;
   email: string | null;
-  base_commission_percentage: number | null;
   clinic_id: string | null;
 };
 
@@ -28,23 +28,26 @@ export default function ProfessionalsSettingsPage() {
   const [clinics, setClinics] = useState<Clinic[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+
+  // Dialog states
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [proToDelete, setProToDelete] = useState<Professional | null>(null);
   const [editingPro, setEditingPro] = useState<Professional | null>(null);
 
-  // Form
+  // Form states
   const [fFirstName, setFFirstName] = useState("");
   const [fLastName, setFLastName] = useState("");
   const [fSpecialty, setFSpecialty] = useState("");
   const [fPhone, setFPhone] = useState("");
   const [fEmail, setFEmail] = useState("");
-  const [fCommission, setFCommission] = useState("40");
   const [fClinicId, setFClinicId] = useState("");
 
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
       const [{ data: pData }, { data: cData }] = await Promise.all([
-        supabase.from("professionals").select("id, first_name, last_name, specialty, phone, email, base_commission_percentage, clinic_id").order("first_name"),
+        supabase.from("professionals").select("id, first_name, last_name, specialty, phone, email, clinic_id").order("first_name"),
         (supabase as any).from("clinics").select("id, name").order("name"),
       ]);
       if (pData) setProfessionals(pData);
@@ -61,7 +64,7 @@ export default function ProfessionalsSettingsPage() {
   const openAdd = () => {
     setEditingPro(null);
     setFFirstName(""); setFLastName(""); setFSpecialty(""); setFPhone("");
-    setFEmail(""); setFCommission("40"); setFClinicId("");
+    setFEmail(""); setFClinicId("");
     setDialogOpen(true);
   };
 
@@ -69,8 +72,7 @@ export default function ProfessionalsSettingsPage() {
     setEditingPro(p);
     setFFirstName(p.first_name); setFLastName(p.last_name);
     setFSpecialty(p.specialty || ""); setFPhone(p.phone || "");
-    setFEmail(p.email || ""); setFCommission(String(p.base_commission_percentage || 40));
-    setFClinicId(p.clinic_id || "");
+    setFEmail(p.email || ""); setFClinicId(p.clinic_id || "");
     setDialogOpen(true);
   };
 
@@ -84,7 +86,6 @@ export default function ProfessionalsSettingsPage() {
         specialty: fSpecialty || null,
         phone: fPhone || null,
         email: fEmail || null,
-        base_commission_percentage: parseFloat(fCommission) || 40,
         clinic_id: fClinicId || null,
       };
       if (editingPro) {
@@ -101,10 +102,24 @@ export default function ProfessionalsSettingsPage() {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("¿Eliminar este profesional?")) return;
-    await supabase.from("professionals").delete().eq("id", id);
-    await fetchData();
+  const promptDelete = (p: Professional) => {
+    setProToDelete(p);
+    setDeleteConfirmOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!proToDelete) return;
+    setSaving(true);
+    try {
+      await supabase.from("professionals").delete().eq("id", proToDelete.id);
+      setDeleteConfirmOpen(false);
+      setProToDelete(null);
+      await fetchData();
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const SPECIALTIES = [
@@ -129,7 +144,7 @@ export default function ProfessionalsSettingsPage() {
             <Stethoscope className="h-6 w-6 text-emerald-500" /> Profesionales
           </h1>
           <p className="text-sm text-slate-500 mt-0.5">
-            Gestiona doctoras y profesionales con sus especialidades y comisiones base.
+            Doctoras y colaboradores del equipo Melosmile (asociados por sede).
           </p>
         </div>
         <Button onClick={openAdd} className="bg-rose-500 hover:bg-rose-600 text-white rounded-xl gap-2 shadow-md shadow-rose-500/20">
@@ -159,36 +174,39 @@ export default function ProfessionalsSettingsPage() {
                     {p.first_name[0]}{p.last_name[0]}
                   </div>
                   <div>
-                    <CardTitle className="text-base font-bold text-slate-900">
+                    <CardTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
                       Dra. {p.first_name} {p.last_name}
                     </CardTitle>
-                    <p className="text-xs text-slate-500">{p.specialty || "Sin especialidad"}</p>
+                    <p className="text-xs text-slate-500 font-medium">{p.specialty || "Sin especialidad"}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-1">
-                  <Button variant="ghost" size="icon" onClick={() => openEdit(p)} className="h-9 w-9 rounded-xl text-slate-500 hover:text-slate-900">
-                    <Edit2 className="h-4 w-4" />
+                  <Link href={`/settings/professionals/${p.id}`}>
+                    <Button variant="outline" size="sm" className="h-8 px-2.5 rounded-xl text-xs gap-1 font-semibold border-slate-200 text-slate-700 hover:bg-slate-50">
+                      <span>Ficha</span>
+                      <ExternalLink className="h-3 w-3 text-slate-400" />
+                    </Button>
+                  </Link>
+                  <Button variant="ghost" size="icon" onClick={() => openEdit(p)} className="h-8 w-8 rounded-xl text-slate-500 hover:text-slate-900">
+                    <Edit2 className="h-3.5 w-3.5" />
                   </Button>
-                  <Button variant="ghost" size="icon" onClick={() => handleDelete(p.id)} className="h-9 w-9 rounded-xl text-rose-400 hover:text-rose-600 hover:bg-rose-50">
-                    <Trash2 className="h-4 w-4" />
+                  <Button variant="ghost" size="icon" onClick={() => promptDelete(p)} className="h-8 w-8 rounded-xl text-rose-400 hover:text-rose-600 hover:bg-rose-50">
+                    <Trash2 className="h-3.5 w-3.5" />
                   </Button>
                 </div>
               </CardHeader>
-              <CardContent className="grid grid-cols-3 gap-3 pt-2 border-t border-slate-100">
-                <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100 text-center">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Comisión</span>
-                  <span className="text-base font-bold text-slate-800 flex items-center justify-center gap-0.5">
-                    {p.base_commission_percentage || 40}<Percent className="h-3 w-3 text-slate-500" />
+
+              <CardContent className="pt-2 pb-4 border-t border-slate-100 space-y-2">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-slate-400 font-medium">Sede Asignada:</span>
+                  <span className="font-semibold text-slate-700 bg-slate-100 px-2.5 py-0.5 rounded-full">
+                    {clinic?.name || "Todas las sedes"}
                   </span>
                 </div>
-                <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100 text-center col-span-2">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Sede Principal</span>
-                  <span className="text-sm font-semibold text-slate-700 truncate block">{clinic?.name || "Todas las sedes"}</span>
-                </div>
-                {p.phone && (
-                  <div className="col-span-3 flex items-center gap-4 text-xs text-slate-500 pt-1">
+                {(p.phone || p.email) && (
+                  <div className="flex items-center gap-4 text-xs text-slate-500 pt-1">
                     {p.phone && <span className="flex items-center gap-1"><Phone className="h-3 w-3" />{p.phone}</span>}
-                    {p.email && <span className="flex items-center gap-1"><Mail className="h-3 w-3" />{p.email}</span>}
+                    {p.email && <span className="flex items-center gap-1"><Mail className="h-3 w-3 text-slate-400" />{p.email}</span>}
                   </div>
                 )}
               </CardContent>
@@ -197,7 +215,7 @@ export default function ProfessionalsSettingsPage() {
         })}
       </div>
 
-      {/* Dialog */}
+      {/* Create / Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="sm:max-w-md rounded-2xl p-6 bg-white shadow-2xl">
           <DialogHeader>
@@ -219,7 +237,7 @@ export default function ProfessionalsSettingsPage() {
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-slate-700">Especialidad</Label>
+              <Label className="text-xs font-semibold text-slate-700">Especialidad Principal</Label>
               <Select value={fSpecialty} onValueChange={(v) => setFSpecialty(v ?? "")}>
                 <SelectTrigger className="rounded-lg text-sm"><SelectValue placeholder="Seleccionar especialidad..." /></SelectTrigger>
                 <SelectContent>
@@ -239,28 +257,47 @@ export default function ProfessionalsSettingsPage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-slate-700 flex items-center gap-1"><Percent className="h-3 w-3" />% Comisión Base</Label>
-                <Input type="number" value={fCommission} onChange={(e) => setFCommission(e.target.value)} placeholder="40" className="rounded-lg" />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-slate-700">Sede Principal</Label>
-                <Select value={fClinicId} onValueChange={(v) => setFClinicId(v ?? "")}>
-                  <SelectTrigger className="rounded-lg text-sm"><SelectValue placeholder="Todas las sedes" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="">Todas las sedes</SelectItem>
-                    {clinics.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold text-slate-700">Sede / Clínica Asignada</Label>
+              <Select value={fClinicId} onValueChange={(v) => setFClinicId(v ?? "")}>
+                <SelectTrigger className="rounded-lg text-sm"><SelectValue placeholder="Todas las sedes" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Todas las sedes</SelectItem>
+                  {clinics.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
             </div>
           </div>
+
           <DialogFooter className="pt-2 gap-2">
             <Button variant="outline" onClick={() => setDialogOpen(false)} className="rounded-xl">Cancelar</Button>
             <Button onClick={handleSave} disabled={saving} className="bg-rose-500 hover:bg-rose-600 text-white rounded-xl gap-2">
               {saving && <Loader2 className="h-4 w-4 animate-spin" />}
-              Guardar
+              Guardar Profesional
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Modal */}
+      <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <DialogContent className="sm:max-w-md rounded-2xl p-6 bg-white shadow-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-bold text-slate-900 flex items-center gap-2">
+              <AlertCircle className="h-5 w-5 text-rose-500" />
+              Confirmar Eliminación
+            </DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-slate-600 py-2">
+            ¿Estás seguro de que deseas eliminar al profesional <span className="font-bold text-slate-900">&quot;Dra. {proToDelete?.first_name} {proToDelete?.last_name}&quot;</span>?
+          </p>
+          <DialogFooter className="pt-2 gap-2">
+            <Button variant="outline" onClick={() => setDeleteConfirmOpen(false)} className="rounded-xl">
+              Cancelar
+            </Button>
+            <Button onClick={confirmDelete} disabled={saving} className="bg-rose-600 hover:bg-rose-700 text-white rounded-xl gap-2 font-bold shadow-md shadow-rose-600/20">
+              {saving && <Loader2 className="h-4 w-4 animate-spin" />}
+              Sí, Eliminar
             </Button>
           </DialogFooter>
         </DialogContent>
