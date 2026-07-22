@@ -15,7 +15,7 @@ const CalendarView = dynamic(
 
 export default function DashboardPage() {
   const [selectedFilter, setSelectedFilter] = useState("all");
-  const [isAIAgentOpen, setIsAIAgentOpen] = useState(false);
+  const [clinics, setClinics] = useState<{ id: string; name: string }[]>([]);
   
   // Real KPIs state
   const [loading, setLoading] = useState(true);
@@ -29,6 +29,13 @@ export default function DashboardPage() {
     async function fetchKPIs() {
       setLoading(true);
       try {
+        // Fetch real clinics from database for quick filters
+        const { data: cData } = await (supabase as any)
+          .from("clinics")
+          .select("id, name")
+          .order("name");
+        if (cData) setClinics(cData);
+
         const today = new Date();
         const todayStr = today.toISOString().split('T')[0];
         
@@ -90,23 +97,28 @@ export default function DashboardPage() {
         </div>
 
         {/* Quick Clinic Filter Pills */}
-        <div className="flex items-center gap-1.5 p-1 bg-slate-200/60 rounded-xl w-fit">
-          {[
-            { id: "all", label: "Todas las Sedes" },
-            { id: "albacete", label: "Albacete" },
-            { id: "goya", label: "Goya" },
-            { id: "rozas", label: "Las Rozas" },
-          ].map((tab) => (
+        <div className="flex items-center gap-1.5 p-1 bg-slate-200/60 rounded-xl w-fit flex-wrap">
+          <button
+            onClick={() => setSelectedFilter("all")}
+            className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all ${
+              selectedFilter === "all"
+                ? "bg-white text-slate-900 shadow-sm"
+                : "text-slate-600 hover:text-slate-900"
+            }`}
+          >
+            Todas las Sedes
+          </button>
+          {clinics.map((clinic) => (
             <button
-              key={tab.id}
-              onClick={() => setSelectedFilter(tab.id)}
+              key={clinic.id}
+              onClick={() => setSelectedFilter(clinic.id)}
               className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all ${
-                selectedFilter === tab.id
+                selectedFilter === clinic.id
                   ? "bg-white text-slate-900 shadow-sm"
                   : "text-slate-600 hover:text-slate-900"
               }`}
             >
-              {tab.label}
+              {clinic.name}
             </button>
           ))}
         </div>
@@ -171,46 +183,8 @@ export default function DashboardPage() {
 
       {/* Calendar Section */}
       <div className="w-full">
-        <CalendarView />
+        <CalendarView selectedClinicId={selectedFilter} />
       </div>
-
-      {/* Floating AI Agent Toggle Button */}
-      {!isAIAgentOpen && (
-        <Button 
-          onClick={() => setIsAIAgentOpen(true)}
-          className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-2xl bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white z-50 flex items-center justify-center border-2 border-white/20 transition-transform hover:scale-105"
-        >
-          <Sparkles className="h-6 w-6" />
-        </Button>
-      )}
-
-      {/* Centered AI Agent Overlay */}
-      {isAIAgentOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="relative w-full max-w-3xl bg-slate-950 rounded-2xl shadow-2xl border border-slate-800 overflow-hidden animate-in zoom-in-95 duration-200">
-            {/* Header for the overlay */}
-            <div className="bg-slate-900 border-b border-slate-800 px-4 py-3 flex items-center justify-between">
-              <div className="flex items-center gap-2 text-white">
-                <Sparkles className="h-5 w-5 text-violet-400" />
-                <span className="font-semibold">Asistente IA</span>
-              </div>
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                onClick={() => setIsAIAgentOpen(false)}
-                className="h-8 w-8 rounded-full text-slate-400 hover:text-white hover:bg-white/10"
-              >
-                <X className="h-5 w-5" />
-              </Button>
-            </div>
-            
-            {/* Embed the AIAgentBar inside */}
-            <div className="p-4 md:p-6">
-              <AIAgentBar />
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

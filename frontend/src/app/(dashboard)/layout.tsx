@@ -2,7 +2,7 @@
 
 import React from "react";
 import { Sidebar } from "@/components/layout/sidebar";
-import { Search, Bell, Plus, RefreshCw, CalendarCheck2 } from "lucide-react";
+import { Search, Bell, Plus, RefreshCw, CalendarCheck2, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PatientSelect } from "@/components/patients/patient-select";
@@ -10,6 +10,10 @@ import {
   NewAppointmentModalGlobal,
   triggerNewAppointmentModal,
 } from "@/components/calendar/new-appointment-modal";
+import {
+  GlobalAIAgentModal,
+  triggerAIAgentModal,
+} from "@/components/dashboard/global-ai-agent-modal";
 
 export default function DashboardLayout({
   children,
@@ -55,6 +59,15 @@ export default function DashboardLayout({
               <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-rose-500 ring-2 ring-white" />
             </Button>
 
+            {/* AI Assistant Quick Action */}
+            <Button
+              onClick={() => triggerAIAgentModal()}
+              className="h-10 px-3.5 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white font-semibold text-xs shadow-md shadow-indigo-500/20 gap-2 transition-all cursor-pointer"
+            >
+              <Sparkles className="h-4 w-4" />
+              <span>Agente IA</span>
+            </Button>
+
             {/* Quick Action Button */}
             <Button 
               onClick={() => triggerNewAppointmentModal()}
@@ -74,6 +87,8 @@ export default function DashboardLayout({
 
       {/* Global New Appointment Modal */}
       <NewAppointmentModalGlobal />
+      {/* Global AI Agent Modal (Floating button & overlay everywhere) */}
+      <GlobalAIAgentModal />
     </div>
   );
 }

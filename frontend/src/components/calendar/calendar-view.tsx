@@ -25,6 +25,15 @@ export type Clinic = {
   baseCommission: number; // e.g. 60%
 };
 
+const COLOR_PRESETS = [
+  { bg: "bg-blue-500", border: "border-blue-600" },
+  { bg: "bg-emerald-500", border: "border-emerald-600" },
+  { bg: "bg-purple-500", border: "border-purple-600" },
+  { bg: "bg-pink-500", border: "border-pink-600" },
+  { bg: "bg-amber-500", border: "border-amber-600" },
+  { bg: "bg-indigo-500", border: "border-indigo-600" },
+];
+
 export const DEFAULT_CLINICS: Clinic[] = [
   { id: "albacete", name: "Albacete", color: "bg-emerald-500", borderColor: "border-emerald-600", labDiscount: 50, baseCommission: 60 },
   { id: "goya", name: "Goya (Madrid)", color: "bg-blue-500", borderColor: "border-blue-600", labDiscount: 0, baseCommission: 60 },
@@ -134,7 +143,7 @@ function DraggableEvent({ event, clinic, heightPx, onClick }: any) {
   );
 }
 
-export function CalendarView() {
+export function CalendarView({ selectedClinicId = "all" }: { selectedClinicId?: string }) {
   const [viewMode, setViewMode] = useState<ViewMode>("week");
   const [currentDate, setCurrentDate] = useState<Date>(today);
   const [events, setEvents] = useState<AppointmentEvent[]>([]);
@@ -142,10 +151,35 @@ export function CalendarView() {
 
   const fetchAppointments = useCallback(async () => {
     try {
+      // Fetch real clinics from database
+      const { data: dbClinics } = await (supabase as any)
+        .from("clinics")
+        .select("id, name, color_hex, base_commission_pct")
+        .order("name");
+
+      let loadedClinics: Clinic[] = [];
+      if (dbClinics && dbClinics.length > 0) {
+        loadedClinics = dbClinics.map((c: any, index: number) => {
+          const preset = COLOR_PRESETS[index % COLOR_PRESETS.length];
+          return {
+            id: c.id,
+            name: c.name,
+            color: preset.bg,
+            borderColor: preset.border,
+            labDiscount: 0,
+            baseCommission: c.base_commission_pct || 40,
+          };
+        });
+        setClinics(loadedClinics);
+      } else {
+        setClinics(DEFAULT_CLINICS);
+      }
+
+      // Fetch appointments
       const { data, error } = await supabase
         .from("appointments")
         .select(`
-          id, appointment_date, reason, status, notes,
+          id, appointment_date, reason, status, notes, clinic_id,
           clinics ( id, name ),
           professionals ( first_name, last_name ),
           patients ( first_name, last_name, historia_id, phone, email )
@@ -159,11 +193,7 @@ export function CalendarView() {
           const p = a.patients;
           const prof = a.professionals;
           const cl = a.clinics;
-          const clinicNameLower = (cl?.name ?? "").toLowerCase();
-
-          let cId = "albacete";
-          if (clinicNameLower.includes("goya")) cId = "goya";
-          else if (clinicNameLower.includes("rozas")) cId = "rozas";
+          const actualClinicId = cl?.id || a.clinic_id || (loadedClinics[0]?.id || "albacete");
 
           return {
             id: a.id,
@@ -171,7 +201,7 @@ export function CalendarView() {
             date: d,
             startTime: `${hours}:${minutes}`,
             durationMinutes: 45,
-            clinicId: cId,
+            clinicId: actualClinicId,
             patient: p ? `${p.first_name} ${p.last_name}` : "Paciente",
             patientHistoriaId: p?.historia_id ?? undefined,
             patientPhone: p?.phone ?? undefined,
@@ -283,6 +313,11 @@ export function CalendarView() {
     }
   };
 
+  const displayEvents = events.filter((e) => {
+    if (!selectedClinicId || selectedClinicId === "all") return true;
+    return e.clinicId === selectedClinicId;
+  });
+
   return (
     <Card className="border-0 shadow-xl rounded-2xl bg-white overflow-hidden">
       <CardContent className="p-0">
@@ -366,7 +401,7 @@ export function CalendarView() {
                 start: startOfWeek(startOfMonth(currentDate), { weekStartsOn: 1 }),
                 end: addDays(startOfWeek(startOfMonth(currentDate), { weekStartsOn: 1 }), 34),
               }).map((day) => {
-                const dayEvents = events.filter((e) => isSameDay(e.date, day));
+                const dayEvents = displayEvents.filter((e) => isSameDay(e.date, day));
                 const isCurrentMonth = isSameMonth(day, currentDate);
                 const isToday = isSameDay(day, today);
                 return (
@@ -450,7 +485,7 @@ export function CalendarView() {
                     </div>
 
                     {(viewMode === "week" ? weekDays : [currentDate]).map((day) => {
-                      const slotEvents = events.filter(
+                      const slotEvents = displayEvents.filter(
                         (e) => isSameDay(e.date, day) && e.startTime === slot
                       );
                       const isToday = isSameDay(day, today);
