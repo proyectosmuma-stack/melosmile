@@ -1,0 +1,109 @@
+{
+  "name": "Melosmile - Monitor de Correo Inteligente (Buzón IA 4x al Día)",
+  "tags": [
+    "Melosmile",
+    "Email",
+    "IMAP",
+    "OCR",
+    "Facturación"
+  ],
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 6
+            }
+          ]
+        }
+      },
+      "name": "Cron Trigger (Cada 6 Horas)",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [
+        250,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "postImportAction": "read",
+        "format": "resolved",
+        "options": {}
+      },
+      "name": "IMAP Email Watcher (Lectura Buzón)",
+      "type": "n8n-nodes-base.emailReadImap",
+      "typeVersion": 2,
+      "position": [
+        480,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "model": "gemini-1.5-pro",
+        "options": {
+          "systemMessage": "Analiza el correo recibido o el adjunto (foto, lista de pacientes, PDF de clínica). Extrae los tratamientos realizados, paciente, importe cobrado y gastos de laboratorio. Formatea como array de objetos JSON de facturación para Melosmile."
+        }
+      },
+      "name": "Agente Vision OCR & Extractor IA",
+      "type": "n8n-nodes-base.googleGemini",
+      "typeVersion": 1,
+      "position": [
+        700,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "requestMethod": "POST",
+        "url": "http://localhost:3000/api/appointments/batch",
+        "options": {}
+      },
+      "name": "Actualizar Agenda & Facturación",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [
+        920,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Cron Trigger (Cada 6 Horas)": {
+      "main": [
+        [
+          {
+            "node": "IMAP Email Watcher (Lectura Buzón)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IMAP Email Watcher (Lectura Buzón)": {
+      "main": [
+        [
+          {
+            "node": "Agente Vision OCR & Extractor IA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agente Vision OCR & Extractor IA": {
+      "main": [
+        [
+          {
+            "node": "Actualizar Agenda & Facturación",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

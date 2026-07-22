@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import dynamic from "next/dynamic";
+import { AIAgentBar } from "@/components/dashboard/ai-agent-bar";
 import { Calendar as CalendarIcon, Users, TrendingUp, Sparkles } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 
@@ -15,13 +16,16 @@ export default function DashboardPage() {
 
   return (
     <div className="flex flex-col gap-8 max-w-[1600px] mx-auto">
+      {/* Conversational AI Agent Bar */}
+      <AIAgentBar />
+
       {/* Page Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-slate-900 flex items-center gap-3">
             Agenda Principal
             <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-200/80 text-slate-700">
-              Vista Semanal
+              Vista Semanal / 15-min
             </span>
           </h1>
           <p className="text-sm text-slate-500 mt-1">
@@ -32,10 +36,10 @@ export default function DashboardPage() {
         {/* Quick Clinic Filter Pills */}
         <div className="flex items-center gap-2 p-1 bg-slate-200/60 rounded-xl w-fit">
           {[
-            { id: "all", label: "Todas" },
+            { id: "all", label: "Todas las Sedes" },
             { id: "albacete", label: "Albacete" },
             { id: "goya", label: "Goya" },
-            { id: "rozas", label: "Rozas" },
+            { id: "rozas", label: "Las Rozas" },
           ].map((tab) => (
             <button
               key={tab.id}

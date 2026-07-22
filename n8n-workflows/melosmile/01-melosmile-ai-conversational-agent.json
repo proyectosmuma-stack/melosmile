@@ -1,0 +1,157 @@
+{
+  "name": "Melosmile - Agente IA Conversacional & Agendador Natural",
+  "tags": [
+    "Melosmile",
+    "IA",
+    "Agenda",
+    "Facturación"
+  ],
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "melosmile-ai-agent",
+        "options": {}
+      },
+      "name": "Webhook Entrante (Prompt Natural)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        250,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "model": "gemini-1.5-pro",
+        "options": {
+          "systemMessage": "Eres el Agente IA Oficial de Melosmile. Tu trabajo es interpretar instrucciones en lenguaje natural escritas por la Dra. Osly Melo o su equipo. Ejemplos de uso:\n- 'Cita a Munir en 15 días' -> Calcula la fecha relativa +15 días, extrae paciente='Munir', acción='crear_cita'.\n- 'Informe mensual Albacete' -> Extrae clínica='Albacete', acción='generar_informe'.\n- 'Registrar pago de 150€ de María' -> Extrae paciente='María', monto=150, acción='registrar_pago'.\nResponde siempre en formato JSON estructurado."
+        }
+      },
+      "name": "Agente IA Gemini (Procesador Lenguaje Natural)",
+      "type": "n8n-nodes-base.googleGemini",
+      "typeVersion": 1,
+      "position": [
+        480,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "dataType": "string",
+        "value1": "={{ $json.action }}",
+        "rules": {
+          "rules": [
+            {
+              "value2": "crear_cita"
+            },
+            {
+              "value2": "generar_informe"
+            },
+            {
+              "value2": "registrar_pago"
+            }
+          ]
+        }
+      },
+      "name": "Enrutador de Acciones",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 1,
+      "position": [
+        700,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "requestMethod": "POST",
+        "url": "http://localhost:3000/api/appointments",
+        "options": {}
+      },
+      "name": "Insertar Cita en Base de Datos",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [
+        950,
+        180
+      ]
+    },
+    {
+      "parameters": {
+        "requestMethod": "POST",
+        "url": "http://localhost:3000/api/reports/monthly",
+        "options": {}
+      },
+      "name": "Generar Informe Facturación",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [
+        950,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "requestMethod": "POST",
+        "url": "http://localhost:3000/api/payments",
+        "options": {}
+      },
+      "name": "Registrar Movimiento Contable / Odoo",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [
+        950,
+        420
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook Entrante (Prompt Natural)": {
+      "main": [
+        [
+          {
+            "node": "Agente IA Gemini (Procesador Lenguaje Natural)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agente IA Gemini (Procesador Lenguaje Natural)": {
+      "main": [
+        [
+          {
+            "node": "Enrutador de Acciones",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enrutador de Acciones": {
+      "main": [
+        [
+          {
+            "node": "Insertar Cita en Base de Datos",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Generar Informe Facturación",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Registrar Movimiento Contable / Odoo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

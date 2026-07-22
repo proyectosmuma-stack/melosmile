@@ -7,10 +7,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Sparkles, Building2, User, Stethoscope, Calculator, CalendarCheck, ChevronLeft, ChevronRight, Clock, CalendarDays, Calendar as CalendarIcon, Sun } from "lucide-react";
+import { Sparkles, Building2, User, Stethoscope, Calculator, CalendarCheck, ChevronLeft, ChevronRight, Clock, CalendarDays, Calendar as CalendarIcon, Sun, FileText, Settings2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format, startOfWeek, addDays, subDays, addWeeks, subWeeks, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isSameMonth, addMonths, subMonths } from "date-fns";
 import { es } from "date-fns/locale";
+import { PatientSelect, Patient } from "@/components/patients/patient-select";
+import { AppointmentDetailDrawer } from "@/components/calendar/appointment-detail-drawer";
 
 export type Clinic = {
   id: string;
@@ -32,24 +34,25 @@ export type AppointmentEvent = {
   title: string;
   date: Date;
   startTime: string; // "09:15"
-  durationMinutes: number; // 15, 30, 45, 60, 75, 90, 120...
+  durationMinutes: number;
   clinicId: string;
   patient: string;
   doctor: string;
   price: number;
   labCost: number;
+  customCommissionRate?: number;
+  customLabDiscountRate?: number;
 };
 
 const today = new Date();
 
 const initialEvents: AppointmentEvent[] = [
-  { id: "1", title: "Ortodoncia", date: today, startTime: "10:00", durationMinutes: 60, clinicId: "albacete", patient: "Juan Pérez", doctor: "Dra. Osly Melo", price: 60, labCost: 0 },
-  { id: "2", title: "Estética Dental", date: today, startTime: "12:30", durationMinutes: 90, clinicId: "goya", patient: "María Gómez", doctor: "Dra. Norelys", price: 250, labCost: 40 },
-  { id: "3", title: "Implante", date: addDays(today, 1), startTime: "11:15", durationMinutes: 120, clinicId: "rozas", patient: "Carlos Rodríguez", doctor: "Dra. Osly Melo", price: 800, labCost: 150 },
-  { id: "4", title: "Revisión 15m", date: today, startTime: "09:15", durationMinutes: 15, clinicId: "goya", patient: "Laura Sánchez", doctor: "Dra. Asencio", price: 45, labCost: 0 },
+  { id: "1", title: "Ortodoncia", date: today, startTime: "10:00", durationMinutes: 60, clinicId: "albacete", patient: "Juan Pérez", doctor: "Dra. Osly Melo", price: 60, labCost: 0, customCommissionRate: 60, customLabDiscountRate: 50 },
+  { id: "2", title: "Estética Dental", date: today, startTime: "12:30", durationMinutes: 90, clinicId: "goya", patient: "María Gómez", doctor: "Dra. Norelys", price: 250, labCost: 40, customCommissionRate: 60, customLabDiscountRate: 0 },
+  { id: "3", title: "Implante", date: addDays(today, 1), startTime: "11:15", durationMinutes: 120, clinicId: "rozas", patient: "Carlos Rodríguez", doctor: "Dra. Osly Melo", price: 800, labCost: 150, customCommissionRate: 60, customLabDiscountRate: 0 },
+  { id: "4", title: "Revisión 15m", date: today, startTime: "09:15", durationMinutes: 15, clinicId: "goya", patient: "Laura Sánchez", doctor: "Dra. Asencio", price: 45, labCost: 0, customCommissionRate: 60, customLabDiscountRate: 0 },
 ];
 
-// Generate 15-minute interval options (08:00 to 20:45)
 const TIME_SLOTS: string[] = [];
 for (let h = 8; h <= 20; h++) {
   for (let m = 0; m < 60; m += 15) {
@@ -57,7 +60,6 @@ for (let h = 8; h <= 20; h++) {
   }
 }
 
-// Duration options in 15-minute increments
 const DURATION_OPTIONS = [
   { value: 15, label: "15 minutos" },
   { value: 30, label: "30 minutos" },
@@ -94,12 +96,13 @@ export function CalendarView() {
   const [doctor, setDoctor] = useState("Dra. Osly Melo");
   const [price, setPrice] = useState("60");
   const [labCost, setLabCost] = useState("0");
+  const [customCommission, setCustomCommission] = useState("60");
+  const [customLabDiscount, setCustomLabDiscount] = useState("50");
   const [naturalText, setNaturalText] = useState("");
 
   const currentWeekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(currentWeekStart, i));
 
-  // Navigation handlers
   const handlePrev = () => {
     if (viewMode === "month") setCurrentDate(subMonths(currentDate, 1));
     else if (viewMode === "week") setCurrentDate(subWeeks(currentDate, 1));
@@ -118,10 +121,9 @@ export function CalendarView() {
 
   const getClinic = (id: string) => clinics.find((c) => c.id === id) || clinics[0];
 
-  const calcNeto = (p: number, l: number, clinicId: string) => {
-    const cl = getClinic(clinicId);
-    const commPct = cl.baseCommission / 100;
-    const labPct = cl.labDiscount / 100;
+  const calcNeto = (p: number, l: number, commRateStr: string, labDiscountRateStr: string) => {
+    const commPct = (parseFloat(commRateStr) || 60) / 100;
+    const labPct = (parseFloat(labDiscountRateStr) || 0) / 100;
     return Math.max(0, (p * commPct) - (l * labPct));
   };
 
@@ -132,6 +134,9 @@ export function CalendarView() {
     setNaturalText("");
     setPatientName("");
     setTreatment("");
+    const defaultCl = getClinic("albacete");
+    setCustomCommission(String(defaultCl.baseCommission));
+    setCustomLabDiscount(String(defaultCl.labDiscount));
     setIsDialogOpen(true);
   };
 
@@ -139,6 +144,13 @@ export function CalendarView() {
     event.stopPropagation();
     setSelectedEvent(e);
     setIsDetailOpen(true);
+  };
+
+  const handleSelectClinicChange = (cId: string) => {
+    setSelectedClinicId(cId);
+    const cl = getClinic(cId);
+    setCustomCommission(String(cl.baseCommission));
+    setCustomLabDiscount(String(cl.labDiscount));
   };
 
   const handleSave = () => {
@@ -153,9 +165,16 @@ export function CalendarView() {
       doctor,
       price: parseFloat(price) || 0,
       labCost: parseFloat(labCost) || 0,
+      customCommissionRate: parseFloat(customCommission) || 60,
+      customLabDiscountRate: parseFloat(customLabDiscount) || 0,
     };
     setEvents([...events, newEvent]);
     setIsDialogOpen(false);
+  };
+
+  const handleUpdateEvent = (updated: AppointmentEvent) => {
+    setEvents(events.map((e) => (e.id === updated.id ? updated : e)));
+    setSelectedEvent(updated);
   };
 
   return (
@@ -164,7 +183,6 @@ export function CalendarView() {
         {/* Toolbar Header */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between px-6 py-4 border-b border-slate-100 gap-4">
           <div className="flex items-center gap-3">
-            {/* Prev/Next */}
             <div className="flex items-center gap-1">
               <button
                 onClick={handlePrev}
@@ -182,7 +200,6 @@ export function CalendarView() {
               </button>
             </div>
 
-            {/* Quick Hoy Button */}
             <button
               onClick={handleToday}
               className="flex items-center gap-1.5 text-xs font-bold px-3 py-2 rounded-xl bg-rose-50 text-rose-600 border border-rose-200 hover:bg-rose-100 transition-colors shadow-xs"
@@ -196,7 +213,6 @@ export function CalendarView() {
             </h2>
           </div>
 
-          {/* View Mode Selector (Mes, Semana, Día) */}
           <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-xl">
             <button
               onClick={() => setViewMode("month")}
@@ -290,7 +306,7 @@ export function CalendarView() {
           </div>
         )}
 
-        {/* ---------------- VISTA SEMANAL O DÍA (GRID CON INTERVALOS DE 15 MIN) ---------------- */}
+        {/* ---------------- VISTA SEMANAL / DÍA GRID (15-MIN SLOTS) ---------------- */}
         {(viewMode === "week" || viewMode === "day") && (
           <div className="overflow-auto" style={{ maxHeight: "calc(100vh - 300px)", minHeight: 520 }}>
             <div
@@ -300,7 +316,6 @@ export function CalendarView() {
                 minWidth: viewMode === "week" ? 800 : 350,
               }}
             >
-              {/* Header Columns */}
               <div className="sticky top-0 z-10 bg-white border-b border-slate-100 h-14" />
               {(viewMode === "week" ? weekDays : [currentDate]).map((day) => (
                 <div
@@ -319,17 +334,14 @@ export function CalendarView() {
                 </div>
               ))}
 
-              {/* 15-Min Slots Rows */}
               {TIME_SLOTS.map((slot) => (
                 <React.Fragment key={slot}>
-                  {/* Slot Time Label (show text every 30m or 1h) */}
                   <div className="flex items-start justify-end pr-2.5 pt-0.5 border-r border-slate-100 h-9 bg-slate-50/30">
                     {slot.endsWith(":00") || slot.endsWith(":30") ? (
                       <span className="text-[10px] text-slate-400 font-semibold">{slot}</span>
                     ) : null}
                   </div>
 
-                  {/* Day Columns for this slot */}
                   {(viewMode === "week" ? weekDays : [currentDate]).map((day) => {
                     const slotEvents = events.filter(
                       (e) => isSameDay(e.date, day) && e.startTime === slot
@@ -347,7 +359,6 @@ export function CalendarView() {
                       >
                         {slotEvents.map((evt) => {
                           const cl = getClinic(evt.clinicId);
-                          // Height based on 15m intervals (height = durationMinutes / 15 * 36px)
                           const heightPx = Math.max(32, (evt.durationMinutes / 15) * 36 - 4);
                           return (
                             <div
@@ -380,7 +391,7 @@ export function CalendarView() {
 
       {/* ---------------- MODAL NUEVA CITA (OPAQUE DIALOG) ---------------- */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-lg rounded-2xl p-6 bg-white border border-slate-200 shadow-2xl opacity-100">
+        <DialogContent className="sm:max-w-lg rounded-2xl p-6 bg-white border border-slate-200 shadow-2xl opacity-100 max-h-[90vh] overflow-y-auto">
           <DialogHeader className="pb-2">
             <DialogTitle className="text-xl font-bold text-slate-900 flex items-center gap-2">
               <CalendarCheck className="h-5 w-5 text-rose-500" />
@@ -389,7 +400,7 @@ export function CalendarView() {
           </DialogHeader>
 
           <div className="space-y-4 py-2">
-            {/* AI Assistant */}
+            {/* AI Prompt Input */}
             <div className="p-3.5 rounded-xl bg-gradient-to-br from-rose-50 to-pink-50 border border-rose-100 space-y-2">
               <div className="flex items-center gap-2 text-xs font-semibold text-rose-700">
                 <Sparkles className="h-4 w-4 text-rose-500" />
@@ -398,11 +409,12 @@ export function CalendarView() {
               <Input
                 value={naturalText}
                 onChange={(e) => setNaturalText(e.target.value)}
-                placeholder='Ej: "Vino Juan en Albacete, Ortodoncia 60€ duracion 45m"'
+                placeholder='Ej: "Vino Juan en Albacete, le hice Ortodoncia por 60€ duracion 45m"'
                 className="bg-white border-rose-200 text-sm focus-visible:ring-rose-500 rounded-lg"
               />
             </div>
 
+            {/* Time & Duration in 15m intervals */}
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label className="text-xs font-semibold text-slate-700">Hora de Inicio (Intervalos 15m)</Label>
@@ -439,24 +451,31 @@ export function CalendarView() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-slate-700">Paciente</Label>
-                <div className="relative">
-                  <User className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
-                  <Input value={patientName} onChange={(e) => setPatientName(e.target.value)} placeholder="Nombre paciente" className="pl-9 text-sm rounded-lg" />
-                </div>
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-slate-700">Tratamiento</Label>
-                <Input value={treatment} onChange={(e) => setTreatment(e.target.value)} placeholder="Ej: Ortodoncia" className="text-sm rounded-lg" />
-              </div>
+            {/* Patient Lookup with Autocomplete AJAX + New Patient Option */}
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold text-slate-700">Paciente (Búsqueda o Nuevo)</Label>
+              <PatientSelect
+                value={patientName}
+                onSelectPatient={(p) => setPatientName(`${p.firstName} ${p.lastName}`)}
+              />
             </div>
 
+            {/* Free Text Treatment / Session Notes */}
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold text-slate-700">Tratamiento & Notas de Sesión (Texto libre)</Label>
+              <Input
+                value={treatment}
+                onChange={(e) => setTreatment(e.target.value)}
+                placeholder="Ej: Ortodoncia brackets metal, cambio de arcos e higiene"
+                className="text-sm rounded-lg"
+              />
+            </div>
+
+            {/* Clinic & Doctor Select */}
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label className="text-xs font-semibold text-slate-700">Clínica / Sede</Label>
-                <Select value={selectedClinicId} onValueChange={setSelectedClinicId}>
+                <Select value={selectedClinicId} onValueChange={handleSelectClinicChange}>
                   <SelectTrigger className="text-sm rounded-lg">
                     <div className="flex items-center gap-2">
                       <Building2 className="h-4 w-4 text-slate-400" />
@@ -490,25 +509,43 @@ export function CalendarView() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-slate-700">Precio Total (€)</Label>
-                <Input type="number" value={price} onChange={(e) => setPrice(e.target.value)} className="text-sm rounded-lg" />
+            {/* Financials & Custom Rate Overrides */}
+            <div className="p-3.5 rounded-xl border border-slate-200 bg-slate-50 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                  <Settings2 className="h-3.5 w-3.5 text-slate-500" />
+                  Configuración de Comisión y Gastos
+                </span>
               </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-slate-700">Gastos Lab (€)</Label>
-                <Input type="number" value={labCost} onChange={(e) => setLabCost(e.target.value)} className="text-sm rounded-lg" />
-              </div>
-            </div>
 
-            <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between">
-              <div className="flex items-center gap-2 text-xs text-slate-600 font-medium">
-                <Calculator className="h-4 w-4 text-slate-400" />
-                <span>Calculado Neto ({getClinic(selectedClinicId).name}):</span>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label className="text-[11px] text-slate-600 font-medium">Precio Total (€)</Label>
+                  <Input type="number" value={price} onChange={(e) => setPrice(e.target.value)} className="h-9 text-xs bg-white rounded-lg" />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-[11px] text-slate-600 font-medium">Gastos Lab (€)</Label>
+                  <Input type="number" value={labCost} onChange={(e) => setLabCost(e.target.value)} className="h-9 text-xs bg-white rounded-lg" />
+                </div>
               </div>
-              <span className="text-sm font-bold text-emerald-600">
-                {calcNeto(parseFloat(price) || 0, parseFloat(labCost) || 0, selectedClinicId).toFixed(2)} €
-              </span>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label className="text-[11px] text-slate-600 font-medium">% Comisión Dra.</Label>
+                  <Input type="number" value={customCommission} onChange={(e) => setCustomCommission(e.target.value)} className="h-9 text-xs bg-white rounded-lg" />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-[11px] text-slate-600 font-medium">% Descuento Lab</Label>
+                  <Input type="number" value={customLabDiscount} onChange={(e) => setCustomLabDiscount(e.target.value)} className="h-9 text-xs bg-white rounded-lg" />
+                </div>
+              </div>
+
+              <div className="pt-1 flex items-center justify-between border-t border-slate-200">
+                <span className="text-xs text-slate-600 font-semibold">Neto Calculado:</span>
+                <span className="text-sm font-bold text-emerald-600">
+                  {calcNeto(parseFloat(price) || 0, parseFloat(labCost) || 0, customCommission, customLabDiscount).toFixed(2)} €
+                </span>
+              </div>
             </div>
           </div>
 
@@ -519,44 +556,13 @@ export function CalendarView() {
         </DialogContent>
       </Dialog>
 
-      {/* ---------------- MODAL DETALLE CITA ---------------- */}
-      {selectedEvent && (
-        <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
-          <DialogContent className="sm:max-w-md rounded-2xl p-6 bg-white border border-slate-200 shadow-2xl opacity-100">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2 text-slate-900">
-                <span className={cn("h-3 w-3 rounded-full", getClinic(selectedEvent.clinicId).color)} />
-                {selectedEvent.patient} — {selectedEvent.title}
-              </DialogTitle>
-            </DialogHeader>
-            <div className="space-y-3 py-2 text-sm">
-              <div className="grid grid-cols-2 gap-3">
-                <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
-                  <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Hora & Duración</p>
-                  <p className="font-semibold text-slate-800">{selectedEvent.startTime}h ({selectedEvent.durationMinutes} min)</p>
-                </div>
-                <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
-                  <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Clínica</p>
-                  <p className="font-semibold text-slate-800">{getClinic(selectedEvent.clinicId).name}</p>
-                </div>
-                <div className="p-3 rounded-xl bg-slate-50 border border-slate-100">
-                  <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Precio Total</p>
-                  <p className="font-bold text-slate-800">{selectedEvent.price.toFixed(2)} €</p>
-                </div>
-                <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-100">
-                  <p className="text-[11px] font-semibold text-emerald-600 uppercase tracking-wider mb-1">Neto Calculado</p>
-                  <p className="font-bold text-emerald-700">
-                    {calcNeto(selectedEvent.price, selectedEvent.labCost, selectedEvent.clinicId).toFixed(2)} €
-                  </p>
-                </div>
-              </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsDetailOpen(false)} className="rounded-xl w-full">Cerrar</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      )}
+      {/* ---------------- APPOINTMENT DETAIL DRAWER ---------------- */}
+      <AppointmentDetailDrawer
+        event={selectedEvent}
+        isOpen={isDetailOpen}
+        onClose={() => setIsDetailOpen(false)}
+        onUpdateEvent={handleUpdateEvent}
+      />
     </Card>
   );
 }
