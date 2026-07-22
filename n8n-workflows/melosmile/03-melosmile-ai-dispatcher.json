@@ -1,0 +1,86 @@
+{
+  "name": "Melosmile - AI Dispatcher (Agent Routing)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "melosmile-ai-dispatcher",
+        "options": {}
+      },
+      "id": "webhook-node",
+      "name": "Webhook Receiver",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "model": "gpt-4o",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "Eres el enrutador IA (Dispatcher) de la clínica dental Melosmile. Tu objetivo es leer el mensaje del usuario y determinar la intención principal. \n\nIntenciones posibles:\n1. 'schedule_appointment': Agendar o modificar citas.\n2. 'patient_info': Consultar o crear datos de pacientes.\n3. 'billing': Registrar un pago o facturación.\n4. 'clinical_note': Agregar una nota clínica o comentario a una sesión.\n5. 'general_query': Preguntas generales o no identificadas.\n\nResponde ÚNICAMENTE con un JSON con el formato:\n{\"intent\": \"[nombre_de_la_intencion]\", \"extracted_entities\": {}}",
+              "role": "system"
+            },
+            {
+              "message": "={{ $json.body.message }}",
+              "role": "user"
+            }
+          ]
+        }
+      },
+      "id": "ai-classifier",
+      "name": "OpenAI Classifier",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.message.content.intent }}",
+              "value2": "schedule_appointment"
+            }
+          ]
+        }
+      },
+      "id": "switch-node",
+      "name": "Route by Intent",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 1,
+      "position": [650, 300]
+    }
+  ],
+  "connections": {
+    "Webhook Receiver": {
+      "main": [
+        [
+          {
+            "node": "OpenAI Classifier",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Classifier": {
+      "main": [
+        [
+          {
+            "node": "Route by Intent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {},
+  "tags": [
+    {
+      "name": "Melosmile"
+    }
+  ]
+}

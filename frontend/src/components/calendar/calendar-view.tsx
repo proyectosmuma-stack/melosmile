@@ -7,10 +7,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Sparkles, Building2, User, Stethoscope, Calculator, CalendarCheck, ChevronLeft, ChevronRight, Clock, CalendarDays, Calendar as CalendarIcon, Sun, FileText, Settings2 } from "lucide-react";
+import { Sparkles, Building2, User, Stethoscope, Calculator, CalendarCheck, ChevronLeft, ChevronRight, Clock, CalendarDays, Calendar as CalendarIcon, Sun, FileText, Settings2, Phone, Mail } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { format, startOfWeek, addDays, subDays, addWeeks, subWeeks, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isSameMonth, addMonths, subMonths } from "date-fns";
+import { format, startOfWeek, addDays, subDays, addWeeks, subWeeks, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isSameMonth, addMonths, subMonths, parseISO, set } from "date-fns";
 import { es } from "date-fns/locale";
+import { DndContext, DragEndEvent, useDraggable, useDroppable } from '@dnd-kit/core';
+import { CSS } from '@dnd-kit/utilities';
 import { PatientSelect, Patient } from "@/components/patients/patient-select";
 import { AppointmentDetailDrawer } from "@/components/calendar/appointment-detail-drawer";
 
@@ -74,6 +76,67 @@ const DURATION_OPTIONS = [
 ];
 
 type ViewMode = "month" | "week" | "day";
+
+function DroppableCell({ id, day, slot, isToday, onCellClick, children }: any) {
+  const { setNodeRef, isOver } = useDroppable({ id });
+  return (
+    <div
+      ref={setNodeRef}
+      onClick={() => onCellClick(day, slot)}
+      className={cn(
+        "relative h-9 border-b border-r border-slate-100/60 cursor-pointer transition-colors hover:bg-slate-100/80 group",
+        slot.endsWith(":00") && "border-b-slate-200/80",
+        isToday && "bg-rose-50/20",
+        isOver && "bg-rose-100/50 ring-2 ring-inset ring-rose-300"
+      )}
+    >
+      {children}
+    </div>
+  );
+}
+
+function DraggableEvent({ event, clinic, heightPx, onClick }: any) {
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+    id: event.id,
+    data: event
+  });
+  
+  const style = {
+    transform: CSS.Translate.toString(transform),
+    top: 2, 
+    height: `${heightPx}px`,
+    zIndex: isDragging ? 50 : 10,
+    opacity: isDragging ? 0.8 : 1,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      {...listeners}
+      {...attributes}
+      onClick={(e) => { e.stopPropagation(); onClick(event, e); }}
+      className={cn(
+        "absolute inset-x-1 rounded-lg px-2 py-1 cursor-grab active:cursor-grabbing shadow-sm hover:shadow-md transition-all border-l-4 overflow-visible group/event",
+        clinic.color, clinic.borderColor, "text-white"
+      )}
+      style={style}
+    >
+      <div className="flex items-center justify-between">
+        <p className="text-[11px] font-bold leading-tight truncate">{event.patient}</p>
+        <span className="text-[9px] opacity-80 font-mono">{event.startTime} ({event.durationMinutes}m)</span>
+      </div>
+      <p className="text-[10px] opacity-90 truncate">{event.title} · {clinic.name}</p>
+      
+      {/* Tooltip Quick Preview */}
+      <div className="absolute top-0 right-full mr-2 hidden group-hover/event:block bg-slate-900 text-white text-xs p-3 rounded-lg shadow-xl w-52 z-[100] pointer-events-none">
+        <p className="font-bold text-sm mb-1">{event.patient}</p>
+        <p className="text-slate-300 text-[11px] flex items-center gap-1.5"><User className="h-3 w-3" /> PAC-001</p>
+        <p className="text-slate-300 text-[11px] flex items-center gap-1.5 mt-0.5"><Phone className="h-3 w-3" /> +34 600 000 000</p>
+        <p className="text-slate-300 text-[11px] flex items-center gap-1.5 mt-0.5"><Mail className="h-3 w-3" /> paciente@email.com</p>
+      </div>
+    </div>
+  );
+}
 
 export function CalendarView() {
   const [viewMode, setViewMode] = useState<ViewMode>("week");
@@ -175,6 +238,28 @@ export function CalendarView() {
   const handleUpdateEvent = (updated: AppointmentEvent) => {
     setEvents(events.map((e) => (e.id === updated.id ? updated : e)));
     setSelectedEvent(updated);
+  };
+
+  const handleDragEnd = (eventDrag: DragEndEvent) => {
+    const { active, over } = eventDrag;
+    if (!over) return;
+
+    const eventId = active.id as string;
+    const dropData = over.id as string; // Format: "YYYY-MM-DD|HH:mm"
+    const [dateStr, timeSlot] = dropData.split("|");
+
+    const newDate = new Date(dateStr);
+    
+    setEvents(events.map(evt => {
+      if (evt.id === eventId) {
+        return {
+          ...evt,
+          date: newDate,
+          startTime: timeSlot
+        };
+      }
+      return evt;
+    }));
   };
 
   return (
@@ -308,83 +393,77 @@ export function CalendarView() {
 
         {/* ---------------- VISTA SEMANAL / DÍA GRID (15-MIN SLOTS) ---------------- */}
         {(viewMode === "week" || viewMode === "day") && (
-          <div className="overflow-auto" style={{ maxHeight: "calc(100vh - 300px)", minHeight: 520 }}>
-            <div
-              className="grid"
-              style={{
-                gridTemplateColumns: `70px repeat(${viewMode === "week" ? 7 : 1}, 1fr)`,
-                minWidth: viewMode === "week" ? 800 : 350,
-              }}
-            >
-              <div className="sticky top-0 z-10 bg-white border-b border-slate-100 h-14" />
-              {(viewMode === "week" ? weekDays : [currentDate]).map((day) => (
-                <div
-                  key={day.toISOString()}
-                  className={cn(
-                    "sticky top-0 z-10 bg-white border-b border-slate-100 h-14 flex flex-col items-center justify-center gap-0.5",
-                    isSameDay(day, today) && "bg-rose-50"
-                  )}
-                >
-                  <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
-                    {format(day, "EEEE", { locale: es })}
-                  </span>
-                  <span className={cn("text-base font-bold leading-none", isSameDay(day, today) ? "text-rose-500" : "text-slate-800")}>
-                    {format(day, "d MMM")}
-                  </span>
-                </div>
-              ))}
-
-              {TIME_SLOTS.map((slot) => (
-                <React.Fragment key={slot}>
-                  <div className="flex items-start justify-end pr-2.5 pt-0.5 border-r border-slate-100 h-9 bg-slate-50/30">
-                    {slot.endsWith(":00") || slot.endsWith(":30") ? (
-                      <span className="text-[10px] text-slate-400 font-semibold">{slot}</span>
-                    ) : null}
+          <DndContext onDragEnd={handleDragEnd}>
+            <div className="overflow-auto" style={{ maxHeight: "calc(100vh - 300px)", minHeight: 520 }}>
+              <div
+                className="grid"
+                style={{
+                  gridTemplateColumns: `70px repeat(${viewMode === "week" ? 7 : 1}, 1fr)`,
+                  minWidth: viewMode === "week" ? 800 : 350,
+                }}
+              >
+                <div className="sticky top-0 z-10 bg-white border-b border-slate-100 h-14" />
+                {(viewMode === "week" ? weekDays : [currentDate]).map((day) => (
+                  <div
+                    key={day.toISOString()}
+                    className={cn(
+                      "sticky top-0 z-10 bg-white border-b border-slate-100 h-14 flex flex-col items-center justify-center gap-0.5",
+                      isSameDay(day, today) && "bg-rose-50"
+                    )}
+                  >
+                    <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+                      {format(day, "EEEE", { locale: es })}
+                    </span>
+                    <span className={cn("text-base font-bold leading-none", isSameDay(day, today) ? "text-rose-500" : "text-slate-800")}>
+                      {format(day, "d MMM")}
+                    </span>
                   </div>
+                ))}
 
-                  {(viewMode === "week" ? weekDays : [currentDate]).map((day) => {
-                    const slotEvents = events.filter(
-                      (e) => isSameDay(e.date, day) && e.startTime === slot
-                    );
-                    const isToday = isSameDay(day, today);
-                    return (
-                      <div
-                        key={`${day.toISOString()}-${slot}`}
-                        onClick={() => handleCellClick(day, slot)}
-                        className={cn(
-                          "relative h-9 border-b border-r border-slate-100/60 cursor-pointer transition-colors hover:bg-slate-100/80 group",
-                          slot.endsWith(":00") && "border-b-slate-200/80",
-                          isToday && "bg-rose-50/20"
-                        )}
-                      >
-                        {slotEvents.map((evt) => {
-                          const cl = getClinic(evt.clinicId);
-                          const heightPx = Math.max(32, (evt.durationMinutes / 15) * 36 - 4);
-                          return (
-                            <div
-                              key={evt.id}
-                              onClick={(e) => handleEventClick(evt, e)}
-                              className={cn(
-                                "absolute inset-x-1 rounded-lg px-2 py-1 cursor-pointer shadow-sm hover:shadow-md transition-all border-l-4 z-10 overflow-hidden",
-                                cl.color, cl.borderColor, "text-white"
-                              )}
-                              style={{ top: 2, height: `${heightPx}px` }}
-                            >
-                              <div className="flex items-center justify-between">
-                                <p className="text-[11px] font-bold leading-tight truncate">{evt.patient}</p>
-                                <span className="text-[9px] opacity-80 font-mono">{evt.startTime} ({evt.durationMinutes}m)</span>
-                              </div>
-                              <p className="text-[10px] opacity-90 truncate">{evt.title} · {cl.name}</p>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    );
-                  })}
-                </React.Fragment>
-              ))}
+                {TIME_SLOTS.map((slot) => (
+                  <React.Fragment key={slot}>
+                    <div className="flex items-start justify-end pr-2.5 pt-0.5 border-r border-slate-100 h-9 bg-slate-50/30">
+                      {slot.endsWith(":00") || slot.endsWith(":30") ? (
+                        <span className="text-[10px] text-slate-400 font-semibold">{slot}</span>
+                      ) : null}
+                    </div>
+
+                    {(viewMode === "week" ? weekDays : [currentDate]).map((day) => {
+                      const slotEvents = events.filter(
+                        (e) => isSameDay(e.date, day) && e.startTime === slot
+                      );
+                      const isToday = isSameDay(day, today);
+                      const cellId = `${format(day, "yyyy-MM-dd")}|${slot}`;
+                      return (
+                        <DroppableCell
+                          key={cellId}
+                          id={cellId}
+                          day={day}
+                          slot={slot}
+                          isToday={isToday}
+                          onCellClick={handleCellClick}
+                        >
+                          {slotEvents.map((evt) => {
+                            const cl = getClinic(evt.clinicId);
+                            const heightPx = Math.max(32, (evt.durationMinutes / 15) * 36 - 4);
+                            return (
+                              <DraggableEvent
+                                key={evt.id}
+                                event={evt}
+                                clinic={cl}
+                                heightPx={heightPx}
+                                onClick={handleEventClick}
+                              />
+                            );
+                          })}
+                        </DroppableCell>
+                      );
+                    })}
+                  </React.Fragment>
+                ))}
+              </div>
             </div>
-          </div>
+          </DndContext>
         )}
 
       </CardContent>
