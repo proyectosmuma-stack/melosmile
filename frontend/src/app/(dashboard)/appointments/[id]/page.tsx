@@ -33,7 +33,7 @@ export default function AppointmentDetailPage({ params }: { params: { id: string
           <p className="text-sm text-slate-500 mt-1">Gestión clínica, registro fotográfico y contabilidad (Odoo).</p>
         </div>
         <div className="flex gap-2">
-          <Select value={status} onValueChange={setStatus}>
+          <Select value={status} onValueChange={(val) => setStatus(val || "")}>
             <SelectTrigger className="w-[160px] bg-white border-slate-200">
               <SelectValue />
             </SelectTrigger>
@@ -139,7 +139,7 @@ export default function AppointmentDetailPage({ params }: { params: { id: string
             <CardContent className="space-y-5">
               <div className="space-y-3">
                 <Label className="text-xs text-slate-300">Estado del Pago</Label>
-                <Select value={paymentStatus} onValueChange={setPaymentStatus}>
+                <Select value={paymentStatus} onValueChange={(val) => setPaymentStatus(val || "")}>
                   <SelectTrigger className="bg-slate-800 border-slate-700 text-white">
                     <SelectValue />
                   </SelectTrigger>

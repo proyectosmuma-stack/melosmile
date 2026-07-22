@@ -92,7 +92,7 @@ export function AppointmentDetailDrawer({
               Ficha de Cita — {event.patient}
             </DialogTitle>
             <div className="flex items-center gap-2">
-              <Select value={status} onValueChange={setStatus}>
+              <Select value={status} onValueChange={(val) => val && setStatus(val)}>
                 <SelectTrigger className="h-8 text-xs font-semibold rounded-lg bg-slate-100 border-slate-200">
                   <SelectValue />
                 </SelectTrigger>

@@ -1,21 +1,22 @@
 # Contexto Técnico y Guía del Proyecto — Melosmile
 
-> ⚠️ **IMPORTANTE**: Este archivo de contexto y documentación solo debe residir en la rama `develop`. Nunca debe fusionarse a la rama `main`.
+> ⚠️ **REGLA DE RAMAS**: Este archivo de contexto y documentación pertenece exclusivamente a la rama `develop` y NUNCA debe fusionarse a la rama `main`.
 
 ---
 
 ## 📌 Visión General del Proyecto
 
-**Melosmile** es una plataforma integral de gestión de clínicas dentales y contabilidad odontológica multiclínica. Su objetivo principal es facilitar el agendamiento inteligente, el seguimiento clínico estilo Notion, la automatización de cobranzas y facturación integrada con Odoo, respaldado por agentes de Inteligencia Artificial que operan mediante **n8n**.
+**Melosmile** es una plataforma integral de gestión de clínicas dentales y contabilidad odontológica multiclínica. Su objetivo principal es facilitar el agendamiento inteligente, el seguimiento clínico estilo Notion, la automatización de cobranzas y facturación integrada con Odoo, respaldado por agentes de Inteligencia Artificial que operan mediante **n8n** alojado en VPS IONOS.
 
 ---
 
 ## 🛠️ Stack Tecnológico
 
 - **Frontend**: Next.js 16 (App Router), React 19, TypeScript.
+- **Hosting & CI/CD**: Vercel (`melosmile-staging`, configurado solo para compilar desde la rama `develop`).
 - **Estilos y UI**: TailwindCSS 4, Shadcn UI, Lucide Icons, `@dnd-kit/core` (Drag & Drop).
-- **Backend & Base de Datos**: Supabase (PostgreSQL).
-- **Automatización e IA**: Workflows de **n8n** (Agente Dispatcher y Sub-agentes temáticos), OpenAI GPT-4o.
+- **Backend & Base de Datos**: Supabase Cloud (`amhfdzfcmpastmlsosou`, PostgreSQL relacional, CLI `supabase`).
+- **Automatización e IA**: Workflows de **n8n** en VPS IONOS (Agente Dispatcher y Sub-agentes temáticos), OpenAI GPT-4o.
 - **Integraciones externas**: Odoo API (Facturación y Contabilidad), WhatsApp/Telegram.
 
 ---
@@ -45,10 +46,14 @@
 
 ```
 melosmile/
-├── Walkthrough.md                   # Registro de cambios y pruebas
-├── roadmap.md                       # Estado de fases y próximos desarrollos
+├── Walkthrough.md                   # Registro de cambios y pruebas (solo develop)
+├── roadmap.md                       # Estado de fases y próximos desarrollos (solo develop)
 ├── context.md                       # Contexto técnico para desarrolladores e IA (solo develop)
-├── supabase_schema.sql              # Esquema de tablas relacionales en Supabase
+├── supabase_schema.sql              # Esquema base SQL
+├── supabase/
+│   ├── config.toml                  # Configuración Supabase CLI
+│   └── migrations/
+│       └── 20260722000000_initial_schema.sql  # Migración inicial enviada con db push
 ├── n8n-workflows/
 │   └── melosmile/
 │       ├── 01-melosmile-ai-conversational-agent.json
@@ -56,6 +61,7 @@ melosmile/
 │       └── 03-melosmile-ai-dispatcher.json
 └── frontend/
     ├── package.json
+    ├── .env.local                   # Credenciales de Supabase
     └── src/
         ├── app/
         │   └── (dashboard)/
@@ -72,7 +78,8 @@ melosmile/
         │       └── ai-agent-bar.tsx             # Barra conversacional para el Agente IA
         └── lib/
             └── supabase/
-                └── client.ts                    # Cliente de Supabase inicializado
+                ├── client.ts                    # Cliente de Supabase inicializado con tipos
+                └── types.ts                     # Tipos estáticos autogenerados desde Supabase
 ```
 
 ---
@@ -90,6 +97,6 @@ melosmile/
    ```
 3. Configurar variables de entorno local (`frontend/.env.local`):
    ```env
-   NEXT_PUBLIC_SUPABASE_URL=https://tu-proyecto.supabase.co
-   NEXT_PUBLIC_SUPABASE_ANON_KEY=tu-anon-key
+   NEXT_PUBLIC_SUPABASE_URL=https://amhfdzfcmpastmlsosou.supabase.co
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_kN-3hlqUxOni9onF1CDmhg_03EOCXG6
    ```

@@ -497,7 +497,7 @@ export function CalendarView() {
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label className="text-xs font-semibold text-slate-700">Hora de Inicio (Intervalos 15m)</Label>
-                <Select value={selectedStartTime} onValueChange={setSelectedStartTime}>
+                <Select value={selectedStartTime} onValueChange={(val) => val && setSelectedStartTime(val)}>
                   <SelectTrigger className="text-sm rounded-lg">
                     <div className="flex items-center gap-2">
                       <Clock className="h-4 w-4 text-slate-400" />
@@ -516,7 +516,7 @@ export function CalendarView() {
                 <Label className="text-xs font-semibold text-slate-700">Duración con Paciente</Label>
                 <Select
                   value={String(durationMinutes)}
-                  onValueChange={(val) => setDurationMinutes(parseInt(val))}
+                  onValueChange={(val) => val && setDurationMinutes(parseInt(val))}
                 >
                   <SelectTrigger className="text-sm rounded-lg">
                     <SelectValue />
@@ -554,7 +554,7 @@ export function CalendarView() {
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label className="text-xs font-semibold text-slate-700">Clínica / Sede</Label>
-                <Select value={selectedClinicId} onValueChange={handleSelectClinicChange}>
+                <Select value={selectedClinicId} onValueChange={(val) => val && handleSelectClinicChange(val)}>
                   <SelectTrigger className="text-sm rounded-lg">
                     <div className="flex items-center gap-2">
                       <Building2 className="h-4 w-4 text-slate-400" />
@@ -571,7 +571,7 @@ export function CalendarView() {
 
               <div className="space-y-1.5">
                 <Label className="text-xs font-semibold text-slate-700">Profesional</Label>
-                <Select value={doctor} onValueChange={setDoctor}>
+                <Select value={doctor} onValueChange={(val) => val && setDoctor(val)}>
                   <SelectTrigger className="text-sm rounded-lg">
                     <div className="flex items-center gap-2">
                       <Stethoscope className="h-4 w-4 text-slate-400" />

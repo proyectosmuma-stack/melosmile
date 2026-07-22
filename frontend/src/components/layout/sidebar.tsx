@@ -68,7 +68,7 @@ export function Sidebar() {
         <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider px-2 mb-2 block">
           Sede Activa
         </label>
-        <Select value={selectedClinic} onValueChange={setSelectedClinic}>
+        <Select value={selectedClinic} onValueChange={(val) => val && setSelectedClinic(val)}>
           <SelectTrigger className="w-full bg-slate-900/90 border-slate-800 text-slate-200 hover:bg-slate-900 transition-colors focus:ring-rose-500 h-11 rounded-xl">
             <div className="flex items-center gap-2.5 overflow-hidden text-ellipsis">
               <Building2 className="h-4 w-4 text-rose-400 shrink-0" />

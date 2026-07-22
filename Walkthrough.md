@@ -1,6 +1,8 @@
 # Walkthrough de Implementación — Melosmile
 
-Este documento detalla todas las funcionalidades desarrolladas y validadas en el proyecto Melosmile.
+> ⚠️ **REGLA DE RAMAS**: Este archivo pertenece exclusivamente a la rama `develop` y NUNCA debe fusionarse a la rama `main`.
+
+Este documento detalla todas las funcionalidades desarrolladas, configuraciones de infraestructura y pruebas validadas en el proyecto **Melosmile**.
 
 ---
 
@@ -9,10 +11,9 @@ Este documento detalla todas las funcionalidades desarrolladas y validadas en el
 - **Ubicación**: `frontend/src/components/calendar/calendar-view.tsx`
 - **Funcionalidades**:
   - **Drag & Drop**: Implementado mediante `@dnd-kit/core`. Permite arrastrar cualquier cita dentro de la cuadrícula semanal/diaria y soltarla en un nuevo intervalo de hora o fecha, actualizando el estado de la aplicación dinámicamente.
-  - **Vista Previa al Pasar el Ratón (Hover Card/Tooltip)**: Al posicionar el cursor sobre una tarjeta de cita, se despliega una ventana flotante oscura mostrando:
+  - **Vista Previa al Pasar el Ratón (Hover Card/Tooltip)**: Al posicionar el cursor sobre una tarjeta de cita, se despliega una ventana flotante mostrando:
     - Nombre del paciente e ID de historia (`PAC-xxx`).
-    - Teléfono directo de contacto.
-    - Correo electrónico.
+    - Teléfono directo de contacto y Email.
   - **Selector de Clínica y Comisión**: Permite alternar la sede (Albacete, Goya, Las Rozas) y ajustar porcentajes base.
 
 ---
@@ -28,7 +29,6 @@ Este documento detalla todas las funcionalidades desarrolladas y validadas en el
     - Selección de estado del pago: `Pendiente`, `Pago Parcial / Entrega`, `Pagado Total`.
     - Sobrescritura a nivel de cita del `% Comisión Dra.` y `% Descuento Laboratorio`.
     - Cálculo automático en tiempo real del Neto resultante.
-    - Botón de envío/sincronización con la API de Odoo.
 
 ---
 
@@ -47,19 +47,30 @@ Este documento detalla todas las funcionalidades desarrolladas y validadas en el
 
 - **Ubicación**: `n8n-workflows/melosmile/03-melosmile-ai-dispatcher.json`
 - **Funcionalidades**:
-  - Flujo n8n etiquetado como `Melosmile`.
+  - Flujo n8n alojado en VPS IONOS.
   - Recibe peticiones en lenguaje natural vía Webhook (desde la barra de IA en el Dashboard o canales externos como WhatsApp/Telegram).
-  - Enruta la petición según la intención detectada:
-    - `schedule_appointment`: Agendar o mover citas.
-    - `patient_info`: Consultas o creación de pacientes.
-    - `billing`: Registro de pagos y facturación.
-    - `clinical_note`: Anotaciones clínicas.
+  - Enruta la petición según la intención detectada: `schedule_appointment`, `patient_info`, `billing`, `clinical_note`.
 
 ---
 
-## 5. Integración Supabase
+## 5. Integración Supabase (Configuración Realizada)
 
-- **Ubicaciones**: `frontend/src/lib/supabase/client.ts` y `supabase_schema.sql`
-- **Configuración**:
-  - Cliente de Supabase inicializado con `@supabase/supabase-js`.
-  - Esquema SQL PostgreSQL preparado con tablas para clínicas, profesionales, pacientes, citas y registros de facturación.
+- **Referencia del proyecto**: `amhfdzfcmpastmlsosou`
+- **URL Supabase**: `https://amhfdzfcmpastmlsosou.supabase.co`
+- **Componentes y Migraciones**:
+  - **CLI y Enlace**: Inicializado con `supabase init` y vinculado con `supabase link --project-ref amhfdzfcmpastmlsosou`.
+  - **Migración SQL**: Archivo inicial [supabase/migrations/20260722000000_initial_schema.sql](file:///Users/munircallaos/Antigravity%20Projects/melosmile/supabase/migrations/20260722000000_initial_schema.sql) aplicado a la nube mediante `supabase db push`.
+  - **Tipado TypeScript**: Tipos autogenerados en [frontend/src/lib/supabase/types.ts](file:///Users/munircallaos/Antigravity%20Projects/melosmile/frontend/src/lib/supabase/types.ts).
+  - **Cliente**: Instanciado y tipado en [frontend/src/lib/supabase/client.ts](file:///Users/munircallaos/Antigravity%20Projects/melosmile/frontend/src/lib/supabase/client.ts).
+
+---
+
+## 6. Configuración de Despliegue en Vercel (Staging)
+
+- **Proyecto Vercel**: `melosmile-staging` (`proyectosmuma-stacks-projects/melosmile-staging`)
+- **Regla Estricta de Rama (`develop`)**:
+  - Configurada la regla de compilación en Vercel:
+    `[ "$VERCEL_GIT_COMMIT_REF" != "develop" ] && exit 0 || exit 1`
+  - Esto garantiza que Vercel solo compilará y desplegará cuando los commits se realicen en la rama **`develop`**. Commits en otras ramas son omitidos automáticamente.
+- **Variables de Entorno**: `NEXT_PUBLIC_SUPABASE_URL` y `NEXT_PUBLIC_SUPABASE_ANON_KEY` configuradas en Vercel para todos los entornos.
+- **URL Staging Activa**: [https://melosmile-staging-7m6bblzux-proyectosmuma-stacks-projects.vercel.app](https://melosmile-staging-7m6bblzux-proyectosmuma-stacks-projects.vercel.app)
