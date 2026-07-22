@@ -26,11 +26,12 @@ export const MOCK_PATIENTS: Patient[] = [
 ];
 
 type PatientSelectProps = {
-  value: string;
-  onSelectPatient: (patient: Patient) => void;
+  value?: string;
+  onSelectPatient?: (patient: Patient) => void;
+  placeholder?: string;
 };
 
-export function PatientSelect({ value, onSelectPatient }: PatientSelectProps) {
+export function PatientSelect({ value = "", onSelectPatient, placeholder = "Buscar o seleccionar paciente..." }: PatientSelectProps) {
   const [query, setQuery] = useState(value || "");
   const [isOpen, setIsOpen] = useState(false);
   const [patients, setPatients] = useState<Patient[]>(MOCK_PATIENTS);
@@ -55,7 +56,7 @@ export function PatientSelect({ value, onSelectPatient }: PatientSelectProps) {
 
   const handleSelect = (patient: Patient) => {
     setQuery(`${patient.firstName} ${patient.lastName}`);
-    onSelectPatient(patient);
+    onSelectPatient?.(patient);
     setIsOpen(false);
   };
 

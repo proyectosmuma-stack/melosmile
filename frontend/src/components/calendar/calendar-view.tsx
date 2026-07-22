@@ -1,6 +1,5 @@
-"use client";
-
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
+import { supabase } from "@/lib/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -15,6 +14,7 @@ import { DndContext, DragEndEvent, useDraggable, useDroppable } from '@dnd-kit/c
 import { CSS } from '@dnd-kit/utilities';
 import { PatientSelect, Patient } from "@/components/patients/patient-select";
 import { AppointmentDetailDrawer } from "@/components/calendar/appointment-detail-drawer";
+import { triggerNewAppointmentModal } from "@/components/calendar/new-appointment-modal";
 
 export type Clinic = {
   id: string;
@@ -39,6 +39,9 @@ export type AppointmentEvent = {
   durationMinutes: number;
   clinicId: string;
   patient: string;
+  patientHistoriaId?: string;
+  patientPhone?: string;
+  patientEmail?: string;
   doctor: string;
   price: number;
   labCost: number;
@@ -47,13 +50,6 @@ export type AppointmentEvent = {
 };
 
 const today = new Date();
-
-const initialEvents: AppointmentEvent[] = [
-  { id: "1", title: "Ortodoncia", date: today, startTime: "10:00", durationMinutes: 60, clinicId: "albacete", patient: "Juan Pérez", doctor: "Dra. Osly Melo", price: 60, labCost: 0, customCommissionRate: 60, customLabDiscountRate: 50 },
-  { id: "2", title: "Estética Dental", date: today, startTime: "12:30", durationMinutes: 90, clinicId: "goya", patient: "María Gómez", doctor: "Dra. Norelys", price: 250, labCost: 40, customCommissionRate: 60, customLabDiscountRate: 0 },
-  { id: "3", title: "Implante", date: addDays(today, 1), startTime: "11:15", durationMinutes: 120, clinicId: "rozas", patient: "Carlos Rodríguez", doctor: "Dra. Osly Melo", price: 800, labCost: 150, customCommissionRate: 60, customLabDiscountRate: 0 },
-  { id: "4", title: "Revisión 15m", date: today, startTime: "09:15", durationMinutes: 15, clinicId: "goya", patient: "Laura Sánchez", doctor: "Dra. Asencio", price: 45, labCost: 0, customCommissionRate: 60, customLabDiscountRate: 0 },
-];
 
 const TIME_SLOTS: string[] = [];
 for (let h = 8; h <= 20; h++) {
@@ -130,9 +126,9 @@ function DraggableEvent({ event, clinic, heightPx, onClick }: any) {
       {/* Tooltip Quick Preview */}
       <div className="absolute top-0 right-full mr-2 hidden group-hover/event:block bg-slate-900 text-white text-xs p-3 rounded-lg shadow-xl w-52 z-[100] pointer-events-none">
         <p className="font-bold text-sm mb-1">{event.patient}</p>
-        <p className="text-slate-300 text-[11px] flex items-center gap-1.5"><User className="h-3 w-3" /> PAC-001</p>
-        <p className="text-slate-300 text-[11px] flex items-center gap-1.5 mt-0.5"><Phone className="h-3 w-3" /> +34 600 000 000</p>
-        <p className="text-slate-300 text-[11px] flex items-center gap-1.5 mt-0.5"><Mail className="h-3 w-3" /> paciente@email.com</p>
+        {event.patientHistoriaId && <p className="text-slate-300 text-[11px] flex items-center gap-1.5"><User className="h-3 w-3" /> {event.patientHistoriaId}</p>}
+        {event.patientPhone && <p className="text-slate-300 text-[11px] flex items-center gap-1.5 mt-0.5"><Phone className="h-3 w-3" /> {event.patientPhone}</p>}
+        {event.patientEmail && <p className="text-slate-300 text-[11px] flex items-center gap-1.5 mt-0.5"><Mail className="h-3 w-3" /> {event.patientEmail}</p>}
       </div>
     </div>
   );
@@ -141,27 +137,80 @@ function DraggableEvent({ event, clinic, heightPx, onClick }: any) {
 export function CalendarView() {
   const [viewMode, setViewMode] = useState<ViewMode>("week");
   const [currentDate, setCurrentDate] = useState<Date>(today);
-  const [events, setEvents] = useState<AppointmentEvent[]>(initialEvents);
+  const [events, setEvents] = useState<AppointmentEvent[]>([]);
   const [clinics, setClinics] = useState<Clinic[]>(DEFAULT_CLINICS);
 
+  const fetchAppointments = useCallback(async () => {
+    try {
+      const { data, error } = await supabase
+        .from("appointments")
+        .select(`
+          id, appointment_date, reason, status, notes,
+          clinics ( id, name ),
+          professionals ( first_name, last_name ),
+          patients ( first_name, last_name, historia_id, phone, email )
+        `);
+
+      if (!error && data) {
+        const mapped: AppointmentEvent[] = data.map((a: any) => {
+          const d = new Date(a.appointment_date);
+          const hours = String(d.getHours()).padStart(2, "0");
+          const minutes = String(d.getMinutes()).padStart(2, "0");
+          const p = a.patients;
+          const prof = a.professionals;
+          const cl = a.clinics;
+          const clinicNameLower = (cl?.name ?? "").toLowerCase();
+
+          let cId = "albacete";
+          if (clinicNameLower.includes("goya")) cId = "goya";
+          else if (clinicNameLower.includes("rozas")) cId = "rozas";
+
+          return {
+            id: a.id,
+            title: a.reason || "Consulta",
+            date: d,
+            startTime: `${hours}:${minutes}`,
+            durationMinutes: 45,
+            clinicId: cId,
+            patient: p ? `${p.first_name} ${p.last_name}` : "Paciente",
+            patientHistoriaId: p?.historia_id ?? undefined,
+            patientPhone: p?.phone ?? undefined,
+            patientEmail: p?.email ?? undefined,
+            doctor: prof ? `${prof.first_name} ${prof.last_name}` : "Dra. Osly Melo",
+            price: 0,
+            labCost: 0,
+          };
+        });
+        setEvents(mapped);
+      }
+    } catch (err) {
+      console.error("Error cargando citas de Supabase:", err);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchAppointments();
+
+    function handleSwitchToToday() {
+      setCurrentDate(new Date());
+      setViewMode("day");
+    }
+
+    function handleApptCreated() {
+      fetchAppointments();
+    }
+
+    window.addEventListener("switch-to-today-day-view", handleSwitchToToday);
+    window.addEventListener("appointment-created", handleApptCreated);
+    return () => {
+      window.removeEventListener("switch-to-today-day-view", handleSwitchToToday);
+      window.removeEventListener("appointment-created", handleApptCreated);
+    };
+  }, [fetchAppointments]);
+
   // New/Edit Modal state
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [selectedDate, setSelectedDate] = useState<Date>(today);
-  const [selectedStartTime, setSelectedStartTime] = useState<string>("09:00");
-  const [durationMinutes, setDurationMinutes] = useState<number>(30);
   const [selectedEvent, setSelectedEvent] = useState<AppointmentEvent | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
-
-  // Form states
-  const [patientName, setPatientName] = useState("");
-  const [treatment, setTreatment] = useState("");
-  const [selectedClinicId, setSelectedClinicId] = useState<string>("albacete");
-  const [doctor, setDoctor] = useState("Dra. Osly Melo");
-  const [price, setPrice] = useState("60");
-  const [labCost, setLabCost] = useState("0");
-  const [customCommission, setCustomCommission] = useState("60");
-  const [customLabDiscount, setCustomLabDiscount] = useState("50");
-  const [naturalText, setNaturalText] = useState("");
 
   const currentWeekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(currentWeekStart, i));
@@ -184,23 +233,11 @@ export function CalendarView() {
 
   const getClinic = (id: string) => clinics.find((c) => c.id === id) || clinics[0];
 
-  const calcNeto = (p: number, l: number, commRateStr: string, labDiscountRateStr: string) => {
-    const commPct = (parseFloat(commRateStr) || 60) / 100;
-    const labPct = (parseFloat(labDiscountRateStr) || 0) / 100;
-    return Math.max(0, (p * commPct) - (l * labPct));
-  };
-
   const handleCellClick = (date: Date, timeSlot: string) => {
-    setSelectedDate(date);
-    setSelectedStartTime(timeSlot);
-    setDurationMinutes(30);
-    setNaturalText("");
-    setPatientName("");
-    setTreatment("");
-    const defaultCl = getClinic("albacete");
-    setCustomCommission(String(defaultCl.baseCommission));
-    setCustomLabDiscount(String(defaultCl.labDiscount));
-    setIsDialogOpen(true);
+    triggerNewAppointmentModal({
+      date: format(date, "yyyy-MM-dd"),
+      time: timeSlot,
+    });
   };
 
   const handleEventClick = (e: AppointmentEvent, event: React.MouseEvent) => {
@@ -209,48 +246,24 @@ export function CalendarView() {
     setIsDetailOpen(true);
   };
 
-  const handleSelectClinicChange = (cId: string) => {
-    setSelectedClinicId(cId);
-    const cl = getClinic(cId);
-    setCustomCommission(String(cl.baseCommission));
-    setCustomLabDiscount(String(cl.labDiscount));
-  };
-
-  const handleSave = () => {
-    const newEvent: AppointmentEvent = {
-      id: String(Date.now()),
-      title: treatment || naturalText || "Consulta",
-      date: selectedDate,
-      startTime: selectedStartTime,
-      durationMinutes,
-      clinicId: selectedClinicId,
-      patient: patientName || "Paciente",
-      doctor,
-      price: parseFloat(price) || 0,
-      labCost: parseFloat(labCost) || 0,
-      customCommissionRate: parseFloat(customCommission) || 60,
-      customLabDiscountRate: parseFloat(customLabDiscount) || 0,
-    };
-    setEvents([...events, newEvent]);
-    setIsDialogOpen(false);
-  };
-
   const handleUpdateEvent = (updated: AppointmentEvent) => {
     setEvents(events.map((e) => (e.id === updated.id ? updated : e)));
     setSelectedEvent(updated);
   };
 
-  const handleDragEnd = (eventDrag: DragEndEvent) => {
+  const handleDragEnd = async (eventDrag: DragEndEvent) => {
     const { active, over } = eventDrag;
     if (!over) return;
 
     const eventId = active.id as string;
     const dropData = over.id as string; // Format: "YYYY-MM-DD|HH:mm"
     const [dateStr, timeSlot] = dropData.split("|");
+    const [hh, mm] = (timeSlot || "09:00").split(":");
 
     const newDate = new Date(dateStr);
-    
-    setEvents(events.map(evt => {
+    newDate.setHours(parseInt(hh, 10), parseInt(mm, 10), 0, 0);
+
+    setEvents(prev => prev.map(evt => {
       if (evt.id === eventId) {
         return {
           ...evt,
@@ -260,6 +273,14 @@ export function CalendarView() {
       }
       return evt;
     }));
+
+    try {
+      await supabase.from("appointments").update({
+        appointment_date: newDate.toISOString(),
+      }).eq("id", eventId);
+    } catch (err) {
+      console.error("Error actualizando fecha de cita en Supabase:", err);
+    }
   };
 
   return (
@@ -467,173 +488,6 @@ export function CalendarView() {
         )}
 
       </CardContent>
-
-      {/* ---------------- MODAL NUEVA CITA (OPAQUE DIALOG) ---------------- */}
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-lg rounded-2xl p-6 bg-white border border-slate-200 shadow-2xl opacity-100 max-h-[90vh] overflow-y-auto">
-          <DialogHeader className="pb-2">
-            <DialogTitle className="text-xl font-bold text-slate-900 flex items-center gap-2">
-              <CalendarCheck className="h-5 w-5 text-rose-500" />
-              Nueva Cita — {format(selectedDate, "dd MMM yyyy", { locale: es })}
-            </DialogTitle>
-          </DialogHeader>
-
-          <div className="space-y-4 py-2">
-            {/* AI Prompt Input */}
-            <div className="p-3.5 rounded-xl bg-gradient-to-br from-rose-50 to-pink-50 border border-rose-100 space-y-2">
-              <div className="flex items-center gap-2 text-xs font-semibold text-rose-700">
-                <Sparkles className="h-4 w-4 text-rose-500" />
-                <span>Asistente IA (Dictado / Lenguaje Natural)</span>
-              </div>
-              <Input
-                value={naturalText}
-                onChange={(e) => setNaturalText(e.target.value)}
-                placeholder='Ej: "Vino Juan en Albacete, le hice Ortodoncia por 60€ duracion 45m"'
-                className="bg-white border-rose-200 text-sm focus-visible:ring-rose-500 rounded-lg"
-              />
-            </div>
-
-            {/* Time & Duration in 15m intervals */}
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-slate-700">Hora de Inicio (Intervalos 15m)</Label>
-                <Select value={selectedStartTime} onValueChange={(val) => val && setSelectedStartTime(val)}>
-                  <SelectTrigger className="text-sm rounded-lg">
-                    <div className="flex items-center gap-2">
-                      <Clock className="h-4 w-4 text-slate-400" />
-                      <SelectValue />
-                    </div>
-                  </SelectTrigger>
-                  <SelectContent className="max-h-56">
-                    {TIME_SLOTS.map((slot) => (
-                      <SelectItem key={slot} value={slot}>{slot}h</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-slate-700">Duración con Paciente</Label>
-                <Select
-                  value={String(durationMinutes)}
-                  onValueChange={(val) => val && setDurationMinutes(parseInt(val))}
-                >
-                  <SelectTrigger className="text-sm rounded-lg">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {DURATION_OPTIONS.map((opt) => (
-                      <SelectItem key={opt.value} value={String(opt.value)}>{opt.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            {/* Patient Lookup with Autocomplete AJAX + New Patient Option */}
-            <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-slate-700">Paciente (Búsqueda o Nuevo)</Label>
-              <PatientSelect
-                value={patientName}
-                onSelectPatient={(p) => setPatientName(`${p.firstName} ${p.lastName}`)}
-              />
-            </div>
-
-            {/* Free Text Treatment / Session Notes */}
-            <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-slate-700">Tratamiento & Notas de Sesión (Texto libre)</Label>
-              <Input
-                value={treatment}
-                onChange={(e) => setTreatment(e.target.value)}
-                placeholder="Ej: Ortodoncia brackets metal, cambio de arcos e higiene"
-                className="text-sm rounded-lg"
-              />
-            </div>
-
-            {/* Clinic & Doctor Select */}
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-slate-700">Clínica / Sede</Label>
-                <Select value={selectedClinicId} onValueChange={(val) => val && handleSelectClinicChange(val)}>
-                  <SelectTrigger className="text-sm rounded-lg">
-                    <div className="flex items-center gap-2">
-                      <Building2 className="h-4 w-4 text-slate-400" />
-                      <SelectValue />
-                    </div>
-                  </SelectTrigger>
-                  <SelectContent>
-                    {clinics.map((c) => (
-                      <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-slate-700">Profesional</Label>
-                <Select value={doctor} onValueChange={(val) => val && setDoctor(val)}>
-                  <SelectTrigger className="text-sm rounded-lg">
-                    <div className="flex items-center gap-2">
-                      <Stethoscope className="h-4 w-4 text-slate-400" />
-                      <SelectValue />
-                    </div>
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Dra. Osly Melo">Dra. Osly Melo</SelectItem>
-                    <SelectItem value="Dra. Norelys">Dra. Norelys</SelectItem>
-                    <SelectItem value="Dra. Asencio">Dra. Asencio</SelectItem>
-                    <SelectItem value="Dra. Shirley">Dra. Shirley</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            {/* Financials & Custom Rate Overrides */}
-            <div className="p-3.5 rounded-xl border border-slate-200 bg-slate-50 space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                  <Settings2 className="h-3.5 w-3.5 text-slate-500" />
-                  Configuración de Comisión y Gastos
-                </span>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <Label className="text-[11px] text-slate-600 font-medium">Precio Total (€)</Label>
-                  <Input type="number" value={price} onChange={(e) => setPrice(e.target.value)} className="h-9 text-xs bg-white rounded-lg" />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-[11px] text-slate-600 font-medium">Gastos Lab (€)</Label>
-                  <Input type="number" value={labCost} onChange={(e) => setLabCost(e.target.value)} className="h-9 text-xs bg-white rounded-lg" />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <Label className="text-[11px] text-slate-600 font-medium">% Comisión Dra.</Label>
-                  <Input type="number" value={customCommission} onChange={(e) => setCustomCommission(e.target.value)} className="h-9 text-xs bg-white rounded-lg" />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-[11px] text-slate-600 font-medium">% Descuento Lab</Label>
-                  <Input type="number" value={customLabDiscount} onChange={(e) => setCustomLabDiscount(e.target.value)} className="h-9 text-xs bg-white rounded-lg" />
-                </div>
-              </div>
-
-              <div className="pt-1 flex items-center justify-between border-t border-slate-200">
-                <span className="text-xs text-slate-600 font-semibold">Neto Calculado:</span>
-                <span className="text-sm font-bold text-emerald-600">
-                  {calcNeto(parseFloat(price) || 0, parseFloat(labCost) || 0, customCommission, customLabDiscount).toFixed(2)} €
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <DialogFooter className="pt-2 gap-2">
-            <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="rounded-xl">Cancelar</Button>
-            <Button onClick={handleSave} className="bg-rose-500 hover:bg-rose-600 text-white rounded-xl shadow-md shadow-rose-500/20">Guardar Cita</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       {/* ---------------- APPOINTMENT DETAIL DRAWER ---------------- */}
       <AppointmentDetailDrawer

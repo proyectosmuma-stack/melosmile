@@ -30,15 +30,17 @@
 2. **Cálculo Neto de Sesión**:
    $$\text{Neto} = \max\left(0, (\text{Precio Total} \times \% \text{Comisión Dra.}) - (\text{Gasto Lab} \times \% \text{Descuento Lab})\right)$$
 
-3. **Tratamiento y Notas Clínicas**:
+3. **Sistema de Etiquetas (WordPress Style)**:
+   - Permite organizar y categorizar pacientes bajo etiquetas dinámicas (*Familiar*, *Henryschein*, *Referido*, *VIP*, etc.).
+   - Autocompletado AJAX/JSON en tiempo real con opción para crear nuevas etiquetas al vuelo.
+   - Barra de filtros interactiva en el directorio de pacientes (`/patients`).
+
+4. **Tratamiento y Notas Clínicas**:
    - El campo **Tratamiento** se maneja como texto libre para permitir el registro de múltiples procedimientos por sesión.
    - Cada cita posee un apartado estilo Notion para evolución clínica, anotaciones y registro fotográfico/documental.
 
-4. **Ficha Única del Paciente**:
-   - Centraliza el historial completo: citas anteriores/futuras, consentimientos firmados, archivos adjuntos, alertas médicas y estado financiero (pagos parciales/recurrentes).
-
-5. **Agente IA en Lenguaje Natural**:
-   - La barra conversacional envía mensajes en lenguaje natural al **Dispatcher de n8n** (`03-melosmile-ai-dispatcher.json`), el cual analiza la intención (agendar, buscar datos, registrar pago, nota) y redirige a los agentes especializados.
+5. **Ficha Única del Paciente**:
+   - Centraliza el historial completo: citas anteriores/futuras, consentimientos firmados, archivos adjuntos, alertas médicas, etiquetas y estado financiero.
 
 ---
 
@@ -49,11 +51,17 @@ melosmile/
 ├── Walkthrough.md                   # Registro de cambios y pruebas (solo develop)
 ├── roadmap.md                       # Estado de fases y próximos desarrollos (solo develop)
 ├── context.md                       # Contexto técnico para desarrolladores e IA (solo develop)
-├── supabase_schema.sql              # Esquema base SQL
+├── docs/
+│   ├── odoo_integration.md          # Documentación integración Odoo ERP
+│   ├── patient_records.md           # Documentación ficha e historial pacientes
+│   └── tags_system.md               # Documentación técnica sistema de etiquetas
 ├── supabase/
 │   ├── config.toml                  # Configuración Supabase CLI
 │   └── migrations/
-│       └── 20260722000000_initial_schema.sql  # Migración inicial enviada con db push
+│       ├── 20260722000000_initial_schema.sql  # Migración inicial
+│       ├── 20260722000001_enable_rls_policies.sql
+│       ├── 20260722000002_extended_schema.sql # Esquema extendido (Multiclínica, Odoo, Docs, Reps)
+│       └── 20260722000003_tags_schema.sql     # Esquema etiquetas pacientes
 ├── n8n-workflows/
 │   └── melosmile/
 │       ├── 01-melosmile-ai-conversational-agent.json
@@ -61,42 +69,33 @@ melosmile/
 │       └── 03-melosmile-ai-dispatcher.json
 └── frontend/
     ├── package.json
-    ├── .env.local                   # Credenciales de Supabase
+    ├── .env.local                   # Credenciales Supabase, Odoo, VPS, n8n
     └── src/
         ├── app/
+        │   ├── api/
+        │   │   └── odoo/
+        │   │       ├── products/route.ts        # GET catálogo productos Odoo
+        │   │       └── invoice/route.ts         # POST upsert partner + crear factura Odoo
         │   └── (dashboard)/
         │       ├── page.tsx                     # Agenda principal con Calendario Drag & Drop
         │       ├── appointments/[id]/page.tsx   # Ficha dedicada de cita (Notion-style, Odoo, Fotos)
-        │       └── patients/[id]/page.tsx       # Ficha integral del paciente (Historial, Pagos, Docs)
+        │       ├── patients/page.tsx            # Directorio con filtro de etiquetas y toggle Lista/Tarjetas
+        │       └── patients/[id]/
+        │           ├── page.tsx                 # Ficha integral del paciente (Historial, Pagos, Docs, Tags)
+        │           └── edit/page.tsx            # Formulario de edición (Menores, Representantes, Odoo, Tags)
         ├── components/
         │   ├── calendar/
         │   │   ├── calendar-view.tsx            # Componente de calendario con @dnd-kit y Tooltips
         │   │   └── appointment-detail-drawer.tsx
         │   ├── patients/
-        │   │   └── patient-select.tsx           # Buscador Ajax autocompletado de pacientes
+        │   │   ├── patient-select.tsx           # Buscador Ajax autocompletado de pacientes
+        │   │   └── tag-input.tsx                # Autocompletado AJAX/JSON de etiquetas (WordPress style)
         │   └── dashboard/
         │       └── ai-agent-bar.tsx             # Barra conversacional para el Agente IA
         └── lib/
+            ├── odoo/
+            │   └── client.ts                    # Cliente JSON-RPC Odoo (Autenticación, Partners, Invoices)
             └── supabase/
                 ├── client.ts                    # Cliente de Supabase inicializado con tipos
                 └── types.ts                     # Tipos estáticos autogenerados desde Supabase
 ```
-
----
-
-## 🚀 Guía de Inicio Rápido para Desarrolladores
-
-1. Instalar dependencias en el frontend:
-   ```bash
-   cd frontend
-   npm install
-   ```
-2. Iniciar el servidor de desarrollo:
-   ```bash
-   npm run dev
-   ```
-3. Configurar variables de entorno local (`frontend/.env.local`):
-   ```env
-   NEXT_PUBLIC_SUPABASE_URL=https://amhfdzfcmpastmlsosou.supabase.co
-   NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_kN-3hlqUxOni9onF1CDmhg_03EOCXG6
-   ```

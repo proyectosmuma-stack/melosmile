@@ -1,8 +1,15 @@
+"use client";
+
 import React from "react";
 import { Sidebar } from "@/components/layout/sidebar";
 import { Search, Bell, Plus, RefreshCw, CalendarCheck2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PatientSelect } from "@/components/patients/patient-select";
+import {
+  NewAppointmentModalGlobal,
+  triggerNewAppointmentModal,
+} from "@/components/calendar/new-appointment-modal";
 
 export default function DashboardLayout({
   children,
@@ -17,12 +24,7 @@ export default function DashboardLayout({
         <header className="h-20 shrink-0 bg-white/80 backdrop-blur-md border-b border-slate-200/80 px-8 flex items-center justify-between gap-4 z-10">
           {/* Search bar */}
           <div className="relative w-full max-w-md">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-            <Input
-              type="search"
-              placeholder="Buscar paciente por nombre, DNI o tratamiento..."
-              className="pl-10 h-10 bg-slate-50 border-slate-200 focus-visible:ring-rose-500 rounded-xl text-sm"
-            />
+            <PatientSelect />
           </div>
 
           {/* Action buttons & status badges */}
@@ -54,7 +56,10 @@ export default function DashboardLayout({
             </Button>
 
             {/* Quick Action Button */}
-            <Button className="h-10 px-4 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-semibold text-sm shadow-md shadow-rose-500/20 gap-2 transition-all">
+            <Button 
+              onClick={() => triggerNewAppointmentModal()}
+              className="h-10 px-4 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-semibold text-sm shadow-md shadow-rose-500/20 gap-2 transition-all cursor-pointer"
+            >
               <Plus className="h-4 w-4" />
               <span>Nueva Cita</span>
             </Button>
@@ -66,6 +71,9 @@ export default function DashboardLayout({
           {children}
         </main>
       </div>
+
+      {/* Global New Appointment Modal */}
+      <NewAppointmentModalGlobal />
     </div>
   );
 }

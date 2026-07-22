@@ -11,9 +11,12 @@ import {
   Sparkles, 
   Building2, 
   ChevronDown, 
+  ChevronRight,
   Bot,
   Activity,
-  CheckCircle2
+  CheckCircle2,
+  Stethoscope,
+  FlaskConical,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -25,23 +28,30 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-const navigation = [
+const mainNavigation = [
   { name: "Agenda & Citas", href: "/", icon: Calendar },
   { name: "Fichas Pacientes", href: "/patients", icon: Users },
   { name: "Cálculo Facturación", href: "/billing", icon: Receipt },
-  { name: "Configuración", href: "/settings", icon: Settings },
+];
+
+const settingsSubMenu = [
+  { name: "Clínicas", href: "/settings/clinics", icon: Building2 },
+  { name: "Profesionales", href: "/settings/professionals", icon: Stethoscope },
+  { name: "Tratamientos", href: "/settings/treatments", icon: FlaskConical },
 ];
 
 const clinics = [
   { id: "all", name: "Todas las Clínicas", color: "bg-rose-500" },
-  { id: "albacete", name: "Clínica Albacete", color: "bg-emerald-500" },
-  { id: "goya", name: "Clínica Goya (Madrid)", color: "bg-blue-500" },
+  { id: "goya", name: "Clínica Goya", color: "bg-blue-500" },
   { id: "rozas", name: "Clínica Las Rozas", color: "bg-purple-500" },
+  { id: "rya", name: "Clínica RyA", color: "bg-emerald-500" },
 ];
 
 export function Sidebar() {
   const pathname = usePathname();
   const [selectedClinic, setSelectedClinic] = useState("all");
+  const isSettingsActive = pathname.startsWith("/settings");
+  const [settingsOpen, setSettingsOpen] = useState(isSettingsActive);
 
   return (
     <aside className="flex h-full w-72 flex-col bg-slate-950 text-slate-100 shadow-2xl relative z-20 border-r border-slate-800/80">
@@ -93,8 +103,8 @@ export function Sidebar() {
         <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider px-2 mb-1 block">
           Menú Principal
         </span>
-        <ul role="list" className="space-y-1.5">
-          {navigation.map((item) => {
+        <ul role="list" className="space-y-1">
+          {mainNavigation.map((item) => {
             const isActive = pathname === item.href;
             return (
               <li key={item.name}>
@@ -122,6 +132,58 @@ export function Sidebar() {
               </li>
             );
           })}
+
+          {/* Configuración with expandable sub-menu */}
+          <li>
+            <button
+              onClick={() => setSettingsOpen(!settingsOpen)}
+              className={cn(
+                "w-full group relative flex items-center gap-x-3.5 rounded-xl px-3.5 py-3 text-sm font-semibold transition-all duration-200",
+                isSettingsActive
+                  ? "bg-gradient-to-r from-rose-600 to-rose-500 text-white shadow-md shadow-rose-600/30"
+                  : "text-slate-400 hover:bg-slate-900/80 hover:text-slate-100"
+              )}
+            >
+              <Settings
+                className={cn(
+                  "h-5 w-5 shrink-0 transition-transform duration-200",
+                  isSettingsActive ? "text-white" : "text-slate-400 group-hover:text-rose-400"
+                )}
+              />
+              <span>Configuración</span>
+              <span className="ml-auto">
+                {settingsOpen
+                  ? <ChevronDown className="h-4 w-4 opacity-70" />
+                  : <ChevronRight className="h-4 w-4 opacity-70" />
+                }
+              </span>
+            </button>
+
+            {/* Sub-menu */}
+            {settingsOpen && (
+              <ul className="mt-1 ml-4 pl-3 border-l border-slate-800 space-y-1">
+                {settingsSubMenu.map((sub) => {
+                  const isSubActive = pathname === sub.href;
+                  return (
+                    <li key={sub.name}>
+                      <Link
+                        href={sub.href}
+                        className={cn(
+                          "flex items-center gap-2.5 rounded-lg px-3 py-2.5 text-xs font-semibold transition-all duration-150",
+                          isSubActive
+                            ? "bg-slate-800 text-rose-400"
+                            : "text-slate-500 hover:bg-slate-900 hover:text-slate-200"
+                        )}
+                      >
+                        <sub.icon className={cn("h-4 w-4 shrink-0", isSubActive ? "text-rose-400" : "text-slate-500")} />
+                        {sub.name}
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </li>
         </ul>
 
         {/* AI & Automation Status Widget */}

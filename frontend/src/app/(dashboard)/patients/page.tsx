@@ -19,7 +19,8 @@ import {
   Calendar,
   ShieldAlert,
   Pill,
-  Stethoscope
+  Stethoscope,
+  Tag as TagIcon
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,6 +31,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/lib/supabase/client";
+import { TagItem, getTagStyle } from "@/components/patients/tag-input";
+import { cn } from "@/lib/utils";
 
 export type PatientRecord = {
   id: string;
@@ -49,106 +52,17 @@ export type PatientRecord = {
   currentMedication: string;
   treatmentPlan: string;
   createdAt?: string;
+  tags?: TagItem[];
 };
 
-const INITIAL_MOCK_PATIENTS: PatientRecord[] = [
-  {
-    id: "p1",
-    historiaId: "PAC-001",
-    firstName: "Juan",
-    lastName: "Pérez",
-    dniNie: "12345678A",
-    dob: "1985-04-12",
-    gender: "Masculino",
-    phone: "+34 612 345 678",
-    email: "juan.perez@email.com",
-    address: "Calle Mayor 12, Madrid",
-    inTreatment: true,
-    importantDiseases: "Hipertensión arterial",
-    previousOperations: "Ninguna",
-    allergies: "Penicilina",
-    currentMedication: "Enalapril 10mg",
-    treatmentPlan: "Ortodoncia brackets metálicos + Higiene previa",
-  },
-  {
-    id: "p2",
-    historiaId: "PAC-002",
-    firstName: "María",
-    lastName: "Gómez",
-    dniNie: "87654321B",
-    dob: "1992-09-24",
-    gender: "Femenino",
-    phone: "+34 622 987 654",
-    email: "maria.gomez@email.com",
-    address: "Av. de Portugal 45, Albacete",
-    inTreatment: true,
-    importantDiseases: "Ninguna",
-    previousOperations: "Apendicectomía 2018",
-    allergies: "Látex",
-    currentMedication: "Ninguna",
-    treatmentPlan: "Estética Dental - Carillas de porcelana",
-  },
-  {
-    id: "p3",
-    historiaId: "PAC-003",
-    firstName: "Carlos",
-    lastName: "Rodríguez",
-    dniNie: "45678912C",
-    dob: "1978-11-03",
-    gender: "Masculino",
-    phone: "+34 633 456 789",
-    email: "carlos.rodriguez@email.com",
-    address: "Calle de la Princesa 8, Madrid",
-    inTreatment: false,
-    importantDiseases: "Diabetes tipo 2",
-    previousOperations: "Cirugía de rodilla",
-    allergies: "Aspirina / AINES",
-    currentMedication: "Metformina 850mg",
-    treatmentPlan: "Rehabilitación sobre implantes",
-  },
-  {
-    id: "p4",
-    historiaId: "PAC-004",
-    firstName: "Laura",
-    lastName: "Sánchez",
-    dniNie: "33221144D",
-    dob: "1995-02-18",
-    gender: "Femenino",
-    phone: "+34 644 112 233",
-    email: "laura.sanchez@email.com",
-    address: "Calle Rozas 100, Las Rozas",
-    inTreatment: true,
-    importantDiseases: "Ninguna",
-    previousOperations: "Ninguna",
-    allergies: "Ninguna",
-    currentMedication: "Ninguna",
-    treatmentPlan: "Alineadores Invisalign - Mantenimiento",
-  },
-  {
-    id: "p5",
-    historiaId: "PAC-005",
-    firstName: "Munir",
-    lastName: "Callaos",
-    dniNie: "77889900X",
-    dob: "1990-06-15",
-    gender: "Masculino",
-    phone: "+34 655 889 900",
-    email: "munir@melosmile.com",
-    address: "Paseo de la Castellana 200, Madrid",
-    inTreatment: true,
-    importantDiseases: "Ninguna",
-    previousOperations: "Ninguna",
-    allergies: "Polen",
-    currentMedication: "Antihistamínicos",
-    treatmentPlan: "Limpieza ultrasónica y Blanqueamiento led",
-  },
-];
-
 export default function PatientsPage() {
-  const [patients, setPatients] = useState<PatientRecord[]>(INITIAL_MOCK_PATIENTS);
+  const [patients, setPatients] = useState<PatientRecord[]>([]);
+  const [allTags, setAllTags] = useState<TagItem[]>([]);
+  const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
+  const [selectedTagFilter, setSelectedTagFilter] = useState<string>("all");
 
   // Modal para Crear Nuevo Paciente
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -169,12 +83,22 @@ export default function PatientsPage() {
     treatmentPlan: "",
   });
 
-  // Intentar cargar pacientes de Supabase
+  // Cargar pacientes y etiquetas únicamente desde Supabase
   useEffect(() => {
     async function loadPatients() {
+      setLoading(true);
       try {
-        const { data, error } = await supabase.from("patients").select("*");
-        if (!error && data && data.length > 0) {
+        // 1. Fetch All Tags for Filter Bar
+        const { data: tagsData } = await (supabase as any).from("tags").select("*").order("name", { ascending: true });
+        if (tagsData) setAllTags(tagsData as TagItem[]);
+
+        // 2. Fetch Patients with patient_tags
+        const { data, error } = await (supabase as any)
+          .from("patients")
+          .select(`*, patient_tags ( tags ( id, name, color ) )`)
+          .order("created_at", { ascending: false });
+
+        if (!error && data) {
           const mapped: PatientRecord[] = data.map((p: any) => ({
             id: p.id,
             historiaId: p.historia_id || `PAC-${p.id.slice(0, 3)}`,
@@ -192,11 +116,14 @@ export default function PatientsPage() {
             allergies: p.allergies || "",
             currentMedication: p.current_medication || "",
             treatmentPlan: p.treatment_plan || "",
+            tags: p.patient_tags ? p.patient_tags.map((pt: any) => pt.tags).filter(Boolean) : [],
           }));
           setPatients(mapped);
         }
       } catch (err) {
-        console.log("Usando datos locales de pacientes.");
+        console.error("Error cargando pacientes:", err);
+      } finally {
+        setLoading(false);
       }
     }
     loadPatients();
@@ -217,7 +144,11 @@ export default function PatientsPage() {
       (statusFilter === "active" && p.inTreatment) ||
       (statusFilter === "inactive" && !p.inTreatment);
 
-    return matchesSearch && matchesStatus;
+    const matchesTag =
+      selectedTagFilter === "all" ||
+      p.tags?.some((t) => t.id === selectedTagFilter || t.name === selectedTagFilter);
+
+    return matchesSearch && matchesStatus && matchesTag;
   });
 
   const handleSavePatient = async () => {
@@ -363,6 +294,48 @@ export default function PatientsPage() {
             </button>
           </div>
         </div>
+
+        {/* Tag Filter Bar (WordPress Style AJAX Filter) */}
+        {allTags.length > 0 && (
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 pt-2.5 border-t border-slate-100 w-full text-xs">
+            <span className="text-slate-400 font-bold uppercase tracking-wider text-[10px] shrink-0 mr-1 flex items-center gap-1">
+              <TagIcon className="h-3 w-3 text-rose-500" /> Etiquetas:
+            </span>
+            <button
+              onClick={() => setSelectedTagFilter("all")}
+              className={cn(
+                "px-2.5 py-1 rounded-lg font-bold border transition-all shrink-0 text-xs",
+                selectedTagFilter === "all"
+                  ? "bg-slate-900 text-white border-slate-900 shadow-xs"
+                  : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100"
+              )}
+            >
+              Todas ({patients.length})
+            </button>
+            {allTags.map((tag) => {
+              const style = getTagStyle(tag.color);
+              const isSelected = selectedTagFilter === tag.id;
+              const count = patients.filter((p) => p.tags?.some((t) => t.id === tag.id)).length;
+              return (
+                <button
+                  key={tag.id}
+                  onClick={() => setSelectedTagFilter(isSelected ? "all" : tag.id)}
+                  className={cn(
+                    "px-2.5 py-1 rounded-lg font-bold border transition-all flex items-center gap-1 shrink-0 text-xs",
+                    isSelected ? "ring-2 ring-rose-400 font-extrabold shadow-sm" : "opacity-80 hover:opacity-100",
+                    style.bg,
+                    style.text,
+                    style.border
+                  )}
+                >
+                  <TagIcon className="h-3 w-3 opacity-70" />
+                  {tag.name}
+                  <span className="opacity-60 text-[10px]">({count})</span>
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* ---------------- VISTA EN TARJETAS (GRID) ---------------- */}
@@ -434,6 +407,27 @@ export default function PatientsPage() {
                     </div>
                   )}
                 </div>
+
+                {/* Patient Tags */}
+                {patient.tags && patient.tags.length > 0 && (
+                  <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-slate-100">
+                    {patient.tags.map((t) => {
+                      const style = getTagStyle(t.color);
+                      return (
+                        <span
+                          key={t.id}
+                          className={cn(
+                            "inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md border",
+                            style.bg, style.text, style.border
+                          )}
+                        >
+                          <TagIcon className="h-2.5 w-2.5 opacity-70" />
+                          {t.name}
+                        </span>
+                      );
+                    })}
+                  </div>
+                )}
 
                 {/* Treatment Plan snippet */}
                 {patient.treatmentPlan && (

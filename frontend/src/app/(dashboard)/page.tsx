@@ -22,19 +22,16 @@ export default function DashboardPage() {
       {/* Page Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900 flex items-center gap-3">
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900">
             Agenda Principal
-            <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-200/80 text-slate-700">
-              Vista Semanal / 15-min
-            </span>
           </h1>
-          <p className="text-sm text-slate-500 mt-1">
+          <p className="text-xs text-slate-500 mt-0.5">
             Gestiona citas, tratamientos y facturación integrada en lenguaje natural.
           </p>
         </div>
 
         {/* Quick Clinic Filter Pills */}
-        <div className="flex items-center gap-2 p-1 bg-slate-200/60 rounded-xl w-fit">
+        <div className="flex items-center gap-1.5 p-1 bg-slate-200/60 rounded-xl w-fit">
           {[
             { id: "all", label: "Todas las Sedes" },
             { id: "albacete", label: "Albacete" },
@@ -44,7 +41,7 @@ export default function DashboardPage() {
             <button
               key={tab.id}
               onClick={() => setSelectedFilter(tab.id)}
-              className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+              className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all ${
                 selectedFilter === tab.id
                   ? "bg-white text-slate-900 shadow-sm"
                   : "text-slate-600 hover:text-slate-900"
@@ -56,56 +53,52 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Metric Cards Row */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="rounded-2xl border border-slate-200/80 bg-white shadow-sm hover:shadow-md transition-shadow">
-          <CardContent className="p-5 flex items-center gap-4">
-            <div className="h-12 w-12 rounded-xl bg-rose-50 text-rose-500 flex items-center justify-center font-bold">
-              <CalendarIcon className="h-6 w-6" />
+      {/* Compact Metric Cards Row (3 widgets) */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        {/* Clickable Citas Para Hoy -> switches calendar to Day View of Today */}
+        <Card
+          onClick={() => {
+            if (typeof window !== "undefined") {
+              window.dispatchEvent(new CustomEvent("switch-to-today-day-view"));
+            }
+          }}
+          className="rounded-xl border border-slate-200/80 bg-white shadow-xs hover:shadow-md hover:border-rose-300 transition-all cursor-pointer group"
+          title="Haz clic para ver las citas de hoy en vista diaria"
+        >
+          <CardContent className="p-3.5 flex items-center gap-3">
+            <div className="h-9 w-9 rounded-lg bg-rose-50 text-rose-500 flex items-center justify-center font-bold shrink-0 group-hover:bg-rose-500 group-hover:text-white transition-colors">
+              <CalendarIcon className="h-4 w-4" />
             </div>
             <div>
-              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Citas para Hoy</p>
-              <h3 className="text-2xl font-bold text-slate-900 mt-0.5">8 Citas</h3>
-              <p className="text-xs text-emerald-600 font-medium mt-0.5">3 en Albacete · 5 en Goya</p>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Citas para Hoy</p>
+              <h3 className="text-lg font-bold text-slate-900 leading-tight">8 Citas</h3>
+              <p className="text-[11px] text-rose-600 font-semibold mt-0.5 group-hover:underline">Ver vista del día →</p>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="rounded-2xl border border-slate-200/80 bg-white shadow-sm hover:shadow-md transition-shadow">
-          <CardContent className="p-5 flex items-center gap-4">
-            <div className="h-12 w-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
-              <TrendingUp className="h-6 w-6" />
+        <Card className="rounded-xl border border-slate-200/80 bg-white shadow-xs">
+          <CardContent className="p-3.5 flex items-center gap-3">
+            <div className="h-9 w-9 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold shrink-0">
+              <TrendingUp className="h-4 w-4" />
             </div>
             <div>
-              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Facturado Este Mes</p>
-              <h3 className="text-2xl font-bold text-slate-900 mt-0.5">14.280 €</h3>
-              <p className="text-xs text-emerald-600 font-medium mt-0.5">+12% vs mes anterior</p>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Facturado Este Mes</p>
+              <h3 className="text-lg font-bold text-slate-900 leading-tight">14.280 €</h3>
+              <p className="text-[11px] text-emerald-600 font-semibold mt-0.5">+12% vs mes anterior</p>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="rounded-2xl border border-slate-200/80 bg-white shadow-sm hover:shadow-md transition-shadow">
-          <CardContent className="p-5 flex items-center gap-4">
-            <div className="h-12 w-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
-              <Users className="h-6 w-6" />
+        <Card className="rounded-xl border border-slate-200/80 bg-white shadow-xs">
+          <CardContent className="p-3.5 flex items-center gap-3">
+            <div className="h-9 w-9 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center font-bold shrink-0">
+              <Users className="h-4 w-4" />
             </div>
             <div>
-              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Pacientes Atendidos</p>
-              <h3 className="text-2xl font-bold text-slate-900 mt-0.5">142 Pacientes</h3>
-              <p className="text-xs text-slate-500 font-medium mt-0.5">En las 3 clínicas</p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="rounded-2xl border border-slate-200/80 bg-white shadow-sm hover:shadow-md transition-shadow">
-          <CardContent className="p-5 flex items-center gap-4">
-            <div className="h-12 w-12 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center font-bold">
-              <Sparkles className="h-6 w-6" />
-            </div>
-            <div>
-              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Procesado por n8n IA</p>
-              <h3 className="text-2xl font-bold text-slate-900 mt-0.5">38 Registros</h3>
-              <p className="text-xs text-purple-600 font-medium mt-0.5">100% de precisión</p>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Pacientes Atendidos</p>
+              <h3 className="text-lg font-bold text-slate-900 leading-tight">142 Pacientes</h3>
+              <p className="text-[11px] text-slate-500 font-medium mt-0.5">En las 3 clínicas</p>
             </div>
           </CardContent>
         </Card>

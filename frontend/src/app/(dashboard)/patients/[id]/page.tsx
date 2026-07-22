@@ -1,25 +1,31 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   User, Phone, Mail, FileText, Calendar as CalendarIcon, CreditCard,
   Activity, Upload, CheckCircle2, AlertCircle, ShieldAlert, Pill,
-  Stethoscope, ArrowLeft, Clock, MapPin, Loader2, Building2
+  Stethoscope, ArrowLeft, Clock, MapPin, Loader2, Building2, Edit3,
+  Bell, Plus, Receipt, ChevronRight, X, UserCheck, Baby,
+  BadgeCheck, Sparkles, ExternalLink, Tag as TagIcon
 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/lib/supabase/client";
+import { TagItem, getTagStyle } from "@/components/patients/tag-input";
+import { cn } from "@/lib/utils";
+import { triggerNewAppointmentModal } from "@/components/calendar/new-appointment-modal";
+
+// ─── Types ────────────────────────────────────────────────────────────────────
 
 type Patient = {
   id: string;
   historiaId: string;
   firstName: string;
   lastName: string;
-  phone: string;
-  email: string;
+  phone: string | null;
+  email: string | null;
   dni: string | null;
   dob: string | null;
   gender: string | null;
@@ -30,6 +36,14 @@ type Patient = {
   currentMedication: string | null;
   treatmentPlan: string | null;
   inTreatment: boolean;
+  nifCif: string | null;
+  billingName: string | null;
+  billingAddress: string | null;
+  billingCity: string | null;
+  billingPostalCode: string | null;
+  billingCountry: string | null;
+  odooPartnerId: number | null;
+  aiSummary: string | null;
 };
 
 type Appointment = {
@@ -39,6 +53,7 @@ type Appointment = {
   status: string;
   notes: string | null;
   clinicName: string;
+  clinicId: string;
   professionalName: string;
   treatmentName: string;
 };
@@ -50,7 +65,38 @@ type BillingRecord = {
   calculated_total: number;
   status: string;
   appointment_reason: string;
+  odoo_invoice_id: number | null;
+  odoo_invoice_number: string | null;
+  payment_method: string | null;
 };
+
+type PatientClinic = {
+  id: string;
+  clinic_id: string;
+  clinic_name: string;
+  is_primary: boolean;
+};
+
+type Reminder = {
+  id: string;
+  reminder_type: string;
+  channel: string;
+  scheduled_at: string;
+  subject: string | null;
+  message: string;
+  status: string;
+};
+
+type Document = {
+  id: string;
+  file_name: string;
+  document_type: string;
+  created_at: string;
+  description: string | null;
+  file_url: string | null;
+};
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const MONTHS_ES = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
 
@@ -65,6 +111,15 @@ function formatDate(dateStr: string) {
   };
 }
 
+function calculateAge(dob: string): { years: number; label: string; isMinor: boolean } {
+  const birth = new Date(dob);
+  const today = new Date();
+  let years = today.getFullYear() - birth.getFullYear();
+  const m = today.getMonth() - birth.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) years--;
+  return { years, label: `${years} años`, isMinor: years < 18 };
+}
+
 function getStatusBadge(status: string) {
   const map: Record<string, string> = {
     Realizada: "bg-emerald-50 text-emerald-700 border-emerald-200",
@@ -72,127 +127,247 @@ function getStatusBadge(status: string) {
     Pendiente: "bg-amber-50 text-amber-700 border-amber-200",
     Cancelada: "bg-red-50 text-red-700 border-red-200",
     Aprobado: "bg-emerald-50 text-emerald-700 border-emerald-200",
-    Pendiente_Pago: "bg-amber-50 text-amber-700 border-amber-200",
+    "Facturado Odoo": "bg-purple-50 text-purple-700 border-purple-200",
+    pendiente: "bg-amber-50 text-amber-700 border-amber-200",
+    enviado: "bg-blue-50 text-blue-700 border-blue-200",
+    leido: "bg-emerald-50 text-emerald-700 border-emerald-200",
+    error: "bg-red-50 text-red-700 border-red-200",
   };
   return map[status] ?? "bg-slate-100 text-slate-600 border-slate-200";
 }
 
-export default function PatientProfilePage({ params }: { params: { id: string } }) {
-  const [activeTab, setActiveTab] = useState("historial");
+const REMINDER_TYPE_LABELS: Record<string, string> = {
+  cambio_alineador: "Cambio de Alineador",
+  confirmar_cita: "Confirmar Cita",
+  recordatorio_cita: "Recordatorio de Cita",
+  pago_pendiente: "Pago Pendiente",
+  seguimiento: "Seguimiento",
+  personalizado: "Personalizado",
+};
+
+const DOC_TYPE_LABELS: Record<string, string> = {
+  consentimiento: "Consentimiento",
+  radiografia: "Radiografía",
+  foto_clinica: "Foto Clínica",
+  presupuesto: "Presupuesto",
+  plan_tratamiento: "Plan de Tratamiento",
+  informe: "Informe",
+  otro: "Otro",
+};
+
+// ─── Document Upload Drop Zone ────────────────────────────────────────────────
+
+function DocumentDropZone({ patientId, onUpload }: { patientId: string; onUpload: () => void }) {
+  const [dragging, setDragging] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const handleFiles = useCallback(async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    setUploading(true);
+    // TODO: upload to VPS/Supabase Storage and register in documents table
+    // For now: register file metadata in documents table (file_path = placeholder)
+    for (const file of Array.from(files)) {
+      const ext = file.name.split(".").pop()?.toLowerCase() || "";
+      let docType: string = "otro";
+      if (["pdf"].includes(ext) && file.name.toLowerCase().includes("consentimiento")) docType = "consentimiento";
+      else if (["jpg","jpeg","png","webp"].includes(ext)) docType = "foto_clinica";
+      else if (["pdf"].includes(ext)) docType = "informe";
+
+      await (supabase as any).from("documents").insert({
+        patient_id: patientId,
+        document_type: docType,
+        file_name: file.name,
+        file_path: `/opt/melosmile/docs/${patientId}/${Date.now()}_${file.name}`,
+        file_size_bytes: file.size,
+        mime_type: file.type,
+        uploaded_by: "Dra. Melo",
+      });
+    }
+    setUploading(false);
+    onUpload();
+  }, [patientId, onUpload]);
+
+  return (
+    <div
+      onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+      onDragLeave={() => setDragging(false)}
+      onDrop={(e) => { e.preventDefault(); setDragging(false); handleFiles(e.dataTransfer.files); }}
+      onClick={() => inputRef.current?.click()}
+      className={`border-2 border-dashed rounded-2xl p-10 flex flex-col items-center justify-center gap-3 cursor-pointer transition-all ${
+        dragging ? "border-rose-400 bg-rose-50" : "border-slate-200 hover:border-rose-300 hover:bg-rose-50/40"
+      }`}
+    >
+      <input ref={inputRef} type="file" multiple className="hidden" onChange={(e) => handleFiles(e.target.files)} />
+      {uploading ? (
+        <Loader2 className="h-8 w-8 animate-spin text-rose-500" />
+      ) : (
+        <Upload className={`h-8 w-8 ${dragging ? "text-rose-500" : "text-slate-300"}`} />
+      )}
+      <div className="text-center">
+        <p className="font-semibold text-sm text-slate-700">Arrastra archivos aquí o haz clic para seleccionar</p>
+        <p className="text-xs text-slate-400 mt-1">Consentimientos, RX, fotografías, informes · PDF, JPG, PNG</p>
+      </div>
+    </div>
+  );
+}
+
+// ─── Main Page ─────────────────────────────────────────────────────────────────
+
+type ActiveTab = "historial" | "recordatorios" | "facturacion";
+
+export default function PatientProfilePage({ params }: { params: Promise<{ id: string }> | { id: string } }) {
+  const resolvedParams = React.use(params as any) as { id: string };
+  const targetId = resolvedParams?.id;
+
+  const [activeTab, setActiveTab] = useState<ActiveTab>("historial");
   const [loading, setLoading] = useState(true);
   const [patient, setPatient] = useState<Patient | null>(null);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [billing, setBilling] = useState<BillingRecord[]>([]);
+  const [patientClinics, setPatientClinics] = useState<PatientClinic[]>([]);
+  const [reminders, setReminders] = useState<Reminder[]>([]);
+  const [documents, setDocuments] = useState<Document[]>([]);
+  const [tags, setTags] = useState<TagItem[]>([]);
 
-  useEffect(() => {
-    async function fetchAll() {
-      setLoading(true);
-      try {
-        // 1. Fetch patient
-        const { data: pData } = await supabase
-          .from("patients")
-          .select("*")
-          .or(`id.eq.${params.id},historia_id.eq.${params.id}`)
-          .limit(1);
-
-        // Fallback: try to find PAC-1 if no match
-        let p = pData?.[0];
-        if (!p) {
-          const { data: fallback } = await supabase
-            .from("patients")
-            .select("*")
-            .eq("historia_id", "PAC-1")
-            .limit(1);
-          p = fallback?.[0];
-        }
-
-        if (!p) return;
-
-        setPatient({
-          id: p.id,
-          historiaId: p.historia_id,
-          firstName: p.first_name,
-          lastName: p.last_name,
-          phone: p.phone ?? null,
-          email: p.email ?? null,
-          dni: p.dni_nie ?? null,
-          dob: p.dob ?? null,
-          gender: p.gender ?? null,
-          address: p.address ?? null,
-          importantDiseases: p.important_diseases ?? null,
-          previousOperations: p.previous_operations ?? null,
-          allergies: p.allergies ?? null,
-          currentMedication: p.current_medication ?? null,
-          treatmentPlan: p.treatment_plan ?? null,
-          inTreatment: p.in_treatment ?? false,
-        });
-
-        // 2. Fetch appointments with related data
-        const { data: apptData } = await supabase
-          .from("appointments")
-          .select(`
-            id,
-            appointment_date,
-            reason,
-            status,
-            notes,
-            clinics ( name ),
-            professionals ( first_name, last_name ),
-            treatments ( service_name )
-          `)
-          .eq("patient_id", p.id)
-          .order("appointment_date", { ascending: false });
-
-        if (apptData) {
-          setAppointments(apptData.map((a: any) => ({
-            id: a.id,
-            appointment_date: a.appointment_date,
-            reason: a.reason ?? "Visita",
-            status: a.status ?? "Pendiente",
-            notes: a.notes,
-            clinicName: a.clinics?.name ?? "—",
-            professionalName: a.professionals
-              ? `${a.professionals.first_name} ${a.professionals.last_name}`
-              : "—",
-            treatmentName: a.treatments?.service_name ?? "—",
-          })));
-        }
-
-        // 3. Fetch billing
-        const { data: billingData } = await supabase
-          .from("billing_records")
-          .select(`
-            id,
-            billing_month,
-            custom_price,
-            calculated_total,
-            status,
-            appointments ( reason )
-          `)
-          .in(
-            "appointment_id",
-            (apptData ?? []).map((a: any) => a.id)
-          )
-          .order("billing_month", { ascending: false });
-
-        if (billingData) {
-          setBilling(billingData.map((b: any) => ({
-            id: b.id,
-            billing_month: b.billing_month,
-            custom_price: b.custom_price ?? 0,
-            calculated_total: b.calculated_total ?? 0,
-            status: b.status ?? "Pendiente",
-            appointment_reason: b.appointments?.reason ?? "Tratamiento",
-          })));
-        }
-      } catch (err) {
-        console.error("Error cargando datos:", err);
-      } finally {
-        setLoading(false);
+  const fetchAll = useCallback(async () => {
+    if (!targetId) return;
+    setLoading(true);
+    try {
+      // 1. Patient
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(targetId);
+      let query = supabase.from("patients").select("*");
+      if (isUuid) {
+        query = query.eq("id", targetId);
+      } else {
+        query = query.eq("historia_id", targetId);
       }
+      let { data: pData } = await query.limit(1);
+
+      let p = pData?.[0];
+      if (!p) return;
+
+      setPatient({
+        id: p.id as string, historiaId: p.historia_id as string,
+        firstName: p.first_name, lastName: p.last_name,
+        phone: p.phone ?? null, email: p.email ?? null,
+        dni: p.dni_nie ?? null, dob: p.dob ?? null,
+        gender: p.gender ?? null, address: p.address ?? null,
+        importantDiseases: p.important_diseases ?? null,
+        previousOperations: p.previous_operations ?? null,
+        allergies: p.allergies ?? null,
+        currentMedication: p.current_medication ?? null,
+        treatmentPlan: p.treatment_plan ?? null,
+        inTreatment: (p.in_treatment as boolean | null) ?? false,
+        nifCif: (p as any).nif_cif ?? null,
+        billingName: (p as any).billing_name ?? null,
+        billingAddress: (p as any).billing_address ?? null,
+        billingCity: (p as any).billing_city ?? null,
+        billingPostalCode: (p as any).billing_postal_code ?? null,
+        billingCountry: (p as any).billing_country ?? "España",
+        odooPartnerId: (p as any).odoo_partner_id ?? null,
+        aiSummary: (p as any).ai_summary ?? null,
+      });
+
+      // 2. Appointments
+      const { data: apptData } = await supabase
+        .from("appointments")
+        .select(`id, appointment_date, reason, status, notes, clinic_id,
+          clinics ( name ),
+          professionals ( first_name, last_name ),
+          treatments ( service_name )`)
+        .eq("patient_id", p.id)
+        .order("appointment_date", { ascending: false });
+
+      if (apptData) {
+        setAppointments(apptData.map((a: any) => ({
+          id: a.id,
+          appointment_date: a.appointment_date,
+          reason: a.reason ?? "Visita",
+          status: a.status ?? "Pendiente",
+          notes: a.notes,
+          clinicId: a.clinic_id,
+          clinicName: a.clinics?.name ?? "—",
+          professionalName: a.professionals ? `${a.professionals.first_name} ${a.professionals.last_name}` : "—",
+          treatmentName: a.treatments?.service_name ?? "—",
+        })));
+
+        // 3. Billing
+        if (apptData.length > 0) {
+          const { data: billingData } = await supabase
+            .from("billing_records")
+            .select(`id, billing_month, custom_price, calculated_total, status, odoo_invoice_id, odoo_invoice_number, payment_method, appointments ( reason )`)
+            .in("appointment_id", apptData.map((a: any) => a.id))
+            .order("billing_month", { ascending: false });
+
+          if (billingData) {
+            setBilling(billingData.map((b: any) => ({
+              id: b.id, billing_month: b.billing_month,
+              custom_price: b.custom_price ?? 0,
+              calculated_total: b.calculated_total ?? 0,
+              status: b.status ?? "Pendiente",
+              appointment_reason: b.appointments?.reason ?? "Tratamiento",
+              odoo_invoice_id: b.odoo_invoice_id ?? null,
+              odoo_invoice_number: b.odoo_invoice_number ?? null,
+              payment_method: b.payment_method ?? null,
+            })));
+          }
+        }
+      }
+
+      // 4. Patient Clinics
+      const { data: clinicsData } = await (supabase as any)
+        .from("patient_clinics")
+        .select(`id, clinic_id, is_primary, clinics ( name )`)
+        .eq("patient_id", p.id);
+
+      if (clinicsData) {
+        setPatientClinics((clinicsData as any[]).map((c: any) => ({
+          id: c.id, clinic_id: c.clinic_id,
+          clinic_name: c.clinics?.name ?? "Clínica",
+          is_primary: c.is_primary,
+        })));
+      }
+
+      // 5. Reminders
+      const { data: remindersData } = await (supabase as any)
+        .from("reminders")
+        .select("id, reminder_type, channel, scheduled_at, subject, message, status")
+        .eq("patient_id", p.id)
+        .order("scheduled_at", { ascending: true });
+
+      if (remindersData) setReminders(remindersData as unknown as Reminder[]);
+
+      // 6. Documents
+      const { data: docsData } = await (supabase as any)
+        .from("documents")
+        .select("id, file_name, document_type, created_at, description, file_url")
+        .eq("patient_id", p.id)
+        .order("created_at", { ascending: false });
+
+      if (docsData) setDocuments(docsData as unknown as Document[]);
+
+      // 7. Tags
+      const { data: pTags } = await (supabase as any)
+        .from("patient_tags")
+        .select("tags ( id, name, color )")
+        .eq("patient_id", p.id);
+
+      if (pTags) {
+        const loadedTags: TagItem[] = pTags
+          .map((pt: any) => pt.tags)
+          .filter(Boolean);
+        setTags(loadedTags);
+      }
+
+    } catch (err) {
+      console.error("Error cargando datos:", err);
+    } finally {
+      setLoading(false);
     }
-    fetchAll();
-  }, [params.id]);
+  }, [targetId]);
+
+  useEffect(() => { fetchAll(); }, [fetchAll]);
 
   if (loading) {
     return (
@@ -208,28 +383,36 @@ export default function PatientProfilePage({ params }: { params: { id: string } 
       <div className="flex flex-col items-center justify-center h-96 gap-4">
         <AlertCircle className="h-12 w-12 text-slate-300" />
         <p className="text-slate-600 font-semibold">Paciente no encontrado</p>
-        <Link href="/patients">
-          <Button variant="outline">Volver al directorio</Button>
-        </Link>
+        <Link href="/patients"><Button variant="outline">Volver al directorio</Button></Link>
       </div>
     );
   }
 
   const initials = `${patient.firstName[0] ?? ""}${patient.lastName[0] ?? ""}`;
+  const ageInfo = patient.dob ? calculateAge(patient.dob) : null;
   const dobFormatted = patient.dob
     ? new Date(patient.dob).toLocaleDateString("es-ES", { day: "2-digit", month: "long", year: "numeric" })
     : null;
 
+  const totalPaid = billing.filter(b => b.status !== "Pendiente").reduce((s, b) => s + b.custom_price, 0);
+  const totalPending = billing.filter(b => b.status === "Pendiente").reduce((s, b) => s + b.custom_price, 0);
+
+  // Clinics this patient visited but isn't linked to
+  const linkedClinicIds = new Set(patientClinics.map(c => c.clinic_id));
+  const visitedOtherClinics = appointments
+    .filter(a => !linkedClinicIds.has(a.clinicId))
+    .reduce((acc, a) => { acc.set(a.clinicId, a.clinicName); return acc; }, new Map<string, string>());
+
   return (
     <div className="flex flex-col gap-6 max-w-[1200px] mx-auto p-4 md:p-6">
-      {/* Back button */}
+      {/* Back */}
       <div>
         <Link href="/patients" className="inline-flex items-center gap-2 text-xs font-bold text-slate-500 hover:text-rose-600 transition-colors">
           <ArrowLeft className="h-4 w-4" /> Volver al directorio de pacientes
         </Link>
       </div>
 
-      {/* Header Profile Card */}
+      {/* ── Header Profile Card ─────────────────────────────────── */}
       <Card className="border-0 shadow-xl rounded-2xl overflow-hidden bg-white">
         <div className="bg-gradient-to-r from-rose-500 via-rose-600 to-pink-500 h-28" />
         <CardContent className="px-6 sm:px-10 pb-8 relative">
@@ -244,30 +427,77 @@ export default function PatientProfilePage({ params }: { params: { id: string } 
                 <div>
                   <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 flex flex-wrap items-center gap-3">
                     {patient.firstName} {patient.lastName}
-                    <Badge
-                      variant="outline"
-                      className={`text-xs px-3 py-0.5 rounded-full font-bold border ${
-                        patient.inTreatment
-                          ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                          : "bg-slate-100 text-slate-600"
-                      }`}
-                    >
+                    <Badge variant="outline" className={`text-xs px-3 py-0.5 rounded-full font-bold border ${patient.inTreatment ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-slate-100 text-slate-600"}`}>
                       {patient.inTreatment ? "En Tratamiento" : "Alta"}
                     </Badge>
+                    {ageInfo?.isMinor && (
+                      <Badge variant="outline" className="text-xs px-3 py-0.5 rounded-full font-bold border bg-amber-50 text-amber-700 border-amber-200 flex items-center gap-1">
+                        <Baby className="h-3 w-3" /> Menor de edad
+                      </Badge>
+                    )}
                   </h1>
                   <div className="flex flex-wrap items-center gap-3 text-sm text-slate-500 mt-1">
-                    <span className="font-bold text-rose-600 bg-rose-50 px-2.5 py-0.5 rounded border border-rose-100">
-                      {patient.historiaId}
-                    </span>
+                    <span className="font-bold text-rose-600 bg-rose-50 px-2.5 py-0.5 rounded border border-rose-100">{patient.historiaId}</span>
                     {patient.gender && <span>Sexo: <strong>{patient.gender}</strong></span>}
-                    {patient.dob && <span>Nacido: <strong>{dobFormatted}</strong></span>}
+                    {dobFormatted && <span>Nacido: <strong>{dobFormatted}</strong></span>}
+                    {ageInfo && (
+                      <span className="flex items-center gap-1 font-semibold text-slate-700">
+                        <UserCheck className="h-3.5 w-3.5 text-slate-400" /> {ageInfo.label}
+                      </span>
+                    )}
                   </div>
+                  {/* Clinics */}
+                  {(patientClinics.length > 0 || visitedOtherClinics.size > 0) && (
+                    <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                      {patientClinics.map(c => (
+                        <span key={c.id} className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-lg bg-blue-50 text-blue-700 border border-blue-100">
+                          <Building2 className="h-3 w-3" /> {c.clinic_name} {c.is_primary && <BadgeCheck className="h-3 w-3" />}
+                        </span>
+                      ))}
+                      {[...visitedOtherClinics.entries()].map(([id, name]) => (
+                        <span key={id} className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-lg bg-slate-100 text-slate-500 border border-slate-200">
+                          <Building2 className="h-3 w-3" /> {name} (visita puntual)
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Patient Tags */}
+                  {tags.length > 0 && (
+                    <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                      {tags.map((t) => {
+                        const style = getTagStyle(t.color);
+                        return (
+                          <span
+                            key={t.id}
+                            className={cn(
+                              "inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-lg border shadow-xs",
+                              style.bg, style.text, style.border
+                            )}
+                          >
+                            <TagIcon className="h-3 w-3 opacity-70" />
+                            {t.name}
+                          </span>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
-                <div className="flex gap-2">
-                  <Button variant="outline" className="h-9 gap-2 rounded-xl text-xs font-semibold">
-                    <FileText className="h-4 w-4 text-slate-500" /> Editar Ficha
-                  </Button>
-                  <Button className="h-9 gap-2 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-semibold text-xs shadow-md shadow-rose-500/20">
+                <div className="flex gap-2 flex-wrap">
+                  <Link href={`/patients/${targetId}/edit`}>
+                    <Button variant="outline" className="h-9 gap-2 rounded-xl text-xs font-semibold">
+                      <Edit3 className="h-4 w-4 text-slate-500" /> Editar Ficha
+                    </Button>
+                  </Link>
+                  <Button
+                    onClick={() =>
+                      triggerNewAppointmentModal({
+                        patientId: patient.id,
+                        patientName: `${patient.firstName} ${patient.lastName}`,
+                      })
+                    }
+                    className="h-9 gap-2 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-semibold text-xs shadow-md shadow-rose-500/20 cursor-pointer"
+                  >
                     <CalendarIcon className="h-4 w-4" /> Agendar Cita
                   </Button>
                 </div>
@@ -276,28 +506,16 @@ export default function PatientProfilePage({ params }: { params: { id: string } 
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-6 border-t border-slate-100">
-            {/* Contact Details */}
+            {/* Contact */}
             <div className="space-y-3">
               <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2">
                 <Phone className="h-4 w-4 text-rose-500" /> Información de Contacto
               </h3>
               <div className="text-xs text-slate-700 space-y-1.5 font-medium">
-                {patient.phone && (
-                  <p className="flex items-center gap-2">
-                    <Phone className="h-3.5 w-3.5 text-slate-400" /> {patient.phone}
-                  </p>
-                )}
-                {patient.email && (
-                  <p className="flex items-center gap-2">
-                    <Mail className="h-3.5 w-3.5 text-slate-400" /> {patient.email}
-                  </p>
-                )}
-                {patient.address && (
-                  <p className="flex items-start gap-2 text-slate-500 pt-1">
-                    <MapPin className="h-3.5 w-3.5 text-slate-400 mt-0.5 shrink-0" />
-                    {patient.address}
-                  </p>
-                )}
+                {patient.phone && <p className="flex items-center gap-2"><Phone className="h-3.5 w-3.5 text-slate-400" /> {patient.phone}</p>}
+                {patient.email && <p className="flex items-center gap-2"><Mail className="h-3.5 w-3.5 text-slate-400" /> {patient.email}</p>}
+                {patient.address && <p className="flex items-start gap-2 text-slate-500 pt-1"><MapPin className="h-3.5 w-3.5 text-slate-400 mt-0.5 shrink-0" />{patient.address}</p>}
+                {patient.dni && <p className="flex items-center gap-2 text-slate-400"><FileText className="h-3.5 w-3.5" /> DNI/NIE: {patient.dni}</p>}
               </div>
             </div>
 
@@ -322,7 +540,7 @@ export default function PatientProfilePage({ params }: { params: { id: string } 
                 {patient.previousOperations && (
                   <div className="flex items-start gap-2 text-blue-800 bg-blue-50 p-2.5 rounded-xl border border-blue-100 font-medium">
                     <Stethoscope className="h-4 w-4 shrink-0 text-blue-500 mt-0.5" />
-                    <span><strong>Operaciones previas:</strong> {patient.previousOperations}</span>
+                    <span><strong>Operaciones:</strong> {patient.previousOperations}</span>
                   </div>
                 )}
                 {patient.currentMedication && (
@@ -330,6 +548,9 @@ export default function PatientProfilePage({ params }: { params: { id: string } 
                     <Pill className="h-4 w-4 shrink-0 text-purple-600 mt-0.5" />
                     <span><strong>Medicación:</strong> {patient.currentMedication}</span>
                   </div>
+                )}
+                {!patient.allergies && !patient.importantDiseases && !patient.previousOperations && !patient.currentMedication && (
+                  <p className="text-slate-400 text-xs italic">Sin alertas médicas registradas</p>
                 )}
               </div>
             </div>
@@ -344,155 +565,282 @@ export default function PatientProfilePage({ params }: { params: { id: string } 
                   {patient.treatmentPlan ?? "Sin plan registrado"}
                 </p>
               </div>
+              {/* AI Summary */}
+              {patient.aiSummary && (
+                <div className="p-3.5 rounded-xl bg-violet-50 border border-violet-100">
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-violet-700 mb-1.5">
+                    <Sparkles className="h-3.5 w-3.5" /> Resumen IA
+                  </div>
+                  <p className="text-xs text-violet-800 leading-relaxed">{patient.aiSummary}</p>
+                </div>
+              )}
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Tabs Section */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="bg-white border border-slate-200 p-1.5 rounded-2xl w-full justify-start overflow-x-auto h-auto shadow-sm">
-          <TabsTrigger
-            value="historial"
-            className="rounded-xl data-[state=active]:bg-rose-500 data-[state=active]:text-white font-semibold text-xs py-2.5 px-4"
-          >
-            Historial de Citas {appointments.length > 0 && `(${appointments.length})`}
-          </TabsTrigger>
-          <TabsTrigger
-            value="documentos"
-            className="rounded-xl data-[state=active]:bg-rose-500 data-[state=active]:text-white font-semibold text-xs py-2.5 px-4"
-          >
-            Documentos y Consentimientos
-          </TabsTrigger>
-          <TabsTrigger
-            value="pagos"
-            className="rounded-xl data-[state=active]:bg-rose-500 data-[state=active]:text-white font-semibold text-xs py-2.5 px-4"
-          >
-            Facturación y Pagos {billing.length > 0 && `(${billing.length})`}
-          </TabsTrigger>
-        </TabsList>
+      {/* ── Stats Row ───────────────────────────────────────────── */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {[
+          { label: "Visitas totales", value: appointments.length, icon: CalendarIcon, color: "text-blue-600 bg-blue-50 border-blue-100" },
+          { label: "Recordatorios", value: reminders.length, icon: Bell, color: "text-amber-600 bg-amber-50 border-amber-100" },
+          { label: "Total cobrado", value: `${totalPaid.toFixed(0)} €`, icon: CheckCircle2, color: "text-emerald-600 bg-emerald-50 border-emerald-100" },
+          { label: "Pendiente cobro", value: `${totalPending.toFixed(0)} €`, icon: CreditCard, color: "text-rose-600 bg-rose-50 border-rose-100" },
+        ].map(stat => (
+          <div key={stat.label} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 flex items-center gap-3">
+            <div className={`h-10 w-10 rounded-xl flex items-center justify-center border ${stat.color}`}>
+              <stat.icon className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-lg font-black text-slate-900">{stat.value}</p>
+              <p className="text-[11px] text-slate-500 font-medium">{stat.label}</p>
+            </div>
+          </div>
+        ))}
+      </div>
 
-        {/* HISTORIAL TAB */}
-        <TabsContent value="historial" className="mt-4 space-y-4">
-          <Card className="border-0 shadow-md rounded-2xl bg-white">
-            <CardHeader className="pb-3 border-b border-slate-100 flex flex-row items-center justify-between">
-              <CardTitle className="text-base font-bold text-slate-900">Historial Clínico de Visitas</CardTitle>
-              <Button className="h-8 gap-1.5 rounded-lg bg-rose-500 hover:bg-rose-600 text-white text-xs font-semibold shadow-sm shadow-rose-500/20">
-                <CalendarIcon className="h-3.5 w-3.5" /> Nueva Cita
-              </Button>
-            </CardHeader>
-            <CardContent className="p-0">
-              {appointments.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12 text-slate-400">
-                  <CalendarIcon className="h-10 w-10 mb-3 text-slate-200" />
-                  <p className="font-semibold text-sm">Sin citas registradas</p>
-                </div>
-              ) : (
-                <div className="divide-y divide-slate-100">
-                  {appointments.map((app) => {
-                    const d = formatDate(app.appointment_date);
-                    return (
-                      <div
-                        key={app.id}
-                        className="p-4 flex items-center justify-between hover:bg-slate-50 transition-colors cursor-pointer group"
-                      >
-                        <div className="flex items-start gap-4">
-                          <div className="h-12 w-12 rounded-xl bg-rose-50 flex flex-col items-center justify-center shrink-0 border border-rose-100">
-                            <span className="text-sm font-black text-slate-800">{d.day}</span>
-                            <span className="text-[10px] font-bold text-rose-600 uppercase">{d.month}</span>
-                          </div>
-                          <div>
-                            <p className="font-bold text-slate-900 text-sm group-hover:text-rose-600 transition-colors">
-                              {app.reason} — {app.treatmentName}
-                            </p>
-                            <p className="text-xs text-slate-500 flex items-center gap-2 mt-0.5">
-                              <User className="h-3 w-3" /> {app.professionalName}
-                              <Building2 className="h-3 w-3 ml-1" /> {app.clinicName}
-                              <Clock className="h-3 w-3 ml-1" /> {d.time}
-                            </p>
-                            {app.notes && (
-                              <p className="text-[11px] text-slate-400 mt-1 italic truncate max-w-md">
-                                {app.notes}
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                        <Badge
-                          variant="outline"
-                          className={`text-xs font-semibold ${getStatusBadge(app.status)}`}
-                        >
-                          {app.status}
-                        </Badge>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
+      {/* ── Tabs ────────────────────────────────────────────────── */}
+      <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+        {/* Tab nav */}
+        <div className="flex border-b border-slate-100 overflow-x-auto">
+          {([
+            { id: "historial", label: `Historial de Citas${appointments.length > 0 ? ` (${appointments.length})` : ""}`, icon: CalendarIcon },
+            { id: "facturacion", label: `Facturación y Pagos${billing.length > 0 ? ` (${billing.length})` : ""}`, icon: Receipt },
+            { id: "recordatorios", label: `Recordatorios${reminders.length > 0 ? ` (${reminders.length})` : ""}`, icon: Bell },
+          ] as const).map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex items-center gap-2 px-5 py-3.5 text-xs font-bold whitespace-nowrap border-b-2 transition-all ${
+                activeTab === tab.id
+                  ? "border-rose-500 text-rose-600 bg-rose-50/50"
+                  : "border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50"
+              }`}
+            >
+              <tab.icon className="h-4 w-4" /> {tab.label}
+            </button>
+          ))}
+        </div>
 
-        {/* DOCUMENTOS TAB */}
-        <TabsContent value="documentos" className="mt-4">
-          <Card className="border-0 shadow-md rounded-2xl bg-white">
-            <CardHeader className="flex flex-row items-center justify-between pb-3 border-b border-slate-100">
-              <CardTitle className="text-base font-bold text-slate-900">Documentación Adjunta</CardTitle>
-              <Button size="sm" variant="outline" className="h-8 rounded-lg gap-1 text-xs font-semibold">
-                <Upload className="h-3.5 w-3.5" /> Subir Documento
+        {/* HISTORIAL */}
+        {activeTab === "historial" && (
+          <div className="p-0">
+            <div className="flex items-center justify-between px-5 py-3 border-b border-slate-50">
+              <p className="text-xs text-slate-500 font-medium">Historial completo de visitas</p>
+              <Button
+                size="sm"
+                onClick={() =>
+                  triggerNewAppointmentModal({
+                    patientId: patient.id,
+                    patientName: `${patient.firstName} ${patient.lastName}`,
+                  })
+                }
+                className="h-7 gap-1.5 rounded-lg bg-rose-500 hover:bg-rose-600 text-white text-[11px] font-semibold shadow-sm cursor-pointer"
+              >
+                <Plus className="h-3 w-3" /> Nueva Cita
               </Button>
-            </CardHeader>
-            <CardContent className="p-5">
-              <div className="flex flex-col items-center justify-center py-10 text-slate-400">
-                <FileText className="h-10 w-10 mb-3 text-slate-200" />
-                <p className="font-semibold text-sm">Sin documentos cargados</p>
-                <p className="text-xs mt-1">Sube consentimientos, RX, fotografías o informes</p>
+            </div>
+            {appointments.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-16 text-slate-400">
+                <CalendarIcon className="h-10 w-10 mb-3 text-slate-200" />
+                <p className="font-semibold text-sm">Sin citas registradas</p>
               </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* PAGOS TAB */}
-        <TabsContent value="pagos" className="mt-4">
-          <Card className="border-0 shadow-md rounded-2xl bg-white">
-            <CardHeader className="pb-3 border-b border-slate-100">
-              <CardTitle className="text-base font-bold text-slate-900">Historial Financiero y Entregas</CardTitle>
-            </CardHeader>
-            <CardContent className="p-0">
-              {billing.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12 text-slate-400">
-                  <CreditCard className="h-10 w-10 mb-3 text-slate-200" />
-                  <p className="font-semibold text-sm">Sin registros financieros</p>
-                </div>
-              ) : (
-                <div className="divide-y divide-slate-100">
-                  {billing.map((b) => {
-                    const monthDate = new Date(b.billing_month);
-                    const monthLabel = monthDate.toLocaleDateString("es-ES", { month: "long", year: "numeric" });
-                    return (
-                      <div key={b.id} className="p-4 flex items-center justify-between">
-                        <div>
-                          <p className="font-bold text-slate-900 text-sm capitalize">{b.appointment_reason}</p>
-                          <p className="text-xs text-slate-500">{monthLabel}</p>
+            ) : (
+              <div className="divide-y divide-slate-50">
+                {appointments.map((app) => {
+                  const d = formatDate(app.appointment_date);
+                  return (
+                    <div key={app.id} className="px-5 py-4 flex items-center justify-between hover:bg-slate-50 transition-colors cursor-pointer group">
+                      <div className="flex items-start gap-4">
+                        <div className="h-12 w-12 rounded-xl bg-rose-50 flex flex-col items-center justify-center shrink-0 border border-rose-100">
+                          <span className="text-sm font-black text-slate-800">{d.day}</span>
+                          <span className="text-[10px] font-bold text-rose-600 uppercase">{d.month}</span>
                         </div>
-                        <div className="text-right">
-                          <p className="font-bold text-slate-900 text-sm">
-                            {b.custom_price.toFixed(2)} €
+                        <div>
+                          <p className="font-bold text-slate-900 text-sm group-hover:text-rose-600 transition-colors">
+                            {app.reason} — {app.treatmentName}
                           </p>
-                          <span
-                            className={`text-[10px] px-2.5 py-0.5 rounded-full font-bold flex items-center gap-1 justify-end w-fit ml-auto mt-1 ${getStatusBadge(b.status)}`}
-                          >
-                            <CheckCircle2 className="h-3 w-3" /> {b.status}
-                          </span>
+                          <p className="text-xs text-slate-500 flex flex-wrap items-center gap-2 mt-0.5">
+                            <span className="flex items-center gap-1"><User className="h-3 w-3" />{app.professionalName}</span>
+                            <span className="flex items-center gap-1"><Building2 className="h-3 w-3" />{app.clinicName}</span>
+                            <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{d.time}</span>
+                          </p>
+                          {app.notes && <p className="text-[11px] text-slate-400 mt-1 italic truncate max-w-md">{app.notes}</p>}
                         </div>
                       </div>
-                    );
-                  })}
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline" className={`text-xs font-semibold ${getStatusBadge(app.status)}`}>{app.status}</Badge>
+                        <ChevronRight className="h-4 w-4 text-slate-300 group-hover:text-rose-400 transition-colors" />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* FACTURACIÓN */}
+        {activeTab === "facturacion" && (
+          <div className="p-0">
+            {/* Billing data */}
+            <div className="px-5 py-3 border-b border-slate-50 flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div>
+                  <p className="text-[11px] text-slate-400 font-medium">Total cobrado</p>
+                  <p className="text-base font-black text-emerald-600">{totalPaid.toFixed(2)} €</p>
                 </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+                {totalPending > 0 && (
+                  <div>
+                    <p className="text-[11px] text-slate-400 font-medium">Pendiente</p>
+                    <p className="text-base font-black text-amber-600">{totalPending.toFixed(2)} €</p>
+                  </div>
+                )}
+              </div>
+              <Button size="sm" className="h-7 gap-1.5 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-[11px] font-semibold shadow-sm">
+                <Receipt className="h-3 w-3" /> Generar Factura Odoo
+              </Button>
+            </div>
+
+            {/* Billing data fields */}
+            {(patient.nifCif || patient.billingName) && (
+              <div className="px-5 py-3 bg-slate-50 border-b border-slate-100">
+                <p className="text-[11px] font-bold text-slate-400 uppercase mb-2">Datos de facturación</p>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs text-slate-700">
+                  {patient.billingName && <div><span className="text-slate-400">Nombre/Razón social:</span><br/><strong>{patient.billingName}</strong></div>}
+                  {patient.nifCif && <div><span className="text-slate-400">NIF/CIF:</span><br/><strong>{patient.nifCif}</strong></div>}
+                  {patient.billingAddress && <div><span className="text-slate-400">Dirección:</span><br/><strong>{patient.billingAddress}</strong></div>}
+                  {patient.billingCity && <div><span className="text-slate-400">Ciudad/CP:</span><br/><strong>{patient.billingCity} {patient.billingPostalCode}</strong></div>}
+                  {patient.odooPartnerId && (
+                    <div>
+                      <span className="text-slate-400">Odoo Partner:</span><br/>
+                      <a href={`${process.env.NEXT_PUBLIC_ODOO_URL}/web#id=${patient.odooPartnerId}&model=res.partner`} target="_blank" rel="noopener noreferrer" className="text-violet-600 font-bold flex items-center gap-1 hover:underline">
+                        #{patient.odooPartnerId} <ExternalLink className="h-3 w-3" />
+                      </a>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {billing.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-16 text-slate-400">
+                <CreditCard className="h-10 w-10 mb-3 text-slate-200" />
+                <p className="font-semibold text-sm">Sin registros financieros</p>
+              </div>
+            ) : (
+              <div className="divide-y divide-slate-50">
+                {billing.map((b) => {
+                  const monthDate = new Date(b.billing_month);
+                  const monthLabel = monthDate.toLocaleDateString("es-ES", { month: "long", year: "numeric" });
+                  return (
+                    <div key={b.id} className="px-5 py-4 flex items-center justify-between hover:bg-slate-50 transition-colors">
+                      <div>
+                        <p className="font-bold text-slate-900 text-sm capitalize">{b.appointment_reason}</p>
+                        <p className="text-xs text-slate-500">{monthLabel} {b.payment_method && `· ${b.payment_method}`}</p>
+                        {b.odoo_invoice_number && (
+                          <p className="text-[11px] text-violet-600 font-semibold mt-0.5 flex items-center gap-1">
+                            <Receipt className="h-3 w-3" /> {b.odoo_invoice_number}
+                          </p>
+                        )}
+                      </div>
+                      <div className="text-right flex flex-col items-end gap-1">
+                        <p className="font-black text-slate-900 text-sm">{b.custom_price.toFixed(2)} €</p>
+                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold border ${getStatusBadge(b.status)}`}>
+                          {b.status}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* RECORDATORIOS */}
+        {activeTab === "recordatorios" && (
+          <div className="p-0">
+            <div className="flex items-center justify-between px-5 py-3 border-b border-slate-50">
+              <p className="text-xs text-slate-500 font-medium">Recordatorios programados y enviados</p>
+              <Button size="sm" className="h-7 gap-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-[11px] font-semibold shadow-sm">
+                <Plus className="h-3 w-3" /> Nuevo Recordatorio
+              </Button>
+            </div>
+            {reminders.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-16 text-slate-400">
+                <Bell className="h-10 w-10 mb-3 text-slate-200" />
+                <p className="font-semibold text-sm">Sin recordatorios programados</p>
+                <p className="text-xs mt-1">Puedes pedirle al Agente IA que programe uno</p>
+              </div>
+            ) : (
+              <div className="divide-y divide-slate-50">
+                {reminders.map((r) => {
+                  const d = formatDate(r.scheduled_at);
+                  return (
+                    <div key={r.id} className="px-5 py-4 flex items-center justify-between hover:bg-slate-50 transition-colors">
+                      <div className="flex items-start gap-3">
+                        <div className="h-9 w-9 rounded-xl bg-amber-50 border border-amber-100 flex items-center justify-center shrink-0">
+                          <Bell className="h-4 w-4 text-amber-500" />
+                        </div>
+                        <div>
+                          <p className="font-bold text-slate-900 text-sm">{r.subject || REMINDER_TYPE_LABELS[r.reminder_type]}</p>
+                          <p className="text-xs text-slate-500">{d.full} · {r.channel}</p>
+                          <p className="text-[11px] text-slate-400 mt-0.5 truncate max-w-sm">{r.message}</p>
+                        </div>
+                      </div>
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold border ${getStatusBadge(r.status)}`}>
+                        {r.status}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* ── Documentos y Consentimientos (full width, bottom) ───── */}
+      <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+          <div className="flex items-center gap-2">
+            <FileText className="h-5 w-5 text-rose-500" />
+            <h2 className="text-base font-bold text-slate-900">Documentos y Consentimientos</h2>
+            {documents.length > 0 && (
+              <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-500">{documents.length}</span>
+            )}
+          </div>
+        </div>
+
+        <div className="p-6 space-y-5">
+          <DocumentDropZone patientId={patient.id} onUpload={fetchAll} />
+
+          {documents.length > 0 && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {documents.map((doc) => {
+                const d = formatDate(doc.created_at);
+                return (
+                  <div key={doc.id} className="flex items-center gap-3 p-3 rounded-xl border border-slate-100 hover:border-rose-200 hover:bg-rose-50/30 transition-all cursor-pointer group">
+                    <div className="h-10 w-10 rounded-lg bg-slate-100 flex items-center justify-center shrink-0">
+                      <FileText className="h-5 w-5 text-slate-400" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-bold text-slate-800 truncate group-hover:text-rose-600">{doc.file_name}</p>
+                      <p className="text-[11px] text-slate-400">{DOC_TYPE_LABELS[doc.document_type] ?? doc.document_type} · {d.full}</p>
+                    </div>
+                    {doc.file_url && (
+                      <a href={doc.file_url} target="_blank" rel="noopener noreferrer">
+                        <ExternalLink className="h-3.5 w-3.5 text-slate-300 group-hover:text-rose-500" />
+                      </a>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
