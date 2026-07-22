@@ -16,6 +16,7 @@ Este documento establece el plan de desarrollo, hitos alcanzados y próximas fas
 - [x] Funcionalidad de Drag & Drop para mover citas de hora/día dinámicamente.
 - [x] Tooltip de vista previa rápida al pasar el cursor sobre las citas (teléfono, email, ID).
 - [x] Rediseño de Ficha de Cita (`/appointments/[id]`) con texto libre de tratamiento, evolución clínica estilo Notion y subida de archivos.
+- [x] Directorio de Fichas de Pacientes (`/patients`) con selector de vista en Tarjetas / Listado, filtros y formulario completo de alta.
 - [x] Creación de Ficha Histórica del Paciente (`/patients/[id]`) reuniendo citas, documentos y pagos.
 - [x] Lógica de cálculos financieros con sobrescritura por cita de `% Comisión` y `% Descuento Laboratorio`.
 

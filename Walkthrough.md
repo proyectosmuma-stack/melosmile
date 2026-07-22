@@ -32,14 +32,19 @@ Este documento detalla todas las funcionalidades desarrolladas, configuraciones 
 
 ---
 
-## 3. Ficha Histórica del Paciente (`/patients/[id]`)
+## 3. Directorio de Fichas de Pacientes (`/patients`)
 
-- **Ubicación**: `frontend/src/app/(dashboard)/patients/[id]/page.tsx`
+- **Ubicaciones**: `frontend/src/app/(dashboard)/patients/page.tsx` y `frontend/src/app/(dashboard)/patients/[id]/page.tsx`
 - **Funcionalidades**:
-  - **Perfil General**: Datos personales, teléfono, email, DNI y alertas médicas de riesgo (alergias y enfermedades importantes).
-  - **Historial de Citas**: Pestaña dedicada con el listado completo de citas pasadas y futuras.
-  - **Documentación y Consentimientos**: Visualizador y gestor de archivos subidos del paciente.
-  - **Historial Financiero**: Registro consolidado de abonos, entregas parciales y pagos completados.
+  - **Selector de Vista**: Botón selector para cambiar en tiempo real entre **Vista en Tarjetas (Grid)** y **Vista en Listado (Tabla)**.
+  - **Buscador & Filtro de Estado**: Permite buscar pacientes por Nombre, DNI/NIE, Número de Historia o Teléfono, así como filtrar por estado (En Tratamiento vs Alta).
+  - **Campos de Ficha Completa**:
+    - Identificadores: Historia (`PAC-xxx`), DNI/NIE, Nombre y Apellidos, Género, Fecha Nacimiento, Dirección.
+    - Contacto: Teléfono y Correo Electrónico.
+    - Anamnesis / Alertas Médicas: Alergias destacadas, Enfermedades/Antecedentes importantes, Medicación actual y Cirugías previas.
+    - Plan de Tratamiento Inicial.
+  - **Creación de Nuevo Paciente**: Modal completo con todos los campos médicos y personales conectable con Supabase.
+  - **Ficha Histórica Individual (`/patients/[id]`)**: Vista en detalle del historial médico, consentimientos y estado financiero del paciente.
 
 ---
 
