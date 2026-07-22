@@ -22,6 +22,7 @@ type Clinic = {
   email: string | null;
   color_hex: string | null;
   base_commission_pct: number | null;
+  odoo_pricelist_id: number | null;
 };
 
 type Family = { id: string; name: string; color_hex: string; };
@@ -50,6 +51,7 @@ export default function ClinicsSettingsPage() {
   const [rules, setRules] = useState<CommissionRule[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [pricelists, setPricelists] = useState<any[]>([]);
 
   // Dialog state
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -67,6 +69,7 @@ export default function ClinicsSettingsPage() {
   const [fEmail, setFEmail] = useState("");
   const [fColor, setFColor] = useState("#3b82f6");
   const [fBaseCommission, setFBaseCommission] = useState("40");
+  const [fOdooPricelist, setFOdooPricelist] = useState<string>("");
 
   // Rules editing for expanded clinic
   const [editingRules, setEditingRules] = useState<Record<string, { commission_pct: string; lab_discount_pct: string }>>({});
@@ -75,13 +78,20 @@ export default function ClinicsSettingsPage() {
     setLoading(true);
     try {
       const [{ data: cData }, { data: fData }, { data: rData }] = await Promise.all([
-        (supabase as any).from("clinics").select("id, name, address, phone, email, color_hex, base_commission_pct").order("name"),
+        (supabase as any).from("clinics").select("id, name, address, phone, email, color_hex, base_commission_pct, odoo_pricelist_id").order("name"),
         (supabase as any).from("treatment_families").select("id, name, color_hex").order("sort_order"),
         (supabase as any).from("clinic_commission_rules").select("id, clinic_id, family_id, commission_pct, lab_discount_pct"),
       ]);
       if (cData) setClinics(cData);
       if (fData) setFamilies(fData);
       if (rData) setRules(rData);
+
+      // Fetch Odoo Pricelists
+      const res = await fetch("/api/odoo/pricelists");
+      const json = await res.json();
+      if (json.success) {
+        setPricelists(json.data || []);
+      }
     } catch (e) {
       console.error("Error loading clinics:", e);
     } finally {
@@ -93,7 +103,7 @@ export default function ClinicsSettingsPage() {
 
   const openAdd = () => {
     setEditingClinic(null);
-    setFName(""); setFAddress(""); setFPhone(""); setFEmail(""); setFColor("#3b82f6"); setFBaseCommission("40");
+    setFName(""); setFAddress(""); setFPhone(""); setFEmail(""); setFColor("#3b82f6"); setFBaseCommission("40"); setFOdooPricelist("");
     setDialogOpen(true);
   };
 
@@ -102,6 +112,7 @@ export default function ClinicsSettingsPage() {
     setFName(c.name); setFAddress(c.address || ""); setFPhone(c.phone || "");
     setFEmail(c.email || ""); setFColor(c.color_hex || "#3b82f6");
     setFBaseCommission(String(c.base_commission_pct || 40));
+    setFOdooPricelist(c.odoo_pricelist_id ? String(c.odoo_pricelist_id) : "");
     setDialogOpen(true);
   };
 
@@ -116,6 +127,7 @@ export default function ClinicsSettingsPage() {
         email: fEmail || null,
         color_hex: fColor,
         base_commission_pct: parseFloat(fBaseCommission) || 40,
+        odoo_pricelist_id: fOdooPricelist ? parseInt(fOdooPricelist) : null,
       };
       if (editingClinic) {
         await (supabase as any).from("clinics").update(payload).eq("id", editingClinic.id);
@@ -444,6 +456,21 @@ export default function ClinicsSettingsPage() {
                   ))}
                 </div>
               </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold text-slate-700">Tarifa Odoo Asociada</Label>
+              <select
+                value={fOdooPricelist}
+                onChange={(e) => setFOdooPricelist(e.target.value)}
+                className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent"
+              >
+                <option value="">Sin tarifa asociada</option>
+                {pricelists.map(p => (
+                  <option key={p.id} value={p.id}>{p.name}</option>
+                ))}
+              </select>
+              <p className="text-[11px] text-slate-500">Selecciona la tarifa de Odoo que usa esta clínica. Las actualizaciones de precios se enviarán automáticamente a Odoo.</p>
             </div>
           </div>
 
