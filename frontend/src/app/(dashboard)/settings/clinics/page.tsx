@@ -57,6 +57,8 @@ export default function ClinicsSettingsPage() {
   const [clinicToDelete, setClinicToDelete] = useState<Clinic | null>(null);
   const [editingClinic, setEditingClinic] = useState<Clinic | null>(null);
   const [expandedClinic, setExpandedClinic] = useState<string | null>(null);
+  const [savedMessage, setSavedMessage] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // Form fields
   const [fName, setFName] = useState("");
@@ -149,44 +151,58 @@ export default function ClinicsSettingsPage() {
     }
   };
 
-  const toggleExpand = (id: string) => {
-    if (expandedClinic === id) {
+  const toggleExpand = (clinic: Clinic) => {
+    if (expandedClinic === clinic.id) {
       setExpandedClinic(null);
       setEditingRules({});
     } else {
-      setExpandedClinic(id);
-      // Initialize rule editing state
+      setExpandedClinic(clinic.id);
+      const baseComm = clinic.base_commission_pct || 40;
       const existing: Record<string, { commission_pct: string; lab_discount_pct: string }> = {};
-      rules.filter(r => r.clinic_id === id).forEach(r => {
-        existing[r.family_id] = {
-          commission_pct: String(r.commission_pct),
-          lab_discount_pct: String(r.lab_discount_pct),
+      const clinicRules = rules.filter(r => r.clinic_id === clinic.id);
+      families.forEach(fam => {
+        const found = clinicRules.find(r => r.family_id === fam.id);
+        existing[fam.id] = {
+          commission_pct: found ? String(found.commission_pct) : String(baseComm),
+          lab_discount_pct: found ? String(found.lab_discount_pct) : "0",
         };
       });
       setEditingRules(existing);
     }
   };
 
-  const handleSaveRules = async (clinicId: string) => {
+  const handleSaveRules = async (clinic: Clinic) => {
     setSaving(true);
+    setSavedMessage(null);
+    setErrorMessage(null);
     try {
-      for (const [familyId, vals] of Object.entries(editingRules)) {
-        const existing = rules.find(r => r.clinic_id === clinicId && r.family_id === familyId);
-        const payload = {
-          clinic_id: clinicId,
-          family_id: familyId,
-          commission_pct: parseFloat(vals.commission_pct) || 40,
+      const payloadBatch = families.map((fam) => {
+        const vals = editingRules[fam.id] || {
+          commission_pct: String(clinic.base_commission_pct || 40),
+          lab_discount_pct: "0",
+        };
+        return {
+          clinic_id: clinic.id,
+          family_id: fam.id,
+          commission_pct: parseFloat(vals.commission_pct) || (clinic.base_commission_pct || 40),
           lab_discount_pct: parseFloat(vals.lab_discount_pct) || 0,
         };
-        if (existing) {
-          await (supabase as any).from("clinic_commission_rules").update(payload).eq("id", existing.id);
-        } else {
-          await (supabase as any).from("clinic_commission_rules").insert(payload);
-        }
+      });
+
+      const { error } = await (supabase as any)
+        .from("clinic_commission_rules")
+        .upsert(payloadBatch, { onConflict: "clinic_id,family_id" });
+
+      if (error) {
+        setErrorMessage(`Error guardando reglas: ${error.message}`);
+      } else {
+        setSavedMessage(`✅ Reglas guardadas correctamente para ${clinic.name}`);
+        setTimeout(() => setSavedMessage(null), 5000);
+        await fetchData();
       }
-      await fetchData();
-    } catch (e) {
+    } catch (e: any) {
       console.error("Error saving rules:", e);
+      setErrorMessage(`Error guardando reglas: ${e?.message || "Error desconocido"}`);
     } finally {
       setSaving(false);
     }
@@ -262,7 +278,7 @@ export default function ClinicsSettingsPage() {
                   <Button variant="ghost" size="icon" onClick={() => promptDeleteClinic(clinic)} className="h-9 w-9 rounded-xl text-rose-400 hover:text-rose-600 hover:bg-rose-50">
                     <Trash2 className="h-4 w-4" />
                   </Button>
-                  <Button variant="ghost" size="sm" onClick={() => toggleExpand(clinic.id)} className="text-xs gap-1 rounded-xl text-slate-600">
+                  <Button variant="ghost" size="sm" onClick={() => toggleExpand(clinic)} className="text-xs gap-1 rounded-xl text-slate-600">
                     <Percent className="h-3.5 w-3.5 text-rose-500" />
                     Reglas
                     {isExpanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
@@ -273,13 +289,29 @@ export default function ClinicsSettingsPage() {
               {/* Commission Rules Panel */}
               {isExpanded && (
                 <CardContent className="pt-4 pb-5 bg-slate-50/50">
+                  {savedMessage && (
+                    <div className="mb-3 p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold flex items-center justify-between shadow-sm">
+                      <span>{savedMessage}</span>
+                    </div>
+                  )}
+                  {errorMessage && (
+                    <div className="mb-3 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-semibold flex items-center justify-between shadow-sm">
+                      <span>{errorMessage}</span>
+                    </div>
+                  )}
+
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-sm font-bold text-slate-700">Reglas de Comisión por Familia de Tratamiento</h3>
                     <Button
+                      type="button"
                       size="sm"
-                      onClick={() => handleSaveRules(clinic.id)}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleSaveRules(clinic);
+                      }}
                       disabled={saving}
-                      className="bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-xs gap-1.5"
+                      className="bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-xs gap-1.5 font-bold shadow-md shadow-emerald-500/20"
                     >
                       {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
                       Guardar Reglas
@@ -294,7 +326,8 @@ export default function ClinicsSettingsPage() {
                     </div>
 
                     {families.map((fam) => {
-                      const ruleVals = editingRules[fam.id] || { commission_pct: "40", lab_discount_pct: "0" };
+                      const baseComm = String(clinic.base_commission_pct || 40);
+                      const ruleVals = editingRules[fam.id] || { commission_pct: baseComm, lab_discount_pct: "0" };
                       const existingRule = clinicRules.find(r => r.family_id === fam.id);
 
                       return (

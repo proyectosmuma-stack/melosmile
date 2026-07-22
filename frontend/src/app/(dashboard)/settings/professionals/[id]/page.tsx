@@ -55,7 +55,7 @@ export default function ProfessionalDetailPage({ params }: { params: Promise<{ i
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [professional, setProfessional] = useState<Professional | null>(null);
-  const [clinic, setClinic] = useState<Clinic | null>(null);
+  const [assignedClinics, setAssignedClinics] = useState<{ id: string; name: string; is_primary: boolean }[]>([]);
   const [allClinics, setAllClinics] = useState<Clinic[]>([]);
   const [appointments, setAppointments] = useState<AppointmentItem[]>([]);
   const [notes, setNotes] = useState<string>("");
@@ -89,14 +89,26 @@ export default function ProfessionalDetailPage({ params }: { params: Promise<{ i
         setFEmail(pData.email || "");
         setFClinicId(pData.clinic_id || "");
 
-        // 2. Fetch associated clinic
-        if (pData.clinic_id) {
+        // 2. Fetch associated clinics from professional_clinics join table
+        const { data: pcData } = await (supabase as any)
+          .from("professional_clinics")
+          .select("clinic_id, is_primary, clinics ( id, name, address, phone )")
+          .eq("professional_id", targetId);
+
+        if (pcData && pcData.length > 0) {
+          const list = pcData.map((row: any) => ({
+            id: row.clinics?.id || row.clinic_id,
+            name: row.clinics?.name || "Clínica",
+            is_primary: row.is_primary ?? false,
+          }));
+          setAssignedClinics(list);
+        } else if (pData.clinic_id) {
           const { data: cData } = await (supabase as any)
             .from("clinics")
             .select("id, name, address, phone")
             .eq("id", pData.clinic_id)
             .maybeSingle();
-          if (cData) setClinic(cData);
+          if (cData) setAssignedClinics([{ id: cData.id, name: cData.name, is_primary: true }]);
         }
 
         // 3. Fetch all clinics for dropdown
@@ -247,7 +259,7 @@ export default function ProfessionalDetailPage({ params }: { params: Promise<{ i
                   )}
                   <span className="flex items-center gap-1.5">
                     <Building2 className="h-3.5 w-3.5 text-slate-400" />
-                    {clinic?.name || "Todas las sedes"}
+                    {assignedClinics.length > 0 ? (assignedClinics.find(c => c.is_primary)?.name || assignedClinics[0].name) : "Todas las sedes"}
                   </span>
                 </div>
               </div>
@@ -261,13 +273,6 @@ export default function ProfessionalDetailPage({ params }: { params: Promise<{ i
               >
                 <Edit3 className="h-4 w-4 text-slate-500" />
                 <span>Editar Ficha</span>
-              </Button>
-              <Button
-                onClick={() => triggerNewAppointmentModal()}
-                className="rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-bold text-xs h-10 px-4 gap-2 shadow-md shadow-rose-500/20"
-              >
-                <Plus className="h-4 w-4" />
-                <span>Agendar Cita</span>
               </Button>
             </div>
           </div>
@@ -335,11 +340,22 @@ export default function ProfessionalDetailPage({ params }: { params: Promise<{ i
               </div>
 
               <div>
-                <Label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Sede Principal</Label>
-                <p className="text-sm font-semibold text-slate-800 mt-0.5 flex items-center gap-1.5">
-                  <Building2 className="h-4 w-4 text-slate-400" />
-                  {clinic?.name || "Todas las sedes asignadas"}
-                </p>
+                <Label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Sedes Vinculadas</Label>
+                <div className="flex flex-wrap gap-1.5 mt-1.5">
+                  {assignedClinics.length === 0 ? (
+                    <span className="text-sm font-semibold text-slate-800">Todas las sedes</span>
+                  ) : (
+                    assignedClinics.map((c) => (
+                      <span key={c.id} className={`text-xs px-2.5 py-1 rounded-full font-semibold border flex items-center gap-1 ${
+                        c.is_primary ? "bg-emerald-50 border-emerald-300 text-emerald-700" : "bg-slate-100 border-slate-200 text-slate-700"
+                      }`}>
+                        <Building2 className="h-3 w-3 text-slate-400" />
+                        {c.name}
+                        {c.is_primary && <span className="text-[10px] text-emerald-600 font-bold ml-0.5">★</span>}
+                      </span>
+                    ))
+                  )}
+                </div>
               </div>
 
               <div className="pt-2 border-t border-slate-100 space-y-3">
