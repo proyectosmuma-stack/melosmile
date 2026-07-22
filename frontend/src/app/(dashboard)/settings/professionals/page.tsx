@@ -290,12 +290,17 @@ export default function ProfessionalsSettingsPage() {
 
           {filteredProfessionals.map((p) => {
             const assignedLinks = proClinicsMap[p.id] || [];
-            const assignedClinics = assignedLinks
+            let assignedClinics = assignedLinks
               .map(link => {
                 const c = clinics.find(cl => cl.id === link.clinic_id);
                 return c ? { name: c.name, is_primary: link.is_primary } : null;
               })
               .filter(Boolean);
+
+            if (assignedClinics.length === 0 && p.clinic_id) {
+              const c = clinics.find(cl => cl.id === p.clinic_id);
+              if (c) assignedClinics = [{ name: c.name, is_primary: true }];
+            }
 
             const specialtiesList = (p.specialty || "").split(",").map(s => s.trim()).filter(Boolean);
 
@@ -403,12 +408,17 @@ export default function ProfessionalsSettingsPage() {
                 ) : (
                   filteredProfessionals.map((p) => {
                     const assignedLinks = proClinicsMap[p.id] || [];
-                    const assignedClinics = assignedLinks
+                    let assignedClinics = assignedLinks
                       .map(link => {
                         const c = clinics.find(cl => cl.id === link.clinic_id);
                         return c ? { name: c.name, is_primary: link.is_primary } : null;
                       })
                       .filter(Boolean);
+
+                    if (assignedClinics.length === 0 && p.clinic_id) {
+                      const c = clinics.find(cl => cl.id === p.clinic_id);
+                      if (c) assignedClinics = [{ name: c.name, is_primary: true }];
+                    }
 
                     const specialtiesList = (p.specialty || "").split(",").map(s => s.trim()).filter(Boolean);
 

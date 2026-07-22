@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { FlaskConical, Plus, Edit2, Trash2, Loader2, AlertCircle, ChevronDown, ChevronRight, Search } from "lucide-react";
+import { FlaskConical, Plus, Edit2, Trash2, Loader2, AlertCircle, ChevronDown, ChevronRight, Search, Building2 } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
 
 type Family = {
@@ -16,6 +16,17 @@ type Family = {
   description: string | null;
   color_hex: string;
   sort_order: number;
+};
+
+type Clinic = {
+  id: string;
+  name: string;
+  color_hex: string;
+};
+
+type TreatmentPrice = {
+  clinic_id: string;
+  price: number;
 };
 
 type Treatment = {
@@ -28,11 +39,13 @@ type Treatment = {
   typical_lab_cost: number;
   family_id: string | null;
   is_active: boolean;
+  prices?: TreatmentPrice[];
 };
 
 export default function TreatmentsSettingsPage() {
   const [families, setFamilies] = useState<Family[]>([]);
   const [treatments, setTreatments] = useState<Treatment[]>([]);
+  const [clinics, setClinics] = useState<Clinic[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState("");
@@ -50,19 +63,30 @@ export default function TreatmentsSettingsPage() {
   const [fLabCost, setFLabCost] = useState("0");
   const [fTypicalLab, setFTypicalLab] = useState("0");
   const [fFamilyId, setFFamilyId] = useState("");
+  const [fClinicPrices, setFClinicPrices] = useState<Record<string, string>>({});
 
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const [{ data: fData }, { data: tData }] = await Promise.all([
+      const [{ data: fData }, { data: tData }, { data: cData }, { data: pData }] = await Promise.all([
         (supabase as any).from("treatment_families").select("id, name, description, color_hex, sort_order").order("sort_order"),
         (supabase as any).from("treatments").select("id, service_name, abbreviation, service_type, default_price, lab_cost, typical_lab_cost, family_id, is_active").order("service_name"),
+        (supabase as any).from("clinics").select("id, name, color_hex").order("name"),
+        (supabase as any).from("treatment_clinic_prices").select("treatment_id, clinic_id, price")
       ]);
+      
+      if (cData) setClinics(cData);
       if (fData) {
         setFamilies(fData);
         setExpandedFamilies(new Set(fData.map((f: Family) => f.id)));
       }
-      if (tData) setTreatments(tData);
+      if (tData) {
+        const enrichedTreatments = tData.map((t: any) => ({
+          ...t,
+          prices: pData?.filter((p: any) => p.treatment_id === t.id) || []
+        }));
+        setTreatments(enrichedTreatments);
+      }
     } catch (e) {
       console.error(e);
     } finally {
@@ -85,6 +109,7 @@ export default function TreatmentsSettingsPage() {
     setEditingTreatment(null);
     setFName(""); setFAbbrev(""); setFType(""); setFPrice("0");
     setFLabCost("0"); setFTypicalLab("0"); setFFamilyId(familyId || "");
+    setFClinicPrices({});
     setTreatmentDialogOpen(true);
   };
 
@@ -94,7 +119,20 @@ export default function TreatmentsSettingsPage() {
     setFType(t.service_type || ""); setFPrice(String(t.default_price));
     setFLabCost(String(t.lab_cost)); setFTypicalLab(String(t.typical_lab_cost));
     setFFamilyId(t.family_id || "");
+    
+    const pricesMap: Record<string, string> = {};
+    t.prices?.forEach(p => {
+      pricesMap[p.clinic_id] = String(p.price);
+    });
+    setFClinicPrices(pricesMap);
     setTreatmentDialogOpen(true);
+  };
+
+  const handleClinicPriceChange = (clinicId: string, value: string) => {
+    setFClinicPrices(prev => ({
+      ...prev,
+      [clinicId]: value
+    }));
   };
 
   const handleSaveTreatment = async () => {
@@ -111,11 +149,36 @@ export default function TreatmentsSettingsPage() {
         family_id: fFamilyId || null,
         is_active: true,
       };
-      if (editingTreatment) {
-        await (supabase as any).from("treatments").update(payload).eq("id", editingTreatment.id);
+      
+      let treatmentId = editingTreatment?.id;
+      
+      if (treatmentId) {
+        await (supabase as any).from("treatments").update(payload).eq("id", treatmentId);
       } else {
-        await (supabase as any).from("treatments").insert(payload);
+        const { data, error } = await (supabase as any).from("treatments").insert(payload).select().single();
+        if (error) throw error;
+        if (data) treatmentId = data.id;
       }
+      
+      if (treatmentId) {
+        // Prepare clinic prices
+        const pricePayloads = Object.entries(fClinicPrices)
+          .filter(([_, priceStr]) => priceStr.trim() !== "")
+          .map(([clinicId, priceStr]) => ({
+            treatment_id: treatmentId,
+            clinic_id: clinicId,
+            price: parseFloat(priceStr) || 0
+          }));
+          
+        // Delete old prices
+        await (supabase as any).from("treatment_clinic_prices").delete().eq("treatment_id", treatmentId);
+        
+        // Insert new prices
+        if (pricePayloads.length > 0) {
+          await (supabase as any).from("treatment_clinic_prices").insert(pricePayloads);
+        }
+      }
+      
       setTreatmentDialogOpen(false);
       await fetchData();
     } catch (e) {
@@ -154,7 +217,7 @@ export default function TreatmentsSettingsPage() {
     (t.abbreviation || "").toLowerCase().includes(search.toLowerCase())
   );
 
-  if (loading) {
+  if (loading && families.length === 0) {
     return (
       <div className="flex items-center justify-center h-64">
         <Loader2 className="h-8 w-8 animate-spin text-rose-500" />
@@ -231,7 +294,7 @@ export default function TreatmentsSettingsPage() {
                 <div className="divide-y divide-slate-100">
                   {famTreatments.length === 0 ? (
                     <div className="px-5 py-4 text-center text-xs text-slate-400">
-                      No hay tratamientos en esta familia. Haz clic en &quot;Añadir&quot; para crear uno.
+                      No hay tratamientos en esta familia. Haz clic en "Añadir" para crear uno.
                     </div>
                   ) : (
                     <>
@@ -255,8 +318,11 @@ export default function TreatmentsSettingsPage() {
                               {t.abbreviation || "-"}
                             </span>
                           </div>
-                          <div className="col-span-2 text-center">
+                          <div className="col-span-2 text-center flex flex-col items-center gap-0.5">
                             <span className="text-sm font-bold text-slate-800">{t.default_price.toFixed(2)}</span>
+                            {t.prices && t.prices.length > 0 && (
+                               <span className="text-[9px] text-indigo-500 font-medium">Precios esp.</span>
+                            )}
                           </div>
                           <div className="col-span-2 text-center">
                             <span className={`text-sm font-bold ${t.typical_lab_cost > 0 ? "text-amber-600" : "text-slate-400"}`}>
@@ -306,7 +372,7 @@ export default function TreatmentsSettingsPage() {
 
       {/* Treatment Dialog */}
       <Dialog open={treatmentDialogOpen} onOpenChange={setTreatmentDialogOpen}>
-        <DialogContent className="sm:max-w-lg rounded-2xl p-6 bg-white shadow-2xl">
+        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl p-6 bg-white shadow-2xl">
           <DialogHeader>
             <DialogTitle className="text-lg font-bold text-slate-900 flex items-center gap-2">
               <FlaskConical className="h-5 w-5 text-violet-500" />
@@ -336,9 +402,14 @@ export default function TreatmentsSettingsPage() {
             <div className="space-y-1.5">
               <Label className="text-xs font-semibold text-slate-700">Familia</Label>
               <Select value={fFamilyId} onValueChange={(v) => setFFamilyId(v ?? "")}>
-                <SelectTrigger className="rounded-lg text-sm"><SelectValue placeholder="Seleccionar familia..." /></SelectTrigger>
+                <SelectTrigger className="rounded-lg text-sm">
+                  {/* Default SelectValue to fFamilyId name using rendering prop for reliable name */}
+                  <SelectValue placeholder="Seleccionar familia...">
+                    {families.find(f => f.id === fFamilyId)?.name}
+                  </SelectValue>
+                </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Sin familia</SelectItem>
+                  <SelectItem value="none">Sin familia</SelectItem>
                   {families.map(f => <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>)}
                 </SelectContent>
               </Select>
@@ -357,8 +428,41 @@ export default function TreatmentsSettingsPage() {
                 <Input type="number" value={fTypicalLab} onChange={(e) => setFTypicalLab(e.target.value)} className="rounded-lg" />
               </div>
             </div>
+            
+            {/* Precios por Clínica */}
+            {clinics.length > 0 && (
+              <div className="pt-2">
+                <div className="flex items-center gap-2 mb-3">
+                  <Building2 className="h-4 w-4 text-indigo-500" />
+                  <Label className="text-xs font-bold text-slate-800 uppercase tracking-wider">Precios Específicos por Sede (Opcional)</Label>
+                </div>
+                <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 space-y-3">
+                  {clinics.map(clinic => (
+                    <div key={clinic.id} className="flex items-center justify-between gap-4">
+                      <div className="flex items-center gap-2 flex-1">
+                        <div className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: clinic.color_hex }} />
+                        <span className="text-sm font-medium text-slate-700">{clinic.name}</span>
+                      </div>
+                      <div className="w-32 relative">
+                        <Input 
+                          type="number" 
+                          placeholder={fPrice} 
+                          value={fClinicPrices[clinic.id] || ""} 
+                          onChange={(e) => handleClinicPriceChange(clinic.id, e.target.value)}
+                          className="pl-6 rounded-lg text-sm h-8"
+                        />
+                        <span className="absolute left-2.5 top-1.5 text-slate-400 text-sm">€</span>
+                      </div>
+                    </div>
+                  ))}
+                  <p className="text-[10px] text-slate-400 leading-tight">
+                    * Si se deja en blanco, se usará el precio base ({fPrice} €) para esa sede.
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
-          <DialogFooter className="pt-2 gap-2">
+          <DialogFooter className="pt-2 gap-2 mt-2">
             <Button variant="outline" onClick={() => setTreatmentDialogOpen(false)} className="rounded-xl">Cancelar</Button>
             <Button onClick={handleSaveTreatment} disabled={saving} className="bg-rose-500 hover:bg-rose-600 text-white rounded-xl gap-2">
               {saving && <Loader2 className="h-4 w-4 animate-spin" />}
@@ -378,7 +482,7 @@ export default function TreatmentsSettingsPage() {
             </DialogTitle>
           </DialogHeader>
           <p className="text-sm text-slate-600 py-2">
-            ¿Estás seguro de que deseas eliminar el tratamiento <span className="font-bold text-slate-900">&quot;{treatmentToDelete?.service_name}&quot;</span>?
+            ¿Estás seguro de que deseas eliminar el tratamiento <span className="font-bold text-slate-900">"{treatmentToDelete?.service_name}"</span>?
           </p>
           <DialogFooter className="pt-2 gap-2">
             <Button variant="outline" onClick={() => setDeleteConfirmOpen(false)} className="rounded-xl">

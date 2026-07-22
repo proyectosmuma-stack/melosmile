@@ -8,15 +8,12 @@ import {
   Users, 
   Receipt, 
   Settings, 
-  Sparkles, 
   Building2, 
   ChevronDown, 
   ChevronRight,
-  Bot,
-  Activity,
-  CheckCircle2,
   Stethoscope,
   FlaskConical,
+  Activity,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -186,25 +183,8 @@ export function Sidebar() {
           </li>
         </ul>
 
-        {/* AI & Automation Status Widget */}
-        <div className="pt-6 mt-auto">
-          <div className="rounded-2xl bg-slate-900/80 border border-slate-800/80 p-4 space-y-3 relative overflow-hidden">
-            <div className="absolute -right-4 -bottom-4 w-20 h-20 bg-rose-500/10 rounded-full blur-xl pointer-events-none" />
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-xs font-semibold text-rose-400">
-                <Sparkles className="h-4 w-4 animate-spin text-rose-400" style={{ animationDuration: '4s' }} />
-                <span>Agente IA n8n</span>
-              </div>
-              <span className="flex items-center gap-1 text-[10px] text-emerald-400 bg-emerald-950/60 border border-emerald-800/50 px-2 py-0.5 rounded-full font-medium">
-                <CheckCircle2 className="h-3 w-3" />
-                Activo
-              </span>
-            </div>
-            <p className="text-xs text-slate-400 leading-relaxed">
-              Parseando lenguaje natural y procesando facturas cada 6h.
-            </p>
-          </div>
-        </div>
+        {/* Spacer to push user footer down */}
+        <div className="mt-auto" />
       </nav>
 
       {/* User Footer Profile */}

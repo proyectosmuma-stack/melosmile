@@ -58,7 +58,7 @@ export function AIAgentBar() {
   };
 
   return (
-    <div className="w-full bg-gradient-to-r from-slate-900 via-slate-950 to-slate-900 border border-slate-800 shadow-xl rounded-2xl p-4 md:p-6 text-white space-y-4">
+    <div className="w-full bg-slate-950 text-white space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">

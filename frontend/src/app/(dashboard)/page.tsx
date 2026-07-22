@@ -1,10 +1,12 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { AIAgentBar } from "@/components/dashboard/ai-agent-bar";
-import { Calendar as CalendarIcon, Users, TrendingUp, Sparkles } from "lucide-react";
+import { Calendar as CalendarIcon, Users, TrendingUp, Sparkles, X, Loader2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { supabase } from "@/lib/supabase/client";
 
 const CalendarView = dynamic(
   () => import("@/components/calendar/calendar-view").then((mod) => mod.CalendarView),
@@ -13,12 +15,69 @@ const CalendarView = dynamic(
 
 export default function DashboardPage() {
   const [selectedFilter, setSelectedFilter] = useState("all");
+  const [isAIAgentOpen, setIsAIAgentOpen] = useState(false);
+  
+  // Real KPIs state
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({
+    appointmentsToday: 0,
+    billedThisMonth: 0,
+    patientsThisMonth: 0
+  });
+
+  useEffect(() => {
+    async function fetchKPIs() {
+      setLoading(true);
+      try {
+        const today = new Date();
+        const todayStr = today.toISOString().split('T')[0];
+        
+        // Month start
+        const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+        const firstDayStr = firstDayOfMonth.toISOString();
+        
+        // Appointments today
+        const { count: appointmentsCount } = await (supabase as any)
+          .from("appointments")
+          .select("id", { count: "exact" })
+          .gte("appointment_date", todayStr + "T00:00:00")
+          .lte("appointment_date", todayStr + "T23:59:59");
+          
+        // Billed this month (from billing_records)
+        const { data: billingData } = await (supabase as any)
+          .from("billing_records")
+          .select("total_amount")
+          .gte("date", firstDayStr);
+          
+        const totalBilled = billingData?.reduce((acc: number, record: any) => acc + Number(record.total_amount || 0), 0) || 0;
+        
+        // Patients seen this month (from completed appointments)
+        const { data: patientsData } = await (supabase as any)
+          .from("appointments")
+          .select("patient_id")
+          .gte("appointment_date", firstDayStr)
+          .in("status", ["completed", "in_progress"]);
+          
+        const uniquePatients = new Set(patientsData?.map((p: any) => p.patient_id)).size;
+        
+        setStats({
+          appointmentsToday: appointmentsCount || 0,
+          billedThisMonth: totalBilled,
+          patientsThisMonth: uniquePatients
+        });
+      } catch (error) {
+        console.error("Error fetching KPIs:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    
+    fetchKPIs();
+  }, []);
 
   return (
-    <div className="flex flex-col gap-8 max-w-[1600px] mx-auto">
-      {/* Conversational AI Agent Bar */}
-      <AIAgentBar />
-
+    <div className="flex flex-col gap-8 max-w-[1600px] mx-auto relative min-h-[calc(100vh-100px)]">
+      
       {/* Page Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
@@ -71,7 +130,9 @@ export default function DashboardPage() {
             </div>
             <div>
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Citas para Hoy</p>
-              <h3 className="text-lg font-bold text-slate-900 leading-tight">8 Citas</h3>
+              <h3 className="text-lg font-bold text-slate-900 leading-tight flex items-center gap-2">
+                {loading ? <Loader2 className="h-4 w-4 animate-spin text-slate-400" /> : `${stats.appointmentsToday} Citas`}
+              </h3>
               <p className="text-[11px] text-rose-600 font-semibold mt-0.5 group-hover:underline">Ver vista del día →</p>
             </div>
           </CardContent>
@@ -84,8 +145,10 @@ export default function DashboardPage() {
             </div>
             <div>
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Facturado Este Mes</p>
-              <h3 className="text-lg font-bold text-slate-900 leading-tight">14.280 €</h3>
-              <p className="text-[11px] text-emerald-600 font-semibold mt-0.5">+12% vs mes anterior</p>
+              <h3 className="text-lg font-bold text-slate-900 leading-tight flex items-center gap-2">
+                {loading ? <Loader2 className="h-4 w-4 animate-spin text-slate-400" /> : `${stats.billedThisMonth.toLocaleString('es-ES')} €`}
+              </h3>
+              <p className="text-[11px] text-emerald-600 font-semibold mt-0.5">Facturación activa</p>
             </div>
           </CardContent>
         </Card>
@@ -97,8 +160,10 @@ export default function DashboardPage() {
             </div>
             <div>
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Pacientes Atendidos</p>
-              <h3 className="text-lg font-bold text-slate-900 leading-tight">142 Pacientes</h3>
-              <p className="text-[11px] text-slate-500 font-medium mt-0.5">En las 3 clínicas</p>
+              <h3 className="text-lg font-bold text-slate-900 leading-tight flex items-center gap-2">
+                {loading ? <Loader2 className="h-4 w-4 animate-spin text-slate-400" /> : `${stats.patientsThisMonth} Pacientes`}
+              </h3>
+              <p className="text-[11px] text-slate-500 font-medium mt-0.5">En el mes actual</p>
             </div>
           </CardContent>
         </Card>
@@ -108,6 +173,44 @@ export default function DashboardPage() {
       <div className="w-full">
         <CalendarView />
       </div>
+
+      {/* Floating AI Agent Toggle Button */}
+      {!isAIAgentOpen && (
+        <Button 
+          onClick={() => setIsAIAgentOpen(true)}
+          className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-2xl bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white z-50 flex items-center justify-center border-2 border-white/20 transition-transform hover:scale-105"
+        >
+          <Sparkles className="h-6 w-6" />
+        </Button>
+      )}
+
+      {/* Collapsible AI Agent Overlay */}
+      {isAIAgentOpen && (
+        <div className="fixed bottom-6 right-6 w-full max-w-md z-50 animate-in slide-in-from-bottom-5 fade-in duration-200">
+          <div className="relative bg-slate-950 rounded-2xl shadow-2xl border border-slate-800 overflow-hidden">
+            {/* Header for the overlay */}
+            <div className="bg-slate-900 border-b border-slate-800 px-4 py-3 flex items-center justify-between">
+              <div className="flex items-center gap-2 text-white">
+                <Sparkles className="h-4 w-4 text-violet-400" />
+                <span className="font-semibold text-sm">Asistente IA</span>
+              </div>
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={() => setIsAIAgentOpen(false)}
+                className="h-6 w-6 rounded-full text-slate-400 hover:text-white hover:bg-white/10"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            
+            {/* Embed the AIAgentBar inside */}
+            <div className="p-4 md:p-5">
+              <AIAgentBar />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
