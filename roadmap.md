@@ -41,13 +41,16 @@ Este documento establece el plan de desarrollo, hitos alcanzados y próximas fas
 ---
 
 ## 🏗️ Fase 3: Módulo de Configuración — Clínicas, Profesionales y Tratamientos (COMPLETADO)
+- [x] **Documentación completa**: ([docs/configuration_module.md](file:///Users/munircallaos/Antigravity%20Projects/melosmile/docs/configuration_module.md)).
 - [x] **Migración BD 005**: Nuevas tablas `treatment_families` y `clinic_commission_rules`, columnas `actual_lab_cost` + `profitability_status` en `billing_records`.
 - [x] **Datos Semilla**: 10 familias de tratamientos (Ortodoncia, Implantología, Endodoncia, etc.) y 50+ tratamientos con precios y costes de laboratorio típicos.
 - [x] **Sidebar expandible**: Sub-menú de Configuración con 3 sub-secciones (Clínicas, Profesionales, Tratamientos).
 - [x] **Página Hub de Configuración** (`/settings`): Cards de navegación a las 3 sub-secciones.
 - [x] **CRUD Clínicas** (`/settings/clinics`): Alta/edición con dirección, teléfono, email, color y % comisión base. Panel de reglas de comisión por familia expandible.
-- [x] **CRUD Profesionales** (`/settings/professionals`): Alta/edición con especialidad, comisión base y sede asignada.
+- [x] **CRUD Profesionales** (`/settings/professionals`): Alta/edición de colaboradores asociados a sedes (reglas financieras centralizadas en la clínica).
+- [x] **Ficha del Profesional** (`/settings/professionals/[id]`): Vista de perfil estilo Notion con métricas (citas atendidas, citas mes, pacientes distintos), historial de citas y notas internas.
 - [x] **CRUD Tratamientos** (`/settings/treatments`): Catálogo agrupado por familia con búsqueda, precios y costes de laboratorio típicos.
+- [x] **Modales de Confirmación Custom**: Modales React `<Dialog>` para eliminación de entidades, eliminando cierres prematuros de ventana nativa.
 - [x] **Rentabilidad por Tratamiento** (`/appointments/[id]`): Campo "Gasto Lab Real (€)", cálculo de neto en tiempo real, badge de alerta 🔴 EN PÉRDIDA / 🟡 MARGEN BAJO / 🟢 Rentable.
 - [x] **Fix popup modal**: Clínica y Profesional cargando nombres reales desde Supabase (no UUIDs). Estado de carga visible.
 - [x] **API `/api/ai-context`**: Endpoint JSON para el agente IA con todo el catálogo, reglas de comisión y fórmulas de cálculo.
