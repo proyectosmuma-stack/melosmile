@@ -187,7 +187,7 @@ export default function DashboardPage() {
       {/* Centered AI Agent Overlay */}
       {isAIAgentOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="relative w-full max-w-2xl bg-slate-950 rounded-2xl shadow-2xl border border-slate-800 overflow-hidden animate-in zoom-in-95 duration-200">
+          <div className="relative w-full max-w-3xl bg-slate-950 rounded-2xl shadow-2xl border border-slate-800 overflow-hidden animate-in zoom-in-95 duration-200">
             {/* Header for the overlay */}
             <div className="bg-slate-900 border-b border-slate-800 px-4 py-3 flex items-center justify-between">
               <div className="flex items-center gap-2 text-white">

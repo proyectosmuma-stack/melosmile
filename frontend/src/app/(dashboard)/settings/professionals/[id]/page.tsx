@@ -178,10 +178,42 @@ export default function ProfessionalDetailPage({ params }: { params: Promise<{ i
     );
   };
 
+  const openEditModal = () => {
+    if (!professional) return;
+    setFFirstName(professional.first_name);
+    setFLastName(professional.last_name);
+    setFDniNie(professional.dni_nie || "");
+    setFPhone(professional.phone || "");
+    setFEmail(professional.email || "");
+    setFAddress(professional.address || "");
+
+    if (professional.specialty) {
+      setSelectedSpecialties(professional.specialty.split(",").map(s => s.trim()).filter(Boolean));
+    } else {
+      setSelectedSpecialties([]);
+    }
+
+    if (assignedClinics.length > 0) {
+      setSelectedClinicIds(assignedClinics.map(c => c.id));
+      const prim = assignedClinics.find(c => c.is_primary);
+      setPrimaryClinicId(prim ? prim.id : assignedClinics[0].id);
+    } else if (professional.clinic_id) {
+      setSelectedClinicIds([professional.clinic_id]);
+      setPrimaryClinicId(professional.clinic_id);
+    } else {
+      setSelectedClinicIds([]);
+      setPrimaryClinicId(null);
+    }
+
+    setEditDialogOpen(true);
+  };
+
   const handleSaveEdit = async () => {
     if (!professional) return;
     setSaving(true);
     try {
+      const mainClinicId = primaryClinicId || (selectedClinicIds[0] || null);
+
       const payload = {
         first_name: fFirstName,
         last_name: fLastName,
@@ -190,20 +222,24 @@ export default function ProfessionalDetailPage({ params }: { params: Promise<{ i
         email: fEmail || null,
         dni_nie: fDniNie || null,
         address: fAddress || null,
-        clinic_id: primaryClinicId || (selectedClinicIds[0] || null),
+        clinic_id: mainClinicId,
       };
 
-      await supabase.from("professionals").update(payload as any).eq("id", professional.id);
+      const { error: pErr } = await supabase.from("professionals").update(payload as any).eq("id", professional.id);
+      if (pErr) console.error("Error updating professional:", pErr);
 
       // Save professional_clinics
-      await (supabase as any).from("professional_clinics").delete().eq("professional_id", professional.id);
+      const { error: delErr } = await (supabase as any).from("professional_clinics").delete().eq("professional_id", professional.id);
+      if (delErr) console.error("Error clearing professional_clinics:", delErr);
+
       if (selectedClinicIds.length > 0) {
         const links = selectedClinicIds.map(cid => ({
           professional_id: professional.id,
           clinic_id: cid,
-          is_primary: primaryClinicId === cid,
+          is_primary: mainClinicId === cid,
         }));
-        await (supabase as any).from("professional_clinics").insert(links);
+        const { error: insErr } = await (supabase as any).from("professional_clinics").insert(links);
+        if (insErr) console.error("Error inserting professional_clinics:", insErr);
       }
 
       setEditDialogOpen(false);
@@ -315,7 +351,7 @@ export default function ProfessionalDetailPage({ params }: { params: Promise<{ i
             <div className="flex items-center gap-3">
               <Button
                 variant="outline"
-                onClick={() => setEditDialogOpen(true)}
+                onClick={openEditModal}
                 className="rounded-xl border-slate-200 hover:bg-slate-50 gap-2 font-semibold text-xs h-10 px-4"
               >
                 <Edit3 className="h-4 w-4 text-slate-500" />

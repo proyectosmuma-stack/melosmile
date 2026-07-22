@@ -98,33 +98,43 @@ export function AIAgentBar() {
       </div>
 
       {/* Input Bar */}
-      <form onSubmit={handleSend} className="relative flex items-center gap-2">
-        <div className="relative flex-1">
-          <Sparkles className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-rose-400" />
-          <Input
+      <form onSubmit={handleSend} className="space-y-3">
+        <div className="relative">
+          <Sparkles className="absolute left-4 top-3.5 h-4 w-4 text-rose-400 pointer-events-none" />
+          <textarea
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                handleSend(e);
+              }
+            }}
+            rows={3}
             placeholder='Escribe cualquier instrucción para la agenda o facturación (ej: "Cita a Munir en 15 días a las 10:00")...'
-            className="pl-11 pr-4 h-12 bg-slate-900/90 border-slate-700/80 text-white placeholder:text-slate-400 rounded-xl focus-visible:ring-rose-500 text-sm shadow-inner"
+            className="w-full pl-11 pr-4 py-3 bg-slate-900/90 border border-slate-700/80 text-white placeholder:text-slate-400 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500 text-sm shadow-inner resize-y min-h-[90px] font-sans leading-relaxed"
           />
         </div>
-        <Button
-          type="submit"
-          disabled={isProcessing || !prompt.trim()}
-          className="h-12 px-6 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-semibold shadow-lg shadow-rose-500/25 shrink-0 gap-2"
-        >
-          {isProcessing ? (
-            <span className="flex items-center gap-2">
-              <Sparkles className="h-4 w-4 animate-spin" />
-              Procesando...
-            </span>
-          ) : (
-            <span className="flex items-center gap-2">
-              <span>Ejecutar</span>
-              <Send className="h-4 w-4" />
-            </span>
-          )}
-        </Button>
+        <div className="flex items-center justify-between">
+          <p className="text-[11px] text-slate-500">Presiona <kbd className="px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 font-mono text-[10px]">Enter</kbd> para enviar o <kbd className="px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 font-mono text-[10px]">Shift+Enter</kbd> para salto de línea</p>
+          <Button
+            type="submit"
+            disabled={isProcessing || !prompt.trim()}
+            className="h-11 px-6 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-semibold shadow-lg shadow-rose-500/25 shrink-0 gap-2"
+          >
+            {isProcessing ? (
+              <span className="flex items-center gap-2">
+                <Sparkles className="h-4 w-4 animate-spin" />
+                Procesando...
+              </span>
+            ) : (
+              <span className="flex items-center gap-2">
+                <span>Ejecutar Instrucción</span>
+                <Send className="h-4 w-4" />
+              </span>
+            )}
+          </Button>
+        </div>
       </form>
 
       {/* Result notification badge if action performed */}
