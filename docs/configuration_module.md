@@ -9,7 +9,8 @@ El **Módulo de Configuración** de Melosmile centraliza la administración de S
 
 ### Tablas Principales
 - **`clinics`**: Sedes de la clínica (Goya, Las Rozas, RyA). Almacena dirección, teléfono, email, color identificador hex, `base_commission_pct` (porcentaje base por defecto) y `odoo_pricelist_id` (tarifa asociada en Odoo).
-- **`professionals`**: Doctoras y colaboradores del equipo. Se asocian a las sedes sin asignarles porcentaje individual (ya que el porcentaje es una regla de la sede).
+- **`professionals`**: Doctoras y colaboradores del equipo. Se asocian a las sedes sin asignarles porcentaje individual.
+- **`professional_clinics`**: Tabla de unión para la asignación de múltiples clínicas a un profesional (`professional_id`, `clinic_id`, `is_primary`). Habilitada con RLS mediante Migración 010.
 - **`treatment_families`**: Categorías de tratamientos (Ortodoncia, Implantología, Endodoncia, Periodoncia, Odontología General, Estética, Prostodoncia, Aparatología, Odontopediatría, Radiología).
 - **`treatments`**: Catálogo de 50+ procedimientos dentales. Contiene `service_name`, `abbreviation`, `default_price`, `typical_lab_cost`, `family_id`, `odoo_product_id` y `odoo_product_tmpl_id`.
 - **`treatment_clinic_prices`**: Precios específicos de cada tratamiento por clínica (`treatment_id`, `clinic_id`, `price`, `odoo_pricelist_item_id`).
@@ -49,11 +50,15 @@ El **Módulo de Configuración** de Melosmile centraliza la administración de S
 
 ---
 
-## 🤖 API para Agentes de Inteligencia Artificial (`/api/ai-context`)
-Expone la información requerida por los workflows de n8n para:
-- Responder consultas sobre precios por sede y tratamiento.
-- Elaborar presupuestos informados en lenguaje natural.
-- Verificar reglas de rentabilidad y comisiones en informes contables.
+## 🤖 Agente de Inteligencia Artificial y Modal Global (`GlobalAIAgentModal`)
+- **Acceso Global**: Disponible en **todas las páginas** a través del layout principal (`DashboardLayout`).
+- **Trigger Flotante**: Botón flotante animado (`Sparkles`) en la esquina inferior derecha (`fixed bottom-6 right-6`).
+- **Botón en Barra Superior**: Botón "Agente IA" ubicado en la barra de navegación superior junto a "Nueva Cita".
+- **Área de Texto Ampliada**: Componente `AIAgentBar` equipado con un `textarea` multitrabajo con soporte para saltos de línea (`Shift+Enter`) y envío rápido (`Enter`).
+- **API (`/api/ai-context`)**: Expone la información requerida por los workflows de n8n para:
+  - Responder consultas sobre precios por sede y tratamiento.
+  - Elaborar presupuestos informados en lenguaje natural.
+  - Verificar reglas de rentabilidad y comisiones en informes contables.
 
 ---
 
