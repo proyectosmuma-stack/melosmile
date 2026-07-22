@@ -1,9 +1,14 @@
 "use client";
 
 import React, { useState } from "react";
-import { CalendarView } from "@/components/calendar/calendar-view";
-import { Calendar as CalendarIcon, Users, TrendingUp, Sparkles, AlertCircle } from "lucide-react";
+import dynamic from "next/dynamic";
+import { Calendar as CalendarIcon, Users, TrendingUp, Sparkles } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
+
+const CalendarView = dynamic(
+  () => import("@/components/calendar/calendar-view").then((mod) => mod.CalendarView),
+  { ssr: false }
+);
 
 export default function DashboardPage() {
   const [selectedFilter, setSelectedFilter] = useState("all");
