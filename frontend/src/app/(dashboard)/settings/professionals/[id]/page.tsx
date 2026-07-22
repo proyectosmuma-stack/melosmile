@@ -3,8 +3,8 @@
 import React, { useState, useEffect, useCallback } from "react";
 import {
   Stethoscope, Phone, Mail, Building2, Calendar as CalendarIcon, Clock,
-  ArrowLeft, Edit3, Loader2, AlertCircle, CheckCircle2, User, FileText,
-  Activity, Plus, Sparkles, MessageSquare, ChevronRight, ExternalLink
+  ArrowLeft, Edit3, Loader2, AlertCircle, User, FileText, Activity,
+  ChevronRight, MapPin, FileCheck
 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -14,9 +14,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/lib/supabase/client";
-import { triggerNewAppointmentModal } from "@/components/calendar/new-appointment-modal";
+import { ClinicMultiSelect, ClinicOption } from "@/components/common/clinic-multi-select";
 
 type Professional = {
   id: string;
@@ -25,15 +24,10 @@ type Professional = {
   specialty: string | null;
   phone: string | null;
   email: string | null;
+  dni_nie: string | null;
+  address: string | null;
   clinic_id: string | null;
   created_at: string;
-};
-
-type Clinic = {
-  id: string;
-  name: string;
-  address: string | null;
-  phone: string | null;
 };
 
 type AppointmentItem = {
@@ -48,6 +42,11 @@ type AppointmentItem = {
   clinic_name: string;
 };
 
+const ALL_SPECIALTIES = [
+  "Odontología General", "Ortodoncia", "Endodoncia", "Periodoncia",
+  "Implantología", "Estética Dental", "Prostodoncia", "Odontopediatría", "Cirugía Oral"
+];
+
 export default function ProfessionalDetailPage({ params }: { params: Promise<{ id: string }> | { id: string } }) {
   const resolvedParams = React.use(params as any) as { id: string };
   const targetId = resolvedParams?.id;
@@ -56,18 +55,21 @@ export default function ProfessionalDetailPage({ params }: { params: Promise<{ i
   const [saving, setSaving] = useState(false);
   const [professional, setProfessional] = useState<Professional | null>(null);
   const [assignedClinics, setAssignedClinics] = useState<{ id: string; name: string; is_primary: boolean }[]>([]);
-  const [allClinics, setAllClinics] = useState<Clinic[]>([]);
+  const [allClinics, setAllClinics] = useState<ClinicOption[]>([]);
   const [appointments, setAppointments] = useState<AppointmentItem[]>([]);
   const [notes, setNotes] = useState<string>("");
 
-  // Edit dialog state
+  // Edit dialog state (Unified with Patient)
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [fFirstName, setFFirstName] = useState("");
   const [fLastName, setFLastName] = useState("");
-  const [fSpecialty, setFSpecialty] = useState("");
+  const [fDniNie, setFDniNie] = useState("");
   const [fPhone, setFPhone] = useState("");
   const [fEmail, setFEmail] = useState("");
-  const [fClinicId, setFClinicId] = useState("");
+  const [fAddress, setFAddress] = useState("");
+  const [selectedSpecialties, setSelectedSpecialties] = useState<string[]>([]);
+  const [selectedClinicIds, setSelectedClinicIds] = useState<string[]>([]);
+  const [primaryClinicId, setPrimaryClinicId] = useState<string | null>(null);
 
   const fetchProfessionalData = useCallback(async () => {
     if (!targetId) return;
@@ -81,13 +83,20 @@ export default function ProfessionalDetailPage({ params }: { params: Promise<{ i
         .maybeSingle();
 
       if (pData) {
-        setProfessional(pData as any);
-        setFFirstName(pData.first_name);
-        setFLastName(pData.last_name);
-        setFSpecialty(pData.specialty || "");
-        setFPhone(pData.phone || "");
-        setFEmail(pData.email || "");
-        setFClinicId(pData.clinic_id || "");
+        const p = pData as any;
+        setProfessional(p);
+        setFFirstName(p.first_name);
+        setFLastName(p.last_name);
+        setFDniNie(p.dni_nie || "");
+        setFPhone(p.phone || "");
+        setFEmail(p.email || "");
+        setFAddress(p.address || "");
+
+        if (p.specialty) {
+          setSelectedSpecialties(p.specialty.split(",").map((s: string) => s.trim()).filter(Boolean));
+        } else {
+          setSelectedSpecialties([]);
+        }
 
         // 2. Fetch associated clinics from professional_clinics join table
         const { data: pcData } = await (supabase as any)
@@ -102,19 +111,26 @@ export default function ProfessionalDetailPage({ params }: { params: Promise<{ i
             is_primary: row.is_primary ?? false,
           }));
           setAssignedClinics(list);
-        } else if (pData.clinic_id) {
+          setSelectedClinicIds(list.map((c: any) => c.id));
+          const prim = list.find((c: any) => c.is_primary);
+          setPrimaryClinicId(prim ? prim.id : list[0].id);
+        } else if (p.clinic_id) {
           const { data: cData } = await (supabase as any)
             .from("clinics")
             .select("id, name, address, phone")
-            .eq("id", pData.clinic_id)
+            .eq("id", p.clinic_id)
             .maybeSingle();
-          if (cData) setAssignedClinics([{ id: cData.id, name: cData.name, is_primary: true }]);
+          if (cData) {
+            setAssignedClinics([{ id: cData.id, name: cData.name, is_primary: true }]);
+            setSelectedClinicIds([cData.id]);
+            setPrimaryClinicId(cData.id);
+          }
         }
 
-        // 3. Fetch all clinics for dropdown
+        // 3. Fetch all clinics for dropdown / multi-select
         const { data: clinicsData } = await (supabase as any)
           .from("clinics")
-          .select("id, name, address, phone")
+          .select("id, name")
           .order("name");
         if (clinicsData) setAllClinics(clinicsData);
 
@@ -156,21 +172,39 @@ export default function ProfessionalDetailPage({ params }: { params: Promise<{ i
     fetchProfessionalData();
   }, [fetchProfessionalData]);
 
+  const toggleSpecialty = (spec: string) => {
+    setSelectedSpecialties(prev =>
+      prev.includes(spec) ? prev.filter(s => s !== spec) : [...prev, spec]
+    );
+  };
+
   const handleSaveEdit = async () => {
     if (!professional) return;
     setSaving(true);
     try {
-      await supabase
-        .from("professionals")
-        .update({
-          first_name: fFirstName,
-          last_name: fLastName,
-          specialty: fSpecialty || null,
-          phone: fPhone || null,
-          email: fEmail || null,
-          clinic_id: fClinicId || null,
-        } as any)
-        .eq("id", professional.id);
+      const payload = {
+        first_name: fFirstName,
+        last_name: fLastName,
+        specialty: selectedSpecialties.join(", ") || null,
+        phone: fPhone || null,
+        email: fEmail || null,
+        dni_nie: fDniNie || null,
+        address: fAddress || null,
+        clinic_id: primaryClinicId || (selectedClinicIds[0] || null),
+      };
+
+      await supabase.from("professionals").update(payload as any).eq("id", professional.id);
+
+      // Save professional_clinics
+      await (supabase as any).from("professional_clinics").delete().eq("professional_id", professional.id);
+      if (selectedClinicIds.length > 0) {
+        const links = selectedClinicIds.map(cid => ({
+          professional_id: professional.id,
+          clinic_id: cid,
+          is_primary: primaryClinicId === cid,
+        }));
+        await (supabase as any).from("professional_clinics").insert(links);
+      }
 
       setEditDialogOpen(false);
       await fetchProfessionalData();
@@ -180,11 +214,6 @@ export default function ProfessionalDetailPage({ params }: { params: Promise<{ i
       setSaving(false);
     }
   };
-
-  const SPECIALTIES = [
-    "Odontología General", "Ortodoncia", "Endodoncia", "Periodoncia",
-    "Implantología", "Estética Dental", "Prostodoncia", "Odontopediatría", "Cirugía Oral"
-  ];
 
   if (loading) {
     return (
@@ -214,6 +243,8 @@ export default function ProfessionalDetailPage({ params }: { params: Promise<{ i
   const thisMonthAppointments = appointments.filter(a => a.appointment_date.startsWith(currentMonthStr)).length;
   const uniquePatientsCount = new Set(appointments.map(a => a.patient_id)).size;
 
+  const specialtiesList = (professional.specialty || "").split(",").map(s => s.trim()).filter(Boolean);
+
   return (
     <div className="flex flex-col gap-6 max-w-[1200px] mx-auto p-4 md:p-6">
       {/* Top Breadcrumb */}
@@ -236,15 +267,29 @@ export default function ProfessionalDetailPage({ params }: { params: Promise<{ i
                 {initials}
               </div>
               <div className="mb-1">
-                <div className="flex items-center gap-3 flex-wrap">
+                <div className="flex items-center gap-2 flex-wrap">
                   <h1 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight">
                     Dra. {professional.first_name} {professional.last_name}
                   </h1>
-                  <Badge className="bg-emerald-100 text-emerald-800 border-emerald-200 font-bold px-3 py-1 text-xs rounded-full">
-                    {professional.specialty || "Odontología General"}
-                  </Badge>
+                  {specialtiesList.map((s, i) => (
+                    <Badge key={i} className="bg-emerald-100 text-emerald-800 border-emerald-200 font-bold px-3 py-1 text-xs rounded-full">
+                      {s}
+                    </Badge>
+                  ))}
+                  {specialtiesList.length === 0 && (
+                    <Badge className="bg-slate-100 text-slate-700 border-slate-200 font-bold px-3 py-1 text-xs rounded-full">
+                      Sin especialidad
+                    </Badge>
+                  )}
                 </div>
+
                 <div className="flex items-center gap-4 text-xs text-slate-500 mt-2 font-medium flex-wrap">
+                  {professional.dni_nie && (
+                    <span className="flex items-center gap-1.5 font-mono text-xs">
+                      <FileCheck className="h-3.5 w-3.5 text-slate-400" />
+                      {professional.dni_nie}
+                    </span>
+                  )}
                   {professional.phone && (
                     <span className="flex items-center gap-1.5">
                       <Phone className="h-3.5 w-3.5 text-slate-400" />
@@ -259,7 +304,9 @@ export default function ProfessionalDetailPage({ params }: { params: Promise<{ i
                   )}
                   <span className="flex items-center gap-1.5">
                     <Building2 className="h-3.5 w-3.5 text-slate-400" />
-                    {assignedClinics.length > 0 ? (assignedClinics.find(c => c.is_primary)?.name || assignedClinics[0].name) : "Todas las sedes"}
+                    {assignedClinics.length > 0
+                      ? (assignedClinics.find(c => c.is_primary)?.name || assignedClinics[0].name)
+                      : "Todas las sedes"}
                   </span>
                 </div>
               </div>
@@ -312,7 +359,7 @@ export default function ProfessionalDetailPage({ params }: { params: Promise<{ i
         </Card>
       </div>
 
-      {/* Main Layout Grid: Left Details & Right Appointments History */}
+      {/* Main Layout Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column: Info & Notes */}
         <div className="space-y-6">
@@ -332,11 +379,23 @@ export default function ProfessionalDetailPage({ params }: { params: Promise<{ i
                 </p>
               </div>
 
+              {professional.dni_nie && (
+                <div>
+                  <Label className="text-xs font-bold text-slate-400 uppercase tracking-wider">DNI / NIE / NIF</Label>
+                  <p className="text-sm font-semibold text-slate-800 mt-0.5 font-mono">{professional.dni_nie}</p>
+                </div>
+              )}
+
               <div>
-                <Label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Especialidad Principal</Label>
-                <p className="text-sm font-semibold text-slate-800 mt-0.5">
-                  {professional.specialty || "Odontología General"}
-                </p>
+                <Label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Especialidades</Label>
+                <div className="flex flex-wrap gap-1.5 mt-1">
+                  {specialtiesList.map((s, i) => (
+                    <Badge key={i} className="bg-emerald-50 text-emerald-700 border-emerald-200 text-xs font-semibold">
+                      {s}
+                    </Badge>
+                  ))}
+                  {specialtiesList.length === 0 && <span className="text-sm text-slate-500">Sin especialidad</span>}
+                </div>
               </div>
 
               <div>
@@ -347,11 +406,11 @@ export default function ProfessionalDetailPage({ params }: { params: Promise<{ i
                   ) : (
                     assignedClinics.map((c) => (
                       <span key={c.id} className={`text-xs px-2.5 py-1 rounded-full font-semibold border flex items-center gap-1 ${
-                        c.is_primary ? "bg-emerald-50 border-emerald-300 text-emerald-700" : "bg-slate-100 border-slate-200 text-slate-700"
+                        c.is_primary ? "bg-blue-50 border-blue-300 text-blue-700" : "bg-slate-100 border-slate-200 text-slate-700"
                       }`}>
                         <Building2 className="h-3 w-3 text-slate-400" />
                         {c.name}
-                        {c.is_primary && <span className="text-[10px] text-emerald-600 font-bold ml-0.5">★</span>}
+                        {c.is_primary && <span className="text-[10px] text-blue-600 font-bold ml-0.5">✓</span>}
                       </span>
                     ))
                   )}
@@ -370,6 +429,13 @@ export default function ProfessionalDetailPage({ params }: { params: Promise<{ i
                   <div>
                     <Label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Email Corporativo</Label>
                     <p className="text-sm font-semibold text-slate-800 mt-0.5">{professional.email}</p>
+                  </div>
+                )}
+
+                {professional.address && (
+                  <div>
+                    <Label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Dirección</Label>
+                    <p className="text-sm font-semibold text-slate-800 mt-0.5">{professional.address}</p>
                   </div>
                 )}
               </div>
@@ -472,7 +538,7 @@ export default function ProfessionalDetailPage({ params }: { params: Promise<{ i
 
       {/* Edit Professional Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="sm:max-w-md rounded-2xl p-6 bg-white shadow-2xl">
+        <DialogContent className="sm:max-w-lg rounded-2xl p-6 bg-white shadow-2xl">
           <DialogHeader>
             <DialogTitle className="text-lg font-bold text-slate-900 flex items-center gap-2">
               <Stethoscope className="h-5 w-5 text-emerald-500" />
@@ -483,51 +549,74 @@ export default function ProfessionalDetailPage({ params }: { params: Promise<{ i
           <div className="space-y-4 py-2">
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-slate-700">Nombre</Label>
+                <Label className="text-xs font-semibold text-slate-700">Nombre *</Label>
                 <Input value={fFirstName} onChange={(e) => setFFirstName(e.target.value)} className="rounded-lg" />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-slate-700">Apellido</Label>
+                <Label className="text-xs font-semibold text-slate-700">Apellidos *</Label>
                 <Input value={fLastName} onChange={(e) => setFLastName(e.target.value)} className="rounded-lg" />
               </div>
             </div>
 
-            <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-slate-700">Especialidad</Label>
-              <Select value={fSpecialty} onValueChange={(v) => setFSpecialty(v ?? "")}>
-                <SelectTrigger className="rounded-lg text-sm"><SelectValue placeholder="Seleccionar especialidad..." /></SelectTrigger>
-                <SelectContent>
-                  {SPECIALTIES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-
             <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold text-slate-700">DNI / NIE / NIF</Label>
+                <Input value={fDniNie} onChange={(e) => setFDniNie(e.target.value)} className="rounded-lg font-mono text-xs" />
+              </div>
               <div className="space-y-1.5">
                 <Label className="text-xs font-semibold text-slate-700 flex items-center gap-1"><Phone className="h-3 w-3" />Teléfono</Label>
                 <Input value={fPhone} onChange={(e) => setFPhone(e.target.value)} className="rounded-lg" />
               </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label className="text-xs font-semibold text-slate-700 flex items-center gap-1"><Mail className="h-3 w-3" />Email</Label>
                 <Input value={fEmail} onChange={(e) => setFEmail(e.target.value)} className="rounded-lg" />
               </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold text-slate-700 flex items-center gap-1"><MapPin className="h-3 w-3" />Dirección</Label>
+                <Input value={fAddress} onChange={(e) => setFAddress(e.target.value)} className="rounded-lg" />
+              </div>
             </div>
 
-            <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-slate-700">Sede Principal</Label>
-              <Select value={fClinicId} onValueChange={(v) => setFClinicId(v ?? "")}>
-                <SelectTrigger className="rounded-lg text-sm"><SelectValue placeholder="Todas las sedes" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">Todas las sedes</SelectItem>
-                  {allClinics.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-                </SelectContent>
-              </Select>
+            {/* Multi-Specialty Chips Selection */}
+            <div className="space-y-1.5 pt-2 border-t border-slate-100">
+              <Label className="text-xs font-semibold text-slate-700 block">Especialidades (Selección Múltiple)</Label>
+              <div className="flex flex-wrap gap-1.5 pt-1">
+                {ALL_SPECIALTIES.map((spec) => {
+                  const active = selectedSpecialties.includes(spec);
+                  return (
+                    <button
+                      key={spec}
+                      type="button"
+                      onClick={() => toggleSpecialty(spec)}
+                      className={`text-xs px-2.5 py-1 rounded-xl font-semibold border transition-all ${
+                        active
+                          ? "bg-emerald-500 text-white border-emerald-500 shadow-sm"
+                          : "bg-slate-50 text-slate-600 border-slate-200 hover:border-emerald-300"
+                      }`}
+                    >
+                      {active ? "✓ " : "+ "}{spec}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
+
+            {/* Unified Multi-Clinic Selection Component */}
+            <ClinicMultiSelect
+              allClinics={allClinics}
+              selectedClinicIds={selectedClinicIds}
+              primaryClinicId={primaryClinicId}
+              onChangeSelected={setSelectedClinicIds}
+              onChangePrimary={setPrimaryClinicId}
+            />
           </div>
 
           <DialogFooter className="pt-2 gap-2">
             <Button variant="outline" onClick={() => setEditDialogOpen(false)} className="rounded-xl">Cancelar</Button>
-            <Button onClick={handleSaveEdit} disabled={saving} className="bg-rose-500 hover:bg-rose-600 text-white rounded-xl gap-2">
+            <Button onClick={handleSaveEdit} disabled={saving} className="bg-rose-500 hover:bg-rose-600 text-white rounded-xl gap-2 font-bold shadow-md shadow-rose-500/20">
               {saving && <Loader2 className="h-4 w-4 animate-spin" />}
               Guardar Cambios
             </Button>
