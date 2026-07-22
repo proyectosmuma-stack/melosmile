@@ -351,43 +351,42 @@ export default function ProfessionalsSettingsPage() {
 
             {/* Multi-Clinic Selection Checkboxes */}
             <div className="space-y-1.5 pt-2 border-t border-slate-100">
-              <Label className="text-xs font-semibold text-slate-700 flex items-center justify-between">
-                <span>Sedes / Clínicas Asignadas (Selección Múltiple)</span>
-              </Label>
-              <p className="text-[11px] text-slate-400">Selecciona las sedes donde ejerce la doctora. Marca la principal.</p>
+              <Label className="text-xs font-semibold text-slate-700 block">Sedes / Clínicas Asignadas (Selección Múltiple)</Label>
+              <p className="text-xs text-slate-500 mb-2">Selecciona las clínicas a las que pertenece este profesional. Marca una como principal.</p>
 
-              <div className="flex flex-wrap gap-2 pt-1">
-                {clinics.map((clinic) => {
-                  const isSelected = selectedClinicIds.includes(clinic.id);
+              <div className="flex flex-wrap gap-2">
+                {clinics.map(clinic => {
+                  const selected = selectedClinicIds.includes(clinic.id);
                   const isPrimary = primaryClinicId === clinic.id;
-
                   return (
                     <div
                       key={clinic.id}
                       className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-semibold cursor-pointer transition-all ${
-                        isSelected
-                          ? "bg-emerald-50 border-emerald-300 text-emerald-800"
-                          : "bg-slate-50 border-slate-200 text-slate-500 hover:border-emerald-200"
+                        selected
+                          ? "bg-blue-50 border-blue-300 text-blue-700"
+                          : "bg-slate-50 border-slate-200 text-slate-500 hover:border-blue-200"
                       }`}
+                      onClick={() => toggleClinic(clinic.id)}
                     >
                       <input
                         type="checkbox"
-                        checked={isSelected}
+                        checked={selected}
                         onChange={() => toggleClinic(clinic.id)}
-                        className="accent-emerald-500 cursor-pointer"
+                        className="accent-blue-500 cursor-pointer"
                       />
-                      <span onClick={() => toggleClinic(clinic.id)}>{clinic.name}</span>
-                      {isSelected && (
+                      <span>{clinic.name}</span>
+                      {selected && (
                         <button
                           type="button"
-                          onClick={() => setPrimaryClinicId(isPrimary ? null : clinic.id)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setPrimaryClinicId(isPrimary ? null : clinic.id);
+                          }}
                           className={`ml-1 text-[10px] px-1.5 py-0.5 rounded-lg font-bold border transition-all ${
-                            isPrimary
-                              ? "bg-emerald-600 text-white border-emerald-600"
-                              : "bg-white text-emerald-600 border-emerald-200 hover:bg-emerald-100"
+                            isPrimary ? "bg-blue-600 text-white border-blue-600" : "bg-white text-blue-400 border-blue-200 hover:bg-blue-100"
                           }`}
                         >
-                          {isPrimary ? "Principal ★" : "Principal"}
+                          {isPrimary ? "Principal ✓" : "Principal"}
                         </button>
                       )}
                     </div>
