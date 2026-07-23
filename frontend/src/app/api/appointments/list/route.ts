@@ -97,10 +97,23 @@ export async function GET(req: Request) {
       results = results.filter((r: any) => r.paciente.toLowerCase().includes(term));
     }
 
+    let summaryText = `Citas programadas para la fecha ${dateLabel} (${results.length} en total):\n`;
+    if (results.length === 0) {
+      summaryText = `No hay ninguna cita programada para la fecha ${dateLabel}.`;
+    } else {
+      summaryText += results
+        .map(
+          (c: any, i: number) =>
+            `${i + 1}. ${c.hora} - ${c.paciente} (Motivo: ${c.motivo}, Clínica: ${c.clinica}, Doctor: ${c.doctor}, Estado: ${c.estado})`
+        )
+        .join("\n");
+    }
+
     return NextResponse.json({
       success: true,
       fecha_consulta: dateLabel,
       total_citas: results.length,
+      resumen: summaryText,
       citas: results
     });
   } catch (error: any) {
