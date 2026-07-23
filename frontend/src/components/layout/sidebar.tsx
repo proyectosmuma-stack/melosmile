@@ -56,37 +56,51 @@ export function Sidebar() {
   return (
     <aside
       className={cn(
-        "flex h-full flex-col bg-slate-950 text-slate-100 shadow-2xl relative z-20 border-r border-slate-800/80 transition-all duration-300 ease-in-out shrink-0",
+        "flex h-full flex-col bg-slate-950 text-slate-100 shadow-2xl relative z-30 border-r border-slate-800/80 transition-all duration-300 ease-in-out shrink-0",
         isCollapsed ? "w-20" : "w-72"
       )}
     >
       {/* Header / Brand & Collapse Toggle */}
-      <div className="flex h-20 shrink-0 items-center justify-between px-4 border-b border-slate-800/80 bg-slate-950/60 backdrop-blur-md">
-        <div className="flex items-center gap-3 overflow-hidden">
-          <div className="h-10 w-10 rounded-xl bg-gradient-to-tr from-rose-600 via-rose-500 to-pink-500 flex items-center justify-center shadow-lg shadow-rose-500/25 ring-1 ring-white/20 shrink-0">
-            <Activity className="h-6 w-6 text-white" />
-          </div>
-          {!isCollapsed && (
-            <div className="animate-in fade-in duration-200 truncate">
-              <h1 className="text-lg font-bold tracking-tight text-white flex items-center gap-1.5">
-                Melosmile
-                <span className="inline-block text-[10px] uppercase font-black px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-400 border border-rose-500/30">
-                  PRO
-                </span>
-              </h1>
-              <p className="text-xs text-slate-400 font-medium truncate">Gestión Odontológica</p>
+      <div
+        className={cn(
+          "flex h-20 shrink-0 items-center border-b border-slate-800/80 bg-slate-950/60 backdrop-blur-md px-4",
+          isCollapsed ? "justify-center" : "justify-between"
+        )}
+      >
+        {!isCollapsed ? (
+          <>
+            <div className="flex items-center gap-3 overflow-hidden">
+              <div className="h-10 w-10 rounded-xl bg-gradient-to-tr from-rose-600 via-rose-500 to-pink-500 flex items-center justify-center shadow-lg shadow-rose-500/25 ring-1 ring-white/20 shrink-0">
+                <Activity className="h-6 w-6 text-white" />
+              </div>
+              <div className="animate-in fade-in duration-200 truncate">
+                <h1 className="text-lg font-bold tracking-tight text-white flex items-center gap-1.5">
+                  Melosmile
+                  <span className="inline-block text-[10px] uppercase font-black px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-400 border border-rose-500/30">
+                    PRO
+                  </span>
+                </h1>
+                <p className="text-xs text-slate-400 font-medium truncate">Gestión Odontológica</p>
+              </div>
             </div>
-          )}
-        </div>
 
-        {/* Toggle Collapse Button */}
-        <button
-          onClick={() => setIsCollapsed(!isCollapsed)}
-          className="h-8 w-8 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-400 hover:text-white flex items-center justify-center transition-colors cursor-pointer shrink-0"
-          title={isCollapsed ? "Expandir menú sidebar" : "Colapsar menú sidebar"}
-        >
-          {isCollapsed ? <PanelLeftOpen className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
-        </button>
+            <button
+              onClick={() => setIsCollapsed(true)}
+              className="h-8 w-8 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-400 hover:text-white flex items-center justify-center transition-colors cursor-pointer shrink-0"
+              title="Colapsar menú sidebar"
+            >
+              <PanelLeftClose className="h-4 w-4" />
+            </button>
+          </>
+        ) : (
+          <button
+            onClick={() => setIsCollapsed(false)}
+            className="h-10 w-10 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-rose-400 hover:text-rose-300 flex items-center justify-center transition-colors cursor-pointer shadow-md"
+            title="Expandir menú sidebar"
+          >
+            <PanelLeftOpen className="h-5 w-5" />
+          </button>
+        )}
       </div>
 
       {/* Clinic Selector */}
@@ -116,12 +130,13 @@ export function Sidebar() {
             </Select>
           </>
         ) : (
-          /* Compact Clinic Icon in Collapsed State with Hover Tooltip */
+          /* Compact Clinic Icon in Collapsed State with Unclipped Floating Tooltip */
           <div className="group relative flex justify-center">
             <div className="h-11 w-11 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center text-rose-400 cursor-pointer hover:bg-slate-800 transition-colors">
               <Building2 className="h-5 w-5" />
             </div>
-            <div className="absolute left-full ml-3 top-1/2 -translate-y-1/2 hidden group-hover:flex items-center bg-slate-900 text-white text-xs font-semibold px-3 py-1.5 rounded-lg shadow-xl border border-slate-700 whitespace-nowrap z-50 pointer-events-none">
+            {/* Escapes overflow clipping using fixed z-[9999] */}
+            <div className="fixed left-24 ml-1 z-[9999] hidden group-hover:flex items-center bg-slate-900 text-white text-xs font-semibold px-3 py-2 rounded-xl shadow-2xl border border-slate-700 whitespace-nowrap pointer-events-none">
               Sede: {clinics.find((c) => c.id === selectedClinic)?.name || "Todas las Clínicas"}
             </div>
           </div>
@@ -139,12 +154,12 @@ export function Sidebar() {
           {mainNavigation.map((item) => {
             const isActive = pathname === item.href;
             return (
-              <li key={item.name} className="group relative">
+              <li key={item.name} className="group relative flex items-center">
                 <Link
                   href={item.href}
                   className={cn(
-                    "flex items-center rounded-xl py-3 text-sm font-semibold transition-all duration-200",
-                    isCollapsed ? "justify-center px-0" : "px-3.5 gap-x-3.5",
+                    "flex items-center rounded-xl py-3 text-sm font-semibold transition-all duration-200 w-full",
+                    isCollapsed ? "justify-center px-0 h-11" : "px-3.5 gap-x-3.5",
                     isActive
                       ? "bg-gradient-to-r from-rose-600 to-rose-500 text-white shadow-md shadow-rose-600/30"
                       : "text-slate-400 hover:bg-slate-900/80 hover:text-slate-100"
@@ -163,9 +178,9 @@ export function Sidebar() {
                   )}
                 </Link>
 
-                {/* Hover Tooltip when Collapsed */}
+                {/* Hover Tooltip when Collapsed — Escapes overflow clipping using fixed z-[9999] */}
                 {isCollapsed && (
-                  <div className="absolute left-full ml-3 top-1/2 -translate-y-1/2 hidden group-hover:flex items-center bg-slate-900 text-white text-xs font-semibold px-3 py-1.5 rounded-lg shadow-xl border border-slate-700 whitespace-nowrap z-50 pointer-events-none">
+                  <div className="fixed left-24 ml-1 z-[9999] hidden group-hover:flex items-center bg-slate-900 text-white text-xs font-semibold px-3 py-2 rounded-xl shadow-2xl border border-slate-700 whitespace-nowrap pointer-events-none">
                     {item.name}
                   </div>
                 )}
@@ -174,7 +189,7 @@ export function Sidebar() {
           })}
 
           {/* Configuración with expandable sub-menu */}
-          <li className="group relative">
+          <li className="group relative flex flex-col justify-center">
             <button
               onClick={() => {
                 if (isCollapsed) setIsCollapsed(false);
@@ -182,7 +197,7 @@ export function Sidebar() {
               }}
               className={cn(
                 "w-full flex items-center rounded-xl py-3 text-sm font-semibold transition-all duration-200 cursor-pointer",
-                isCollapsed ? "justify-center px-0" : "px-3.5 gap-x-3.5",
+                isCollapsed ? "justify-center px-0 h-11" : "px-3.5 gap-x-3.5",
                 isSettingsActive
                   ? "bg-gradient-to-r from-rose-600 to-rose-500 text-white shadow-md shadow-rose-600/30"
                   : "text-slate-400 hover:bg-slate-900/80 hover:text-slate-100"
@@ -206,9 +221,9 @@ export function Sidebar() {
               )}
             </button>
 
-            {/* Hover Tooltip when Collapsed */}
+            {/* Hover Tooltip when Collapsed — Escapes overflow clipping using fixed z-[9999] */}
             {isCollapsed && (
-              <div className="absolute left-full ml-3 top-1/2 -translate-y-1/2 hidden group-hover:flex items-center bg-slate-900 text-white text-xs font-semibold px-3 py-1.5 rounded-lg shadow-xl border border-slate-700 whitespace-nowrap z-50 pointer-events-none">
+              <div className="fixed left-24 ml-1 z-[9999] hidden group-hover:flex items-center bg-slate-900 text-white text-xs font-semibold px-3 py-2 rounded-xl shadow-2xl border border-slate-700 whitespace-nowrap pointer-events-none">
                 Configuración (Clínicas, Profesionales, Tratamientos)
               </div>
             )}
@@ -265,9 +280,9 @@ export function Sidebar() {
             </div>
           )}
 
-          {/* Hover Tooltip when Collapsed */}
+          {/* Hover Tooltip when Collapsed — Escapes overflow clipping using fixed z-[9999] */}
           {isCollapsed && (
-            <div className="absolute left-full ml-3 top-1/2 -translate-y-1/2 hidden group-hover:flex flex-col bg-slate-900 text-white text-xs px-3 py-1.5 rounded-lg shadow-xl border border-slate-700 whitespace-nowrap z-50 pointer-events-none">
+            <div className="fixed left-24 ml-1 z-[9999] hidden group-hover:flex flex-col bg-slate-900 text-white text-xs px-3 py-2 rounded-xl shadow-2xl border border-slate-700 whitespace-nowrap pointer-events-none">
               <span className="font-bold">Dra. Osly Melo</span>
               <span className="text-[10px] text-slate-400">gestion@melosmile.com</span>
             </div>
