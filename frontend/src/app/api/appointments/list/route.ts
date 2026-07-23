@@ -2,11 +2,50 @@ import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase/client";
 
 // Keywords that indicate a date context, NOT a patient name
-const DATE_KEYWORDS = ["mañana", "manana", "tomorrow", "pasado mañana", "hoy", "today", "ayer", "yesterday"];
+const DATE_KEYWORDS = [
+  "mañana",
+  "manana",
+  "tomorrow",
+  "pasado mañana",
+  "hoy",
+  "today",
+  "ayer",
+  "yesterday",
+  "enero",
+  "febrero",
+  "marzo",
+  "abril",
+  "mayo",
+  "junio",
+  "julio",
+  "agosto",
+  "septiembre",
+  "octubre",
+  "noviembre",
+  "diciembre",
+];
+
+const SPANISH_MONTHS: Record<string, number> = {
+  enero: 1,
+  febrero: 2,
+  marzo: 3,
+  abril: 4,
+  mayo: 5,
+  junio: 6,
+  julio: 7,
+  agosto: 8,
+  septiembre: 9,
+  octubre: 10,
+  noviembre: 11,
+  diciembre: 12,
+};
 
 function isDateKeyword(term: string): boolean {
   const lower = term.toLowerCase();
-  return DATE_KEYWORDS.some((kw) => lower.includes(kw)) || /\d{4}-\d{2}-\d{2}/.test(lower);
+  if (DATE_KEYWORDS.some((kw) => lower.includes(kw))) return true;
+  if (/\d{4}-\d{2}-\d{2}/.test(lower)) return true;
+  if (/\d{1,2}\s*(?:de|\/|-)\s*(?:[a-z]+|\d{1,2})/i.test(lower)) return true;
+  return false;
 }
 
 function cleanPatientName(term: string): string {
@@ -16,43 +55,91 @@ function cleanPatientName(term: string): string {
   clean = clean.replace(/^["']|["']$/g, "").trim();
 
   // Strip conversational stop-words from patient search
-  // e.g. "cuándo tiene cita Munir?" → "Munir"
   const stopPattern = /\b(cu[aá]ndo|tiene|cita|citas|de|para|ver|buscar|las|los|la|el|revisar|agenda)\b/gi;
   let nameOnly = clean.replace(stopPattern, "").replace(/[?¿!¡]/g, "").replace(/\s+/g, " ").trim();
 
   return (nameOnly.length >= 2 ? nameOnly : clean).toLowerCase();
 }
 
-function getDateRange(dateStr: string): { startISO: string; endISO: string | null; dateLabel: string } {
+/**
+ * Returns current date components in Europe/Madrid timezone
+ */
+function getMadridDate(): { yyyy: number; mm: number; dd: number; isoToday: string } {
   const now = new Date();
-  const target = new Date(now);
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Europe/Madrid",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(now); // Format: "YYYY-MM-DD"
 
+  const [yyyy, mm, dd] = parts.split("-").map(Number);
+  return { yyyy, mm, dd, isoToday: parts };
+}
+
+/**
+ * Parses natural language date strings into ISO start/end UTC range using Europe/Madrid baseline
+ */
+function getDateRange(dateStr: string): { startISO: string; endISO: string; dateLabel: string } {
   let clean = dateStr.replace(/^["']|["']$/g, "").toLowerCase().trim();
   try { clean = decodeURIComponent(clean); } catch (e) {}
 
+  const madrid = getMadridDate();
+  let targetY = madrid.yyyy;
+  let targetM = madrid.mm;
+  let targetD = madrid.dd;
+
   if (clean.includes("pasado mañana") || clean.includes("pasado manana")) {
-    target.setDate(target.getDate() + 2);
+    const d = new Date(madrid.yyyy, madrid.mm - 1, madrid.dd + 2);
+    targetY = d.getFullYear();
+    targetM = d.getMonth() + 1;
+    targetD = d.getDate();
   } else if (clean.includes("mañana") || clean.includes("manana") || clean.includes("tomorrow")) {
-    target.setDate(target.getDate() + 1);
+    const d = new Date(madrid.yyyy, madrid.mm - 1, madrid.dd + 1);
+    targetY = d.getFullYear();
+    targetM = d.getMonth() + 1;
+    targetD = d.getDate();
   } else if (clean.includes("ayer") || clean.includes("yesterday")) {
-    target.setDate(target.getDate() - 1);
+    const d = new Date(madrid.yyyy, madrid.mm - 1, madrid.dd - 1);
+    targetY = d.getFullYear();
+    targetM = d.getMonth() + 1;
+    targetD = d.getDate();
+  } else if (clean.includes("hoy") || clean.includes("today")) {
+    // Keep target as madrid today
   } else {
-    const isoMatch = clean.match(/\d{4}-\d{2}-\d{2}/);
-    if (isoMatch && !isNaN(new Date(isoMatch[0]).getTime())) {
-      const custom = new Date(isoMatch[0]);
-      target.setFullYear(custom.getFullYear(), custom.getMonth(), custom.getDate());
+    // Match "24 de julio", "24 de julio de 2026", "24/07", "24/07/2026"
+    const spanishDateMatch = clean.match(/(\d{1,2})\s*(?:de|\/|-)\s*([a-z]+|\d{1,2})(?:\s*(?:de|\/|-)\s*(\d{2,4}))?/i);
+    if (spanishDateMatch) {
+      const day = parseInt(spanishDateMatch[1], 10);
+      const monthRaw = spanishDateMatch[2].toLowerCase();
+      let month = parseInt(monthRaw, 10);
+      if (isNaN(month)) {
+        month = SPANISH_MONTHS[monthRaw] || madrid.mm;
+      }
+      let year = spanishDateMatch[3] ? parseInt(spanishDateMatch[3], 10) : madrid.yyyy;
+      if (year < 100) year += 2000;
+
+      targetY = year;
+      targetM = month;
+      targetD = day;
+    } else {
+      const isoMatch = clean.match(/(\d{4})-(\d{2})-(\d{2})/);
+      if (isoMatch) {
+        targetY = parseInt(isoMatch[1], 10);
+        targetM = parseInt(isoMatch[2], 10);
+        targetD = parseInt(isoMatch[3], 10);
+      }
     }
   }
 
-  const startOfDay = new Date(target);
-  startOfDay.setHours(0, 0, 0, 0);
-  const endOfDay = new Date(target);
-  endOfDay.setHours(23, 59, 59, 999);
+  const mmStr = String(targetM).padStart(2, "0");
+  const ddStr = String(targetD).padStart(2, "0");
+  const dateLabel = `${targetY}-${mmStr}-${ddStr}`;
 
   return {
-    startISO: startOfDay.toISOString(),
-    endISO: endOfDay.toISOString(),
-    dateLabel: startOfDay.toISOString().split("T")[0]
+    startISO: `${dateLabel}T00:00:00.000Z`,
+    endISO: `${dateLabel}T23:59:59.999Z`,
+    dateLabel,
   };
 }
 
@@ -69,16 +156,13 @@ export async function GET(req: Request) {
       searchParams.get("patient_name") ||
       "";
 
-    // Determine whether rawQ is a date keyword or a patient name
     let dateInput = rawDate;
     let patientInput = "";
 
     if (rawQ) {
       if (isDateKeyword(rawQ)) {
-        // e.g. q=mañana → use as date
         dateInput = dateInput || rawQ;
       } else {
-        // e.g. q=Munir or q="cuando tiene cita Munir?" → use as patient
         patientInput = rawQ;
       }
     }
@@ -90,17 +174,16 @@ export async function GET(req: Request) {
     let dateLabel: string;
 
     if (dateInput) {
-      // Filter by specific date
+      // Filter by specific date (natural language or ISO)
       ({ startISO, endISO, dateLabel } = getDateRange(dateInput));
     } else if (patientTerm) {
-      // Patient search with no date: return all upcoming from today
-      const startOfDay = new Date();
-      startOfDay.setHours(0, 0, 0, 0);
-      startISO = startOfDay.toISOString();
+      // Patient search with no date: return all upcoming from today (Europe/Madrid)
+      const madridToday = getMadridDate().isoToday;
+      startISO = `${madridToday}T00:00:00.000Z`;
       endISO = null;
       dateLabel = "próximas citas";
     } else {
-      // No params: default to today
+      // No params: default to today (Europe/Madrid)
       ({ startISO, endISO, dateLabel } = getDateRange("hoy"));
     }
 
@@ -162,7 +245,7 @@ export async function GET(req: Request) {
         ? `No se encontraron citas programadas para el paciente "${patientInput}".`
         : `No hay ninguna cita programada para ${dateLabel === "próximas citas" ? "próximas fechas" : `la fecha ${dateLabel}`}.`;
     } else {
-      summaryText = `Citas encontradas (${results.length} en total):\n` +
+      summaryText = `Citas encontradas para ${dateLabel} (${results.length} en total):\n` +
         results
           .map((c: any, i: number) =>
             `${i + 1}. ${c.fecha} a las ${c.hora} - ${c.paciente} (${c.motivo}, ${c.clinica}, ${c.estado})`
