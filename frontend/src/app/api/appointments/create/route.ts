@@ -7,28 +7,40 @@ function parseAppointmentDate(inputDate?: string, inputTime?: string): string {
     combined += ` ${inputTime}`;
   }
 
-  if (!combined.trim()) return new Date().toISOString();
-
-  const parsed = new Date(combined);
-  if (!isNaN(parsed.getTime())) return parsed.toISOString();
-
   const now = new Date();
-  const target = new Date(now);
+  let target = new Date(now);
 
-  const lower = combined.toLowerCase();
-  if (lower.includes("mañana")) {
-    target.setDate(target.getDate() + 1);
-  } else if (lower.includes("pasado mañana")) {
-    target.setDate(target.getDate() + 2);
-  }
+  if (combined.trim()) {
+    const parsed = new Date(combined);
+    if (!isNaN(parsed.getTime())) {
+      target = parsed;
+    } else {
+      const lower = combined.toLowerCase();
+      if (lower.includes("mañana")) {
+        target.setDate(target.getDate() + 1);
+      } else if (lower.includes("pasado mañana")) {
+        target.setDate(target.getDate() + 2);
+      }
 
-  const timeMatch = lower.match(/(\d{1,2})(?::(\d{2}))?/);
-  if (timeMatch) {
-    const hours = parseInt(timeMatch[1], 10);
-    const minutes = timeMatch[2] ? parseInt(timeMatch[2], 10) : 0;
-    target.setHours(hours, minutes, 0, 0);
+      const timeMatch = lower.match(/(\d{1,2})(?::(\d{2}))?/);
+      if (timeMatch) {
+        const hours = parseInt(timeMatch[1], 10);
+        const minutes = timeMatch[2] ? parseInt(timeMatch[2], 10) : 0;
+        target.setHours(hours, minutes, 0, 0);
+      } else {
+        target.setHours(10, 0, 0, 0);
+      }
+    }
   } else {
     target.setHours(10, 0, 0, 0);
+  }
+
+  // Round minutes to nearest 15-min slot and clear seconds/ms
+  const roundedMins = Math.round(target.getMinutes() / 15) * 15;
+  if (roundedMins === 60) {
+    target.setHours(target.getHours() + 1, 0, 0, 0);
+  } else {
+    target.setMinutes(roundedMins, 0, 0);
   }
 
   return target.toISOString();

@@ -1,50 +1,29 @@
+"use client";
+
 import React, { useState, useEffect, useCallback } from "react";
-import { supabase } from "@/lib/supabase/client";
-import { Card, CardContent } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { format, startOfWeek, addDays, subDays, addWeeks, subWeeks, startOfMonth, addMonths, subMonths, isSameMonth, isSameDay, eachDayOfInterval } from "date-fns";
+import { es } from "date-fns/locale";
+import { useDroppable, useDraggable, DndContext, DragEndEvent, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { Sparkles, Building2, User, Stethoscope, Calculator, CalendarCheck, ChevronLeft, ChevronRight, Clock, CalendarDays, Calendar as CalendarIcon, Sun, FileText, Settings2, Phone, Mail } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { format, startOfWeek, addDays, subDays, addWeeks, subWeeks, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isSameMonth, addMonths, subMonths, parseISO, set } from "date-fns";
-import { es } from "date-fns/locale";
-import { DndContext, DragEndEvent, useDraggable, useDroppable, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
-import { CSS } from '@dnd-kit/utilities';
-import { PatientSelect, Patient } from "@/components/patients/patient-select";
+import { supabase } from "@/lib/supabase/client";
 import { AppointmentDetailDrawer } from "@/components/calendar/appointment-detail-drawer";
 import { triggerNewAppointmentModal } from "@/components/calendar/new-appointment-modal";
 
-export type Clinic = {
+export interface Clinic {
   id: string;
   name: string;
   color: string;
   borderColor: string;
-  labDiscount: number; // e.g. 50%
-  baseCommission: number; // e.g. 60%
-};
+  labDiscount: number;
+  baseCommission: number;
+}
 
-const COLOR_PRESETS = [
-  { bg: "bg-blue-500", border: "border-blue-600" },
-  { bg: "bg-emerald-500", border: "border-emerald-600" },
-  { bg: "bg-purple-500", border: "border-purple-600" },
-  { bg: "bg-pink-500", border: "border-pink-600" },
-  { bg: "bg-amber-500", border: "border-amber-600" },
-  { bg: "bg-indigo-500", border: "border-indigo-600" },
-];
-
-export const DEFAULT_CLINICS: Clinic[] = [
-  { id: "albacete", name: "Albacete", color: "bg-emerald-500", borderColor: "border-emerald-600", labDiscount: 50, baseCommission: 60 },
-  { id: "goya", name: "Goya (Madrid)", color: "bg-blue-500", borderColor: "border-blue-600", labDiscount: 0, baseCommission: 60 },
-  { id: "rozas", name: "Las Rozas", color: "bg-purple-500", borderColor: "border-purple-600", labDiscount: 0, baseCommission: 60 },
-];
-
-export type AppointmentEvent = {
+export interface AppointmentEvent {
   id: string;
   title: string;
   date: Date;
-  startTime: string; // "09:15"
+  startTime: string; // HH:mm
   durationMinutes: number;
   clinicId: string;
   patient: string;
@@ -55,64 +34,131 @@ export type AppointmentEvent = {
   doctor: string;
   price: number;
   labCost: number;
-  customCommissionRate?: number;
-  customLabDiscountRate?: number;
-};
-
-const today = new Date();
-
-const TIME_SLOTS: string[] = [];
-for (let h = 8; h <= 20; h++) {
-  for (let m = 0; m < 60; m += 15) {
-    TIME_SLOTS.push(`${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`);
-  }
 }
 
-const DURATION_OPTIONS = [
-  { value: 15, label: "15 minutos" },
-  { value: 30, label: "30 minutos" },
-  { value: 45, label: "45 minutos" },
-  { value: 60, label: "1 hora (60 min)" },
-  { value: 75, label: "1 hora 15 min" },
-  { value: 90, label: "1 hora 30 min" },
-  { value: 105, label: "1 hora 45 min" },
-  { value: 120, label: "2 horas (120 min)" },
-  { value: 150, label: "2.5 horas (150 min)" },
-  { value: 180, label: "3 horas (180 min)" },
+const COLOR_PRESETS = [
+  { bg: "bg-blue-600", border: "border-blue-600" },
+  { bg: "bg-emerald-600", border: "border-emerald-600" },
+  { bg: "bg-violet-600", border: "border-violet-600" },
+  { bg: "bg-amber-600", border: "border-amber-600" },
+  { bg: "bg-rose-600", border: "border-rose-600" },
+];
+
+export const DEFAULT_CLINICS: Clinic[] = [
+  {
+    id: "goya",
+    name: "Clínica Goya",
+    color: "bg-blue-600",
+    borderColor: "border-blue-600",
+    labDiscount: 50,
+    baseCommission: 60,
+  },
+  {
+    id: "albacete",
+    name: "Clínica Albacete",
+    color: "bg-emerald-600",
+    borderColor: "border-emerald-600",
+    labDiscount: 50,
+    baseCommission: 60,
+  },
 ];
 
 type ViewMode = "month" | "week" | "day";
 
-function DroppableCell({ id, day, slot, isToday, onCellClick, children }: any) {
-  const { setNodeRef, isOver } = useDroppable({ id });
+// 15-minute grid slots from 08:00 to 20:45
+const TIME_SLOTS: string[] = [];
+for (let h = 8; h <= 20; h++) {
+  for (let m = 0; m < 60; m += 15) {
+    const hh = String(h).padStart(2, "0");
+    const mm = String(m).padStart(2, "0");
+    TIME_SLOTS.push(`${hh}:${mm}`);
+  }
+}
+
+const today = new Date();
+
+/**
+ * Rounds any arbitrary minute/second time to the nearest 15-minute slot
+ * so events always align with the grid in Day/Week view.
+ */
+function roundToNearestSlot(d: Date): string {
+  const hours = d.getHours();
+  const mins = d.getMinutes();
+  const roundedMins = Math.round(mins / 15) * 15;
+
+  let finalHours = hours;
+  let finalMins = roundedMins;
+
+  if (finalMins === 60) {
+    finalHours = (hours + 1) % 24;
+    finalMins = 0;
+  }
+
+  const hh = String(finalHours).padStart(2, "0");
+  const mm = String(finalMins).padStart(2, "0");
+  return `${hh}:${mm}`;
+}
+
+// Droppable Cell for DnD
+function DroppableCell({
+  id,
+  day,
+  slot,
+  isToday,
+  onCellClick,
+  children,
+}: {
+  id: string;
+  day: Date;
+  slot: string;
+  isToday: boolean;
+  onCellClick: (day: Date, slot: string) => void;
+  children: React.ReactNode;
+}) {
+  const { isOver, setNodeRef } = useDroppable({ id });
+
   return (
     <div
       ref={setNodeRef}
       onClick={() => onCellClick(day, slot)}
       className={cn(
-        "relative h-9 border-b border-r border-slate-100/60 cursor-pointer transition-colors hover:bg-slate-100/80 group",
-        slot.endsWith(":00") && "border-b-slate-200/80",
-        isToday && "bg-rose-50/20",
-        isOver && "bg-rose-100/50 ring-2 ring-inset ring-rose-300"
+        "border-r border-b border-slate-100/70 p-0.5 relative group cursor-pointer transition-colors min-h-[36px]",
+        isToday ? "bg-rose-50/10 hover:bg-rose-50/30" : "hover:bg-slate-50/80",
+        isOver && "bg-rose-100/60 ring-2 ring-rose-400 ring-inset"
       )}
     >
-      {children}
+      <div className="w-full h-full flex flex-col gap-1">{children}</div>
     </div>
   );
 }
 
-function DraggableEvent({ event, clinic, heightPx, onClick, onDoubleClick, viewMode, dayIndex }: any) {
+// Draggable Event Box
+function DraggableEvent({
+  event,
+  clinic,
+  heightPx,
+  onClick,
+  onDoubleClick,
+  viewMode,
+  dayIndex,
+}: {
+  event: AppointmentEvent;
+  clinic: Clinic;
+  heightPx: number;
+  onClick: (e: AppointmentEvent, event: React.MouseEvent) => void;
+  onDoubleClick?: (e: AppointmentEvent) => void;
+  viewMode: ViewMode;
+  dayIndex: number;
+}) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: event.id,
-    data: event
   });
-  
-  const style = {
-    transform: CSS.Translate.toString(transform),
-    top: 2, 
+
+  const style: React.CSSProperties = {
     height: `${heightPx}px`,
+    transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
     zIndex: isDragging ? 50 : 10,
-    opacity: isDragging ? 0.8 : 1,
+    opacity: isDragging ? 0.7 : 1,
   };
 
   return (
@@ -120,23 +166,17 @@ function DraggableEvent({ event, clinic, heightPx, onClick, onDoubleClick, viewM
       ref={setNodeRef}
       {...listeners}
       {...attributes}
-      onClick={(e) => { 
-        e.stopPropagation(); 
-        onClick(event, e); 
-      }}
-      onDoubleClick={(e) => {
-        e.stopPropagation();
-        if (onDoubleClick) onDoubleClick(event);
-      }}
-      className={cn(
-        "absolute inset-x-1 rounded-lg px-2 py-1 cursor-pointer active:cursor-grabbing shadow-sm hover:shadow-md transition-all border-l-4 overflow-hidden group/event select-none",
-        clinic.color, clinic.borderColor, "text-white"
-      )}
       style={style}
+      onClick={(e) => onClick(event, e)}
+      onDoubleClick={() => onDoubleClick?.(event)}
+      className={cn(
+        "w-full rounded-lg px-2 py-1 flex flex-col justify-between text-white transition-all shadow-xs hover:shadow-md cursor-grab active:cursor-grabbing text-left select-none overflow-hidden",
+        clinic.color
+      )}
     >
-      <div className="flex items-center justify-between pointer-events-none">
-        <p className="text-[11px] font-bold leading-tight truncate">{event.patient}</p>
-        <span className="text-[9px] opacity-80 font-mono">{event.startTime} ({event.durationMinutes}m)</span>
+      <div className="flex items-center justify-between gap-1">
+        <span className="font-bold text-[11px] leading-tight truncate">{event.patient}</span>
+        <span className="text-[9px] opacity-80 shrink-0 font-medium">{event.startTime}</span>
       </div>
       <p className="text-[10px] opacity-90 truncate pointer-events-none">{event.title} · {clinic.name}</p>
     </div>
@@ -152,7 +192,7 @@ export function CalendarView({ selectedClinicId = "all" }: { selectedClinicId?: 
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 15, // Require 15px intentional move to start drag
+        distance: 15,
       },
     })
   );
@@ -196,8 +236,7 @@ export function CalendarView({ selectedClinicId = "all" }: { selectedClinicId?: 
       if (!error && data) {
         const mapped: AppointmentEvent[] = data.map((a: any) => {
           const d = new Date(a.appointment_date);
-          const hours = String(d.getHours()).padStart(2, "0");
-          const minutes = String(d.getMinutes()).padStart(2, "0");
+          const slotTime = roundToNearestSlot(d);
           const p = a.patients;
           const prof = a.professionals;
           const cl = a.clinics;
@@ -207,7 +246,7 @@ export function CalendarView({ selectedClinicId = "all" }: { selectedClinicId?: 
             id: a.id,
             title: a.reason || "Consulta",
             date: d,
-            startTime: `${hours}:${minutes}`,
+            startTime: slotTime,
             durationMinutes: 45,
             clinicId: actualClinicId,
             patient: p ? `${p.first_name} ${p.last_name}` : "Paciente",
@@ -467,7 +506,7 @@ export function CalendarView({ selectedClinicId = "all" }: { selectedClinicId?: 
         </div>
       )}
 
-      {/* ---------------- VISTA SEMANAL / DÍA GRID (15-MIN SLOTS - Direct Page Scroll) ---------------- */}
+      {/* ---------------- VISTA SEMANAL / DÍA GRID (15-MIN SLOTS) ---------------- */}
       {(viewMode === "week" || viewMode === "day") && (
         <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
           <div className="w-full">
