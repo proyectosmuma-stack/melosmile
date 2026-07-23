@@ -277,7 +277,7 @@ function AssistantBubble({ msg }: { msg: Message }) {
           <div className="bg-slate-900/90 border border-slate-800 rounded-2xl rounded-tl-sm px-5 py-4 flex items-center gap-3">
             <Loader2 className="h-4 w-4 text-violet-400 animate-spin" />
             <span className="text-sm text-slate-400 italic">
-              El Dispatcher está analizando tu instrucción…
+              Musly está analizando tu instrucción…
             </span>
           </div>
         ) : (
@@ -369,12 +369,12 @@ export function AIAgentBar({ fullHeight = false }: { fullHeight?: boolean }) {
     {
       id: uid(),
       role: "assistant",
-      text: "Hola 👋 Soy el Dispatcher IA de Melosmile. Puedo agendar citas, consultar la agenda del día, gestionar pacientes y facturación. ¿En qué te ayudo hoy?",
+      text: "Hola 👋 Soy Musly, tu asistente IA. Puedo agendar citas, consultar la agenda del día, gestionar pacientes y facturación. ¿En qué te ayudo hoy?",
       timestamp: new Date(),
       payload: {
         intent: "general_query",
         summary:
-          "Hola 👋 Soy el Dispatcher IA de Melosmile. Puedo agendar citas, consultar la agenda del día, gestionar pacientes y facturación. ¿En qué te ayudo hoy?",
+          "Hola 👋 Soy Musly, tu asistente IA. Puedo agendar citas, consultar la agenda del día, gestionar pacientes y facturación. ¿En qué te ayudo hoy?",
       },
     },
   ]);
@@ -459,12 +459,12 @@ export function AIAgentBar({ fullHeight = false }: { fullHeight?: boolean }) {
             ? {
                 ...m,
                 isLoading: false,
-                text: "No se pudo conectar con el Dispatcher. Verifica la conexión.",
+                text: "No se pudo conectar con Musly. Verifica la conexión.",
                 timestamp: new Date(),
                 payload: {
                   intent: "error",
                   summary:
-                    "No se pudo conectar con el Dispatcher. Verifica la conexión a n8n.",
+                    "No se pudo conectar con Musly. Verifica la conexión a n8n.",
                 },
               }
             : m

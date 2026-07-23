@@ -76,7 +76,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         {
           intent: "error",
-          summary: `El Dispatcher respondió con error ${n8nRes.status}. Inténtalo en unos segundos.`,
+          summary: `Musly respondió con un error (${n8nRes.status}). Inténtalo en unos segundos.`,
           error: text,
         },
         { status: n8nRes.status }
@@ -108,8 +108,8 @@ export async function POST(req: NextRequest) {
       {
         intent: "error",
         summary: isTimeout
-          ? "El Dispatcher tardó demasiado en responder (>30s). Es posible que la API de Gemini esté saturada."
-          : "No se pudo conectar con el Dispatcher. Verifica la conexión a n8n.",
+          ? "Musly tardó demasiado en responder (>30s). Es posible que la API de Gemini esté saturada."
+          : "No se pudo conectar con Musly. Verifica la conexión a n8n.",
         error: err instanceof Error ? err.message : String(err),
       },
       { status: 502 }
