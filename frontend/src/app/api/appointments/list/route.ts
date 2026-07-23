@@ -3,6 +3,7 @@ import { supabase } from "@/lib/supabase/client";
 
 function getDateRange(dateStr?: string, fullUrl?: string, hasPatientQuery?: boolean): { startISO: string; endISO: string | null; dateLabel: string } {
   const now = new Date();
+  const todayLabel = now.toISOString().split("T")[0];
   const target = new Date(now);
 
   let clean = dateStr || "";
@@ -12,34 +13,36 @@ function getDateRange(dateStr?: string, fullUrl?: string, hasPatientQuery?: bool
 
   clean = clean.replace(/^["']|["']$/g, "").toLowerCase().trim();
 
-  let isSpecificFutureDate = false;
+  let isSpecificDateRequested = false;
 
   if (clean.includes("mañana") || clean.includes("tomorrow")) {
     target.setDate(target.getDate() + 1);
-    isSpecificFutureDate = true;
+    isSpecificDateRequested = true;
   } else if (clean.includes("pasado mañana")) {
     target.setDate(target.getDate() + 2);
-    isSpecificFutureDate = true;
+    isSpecificDateRequested = true;
   } else if (clean.includes("ayer") || clean.includes("yesterday")) {
     target.setDate(target.getDate() - 1);
-    isSpecificFutureDate = true;
+    isSpecificDateRequested = true;
   } else {
     const isoMatch = clean.match(/\d{4}-\d{2}-\d{2}/);
     if (isoMatch && !isNaN(new Date(isoMatch[0]).getTime())) {
       const custom = new Date(isoMatch[0]);
-      // If the ISO date matches tomorrow or future, mark as specific date
       target.setFullYear(custom.getFullYear(), custom.getMonth(), custom.getDate());
-      isSpecificFutureDate = true;
+      // Only treat as specific date filter if it's NOT just today's auto-filled date
+      if (isoMatch[0] !== todayLabel) {
+        isSpecificDateRequested = true;
+      }
     }
   }
 
-  // If searching by patient name and no future date was explicitly requested (e.g., "mañana"), search ALL upcoming citas
-  if (hasPatientQuery && !isSpecificFutureDate) {
+  // If a patient is specified and no specific future/past date (like "mañana") was requested, search all upcoming from today
+  if (hasPatientQuery && !isSpecificDateRequested) {
     const startOfDay = new Date(now);
     startOfDay.setHours(0, 0, 0, 0);
     return {
       startISO: startOfDay.toISOString(),
-      endISO: null, // Unlimited upper bound -> fetches all upcoming citas
+      endISO: null, // Unlimited upper bound -> queries all upcoming appointments
       dateLabel: "próximas citas"
     };
   }
