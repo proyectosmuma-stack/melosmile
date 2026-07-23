@@ -115,17 +115,17 @@ export function AppointmentDetailDrawer({
           </div>
         </div>
 
-        {/* Invite Link / Share Pill Button */}
+        {/* Modificar Cita Pill Button */}
         <div className="pl-6.5 mt-3">
           <button
             onClick={() => {
               onClose();
               router.push(`/appointments/${event.id}`);
             }}
-            className="border border-slate-300 hover:border-slate-400 bg-white hover:bg-slate-50 text-blue-600 rounded-full px-4 py-1.5 text-xs font-semibold flex items-center gap-2 transition-all shadow-xs cursor-pointer"
+            className="border border-blue-200 hover:border-blue-400 bg-blue-50/50 hover:bg-blue-100/50 text-blue-600 rounded-full px-4 py-1.5 text-xs font-bold flex items-center gap-2 transition-all shadow-xs cursor-pointer"
           >
-            <Share2 className="h-3.5 w-3.5" />
-            Invitar mediante enlace / Ver Ficha Completa
+            <Pencil className="h-3.5 w-3.5 text-blue-600" />
+            Modificar Cita
           </button>
         </div>
 

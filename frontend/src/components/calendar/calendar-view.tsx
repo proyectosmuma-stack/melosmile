@@ -115,16 +115,6 @@ function DraggableEvent({ event, clinic, heightPx, onClick, onDoubleClick, viewM
     opacity: isDragging ? 0.8 : 1,
   };
 
-  // Smart Tooltip positioning so it never overflows offscreen
-  const tooltipClass = cn(
-    "absolute hidden group-hover/event:block bg-slate-900 text-white text-xs p-3 rounded-xl shadow-2xl w-56 z-[100] pointer-events-none transition-all",
-    viewMode === "day"
-      ? "left-0 top-full mt-2" // Day view: show below event inside the day column
-      : dayIndex >= 4
-      ? "right-full mr-2 top-0" // Fri, Sat, Sun: show to the left
-      : "left-full ml-2 top-0"  // Mon, Tue, Wed, Thu: show to the right
-  );
-
   return (
     <div
       ref={setNodeRef}
@@ -139,7 +129,7 @@ function DraggableEvent({ event, clinic, heightPx, onClick, onDoubleClick, viewM
         if (onDoubleClick) onDoubleClick(event);
       }}
       className={cn(
-        "absolute inset-x-1 rounded-lg px-2 py-1 cursor-pointer active:cursor-grabbing shadow-sm hover:shadow-md transition-all border-l-4 overflow-visible group/event select-none",
+        "absolute inset-x-1 rounded-lg px-2 py-1 cursor-pointer active:cursor-grabbing shadow-sm hover:shadow-md transition-all border-l-4 overflow-hidden group/event select-none",
         clinic.color, clinic.borderColor, "text-white"
       )}
       style={style}
@@ -149,15 +139,6 @@ function DraggableEvent({ event, clinic, heightPx, onClick, onDoubleClick, viewM
         <span className="text-[9px] opacity-80 font-mono">{event.startTime} ({event.durationMinutes}m)</span>
       </div>
       <p className="text-[10px] opacity-90 truncate pointer-events-none">{event.title} · {clinic.name}</p>
-      
-      {/* Tooltip Quick Preview */}
-      <div className={tooltipClass}>
-        <p className="font-bold text-sm mb-1">{event.patient}</p>
-        <p className="text-slate-300 text-[11px] font-medium mb-1">{event.title}</p>
-        {event.patientHistoriaId && <p className="text-slate-300 text-[11px] flex items-center gap-1.5"><User className="h-3 w-3" /> {event.patientHistoriaId}</p>}
-        {event.patientPhone && <p className="text-slate-300 text-[11px] flex items-center gap-1.5 mt-0.5"><Phone className="h-3 w-3" /> {event.patientPhone}</p>}
-        {event.patientEmail && <p className="text-slate-300 text-[11px] flex items-center gap-1.5 mt-0.5"><Mail className="h-3 w-3" /> {event.patientEmail}</p>}
-      </div>
     </div>
   );
 }

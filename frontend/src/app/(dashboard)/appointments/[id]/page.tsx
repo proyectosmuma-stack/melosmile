@@ -1,11 +1,12 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import {
   User, Calendar as CalendarIcon, Clock, Building2, Stethoscope, FileText, Upload,
   CreditCard, MessageSquare, CheckCircle2, Save, Loader2, AlertCircle, ArrowLeft, Receipt,
   TrendingDown, TrendingUp, AlertTriangle, FlaskConical, Plus, Sparkles, ExternalLink,
-  Pill, Activity, ShieldAlert, ChevronRight, Check, DollarSign, Settings2, Trash2, Camera, Image as ImageIcon, UserCheck
+  Pill, Activity, ShieldAlert, ChevronRight, Check, DollarSign, Settings2, Trash2, Camera, Image as ImageIcon, UserCheck, Pencil
 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -24,7 +25,9 @@ type AppointmentData = {
   reason: string;
   status: string;
   notes: string | null;
+  clinicId?: string;
   clinicName: string;
+  professionalId?: string;
   professionalName: string;
   patientId: string;
   patientName: string;
@@ -105,8 +108,17 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
   const [isAiAnalyzed, setIsAiAnalyzed] = useState(false);
 
   const [professionalsCatalog, setProfessionalsCatalog] = useState<{ id: string; name: string; specialty?: string }[]>([]);
+  const [clinicsCatalog, setClinicsCatalog] = useState<{ id: string; name: string }[]>([]);
   const [newDoctorInput, setNewDoctorInput] = useState("");
   const [creatingDoctor, setCreatingDoctor] = useState(false);
+
+  // Edit Appointment Modal state
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editDate, setEditDate] = useState("");
+  const [editTime, setEditTime] = useState("");
+  const [editClinicId, setEditClinicId] = useState("");
+  const [editProfessionalId, setEditProfessionalId] = useState("");
+  const [editReason, setEditReason] = useState("");
 
   const handleCreateNewProfessional = async () => {
     if (!newDoctorInput.trim()) return;
@@ -168,7 +180,7 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
       const { data: a } = await supabase
         .from("appointments")
         .select(`
-          id, appointment_date, reason, status, notes,
+          id, appointment_date, reason, status, notes, clinic_id, professional_id,
           clinics ( name ),
           professionals ( first_name, last_name ),
           patients ( id, first_name, last_name, historia_id, dob, phone, email, nif_cif, allergies, important_diseases, current_medication, billing_name, billing_address, billing_city, billing_postal_code )
@@ -208,7 +220,9 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
           reason: a.reason ?? "Consulta",
           status: a.status ?? "Confirmada",
           notes: a.notes ?? "",
+          clinicId: a.clinic_id ?? "",
           clinicName: clinic?.name ?? "Clínica",
+          professionalId: a.professional_id ?? "",
           professionalName: prof ? `${prof.first_name} ${prof.last_name}` : "Dra. Osly Melo",
           patientId: p?.id ?? "",
           patientName: p ? `${p.first_name} ${p.last_name}` : "Paciente",
@@ -308,6 +322,12 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
             specialty: p.specialty ?? undefined,
           })));
         }
+
+        const { data: clinicsData } = await (supabase as any)
+          .from("clinics")
+          .select("id, name")
+          .order("name");
+        if (clinicsData) setClinicsCatalog(clinicsData);
 
         // Parse AI Suggestion
         const aiMatch = rawNotes.match(/\[CitaSugeridaIA:\s*([\s\S]*?)\]/i);
@@ -687,6 +707,35 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
               >
                 <DollarSign className="h-3.5 w-3.5" />
                 Contabilidad ($)
+              </Button>
+
+              {/* Button 3: Modificar Cita */}
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  if (appt) {
+                    const d = new Date(appt.appointment_date);
+                    const yyyy = d.getFullYear();
+                    const mm = String(d.getMonth() + 1).padStart(2, "0");
+                    const dd = String(d.getDate()).padStart(2, "0");
+                    const hh = String(d.getHours()).padStart(2, "0");
+                    const min = String(d.getMinutes()).padStart(2, "0");
+
+                    setEditDate(`${yyyy}-${mm}-${dd}`);
+                    setEditTime(`${hh}:${min}`);
+                    setEditClinicId(appt.clinicId || "");
+                    setEditProfessionalId(appt.professionalId || "");
+                    setEditReason(appt.reason || "");
+                    setIsEditModalOpen(true);
+                  }
+                }}
+                title="Modificar fecha, hora, sede o doctor de esta cita"
+                className="h-8 px-3 rounded-lg text-xs font-bold gap-1.5 transition-all text-slate-700 hover:bg-white hover:text-blue-600 border border-slate-200/80 bg-white shadow-2xs cursor-pointer"
+              >
+                <Pencil className="h-3.5 w-3.5 text-blue-600" />
+                Modificar Cita
               </Button>
             </div>
 
@@ -1258,6 +1307,108 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
           defaultAmount={totals.totalPrice}
           onSuccess={fetchAppointment}
         />
+      )}
+
+      {/* Edit Appointment Modal */}
+      {appt && (
+        <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+          <DialogContent className="sm:max-w-lg rounded-2xl p-6 bg-white shadow-2xl border border-slate-200">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                <Pencil className="h-5 w-5 text-blue-600" /> Modificar Datos de la Cita — {appt.patientName}
+              </DialogTitle>
+            </DialogHeader>
+
+            <div className="space-y-4 py-3 text-xs">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label className="text-xs font-semibold text-slate-700">Fecha de la Cita</Label>
+                  <Input
+                    type="date"
+                    value={editDate}
+                    onChange={(e) => setEditDate(e.target.value)}
+                    className="h-9 text-xs"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs font-semibold text-slate-700">Hora de la Cita</Label>
+                  <Input
+                    type="time"
+                    value={editTime}
+                    onChange={(e) => setEditTime(e.target.value)}
+                    className="h-9 text-xs"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <Label className="text-xs font-semibold text-slate-700">Clínica / Sede</Label>
+                <Select value={editClinicId} onValueChange={(val) => setEditClinicId(val || "")}>
+                  <SelectTrigger className="h-9 text-xs bg-white">
+                    <SelectValue placeholder="Seleccionar Clínica" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {clinicsCatalog.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1">
+                <Label className="text-xs font-semibold text-slate-700">Doctor / Profesional Principal</Label>
+                <Select value={editProfessionalId} onValueChange={(val) => setEditProfessionalId(val || "")}>
+                  <SelectTrigger className="h-9 text-xs bg-white">
+                    <SelectValue placeholder="Seleccionar Doctor" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {professionalsCatalog.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1">
+                <Label className="text-xs font-semibold text-slate-700">Motivo / Tratamiento Principal</Label>
+                <Input
+                  value={editReason}
+                  onChange={(e) => setEditReason(e.target.value)}
+                  placeholder="Ej: Revisión y Control de Ortodoncia"
+                  className="h-9 text-xs"
+                />
+              </div>
+            </div>
+
+            <DialogFooter className="gap-2 pt-2">
+              <Button variant="outline" onClick={() => setIsEditModalOpen(false)} className="rounded-xl">
+                Cancelar
+              </Button>
+              <Button
+                onClick={async () => {
+                  try {
+                    const newIsoDate = new Date(`${editDate}T${editTime}:00`).toISOString();
+                    const { error } = await supabase.from("appointments").update({
+                      appointment_date: newIsoDate,
+                      clinic_id: editClinicId || undefined,
+                      professional_id: editProfessionalId || undefined,
+                      reason: editReason || "Consulta",
+                    }).eq("id", appt.id);
+
+                    if (error) throw error;
+                    setIsEditModalOpen(false);
+                    await fetchAppointment();
+                  } catch (err: any) {
+                    alert(`Error actualizando cita: ${err.message}`);
+                  }
+                }}
+                className="bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-md cursor-pointer"
+              >
+                Guardar Cambios
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       )}
     </div>
   );
