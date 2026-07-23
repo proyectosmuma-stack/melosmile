@@ -16,8 +16,8 @@
 - **Hosting & CI/CD**: Vercel (`melosmile-staging`, configurado solo para compilar desde la rama `develop`).
 - **Estilos y UI**: TailwindCSS 4, Shadcn UI, Lucide Icons, `@dnd-kit/core` (Drag & Drop).
 - **Backend & Base de Datos**: Supabase Cloud (`amhfdzfcmpastmlsosou`, PostgreSQL relacional, CLI `supabase`).
-- **Automatización e IA**: Workflows de **n8n** en VPS IONOS (Agente Dispatcher y Sub-agentes temáticos), OpenAI GPT-4o.
-- **Integraciones externas**: Odoo API (Facturación y Contabilidad), WhatsApp/Telegram.
+- **Automatización e IA**: Agente **Musly** (Dispatcher + 3 Sub-agentes especializados en n8n alojado en VPS IONOS), modelo `google/gemini-2.5-flash` vía OpenRouter.
+- **Integraciones externas**: Odoo API (Facturación y Contabilidad), WhatsApp/Email/SMS vía n8n.
 
 ---
 

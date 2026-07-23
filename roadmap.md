@@ -75,9 +75,10 @@ Este documento establece el plan de desarrollo, hitos alcanzados y próximas fas
 
 ---
 
-## 🤖 Fase 5: Integración de IA y Workflows n8n (VPS IONOS)
-- [x] Creación del flujo enrutador `Melosmile - AI Dispatcher` ([03-melosmile-ai-dispatcher.json](file:///Users/munircallaos/Antigravity%20Projects/melosmile/n8n-workflows/melosmile/03-melosmile-ai-dispatcher.json)).
-- [ ] Importar workflows en la instancia n8n del VPS de IONOS.
-- [ ] Conectar la barra de IA conversacional (`AIAgentBar`) al Webhook del Dispatcher de n8n en IONOS.
-- [ ] Sub-agentes en n8n (Agendamiento, Consultas Clínicas, Registro Contable).
-- [ ] Pruebas de interacción en lenguaje natural desde Telegram / WhatsApp.
+## 🤖 Fase 5: Integración de IA y Workflows n8n — Agente Musly (COMPLETADO)
+- [x] Creación del flujo enrutador `[MELOSMILE] AI Dispatcher` (**Musly**) (`04-melosmile-ai-dispatcher-v2.json`).
+- [x] Importación y activación de 4 workflows en la instancia n8n (`https://n8n.mumaweb.com`).
+- [x] Conexión de la barra conversacional del frontend (`AIAgentBar`) mediante proxy server-side Next.js `/api/dispatcher`.
+- [x] Sub-agentes especializados en n8n conectados por `toolWorkflow` (Agendamiento, Clínico, Contabilidad).
+- [x] Conexión de herramientas a Supabase real con emparejamiento automático de tratamientos (`treatment_id`) y facturación Odoo.
+- [x] Implementación de Memoria Conversacional (historial de sesión) e Historial de Auditoría en Supabase (`ai_conversation_history`).
