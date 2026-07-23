@@ -82,3 +82,6 @@ Este documento establece el plan de desarrollo, hitos alcanzados y próximas fas
 - [x] Sub-agentes especializados en n8n conectados por `toolWorkflow` (Agendamiento, Clínico, Contabilidad).
 - [x] Conexión de herramientas a Supabase real con emparejamiento automático de tratamientos (`treatment_id`) y facturación Odoo.
 - [x] Implementación de Memoria Conversacional (historial de sesión) e Historial de Auditoría en Supabase (`ai_conversation_history`).
+- [x] **Sistema de Reporte de Errores y Contexto IA (`logs/agent_reports.log`)**: Botón en respuestas del asistente para reportar fallos de lógica con formulario modal, fecha/hora, comentario del usuario, agentes involucrados e historial completo.
+- [x] **Regla Global de Profesional Tratante por Defecto**: Asignación automática de la **Dra. Osly Melo** en la creación y visualización de citas por el agente o API.
+- [x] **Fix de Edición y Carga de Citas (`/appointments/[id]`)**: Auto-emparejamiento con el catálogo `treatments`, carga automática de precios por defecto y gastos de laboratorio sin pérdida de datos al guardar o recargar.

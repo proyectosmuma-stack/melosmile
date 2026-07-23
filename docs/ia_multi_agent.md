@@ -142,6 +142,15 @@ Resuelve el problema de **CORS** — el browser no puede llamar directamente a `
 - **Botón flotante** `✦` en esquina inferior derecha (visible en todas las páginas).
 - **Botón `✦ Agente IA`** en el header principal (morado).
 
+### Sistema de Reporte de Errores y Contexto (Log System)
+- **Botón "Reportar error / contexto"** (`<AlertTriangle />`) en cada respuesta del asistente.
+- **Formulario modal**: Permite al profesional ingresar un comentario describiendo la falla de lógica o contexto.
+- **Endpoint**: `POST /api/ai/report`
+- **Archivo de Registro**: `logs/agent_reports.log` (formato estructurado con timestamp ISO, fecha legible, comentario del usuario, lista de agentes participantes e historial completo de la conversación).
+
+### Regla Global de Profesional Tratante
+- Por norma global del sistema, la **Dra. Osly Melo** es siempre la profesional tratante predeterminada al crear o visualizar citas mediante el agente o las API, salvo que el usuario especifique de forma explícita a otro profesional.
+
 ---
 
 ## 6. Variables de Entorno Relevantes

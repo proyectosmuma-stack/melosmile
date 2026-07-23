@@ -55,6 +55,9 @@ Este documento registra el estado del proyecto, el listado exhaustivo de los **f
 - [x] **Añadir memoria conversacional** (Inyección de historial conversacional desde `ai-agent-bar.tsx` hacia los nodos de n8n).
 - [x] **Persistencia de historial en Supabase** (tabla `ai_conversation_history` para auditoría).
 - [x] **Navegación directa desde el Calendario**: Botón "Ver Ficha Completa" en la ficha flotante para editar la cita en `/appointments/[id]`.
+- [x] **Sistema de Reporte de Errores y Contexto IA (`logs/agent_reports.log`)**: Botón en respuestas del asistente para reportar fallos de lógica con formulario modal, fecha/hora, comentario del usuario, agentes involucrados e historial completo.
+- [x] **Regla Global de Profesional Tratante por Defecto**: Asignación automática de la **Dra. Osly Melo** en la creación y visualización de citas por el agente o API.
+- [x] **Fix de Edición y Carga de Citas (`/appointments/[id]`)**: Auto-emparejamiento con el catálogo `treatments`, carga automática de precios por defecto y gastos de laboratorio sin pérdida de datos al guardar o recargar.
 
 ### ⚙️ Interfaz & Ajustes UI
 - [x] **Ajuste Asistente IA Flotante**: TextArea expandible con atajo `Enter` (enviar) y `Shift+Enter` (salto de línea).

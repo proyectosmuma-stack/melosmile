@@ -109,12 +109,16 @@ Cada cita puede contener **múltiples procedimientos**:
 DOCEOF
 ---
 
-## 5. Asignación de Profesional por Defecto & Dr. Invitado / Colaborador
+## 5. Asignación de Profesional por Defecto & Emparejamiento de Catálogo
 
-- **Profesional Principal por Defecto**: Todas las citas se asignan por defecto a la **Dra. Osly Melo**.
+- **Profesional Principal por Defecto**: Por norma global del sistema, la **Dra. Osly Melo** es asignada automáticamente como profesional tratante predeterminada al crear o visualizar citas mediante el agente, API o formulario.
+- **Emparejamiento Inteligente con Catálogo (`treatments`)**:
+  - Al crear citas mediante el agente (`/api/appointments/create`), la API limpia palabras vacías (*stop words*) para relacionar la cita con un servicio existente del catálogo `treatments`.
+  - Al abrir la ficha de cita (`/appointments/[id]`), si la cita carece de bloque estructurado previo, el sistema busca automáticamente la coincidencia de `reason` o `treatment_id` en el catálogo de tratamientos para cargar su `default_price`, `lab_cost` y `treatment_id`.
+  - Al guardar la cita, se actualiza `treatment_id` en la tabla `appointments` y se sincroniza la facturación local en `billing_records`.
 - **Dr. Invitado / Colaborador**:
-  - En la ficha de cita (`/appointments/[id]`) y en el modal de nueva cita (`NewAppointmentModal`), se añade el campo de entrada **`Dr. Invitado / Colaborador (Opcional)`** (ej. *Dr. Carlos Pérez - Cirujano invitado*).
-  - Al ingresar un doctor colaborador, este se muestra en la cabecera junto a la Dra. Osly Melo (`Dra. Osly Melo + Dr. Carlos Pérez (Invitado)`) y se guarda en Supabase con la etiqueta `[DoctorInvitado: ...]`.
+  - En la ficha de cita (`/appointments/[id]`) y en el modal de nueva cita (`NewAppointmentModal`), se incluye la opción **`Dr. Invitado / Colaborador`** (ej. *Dr. Carlos Pérez - Cirujano invitado*).
+  - Al seleccionar un doctor colaborador, este se muestra en la cabecera junto a la Dra. Osly Melo (`Dra. Osly Melo + Dr. Carlos Pérez (Invitado)`) y se guarda en Supabase con la etiqueta `[DoctorInvitado: ...]`.
 
 ---
 
