@@ -5,18 +5,18 @@ function getDateRange(dateStr?: string): { startISO: string; endISO: string; dat
   const now = new Date();
   const target = new Date(now);
 
-  const lower = (dateStr || "hoy").toLowerCase().trim();
+  const clean = (dateStr || "hoy").replace(/^["']|["']$/g, "").toLowerCase().trim();
 
-  if (lower.includes("mañana") || lower.includes("tomorrow")) {
+  if (clean.includes("mañana") || clean.includes("tomorrow")) {
     target.setDate(target.getDate() + 1);
-  } else if (lower.includes("pasado mañana")) {
+  } else if (clean.includes("pasado mañana")) {
     target.setDate(target.getDate() + 2);
-  } else if (lower.includes("ayer") || lower.includes("yesterday")) {
+  } else if (clean.includes("ayer") || clean.includes("yesterday")) {
     target.setDate(target.getDate() - 1);
-  } else if (lower.includes("hoy") || lower.includes("today")) {
+  } else if (clean.includes("hoy") || clean.includes("today")) {
     // Keep target as today
-  } else if (dateStr && !isNaN(new Date(dateStr).getTime())) {
-    const custom = new Date(dateStr);
+  } else if (dateStr && !isNaN(new Date(clean).getTime())) {
+    const custom = new Date(clean);
     target.setFullYear(custom.getFullYear(), custom.getMonth(), custom.getDate());
   }
 
@@ -36,8 +36,13 @@ function getDateRange(dateStr?: string): { startISO: string; endISO: string; dat
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
-    const rawDate = searchParams.get("date") || searchParams.get("q") || "hoy";
-    const patientQuery = searchParams.get("patient") || searchParams.get("patient_name");
+    let rawDate = searchParams.get("date") || searchParams.get("q") || "hoy";
+    rawDate = decodeURIComponent(rawDate).replace(/^["']|["']$/g, "").trim();
+
+    let patientQuery = searchParams.get("patient") || searchParams.get("patient_name");
+    if (patientQuery) {
+      patientQuery = decodeURIComponent(patientQuery).replace(/^["']|["']$/g, "").trim();
+    }
 
     const { startISO, endISO, dateLabel } = getDateRange(rawDate);
 
