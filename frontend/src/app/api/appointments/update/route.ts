@@ -34,7 +34,7 @@ const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { appointment_id, patient_id, appointment_date, reason, status, notes } = body;
+    const { appointment_id, patient_id, appointment_date, reason, status, notes, treatment_id, professional_id, clinic_id } = body;
 
     let targetId = appointment_id;
     let resolvedPatientId = patient_id;
@@ -80,6 +80,9 @@ export async function POST(req: Request) {
     if (reason) updates.reason = reason;
     if (status) updates.status = status;
     if (notes) updates.notes = notes;
+    if (treatment_id) updates.treatment_id = treatment_id;
+    if (professional_id) updates.professional_id = professional_id;
+    if (clinic_id) updates.clinic_id = clinic_id;
 
     const { data, error } = await (supabase as any)
       .from("appointments")

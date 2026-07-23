@@ -17,7 +17,12 @@ import {
   Clock,
   MapPin,
   CheckCircle2,
+  AlertTriangle,
+  Flag,
+  MessageSquareWarning,
 } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -247,7 +252,13 @@ function FormattedResponse({ text }: { text: string }) {
   );
 }
 
-function AssistantBubble({ msg }: { msg: Message }) {
+function AssistantBubble({
+  msg,
+  onReportError,
+}: {
+  msg: Message;
+  onReportError?: (msgId: string) => void;
+}) {
   const [showDetails, setShowDetails] = useState(false);
   const payload = msg.payload;
   const intent = payload?.intent ?? "general_query";
@@ -321,10 +332,19 @@ function AssistantBubble({ msg }: { msg: Message }) {
               )}
             </div>
 
-            {/* Timestamp */}
-            <p className="text-[10px] text-slate-500 pl-1">
-              {formatTime(msg.timestamp)}
-            </p>
+            {/* Timestamp & Report Button */}
+            <div className="flex items-center justify-between pl-1 pt-0.5">
+              <span className="text-[10px] text-slate-500">{formatTime(msg.timestamp)}</span>
+              <button
+                type="button"
+                onClick={() => onReportError?.(msg.id)}
+                className="flex items-center gap-1 text-[10px] font-semibold text-rose-400/90 hover:text-rose-300 hover:bg-rose-500/10 px-2 py-0.5 rounded-lg transition-colors cursor-pointer border border-rose-500/20"
+                title="Reportar fallo de lógica o contexto en esta respuesta"
+              >
+                <AlertTriangle className="h-3 w-3 text-rose-400" />
+                <span>Reportar error / contexto</span>
+              </button>
+            </div>
           </>
         )}
       </div>
@@ -381,6 +401,73 @@ export function AIAgentBar({ fullHeight = false }: { fullHeight?: boolean }) {
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const sessionId = useRef(uid() + uid());
+
+  // Report error modal state
+  const [reportModalOpen, setReportModalOpen] = useState(false);
+  const [reportingMsgId, setReportingMsgId] = useState<string | null>(null);
+  const [reportComment, setReportComment] = useState("");
+  const [submittingReport, setSubmittingReport] = useState(false);
+  const [reportFeedback, setReportFeedback] = useState<string | null>(null);
+
+  const handleOpenReportModal = (msgId: string) => {
+    setReportingMsgId(msgId);
+    setReportComment("");
+    setReportModalOpen(true);
+  };
+
+  const handleSendReport = async () => {
+    if (!reportComment.trim()) return;
+    setSubmittingReport(true);
+    try {
+      const targetMsg = messages.find((m) => m.id === reportingMsgId);
+      const intent = targetMsg?.payload?.intent ?? "general_query";
+
+      const INTENT_AGENTS_MAP: Record<string, string[]> = {
+        schedule_appointment: ["Musly Router", "Agente de Agendamiento (03-melosmile-agent-appointment)"],
+        patient_info: ["Musly Router", "Agente Clínico (02-melosmile-agent-medical-history)"],
+        billing: ["Musly Router", "Agente de Facturación (07-melosmile-agent-billing)"],
+        clinical_note: ["Musly Router", "Agente de Notas Clínicas (05-melosmile-agent-clinical-notes)"],
+        general_query: ["Musly Router", "Agente General / QA (01-melosmile-agent-qa)"],
+        error: ["Musly Router", "Agente Error / Fallback"],
+      };
+
+      const participatingAgents = INTENT_AGENTS_MAP[intent] || ["Musly Router", "Sub-Agentes Melosmile"];
+
+      const historySnapshot = messages
+        .filter((m) => !m.isLoading)
+        .map((m) => ({
+          role: m.role,
+          text: m.payload?.summary ?? m.text,
+          intent: m.payload?.intent,
+          timestamp: m.timestamp,
+        }));
+
+      const res = await fetch("/api/ai/report", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          user_comment: reportComment,
+          session_id: sessionId.current,
+          conversation_history: historySnapshot,
+          participating_agents: participatingAgents,
+          timestamp: new Date().toISOString(),
+        }),
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        setReportModalOpen(false);
+        setReportFeedback("✅ Reporte de conversación guardado en logs/agent_reports.log");
+        setTimeout(() => setReportFeedback(null), 6000);
+      } else {
+        alert(`Error al guardar reporte: ${data.error}`);
+      }
+    } catch (err: any) {
+      alert(`Error al enviar reporte: ${err.message}`);
+    } finally {
+      setSubmittingReport(false);
+    }
+  };
 
   // Auto-scroll to bottom on new message
   useEffect(() => {
@@ -495,15 +582,32 @@ export function AIAgentBar({ fullHeight = false }: { fullHeight?: boolean }) {
 
   return (
     <div
-      className={`w-full flex flex-col bg-slate-950 text-white overflow-hidden ${
+      className={`w-full flex flex-col bg-slate-950 text-white overflow-hidden relative ${
         fullHeight ? "h-full" : "h-[560px]"
       }`}
     >
+      {/* ── Notification Feedback Banner ── */}
+      {reportFeedback && (
+        <div className="bg-emerald-900/90 text-emerald-100 border-b border-emerald-700/80 px-4 py-2.5 text-xs font-semibold flex items-center justify-between animate-in slide-in-from-top duration-200">
+          <span>{reportFeedback}</span>
+          <button
+            onClick={() => setReportFeedback(null)}
+            className="text-emerald-300 hover:text-white text-xs font-bold"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
       {/* ── Messages Container ── */}
       <div className="flex-1 overflow-y-auto px-5 py-6 space-y-6 scrollbar-thin scrollbar-thumb-slate-800">
         {messages.map((msg) =>
           msg.role === "assistant" ? (
-            <AssistantBubble key={msg.id} msg={msg} />
+            <AssistantBubble
+              key={msg.id}
+              msg={msg}
+              onReportError={handleOpenReportModal}
+            />
           ) : (
             <UserBubble key={msg.id} msg={msg} />
           )
@@ -565,6 +669,57 @@ export function AIAgentBar({ fullHeight = false }: { fullHeight?: boolean }) {
           )}
         </Button>
       </form>
+
+      {/* ── Modal / Dialog Reportar Error de Agente ── */}
+      <Dialog open={reportModalOpen} onOpenChange={setReportModalOpen}>
+        <DialogContent className="sm:max-w-md bg-slate-900 border border-slate-800 text-white rounded-2xl p-6 shadow-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-base font-bold flex items-center gap-2 text-rose-400">
+              <AlertTriangle className="h-5 w-5" /> Reportar Fallo del Agente
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-3 py-2 text-xs">
+            <p className="text-slate-300 leading-relaxed">
+              Describe brevemente qué entendió mal el agente o qué fallo de lógica ocurrió. Esta conversación completa se guardará en un archivo de Log (<code className="text-rose-300 font-mono bg-slate-800 px-1 py-0.5 rounded">logs/agent_reports.log</code>) para que el programador ajuste la lógica de Musly.
+            </p>
+
+            <div className="space-y-1.5 pt-1">
+              <label className="font-bold text-slate-200 text-[11px] uppercase tracking-wider">
+                Comentario del usuario:
+              </label>
+              <Textarea
+                value={reportComment}
+                onChange={(e) => setReportComment(e.target.value)}
+                placeholder='Ej: "El agente agendó la cita pero no asignó el tratamiento de ortodoncia correcto ni cargó los costes."'
+                className="bg-slate-950 border-slate-800 text-white text-xs min-h-[100px] rounded-xl focus:ring-rose-500"
+              />
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2 pt-2">
+            <Button
+              variant="ghost"
+              onClick={() => setReportModalOpen(false)}
+              className="text-slate-400 hover:text-white hover:bg-slate-800 text-xs rounded-xl"
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleSendReport}
+              disabled={submittingReport || !reportComment.trim()}
+              className="bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl gap-1.5 cursor-pointer shadow-md shadow-rose-600/20"
+            >
+              {submittingReport ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Flag className="h-4 w-4" />
+              )}
+              Enviar Reporte a Log
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

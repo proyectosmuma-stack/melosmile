@@ -36,6 +36,11 @@ function parseAppointmentDate(inputDate?: string, inputTime?: string): string {
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+const STOP_WORDS = new Set([
+  "de", "del", "la", "el", "los", "las", "en", "para", "con", "sin", "por",
+  "cita", "manana", "mañana", "hoy", "revision", "revisión", "control", "consulta", "ajuste"
+]);
+
 export async function POST(req: Request) {
   try {
     const body = await req.json();
@@ -46,6 +51,7 @@ export async function POST(req: Request) {
     const rawTime = body.time;
     const rawReason = body.reason || body.treatment || body.appointment_type || body.concept;
     const rawClinic = body.clinic || body.clinic_name || body.location;
+    const rawDoctor = body.professional || body.doctor || body.professional_id;
 
     let resolvedPatientId = String(rawPatient);
 
@@ -84,13 +90,12 @@ export async function POST(req: Request) {
             phone: "+34 600 000 000",
             email: `${firstName.toLowerCase()}@melosmile.local`,
             dob: "1990-01-01",
-            historia_id: generatedHistoriaId
+            historia_id: generatedHistoriaId,
           })
           .select("id")
           .single();
 
         if (createErr || !created) {
-          // Fallback to any existing patient
           const { data: fallback } = await (supabase as any).from("patients").select("id").limit(1).single();
           resolvedPatientId = fallback?.id;
         } else {
@@ -117,48 +122,145 @@ export async function POST(req: Request) {
       if (clinics) c_id = clinics.id;
     }
 
-    if (!p_id || !UUID_REGEX.test(p_id)) {
-      const { data: profs } = await (supabase as any).from("professionals").select("id").limit(1).single();
-      if (profs) p_id = profs.id;
+    // Default professional is ALWAYS Dra. Osly Melo unless explicitly requested otherwise
+    if (rawDoctor && UUID_REGEX.test(rawDoctor)) {
+      p_id = rawDoctor;
+    } else if (rawDoctor && typeof rawDoctor === "string" && rawDoctor.trim().length > 0) {
+      const { data: matchedDoctor } = await (supabase as any)
+        .from("professionals")
+        .select("id")
+        .or(`first_name.ilike.%${rawDoctor}%,last_name.ilike.%${rawDoctor}%`)
+        .limit(1)
+        .maybeSingle();
+      if (matchedDoctor) p_id = matchedDoctor.id;
     }
 
-    let t_id = null;
-    let finalReason = rawReason || "Nueva cita (IA)";
-
-    if (rawReason) {
-      const terms = rawReason.split(/\s+/).filter(Boolean);
-      const orConditions = terms.map((term: string) => `service_name.ilike.%${term}%`).join(",");
-      
-      const { data: matchedTreatment } = await (supabase as any)
-        .from("treatments")
-        .select("id, service_name")
-        .or(orConditions)
+    if (!p_id || !UUID_REGEX.test(p_id)) {
+      const { data: osly } = await (supabase as any)
+        .from("professionals")
+        .select("id")
+        .or("first_name.ilike.%Osly%,last_name.ilike.%Melo%")
         .limit(1)
         .maybeSingle();
 
-      if (matchedTreatment) {
-        t_id = matchedTreatment.id;
-        finalReason = matchedTreatment.service_name;
+      if (osly) {
+        p_id = osly.id;
+      } else {
+        const { data: profs } = await (supabase as any).from("professionals").select("id").limit(1).single();
+        if (profs) p_id = profs.id;
+      }
+    }
+
+    // Smart Treatment & Procedure Catalog Matching
+    let t_id: string | null = null;
+    let finalReason = rawReason || "Consulta General";
+    let matchedPrice = 0;
+    let matchedLabCost = 0;
+
+    if (rawReason && typeof rawReason === "string") {
+      const rawClean = rawReason.trim();
+      
+      // 1. Try exact match first
+      const { data: exactMatch } = await (supabase as any)
+        .from("treatments")
+        .select("id, service_name, default_price, lab_cost")
+        .ilike("service_name", rawClean)
+        .limit(1)
+        .maybeSingle();
+
+      if (exactMatch) {
+        t_id = exactMatch.id;
+        finalReason = exactMatch.service_name;
+        matchedPrice = Number(exactMatch.default_price) || 0;
+        matchedLabCost = Number(exactMatch.lab_cost) || 0;
+      } else {
+        // 2. Filter terms without stop words
+        const filteredTerms = rawClean
+          .toLowerCase()
+          .replace(/[^a-záéíóúñ0-9\s]/gi, "")
+          .split(/\s+/)
+          .filter((term) => term.length > 2 && !STOP_WORDS.has(term));
+
+        if (filteredTerms.length > 0) {
+          const orConditions = filteredTerms
+            .flatMap((t) => [`service_name.ilike.%${t}%`, `abbreviation.ilike.%${t}%`])
+            .join(",");
+
+          const { data: fuzzyMatch } = await (supabase as any)
+            .from("treatments")
+            .select("id, service_name, default_price, lab_cost")
+            .or(orConditions)
+            .limit(1)
+            .maybeSingle();
+
+          if (fuzzyMatch) {
+            t_id = fuzzyMatch.id;
+            finalReason = fuzzyMatch.service_name;
+            matchedPrice = Number(fuzzyMatch.default_price) || 0;
+            matchedLabCost = Number(fuzzyMatch.lab_cost) || 0;
+          }
+        }
       }
     }
 
     const isoDate = parseAppointmentDate(rawDate, rawTime);
 
-    const { data, error } = await (supabase as any).from("appointments").insert({
-      patient_id: resolvedPatientId,
-      clinic_id: c_id,
-      professional_id: p_id,
-      treatment_id: t_id,
-      appointment_date: isoDate,
-      reason: finalReason,
-      status: body.status || "Confirmada",
-      notes: rawClinic ? `Agendada por Asistente IA (${rawClinic})` : "Agendada por Asistente IA"
-    }).select().single();
+    // Initial Procedures Structure
+    const initialProcedures = [
+      {
+        id: Date.now().toString(),
+        treatmentId: t_id || "",
+        serviceName: finalReason,
+        toothRef: "",
+        dbPrice: matchedPrice,
+        dbCommission: 60,
+        dbLabCost: matchedLabCost,
+        overridePrice: null,
+        overrideCommission: null,
+        overrideLabCost: null,
+        showOverride: false,
+      },
+    ];
+
+    let initialNotes = rawClinic
+      ? `Agendada por Asistente IA (${rawClinic})`
+      : "Agendada por Asistente IA";
+    initialNotes += `\n[Procedimientos: ${JSON.stringify(initialProcedures)}]`;
+
+    const { data, error } = await (supabase as any)
+      .from("appointments")
+      .insert({
+        patient_id: resolvedPatientId,
+        clinic_id: c_id,
+        professional_id: p_id,
+        treatment_id: t_id,
+        appointment_date: isoDate,
+        reason: finalReason,
+        status: body.status || "Confirmada",
+        notes: initialNotes,
+      })
+      .select()
+      .single();
 
     if (error) throw error;
 
+    // Create billing record asynchronously so price & lab cost are immediately available
+    if (data?.id) {
+      const netTotal = matchedPrice * 0.6 - matchedLabCost * 0.5;
+      await (supabase as any).from("billing_records").insert({
+        appointment_id: data.id,
+        custom_price: matchedPrice,
+        applied_commission_rate: 60,
+        applied_lab_discount_rate: 50,
+        calculated_total: netTotal,
+        billing_month: isoDate.substring(0, 10),
+        status: "Pendiente",
+      }).catch((bErr: any) => console.warn("Billing record insert notice:", bErr));
+    }
+
     return NextResponse.json({ success: true, data });
   } catch (error: any) {
+    console.error("Error creando cita:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

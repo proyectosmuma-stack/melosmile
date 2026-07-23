@@ -180,9 +180,10 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
       const { data: a } = await supabase
         .from("appointments")
         .select(`
-          id, appointment_date, reason, status, notes, clinic_id, professional_id,
+          id, appointment_date, reason, status, notes, clinic_id, professional_id, treatment_id,
           clinics ( name ),
           professionals ( first_name, last_name ),
+          treatments ( id, service_name, default_price, lab_cost ),
           patients ( id, first_name, last_name, historia_id, dob, phone, email, nif_cif, allergies, important_diseases, current_medication, billing_name, billing_address, billing_city, billing_postal_code )
         `)
         .eq("id", targetId)
@@ -198,7 +199,7 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
 
         const { data: tData } = await (supabase as any)
           .from("treatments")
-          .select("id, service_name, default_price")
+          .select("id, service_name, default_price, lab_cost")
           .eq("is_active", true)
           .order("service_name");
         if (tData) setTreatmentsList(tData);
@@ -213,6 +214,7 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
         const p = a.patients as any;
         const prof = a.professionals as any;
         const clinic = a.clinics as any;
+        const trt = a.treatments as any;
 
         const loadedAppt: AppointmentData = {
           id: a.id,
@@ -223,7 +225,7 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
           clinicId: a.clinic_id ?? "",
           clinicName: clinic?.name ?? "Clínica",
           professionalId: a.professional_id ?? "",
-          professionalName: prof ? `${prof.first_name} ${prof.last_name}` : "Dra. Osly Melo",
+          professionalName: prof ? `Dr. ${prof.first_name} ${prof.last_name}` : "Dra. Osly Melo",
           patientId: p?.id ?? "",
           patientName: p ? `${p.first_name} ${p.last_name}` : "Paciente",
           patientHistoriaId: p?.historia_id ?? "PAC-",
@@ -235,8 +237,8 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
           patientDiseases: p?.important_diseases ?? null,
           patientMedication: p?.current_medication ?? null,
           billingId: bData?.id ?? null,
-          customPrice: bData?.custom_price ?? 0,
-          actualLabCost: bData?.actual_lab_cost ?? 0,
+          customPrice: bData?.custom_price ?? trt?.default_price ?? 0,
+          actualLabCost: bData?.actual_lab_cost ?? trt?.lab_cost ?? 0,
           customCommission: bData?.applied_commission_rate ?? 60,
           customLabDiscount: bData?.applied_lab_discount_rate ?? 50,
           paymentStatus: bData?.status ?? "Pendiente",
@@ -247,6 +249,18 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
 
         setAppt(loadedAppt);
         setStatus(loadedAppt.status);
+
+        // Match treatment against catalog if not present in notes
+        const matchedTreatment = (tData || []).find((t: any) =>
+          a.treatment_id ? t.id === a.treatment_id : t.service_name?.toLowerCase() === loadedAppt.reason?.toLowerCase()
+        ) || (tData || []).find((t: any) =>
+          loadedAppt.reason?.toLowerCase().includes(t.service_name?.toLowerCase()) ||
+          t.service_name?.toLowerCase().includes(loadedAppt.reason?.toLowerCase())
+        );
+
+        const defaultPrice = matchedTreatment ? Number(matchedTreatment.default_price) || 0 : Number(trt?.default_price) || loadedAppt.customPrice || 0;
+        const defaultLabCost = matchedTreatment ? Number(matchedTreatment.lab_cost) || 0 : Number(trt?.lab_cost) || loadedAppt.actualLabCost || 0;
+        const matchedTreatmentId = matchedTreatment ? matchedTreatment.id : (a.treatment_id || trt?.id || "");
 
         // Parse structured blocks from notes
         const rawNotes = loadedAppt.notes ?? "";
@@ -266,12 +280,12 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
           setProcedures([
             {
               id: Date.now().toString(),
-              treatmentId: "",
-              serviceName: loadedAppt.reason || "Consulta General",
+              treatmentId: matchedTreatmentId,
+              serviceName: matchedTreatment ? matchedTreatment.service_name : (loadedAppt.reason || "Consulta General"),
               toothRef: "",
-              dbPrice: loadedAppt.customPrice || 0,
+              dbPrice: defaultPrice,
               dbCommission: loadedAppt.customCommission || 60,
-              dbLabCost: loadedAppt.actualLabCost || 0,
+              dbLabCost: defaultLabCost,
               overridePrice: null,
               overrideCommission: null,
               overrideLabCost: null,
@@ -464,34 +478,36 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
         setIsAiAnalyzed(true);
       }
 
+      const primaryTreatmentId = procedures[0]?.treatmentId || null;
+
       await supabase.from("appointments").update({
         status: status as any,
         reason: primaryReason,
         notes: combinedNotes.trim(),
+        ...(primaryTreatmentId ? { treatment_id: primaryTreatmentId } : {}),
       }).eq("id", appt.id);
 
       // Save/Update billing record
+      const billingPayload = {
+        appointment_id: appt.id,
+        custom_price: totals.totalPrice,
+        applied_commission_rate: procedures[0]?.overrideCommission ?? 60,
+        applied_lab_discount_rate: 50,
+        calculated_total: totals.totalNeto,
+        status: paymentStatus,
+        billing_month: appt.appointment_date.substring(0, 10),
+      };
+
       if (appt.billingId) {
         await (supabase as any).from("billing_records").update({
           custom_price: totals.totalPrice,
-          total_amount: totals.totalPrice,
+          applied_commission_rate: procedures[0]?.overrideCommission ?? 60,
+          applied_lab_discount_rate: 50,
+          calculated_total: totals.totalNeto,
           status: paymentStatus,
-          actual_lab_cost: totals.totalLabCost,
-          profitability_status: totals.profStatus,
-          appointment_reason: primaryReason,
         }).eq("id", appt.billingId);
       } else {
-        await (supabase as any).from("billing_records").insert({
-          appointment_id: appt.id,
-          patient_id: appt.patientId,
-          appointment_reason: primaryReason,
-          custom_price: totals.totalPrice,
-          total_amount: totals.totalPrice,
-          status: paymentStatus,
-          actual_lab_cost: totals.totalLabCost,
-          profitability_status: totals.profStatus,
-          billing_month: appt.appointment_date.substring(0, 10),
-        });
+        await (supabase as any).from("billing_records").insert(billingPayload);
       }
 
       // Trigger AI Next Step Analysis in Background
@@ -942,7 +958,8 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
                               updateProcedure(proc.id, {
                                 serviceName: val,
                                 treatmentId: found?.id || "",
-                                dbPrice: found?.default_price || 0,
+                                dbPrice: Number(found?.default_price) || 0,
+                                dbLabCost: Number((found as any)?.lab_cost) || 0,
                               });
                             }}
                             className="w-full h-9 rounded-xl border border-slate-200 bg-white px-3 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-rose-500"
