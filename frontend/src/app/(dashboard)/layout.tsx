@@ -59,13 +59,17 @@ export default function DashboardLayout({
               <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-rose-500 ring-2 ring-white" />
             </Button>
 
-            {/* AI Assistant Quick Action */}
+            {/* AI Assistant Quick Action (Shortcut: Cmd+K / Ctrl+K) */}
             <Button
               onClick={() => triggerAIAgentModal()}
               className="h-10 px-3.5 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white font-semibold text-xs shadow-md shadow-indigo-500/20 gap-2 transition-all cursor-pointer"
+              title="Abrir Asistente IA Melosmile (⌘K)"
             >
               <Sparkles className="h-4 w-4" />
               <span>Agente IA</span>
+              <kbd className="hidden sm:inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-white/20 text-[10px] font-mono tracking-tighter">
+                ⌘K
+              </kbd>
             </Button>
 
             {/* Quick Action Button */}
