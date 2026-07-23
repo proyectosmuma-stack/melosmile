@@ -1,16 +1,21 @@
 import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase/client";
 
-function parseAppointmentDate(inputDate?: string): string {
-  if (!inputDate) return new Date().toISOString();
+function parseAppointmentDate(inputDate?: string, inputTime?: string): string {
+  let combined = inputDate || "";
+  if (inputTime && !combined.includes(inputTime)) {
+    combined += ` ${inputTime}`;
+  }
 
-  const parsed = new Date(inputDate);
+  if (!combined.trim()) return new Date().toISOString();
+
+  const parsed = new Date(combined);
   if (!isNaN(parsed.getTime())) return parsed.toISOString();
 
   const now = new Date();
   const target = new Date(now);
 
-  const lower = inputDate.toLowerCase();
+  const lower = combined.toLowerCase();
   if (lower.includes("mañana")) {
     target.setDate(target.getDate() + 1);
   } else if (lower.includes("pasado mañana")) {
@@ -34,17 +39,22 @@ const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { patient_id, appointment_date, reason, clinic_id, professional_id, treatment, status } = body;
 
-    if (!patient_id) {
-      return NextResponse.json({ error: "patient_id is required" }, { status: 400 });
+    // Accept multiple naming conventions passed by different LLM tool calls
+    const rawPatient = body.patient_id || body.patient_name || body.patient || body.name;
+    const rawDate = body.appointment_date || body.date;
+    const rawTime = body.time;
+    const rawReason = body.reason || body.treatment || body.appointment_type || body.concept;
+
+    if (!rawPatient) {
+      return NextResponse.json({ error: "patient identification is required" }, { status: 400 });
     }
 
-    let resolvedPatientId = patient_id;
+    let resolvedPatientId = String(rawPatient);
 
-    // Resolve patient name if patient_id is not a valid UUID
-    if (!UUID_REGEX.test(patient_id)) {
-      const terms = String(patient_id).split(/\s+/).filter(Boolean);
+    // Resolve patient name to UUID if not a valid UUID
+    if (!UUID_REGEX.test(resolvedPatientId)) {
+      const terms = resolvedPatientId.split(/\s+/).filter(Boolean);
       const orConditions = terms
         .flatMap((term) => [
           `first_name.ilike.%${term}%`,
@@ -63,12 +73,12 @@ export async function POST(req: Request) {
       if (found) {
         resolvedPatientId = found.id;
       } else {
-        return NextResponse.json({ error: `Paciente no encontrado con el término "${patient_id}"` }, { status: 404 });
+        return NextResponse.json({ error: `Paciente no encontrado con el término "${rawPatient}"` }, { status: 404 });
       }
     }
 
-    let c_id = clinic_id;
-    let p_id = professional_id;
+    let c_id = body.clinic_id;
+    let p_id = body.professional_id;
 
     if (!c_id || !UUID_REGEX.test(c_id)) {
       const { data: clinics } = await (supabase as any).from("clinics").select("id").limit(1).single();
@@ -79,15 +89,15 @@ export async function POST(req: Request) {
       if (profs) p_id = profs.id;
     }
 
-    const isoDate = parseAppointmentDate(appointment_date);
+    const isoDate = parseAppointmentDate(rawDate, rawTime);
 
     const { data, error } = await (supabase as any).from("appointments").insert({
       patient_id: resolvedPatientId,
       clinic_id: c_id,
       professional_id: p_id,
       appointment_date: isoDate,
-      reason: reason || treatment || "Nueva cita (IA)",
-      status: status || "Confirmada",
+      reason: rawReason || "Nueva cita (IA)",
+      status: body.status || "Confirmada",
       notes: "Agendada por Asistente IA"
     }).select().single();
 
