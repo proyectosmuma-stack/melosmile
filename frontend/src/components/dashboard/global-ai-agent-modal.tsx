@@ -48,7 +48,7 @@ export function GlobalAIAgentModal() {
         <Button
           onClick={() => setIsOpen(true)}
           className="fixed bottom-6 right-6 h-14 px-4 rounded-full shadow-2xl bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white z-50 flex items-center justify-center gap-2 border-2 border-white/20 transition-transform hover:scale-105 active:scale-95 cursor-pointer"
-          title="Abrir Asistente IA Melosmile (⌘K)"
+          title="Abrir Musly (⌘K)"
         >
           <Sparkles className="h-6 w-6 animate-pulse" />
           <span className="font-semibold text-xs pr-1">Agente IA</span>
@@ -76,7 +76,7 @@ export function GlobalAIAgentModal() {
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="font-bold text-sm tracking-wide">Dispatcher IA · Melosmile</span>
+                    <span className="font-bold text-sm tracking-wide">Musly</span>
                     <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 uppercase tracking-wide">
                       n8n live
                     </span>
