@@ -1,6 +1,23 @@
 import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase/client";
 
+function cleanSearchTerm(term: string): string {
+  if (!term) return "";
+  let clean = term;
+  try {
+    clean = decodeURIComponent(clean);
+  } catch (e) {}
+
+  clean = clean.replace(/^["']|["']$/g, "").trim();
+
+  // If term contains conversational phrases like "cuándo tiene cita Munir?", extract the actual patient name
+  const stopWords = /^(cuándo|cuando|tiene|cita|citas|de|para|ver|buscar|las|los|la|el|\?|\s)+|(\s+(cuándo|cuando|tiene|cita|citas|de|para|ver|buscar|las|los|la|el|\?))+$/gi;
+  let nameOnly = clean.replace(stopWords, "").replace(/[?¿!¡]/g, "").trim();
+
+  // If cleaning stripped everything, fall back to original clean term
+  return (nameOnly.length >= 2 ? nameOnly : clean).toLowerCase();
+}
+
 function getDateRange(dateStr?: string, patientQuery?: string): { startISO: string; endISO: string | null; dateLabel: string } {
   const now = new Date();
   const target = new Date(now);
@@ -71,7 +88,8 @@ export async function GET(req: Request) {
       rawDate = "";
     }
 
-    const { startISO, endISO, dateLabel } = getDateRange(rawDate, patientQuery);
+    const cleanedTerm = cleanSearchTerm(patientQuery);
+    const { startISO, endISO, dateLabel } = getDateRange(rawDate, cleanedTerm);
 
     let query = (supabase as any)
       .from("appointments")
@@ -123,17 +141,14 @@ export async function GET(req: Request) {
       };
     });
 
-    if (patientQuery) {
-      let cleanPatient = patientQuery;
-      try { cleanPatient = decodeURIComponent(cleanPatient); } catch (e) {}
-      const term = cleanPatient.replace(/^["']|["']$/g, "").toLowerCase().trim();
-      results = results.filter((r: any) => r.paciente.toLowerCase().includes(term));
+    if (cleanedTerm) {
+      results = results.filter((r: any) => r.paciente.toLowerCase().includes(cleanedTerm));
     }
 
     let summaryText = `Citas encontradas (${results.length} en total):\n`;
     if (results.length === 0) {
       summaryText = patientQuery
-        ? `No se encontraron citas programadas para el paciente ${patientQuery}.`
+        ? `No se encontraron citas programadas para el paciente ${cleanedTerm || patientQuery}.`
         : `No hay ninguna cita programada para la fecha ${dateLabel}.`;
     } else {
       summaryText += results
