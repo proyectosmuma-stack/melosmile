@@ -11,6 +11,7 @@ const DATE_KEYWORDS = [
   "today",
   "ayer",
   "yesterday",
+  "semana",
   "enero",
   "febrero",
   "marzo",
@@ -88,6 +89,30 @@ function getDateRange(dateStr: string): { startISO: string; endISO: string; date
   let targetY = madrid.yyyy;
   let targetM = madrid.mm;
   let targetD = madrid.dd;
+
+  if (clean.includes("esta semana") || clean.includes("semana") || clean.includes("this week")) {
+    const d = new Date(madrid.yyyy, madrid.mm - 1, madrid.dd);
+    const dayOfWeek = d.getDay(); // 0 is Sun, 1 is Mon...
+    const diffToMon = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+    const monday = new Date(d);
+    monday.setDate(d.getDate() + diffToMon);
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+
+    const monY = monday.getFullYear();
+    const monM = String(monday.getMonth() + 1).padStart(2, "0");
+    const monD = String(monday.getDate()).padStart(2, "0");
+
+    const sunY = sunday.getFullYear();
+    const sunM = String(sunday.getMonth() + 1).padStart(2, "0");
+    const sunD = String(sunday.getDate()).padStart(2, "0");
+
+    return {
+      startISO: `${monY}-${monM}-${monD}T00:00:00.000Z`,
+      endISO: `${sunY}-${sunM}-${sunD}T23:59:59.999Z`,
+      dateLabel: `esta semana (${monY}-${monM}-${monD} al ${sunY}-${sunM}-${sunD})`,
+    };
+  }
 
   if (clean.includes("pasado mañana") || clean.includes("pasado manana")) {
     const d = new Date(madrid.yyyy, madrid.mm - 1, madrid.dd + 2);
