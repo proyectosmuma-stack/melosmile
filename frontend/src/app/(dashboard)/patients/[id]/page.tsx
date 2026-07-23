@@ -6,7 +6,8 @@ import {
   Activity, Upload, CheckCircle2, AlertCircle, ShieldAlert, Pill,
   Stethoscope, ArrowLeft, Clock, MapPin, Loader2, Building2, Edit3,
   Bell, Plus, Receipt, ChevronRight, X, UserCheck, Baby,
-  BadgeCheck, Sparkles, ExternalLink, Tag as TagIcon, Save, Smile, MessageSquare
+  BadgeCheck, Sparkles, ExternalLink, Tag as TagIcon, Save, Smile, MessageSquare,
+  Trash2, CheckSquare, Square
 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -255,6 +256,61 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
   const [selectedBillingIds, setSelectedBillingIds] = useState<string[]>([]);
   const [generatingInvoice, setGeneratingInvoice] = useState(false);
   const [generatingAiSummary, setGeneratingAiSummary] = useState(false);
+
+  // Bulk appointment selection
+  const [selectedAppointmentIds, setSelectedAppointmentIds] = useState<string[]>([]);
+  const [bulkActionLoading, setBulkActionLoading] = useState(false);
+
+  const toggleAppointmentSelection = (id: string) => {
+    setSelectedAppointmentIds(prev =>
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+    );
+  };
+
+  const toggleSelectAllAppointments = () => {
+    if (selectedAppointmentIds.length === appointments.length) {
+      setSelectedAppointmentIds([]);
+    } else {
+      setSelectedAppointmentIds(appointments.map(a => a.id));
+    }
+  };
+
+  const handleBulkDeleteAppointments = async () => {
+    if (selectedAppointmentIds.length === 0) return;
+    if (!confirm(`¿Eliminar ${selectedAppointmentIds.length} cita(s) seleccionada(s)? Esta acción no se puede deshacer.`)) return;
+    setBulkActionLoading(true);
+    try {
+      const { error } = await (supabase as any)
+        .from("appointments")
+        .delete()
+        .in("id", selectedAppointmentIds);
+      if (error) throw error;
+      setSelectedAppointmentIds([]);
+      await fetchAll();
+    } catch (e: any) {
+      alert(`Error eliminando citas: ${e.message}`);
+    } finally {
+      setBulkActionLoading(false);
+    }
+  };
+
+  const handleBulkStatusChange = async (newStatus: string) => {
+    if (selectedAppointmentIds.length === 0) return;
+    setBulkActionLoading(true);
+    try {
+      const { error } = await (supabase as any)
+        .from("appointments")
+        .update({ status: newStatus })
+        .in("id", selectedAppointmentIds);
+      if (error) throw error;
+      setSelectedAppointmentIds([]);
+      await fetchAll();
+    } catch (e: any) {
+      alert(`Error actualizando estado: ${e.message}`);
+    } finally {
+      setBulkActionLoading(false);
+    }
+  };
 
   // Reminders Modal State
   const [newReminderModalOpen, setNewReminderModalOpen] = useState(false);
@@ -823,8 +879,25 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
         {/* HISTORIAL */}
         {activeTab === "historial" && (
           <div className="p-0">
+            {/* Header bar */}
             <div className="flex items-center justify-between px-5 py-3 border-b border-slate-50">
-              <p className="text-xs text-slate-500 font-medium">Historial completo de visitas</p>
+              <div className="flex items-center gap-3">
+                {/* Select all toggle */}
+                {appointments.length > 0 && (
+                  <button
+                    onClick={toggleSelectAllAppointments}
+                    className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-rose-600 transition-colors"
+                  >
+                    {selectedAppointmentIds.length === appointments.length ? (
+                      <CheckSquare className="h-4 w-4 text-rose-500" />
+                    ) : (
+                      <Square className="h-4 w-4" />
+                    )}
+                    {selectedAppointmentIds.length === appointments.length ? "Deseleccionar todo" : "Seleccionar todo"}
+                  </button>
+                )}
+                <p className="text-xs text-slate-400 font-medium">Historial completo de visitas</p>
+              </div>
               <Button
                 size="sm"
                 onClick={() =>
@@ -838,6 +911,45 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
                 <Plus className="h-3 w-3" /> Nueva Cita
               </Button>
             </div>
+
+            {/* Bulk action bar — shown when items are selected */}
+            {selectedAppointmentIds.length > 0 && (
+              <div className="flex flex-wrap items-center gap-2 px-5 py-2.5 bg-rose-50 border-b border-rose-100">
+                <span className="text-xs font-bold text-rose-700">
+                  {selectedAppointmentIds.length} cita(s) seleccionada(s)
+                </span>
+                <div className="flex flex-wrap items-center gap-2 ml-2">
+                  <select
+                    disabled={bulkActionLoading}
+                    defaultValue=""
+                    onChange={(e) => { if (e.target.value) handleBulkStatusChange(e.target.value); }}
+                    className="text-xs font-semibold border border-slate-200 rounded-lg px-2 py-1.5 bg-white text-slate-700 cursor-pointer focus:ring-2 focus:ring-rose-300 focus:outline-none"
+                  >
+                    <option value="" disabled>Cambiar estado…</option>
+                    <option value="Confirmada">✅ Confirmada</option>
+                    <option value="Pendiente">⏳ Pendiente</option>
+                    <option value="Realizada">🏁 Realizada</option>
+                    <option value="Cancelada">❌ Cancelada</option>
+                  </select>
+                  <Button
+                    size="sm"
+                    disabled={bulkActionLoading}
+                    onClick={handleBulkDeleteAppointments}
+                    className="h-7 gap-1.5 rounded-lg bg-red-500 hover:bg-red-600 text-white text-[11px] font-bold cursor-pointer"
+                  >
+                    {bulkActionLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}
+                    Eliminar seleccionadas
+                  </Button>
+                  <button
+                    onClick={() => setSelectedAppointmentIds([])}
+                    className="text-xs text-slate-400 hover:text-slate-600 transition-colors ml-1"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              </div>
+            )}
+
             {appointments.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-16 text-slate-400">
                 <CalendarIcon className="h-10 w-10 mb-3 text-slate-200" />
@@ -847,34 +959,55 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
               <div className="divide-y divide-slate-50">
                 {appointments.map((app) => {
                   const d = formatDate(app.appointment_date);
+                  const isSelected = selectedAppointmentIds.includes(app.id);
                   return (
-                    <Link key={app.id} href={`/appointments/${app.id}`} className="px-5 py-4 flex items-center justify-between hover:bg-slate-50 transition-colors cursor-pointer group">
-                      <div className="flex items-start gap-4">
-                        <div className="h-12 w-12 rounded-xl bg-rose-50 flex flex-col items-center justify-center shrink-0 border border-rose-100">
-                          <span className="text-sm font-black text-slate-800">{d.day}</span>
-                          <span className="text-[10px] font-bold text-rose-600 uppercase">{d.month}</span>
+                    <div
+                      key={app.id}
+                      className={`px-5 py-4 flex items-center gap-3 transition-colors ${
+                        isSelected ? "bg-rose-50/70" : "hover:bg-slate-50"
+                      }`}
+                    >
+                      {/* Checkbox */}
+                      <button
+                        onClick={() => toggleAppointmentSelection(app.id)}
+                        className="shrink-0 text-slate-300 hover:text-rose-500 transition-colors"
+                      >
+                        {isSelected ? (
+                          <CheckSquare className="h-4 w-4 text-rose-500" />
+                        ) : (
+                          <Square className="h-4 w-4" />
+                        )}
+                      </button>
+
+                      {/* Row content — click navigates to detail */}
+                      <Link href={`/appointments/${app.id}`} className="flex items-center justify-between flex-1 group cursor-pointer">
+                        <div className="flex items-start gap-4">
+                          <div className="h-12 w-12 rounded-xl bg-rose-50 flex flex-col items-center justify-center shrink-0 border border-rose-100">
+                            <span className="text-sm font-black text-slate-800">{d.day}</span>
+                            <span className="text-[10px] font-bold text-rose-600 uppercase">{d.month}</span>
+                          </div>
+                          <div>
+                            <p className="font-bold text-slate-900 text-sm group-hover:text-rose-600 transition-colors">
+                              {app.reason} — {app.treatmentName}
+                            </p>
+                            <p className="text-xs text-slate-500 flex flex-wrap items-center gap-2 mt-0.5">
+                              <span className="flex items-center gap-1">
+                                <User className="h-3 w-3" />
+                                {app.professionalName}
+                                {app.guestDoctor && <span className="font-bold text-rose-600 ml-0.5">(+ {app.guestDoctor})</span>}
+                              </span>
+                              <span className="flex items-center gap-1"><Building2 className="h-3 w-3" />{app.clinicName}</span>
+                              <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{d.time}</span>
+                            </p>
+                            {app.notes && <p className="text-[11px] text-slate-400 mt-1 italic truncate max-w-md">{app.notes}</p>}
+                          </div>
                         </div>
-                        <div>
-                          <p className="font-bold text-slate-900 text-sm group-hover:text-rose-600 transition-colors">
-                            {app.reason} — {app.treatmentName}
-                          </p>
-                          <p className="text-xs text-slate-500 flex flex-wrap items-center gap-2 mt-0.5">
-                            <span className="flex items-center gap-1">
-                              <User className="h-3 w-3" />
-                              {app.professionalName}
-                              {app.guestDoctor && <span className="font-bold text-rose-600 ml-0.5">(+ {app.guestDoctor})</span>}
-                            </span>
-                            <span className="flex items-center gap-1"><Building2 className="h-3 w-3" />{app.clinicName}</span>
-                            <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{d.time}</span>
-                          </p>
-                          {app.notes && <p className="text-[11px] text-slate-400 mt-1 italic truncate max-w-md">{app.notes}</p>}
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline" className={`text-xs font-semibold ${getStatusBadge(app.status)}`}>{app.status}</Badge>
+                          <ChevronRight className="h-4 w-4 text-slate-300 group-hover:text-rose-400 transition-colors" />
                         </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Badge variant="outline" className={`text-xs font-semibold ${getStatusBadge(app.status)}`}>{app.status}</Badge>
-                        <ChevronRight className="h-4 w-4 text-slate-300 group-hover:text-rose-400 transition-colors" />
-                      </div>
-                    </Link>
+                      </Link>
+                    </div>
                   );
                 })}
               </div>

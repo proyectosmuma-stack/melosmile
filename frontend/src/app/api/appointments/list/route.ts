@@ -1,66 +1,51 @@
 import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase/client";
 
-function cleanSearchTerm(term: string): string {
+// Keywords that indicate a date context, NOT a patient name
+const DATE_KEYWORDS = ["mañana", "manana", "tomorrow", "pasado mañana", "hoy", "today", "ayer", "yesterday"];
+
+function isDateKeyword(term: string): boolean {
+  const lower = term.toLowerCase();
+  return DATE_KEYWORDS.some((kw) => lower.includes(kw)) || /\d{4}-\d{2}-\d{2}/.test(lower);
+}
+
+function cleanPatientName(term: string): string {
   if (!term) return "";
   let clean = term;
-  try {
-    clean = decodeURIComponent(clean);
-  } catch (e) {}
-
+  try { clean = decodeURIComponent(clean); } catch (e) {}
   clean = clean.replace(/^["']|["']$/g, "").trim();
 
-  // If term contains conversational phrases like "cuándo tiene cita Munir?", extract the actual patient name
-  const stopWords = /^(cuándo|cuando|tiene|cita|citas|de|para|ver|buscar|las|los|la|el|\?|\s)+|(\s+(cuándo|cuando|tiene|cita|citas|de|para|ver|buscar|las|los|la|el|\?))+$/gi;
-  let nameOnly = clean.replace(stopWords, "").replace(/[?¿!¡]/g, "").trim();
+  // Strip conversational stop-words from patient search
+  // e.g. "cuándo tiene cita Munir?" → "Munir"
+  const stopPattern = /\b(cu[aá]ndo|tiene|cita|citas|de|para|ver|buscar|las|los|la|el|revisar|agenda)\b/gi;
+  let nameOnly = clean.replace(stopPattern, "").replace(/[?¿!¡]/g, "").replace(/\s+/g, " ").trim();
 
-  // If cleaning stripped everything, fall back to original clean term
   return (nameOnly.length >= 2 ? nameOnly : clean).toLowerCase();
 }
 
-function getDateRange(dateStr?: string, patientQuery?: string): { startISO: string; endISO: string | null; dateLabel: string } {
+function getDateRange(dateStr: string): { startISO: string; endISO: string | null; dateLabel: string } {
   const now = new Date();
   const target = new Date(now);
 
-  let clean = (dateStr || "").replace(/^["']|["']$/g, "").toLowerCase().trim();
-  try {
-    clean = decodeURIComponent(clean);
-  } catch (e) {}
+  let clean = dateStr.replace(/^["']|["']$/g, "").toLowerCase().trim();
+  try { clean = decodeURIComponent(clean); } catch (e) {}
 
-  let isSpecificFutureDate = false;
-
-  if (clean.includes("mañana") || clean.includes("tomorrow")) {
-    target.setDate(target.getDate() + 1);
-    isSpecificFutureDate = true;
-  } else if (clean.includes("pasado mañana")) {
+  if (clean.includes("pasado mañana") || clean.includes("pasado manana")) {
     target.setDate(target.getDate() + 2);
-    isSpecificFutureDate = true;
+  } else if (clean.includes("mañana") || clean.includes("manana") || clean.includes("tomorrow")) {
+    target.setDate(target.getDate() + 1);
   } else if (clean.includes("ayer") || clean.includes("yesterday")) {
     target.setDate(target.getDate() - 1);
-    isSpecificFutureDate = true;
   } else {
     const isoMatch = clean.match(/\d{4}-\d{2}-\d{2}/);
     if (isoMatch && !isNaN(new Date(isoMatch[0]).getTime())) {
       const custom = new Date(isoMatch[0]);
       target.setFullYear(custom.getFullYear(), custom.getMonth(), custom.getDate());
-      isSpecificFutureDate = true;
     }
-  }
-
-  // If patient query is present and no explicit relative/ISO date (like "mañana") was passed, search all upcoming from today
-  if (patientQuery && !isSpecificFutureDate) {
-    const startOfDay = new Date(now);
-    startOfDay.setHours(0, 0, 0, 0);
-    return {
-      startISO: startOfDay.toISOString(),
-      endISO: null,
-      dateLabel: "próximas citas"
-    };
   }
 
   const startOfDay = new Date(target);
   startOfDay.setHours(0, 0, 0, 0);
-
   const endOfDay = new Date(target);
   endOfDay.setHours(23, 59, 59, 999);
 
@@ -74,22 +59,50 @@ function getDateRange(dateStr?: string, patientQuery?: string): { startISO: stri
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
-    let rawDate = searchParams.get("date") || "";
-    let patientQuery =
-      searchParams.get("patient") ||
-      searchParams.get("patient_name") ||
+
+    // Collect all possible query parameters
+    const rawDate = searchParams.get("date") || "";
+    const rawQ =
       searchParams.get("q") ||
       searchParams.get("query") ||
+      searchParams.get("patient") ||
+      searchParams.get("patient_name") ||
       "";
 
-    // Auto-detect if rawDate contains patient name instead of a date
-    if (!patientQuery && rawDate && !["hoy", "mañana", "ayer", "pasado mañana"].some((w) => rawDate.toLowerCase().includes(w)) && !rawDate.match(/\d{4}-\d{2}-\d{2}/)) {
-      patientQuery = rawDate;
-      rawDate = "";
+    // Determine whether rawQ is a date keyword or a patient name
+    let dateInput = rawDate;
+    let patientInput = "";
+
+    if (rawQ) {
+      if (isDateKeyword(rawQ)) {
+        // e.g. q=mañana → use as date
+        dateInput = dateInput || rawQ;
+      } else {
+        // e.g. q=Munir or q="cuando tiene cita Munir?" → use as patient
+        patientInput = rawQ;
+      }
     }
 
-    const cleanedTerm = cleanSearchTerm(patientQuery);
-    const { startISO, endISO, dateLabel } = getDateRange(rawDate, cleanedTerm);
+    const patientTerm = cleanPatientName(patientInput);
+
+    let startISO: string;
+    let endISO: string | null;
+    let dateLabel: string;
+
+    if (dateInput) {
+      // Filter by specific date
+      ({ startISO, endISO, dateLabel } = getDateRange(dateInput));
+    } else if (patientTerm) {
+      // Patient search with no date: return all upcoming from today
+      const startOfDay = new Date();
+      startOfDay.setHours(0, 0, 0, 0);
+      startISO = startOfDay.toISOString();
+      endISO = null;
+      dateLabel = "próximas citas";
+    } else {
+      // No params: default to today
+      ({ startISO, endISO, dateLabel } = getDateRange("hoy"));
+    }
 
     let query = (supabase as any)
       .from("appointments")
@@ -111,18 +124,15 @@ export async function GET(req: Request) {
     }
 
     const { data: rawAppointments, error } = await query;
-
     if (error) throw error;
 
     let results = (rawAppointments || []).map((apt: any) => {
       const dateObj = new Date(apt.appointment_date);
       const timeStr = dateObj.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" });
       const fechaStr = dateObj.toISOString().split("T")[0];
-
       const patientName = apt.patients
         ? `${apt.patients.first_name} ${apt.patients.last_name}`.trim()
         : "Paciente Sin Nombre";
-
       const doctorName = apt.professionals
         ? `Dr. ${apt.professionals.first_name} ${apt.professionals.last_name}`.trim()
         : "Profesional";
@@ -141,22 +151,23 @@ export async function GET(req: Request) {
       };
     });
 
-    if (cleanedTerm) {
-      results = results.filter((r: any) => r.paciente.toLowerCase().includes(cleanedTerm));
+    // Filter by patient name if provided
+    if (patientTerm) {
+      results = results.filter((r: any) => r.paciente.toLowerCase().includes(patientTerm));
     }
 
-    let summaryText = `Citas encontradas (${results.length} en total):\n`;
+    let summaryText: string;
     if (results.length === 0) {
-      summaryText = patientQuery
-        ? `No se encontraron citas programadas para el paciente ${cleanedTerm || patientQuery}.`
-        : `No hay ninguna cita programada para la fecha ${dateLabel}.`;
+      summaryText = patientTerm
+        ? `No se encontraron citas programadas para el paciente "${patientInput}".`
+        : `No hay ninguna cita programada para ${dateLabel === "próximas citas" ? "próximas fechas" : `la fecha ${dateLabel}`}.`;
     } else {
-      summaryText += results
-        .map(
-          (c: any, i: number) =>
+      summaryText = `Citas encontradas (${results.length} en total):\n` +
+        results
+          .map((c: any, i: number) =>
             `${i + 1}. ${c.fecha} a las ${c.hora} - ${c.paciente} (${c.motivo}, ${c.clinica}, ${c.estado})`
-        )
-        .join("\n");
+          )
+          .join("\n");
     }
 
     return NextResponse.json({
