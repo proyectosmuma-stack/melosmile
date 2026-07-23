@@ -12,35 +12,34 @@ function getDateRange(dateStr?: string, fullUrl?: string, hasPatientQuery?: bool
 
   clean = clean.replace(/^["']|["']$/g, "").toLowerCase().trim();
 
-  let isExplicitDate = false;
+  let isSpecificFutureDate = false;
 
   if (clean.includes("mañana") || clean.includes("tomorrow")) {
     target.setDate(target.getDate() + 1);
-    isExplicitDate = true;
+    isSpecificFutureDate = true;
   } else if (clean.includes("pasado mañana")) {
     target.setDate(target.getDate() + 2);
-    isExplicitDate = true;
+    isSpecificFutureDate = true;
   } else if (clean.includes("ayer") || clean.includes("yesterday")) {
     target.setDate(target.getDate() - 1);
-    isExplicitDate = true;
-  } else if (clean.includes("hoy") || clean.includes("today")) {
-    isExplicitDate = true;
+    isSpecificFutureDate = true;
   } else {
     const isoMatch = clean.match(/\d{4}-\d{2}-\d{2}/);
     if (isoMatch && !isNaN(new Date(isoMatch[0]).getTime())) {
       const custom = new Date(isoMatch[0]);
+      // If the ISO date matches tomorrow or future, mark as specific date
       target.setFullYear(custom.getFullYear(), custom.getMonth(), custom.getDate());
-      isExplicitDate = true;
+      isSpecificFutureDate = true;
     }
   }
 
-  // If a patient query is provided WITHOUT an explicit date, search all upcoming from today
-  if (hasPatientQuery && !isExplicitDate) {
+  // If searching by patient name and no future date was explicitly requested (e.g., "mañana"), search ALL upcoming citas
+  if (hasPatientQuery && !isSpecificFutureDate) {
     const startOfDay = new Date(now);
     startOfDay.setHours(0, 0, 0, 0);
     return {
       startISO: startOfDay.toISOString(),
-      endISO: null, // No upper bound -> query all upcoming appointments
+      endISO: null, // Unlimited upper bound -> fetches all upcoming citas
       dateLabel: "próximas citas"
     };
   }
@@ -133,7 +132,7 @@ export async function GET(req: Request) {
       summaryText += results
         .map(
           (c: any, i: number) =>
-            `${i + 1}. ${c.fecha} a las ${c.hora} - ${c.paciente} (Motivo: ${c.motivo}, Clínica: ${c.clinica}, Doctor: ${c.doctor}, Estado: ${c.estado})`
+            `${i + 1}. ${c.fecha} a las ${c.hora} - ${c.paciente} (${c.motivo}, ${c.clinica}, ${c.estado})`
         )
         .join("\n");
     }
