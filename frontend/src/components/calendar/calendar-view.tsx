@@ -65,9 +65,9 @@ export const DEFAULT_CLINICS: Clinic[] = [
 
 type ViewMode = "month" | "week" | "day";
 
-// 15-minute grid slots from 08:00 to 20:45
+// 15-minute grid slots from 07:00 to 23:45 so all morning, evening & night appointments fit
 const TIME_SLOTS: string[] = [];
-for (let h = 8; h <= 20; h++) {
+for (let h = 7; h <= 23; h++) {
   for (let m = 0; m < 60; m += 15) {
     const hh = String(h).padStart(2, "0");
     const mm = String(m).padStart(2, "0");
@@ -506,7 +506,7 @@ export function CalendarView({ selectedClinicId = "all" }: { selectedClinicId?: 
         </div>
       )}
 
-      {/* ---------------- VISTA SEMANAL / DÍA GRID (15-MIN SLOTS) ---------------- */}
+      {/* ---------------- VISTA SEMANAL / DÍA GRID (15-MIN SLOTS 07:00-23:45) ---------------- */}
       {(viewMode === "week" || viewMode === "day") && (
         <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
           <div className="w-full">
