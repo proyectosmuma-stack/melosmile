@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
@@ -14,10 +14,8 @@ import {
   Calendar as CalendarIcon, 
   Pencil, 
   Trash2, 
-  MoreVertical, 
-  X, 
-  Share2,
-  ExternalLink
+  AlertTriangle,
+  Loader2
 } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
@@ -38,9 +36,11 @@ export function AppointmentDetailDrawer({
   onClose,
   onUpdateEvent,
 }: AppointmentDetailDrawerProps) {
-  if (!event) return null;
-
   const router = useRouter();
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  if (!event) return null;
 
   const clinic = DEFAULT_CLINICS.find((c) => c.id === event.clinicId) || DEFAULT_CLINICS[0];
 
@@ -49,31 +49,50 @@ export function AppointmentDetailDrawer({
   const endTimeStr = format(endDate, "HH:mm");
   const formattedDateStr = format(event.date, "EEEE, d 'de' MMMM", { locale: es });
 
+  const handleOpenChange = (open: boolean) => {
+    if (!open) {
+      setShowDeleteConfirm(false);
+      setIsDeleting(false);
+      onClose();
+    }
+  };
+
+  const handleDelete = async () => {
+    try {
+      setIsDeleting(true);
+      const { error } = await supabase.from("appointments").delete().eq("id", event.id);
+      if (error) throw error;
+
+      window.dispatchEvent(new CustomEvent("appointment-created"));
+      setShowDeleteConfirm(false);
+      setIsDeleting(false);
+      onClose();
+    } catch (err: any) {
+      console.error("Error eliminando cita:", err);
+      alert(err.message || "Error al eliminar la cita.");
+      setIsDeleting(false);
+    }
+  };
+
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-md rounded-3xl p-6 bg-[#f8fafc] border border-slate-200/90 shadow-2xl text-slate-800">
-        {/* Top Header Action Buttons (Google Calendar Style) */}
-        <div className="flex items-center justify-end gap-1 mb-2">
+        {/* Top Header Action Buttons (Google Calendar Style - Single Pencil, Trash, Mail) */}
+        <div className="flex items-center justify-end gap-1 pr-6 mb-2">
           <button
             onClick={() => {
               onClose();
               router.push(`/appointments/${event.id}`);
             }}
-            className="p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-200/70 rounded-full transition-colors cursor-pointer"
-            title="Editar cita"
+            className="p-2 text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors cursor-pointer"
+            title="Modificar Cita"
           >
             <Pencil className="h-4 w-4" />
           </button>
 
           <button
-            onClick={async () => {
-              if (confirm(`¿Estás seguro de eliminar la cita de ${event.patient}?`)) {
-                await supabase.from("appointments").delete().eq("id", event.id);
-                window.dispatchEvent(new CustomEvent("appointment-created"));
-                onClose();
-              }
-            }}
-            className="p-2 text-slate-600 hover:text-rose-600 hover:bg-slate-200/70 rounded-full transition-colors cursor-pointer"
+            onClick={() => setShowDeleteConfirm(true)}
+            className="p-2 text-slate-600 hover:text-rose-600 hover:bg-rose-50 rounded-full transition-colors cursor-pointer"
             title="Eliminar cita"
           >
             <Trash2 className="h-4 w-4" />
@@ -86,23 +105,35 @@ export function AppointmentDetailDrawer({
           >
             <Mail className="h-4 w-4" />
           </button>
-
-          <button
-            onClick={() => alert(`Opciones adicionales de ${event.patient}`)}
-            className="p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-200/70 rounded-full transition-colors cursor-pointer"
-            title="Más opciones"
-          >
-            <MoreVertical className="h-4 w-4" />
-          </button>
-
-          <button
-            onClick={onClose}
-            className="p-2 ml-1 text-slate-600 hover:text-slate-900 bg-slate-200/80 hover:bg-slate-300/80 rounded-full transition-colors cursor-pointer"
-            title="Cerrar"
-          >
-            <X className="h-4 w-4" />
-          </button>
         </div>
+
+        {/* Delete Confirmation Alert Banner (Inline) */}
+        {showDeleteConfirm && (
+          <div className="mb-4 p-3.5 bg-rose-50 border border-rose-200 rounded-2xl flex flex-col gap-2.5 animate-in fade-in slide-in-from-top-2 duration-200">
+            <div className="flex items-center gap-2 text-rose-800 text-xs font-bold">
+              <AlertTriangle className="h-4 w-4 text-rose-600 shrink-0" />
+              <span>¿Eliminar la cita de {event.patient}?</span>
+            </div>
+            <p className="text-[11px] text-rose-700">Esta acción es permanente y eliminará la cita de la agenda.</p>
+            <div className="flex items-center justify-end gap-2 pt-1">
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                disabled={isDeleting}
+                className="px-3 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-200/60 rounded-lg transition-colors cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={isDeleting}
+                className="px-3.5 py-1 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-lg shadow-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+              >
+                {isDeleting && <Loader2 className="h-3 w-3 animate-spin" />}
+                Confirmar y Eliminar
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Event Title & Subtitle */}
         <div className="flex items-start gap-3 mt-1">
@@ -113,20 +144,6 @@ export function AppointmentDetailDrawer({
               {formattedDateStr} · {event.startTime} – {endTimeStr}
             </p>
           </div>
-        </div>
-
-        {/* Modificar Cita Pill Button */}
-        <div className="pl-6.5 mt-3">
-          <button
-            onClick={() => {
-              onClose();
-              router.push(`/appointments/${event.id}`);
-            }}
-            className="border border-blue-200 hover:border-blue-400 bg-blue-50/50 hover:bg-blue-100/50 text-blue-600 rounded-full px-4 py-1.5 text-xs font-bold flex items-center gap-2 transition-all shadow-xs cursor-pointer"
-          >
-            <Pencil className="h-3.5 w-3.5 text-blue-600" />
-            Modificar Cita
-          </button>
         </div>
 
         {/* Google Calendar Details List */}
@@ -180,7 +197,7 @@ export function AppointmentDetailDrawer({
           </div>
         </div>
 
-        {/* Footer Actions */}
+        {/* Footer Actions - Single Clean Action */}
         <div className="mt-6 pt-3 border-t border-slate-200/60 flex items-center justify-between">
           <Button
             variant="outline"
@@ -193,15 +210,16 @@ export function AppointmentDetailDrawer({
             <User className="h-3.5 w-3.5 mr-1.5 text-slate-500" />
             Ver Paciente
           </Button>
+
           <Button
             onClick={() => {
               onClose();
               router.push(`/appointments/${event.id}`);
             }}
-            className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-xl px-5 shadow-sm cursor-pointer"
+            className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-xl px-4 shadow-sm cursor-pointer"
           >
             <Pencil className="h-3.5 w-3.5 mr-1.5" />
-            Editar Cita Completa
+            Modificar Cita
           </Button>
         </div>
       </DialogContent>
