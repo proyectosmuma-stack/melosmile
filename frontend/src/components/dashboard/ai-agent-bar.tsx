@@ -410,10 +410,23 @@ export function AIAgentBar({ fullHeight = false }: { fullHeight?: boolean }) {
     setPrompt("");
 
     try {
+      // Build conversation history (last 10 real messages, excluding loading states)
+      const historySnapshot = messages
+        .filter((m) => !m.isLoading)
+        .slice(-10)
+        .map((m) => ({
+          role: m.role,
+          content: m.payload?.summary ?? m.text,
+        }));
+
       const response = await fetch("/api/dispatcher", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: trimmed, session_id: sessionId.current }),
+        body: JSON.stringify({
+          message: trimmed,
+          session_id: sessionId.current,
+          history: historySnapshot,
+        }),
       });
 
       let payload: AssistantPayload;
