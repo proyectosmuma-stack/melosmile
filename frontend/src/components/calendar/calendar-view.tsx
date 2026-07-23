@@ -171,7 +171,7 @@ export function CalendarView({ selectedClinicId = "all" }: { selectedClinicId?: 
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 8,
+        distance: 15, // Require 15px intentional move to start drag
       },
     })
   );
@@ -322,8 +322,16 @@ export function CalendarView({ selectedClinicId = "all" }: { selectedClinicId?: 
     const [dateStr, timeSlot] = dropData.split("|");
     const [hh, mm] = (timeSlot || "09:00").split(":");
 
+    const currentEvt = events.find(e => e.id === eventId);
+    if (!currentEvt) return;
+
     const newDate = new Date(dateStr);
     newDate.setHours(parseInt(hh, 10), parseInt(mm, 10), 0, 0);
+
+    // GUARD: If date and time slot didn't change, DO NOTHING!
+    if (isSameDay(currentEvt.date, newDate) && currentEvt.startTime === timeSlot) {
+      return;
+    }
 
     setEvents(prev => prev.map(evt => {
       if (evt.id === eventId) {
