@@ -22,8 +22,11 @@ import {
   Clock, 
   AlertCircle,
   ExternalLink,
-  Plus
+  Plus,
+  Pencil,
+  Trash2
 } from "lucide-react";
+import { supabase } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 import { AppointmentEvent, DEFAULT_CLINICS } from "@/components/calendar/calendar-view";
 
@@ -106,6 +109,32 @@ export function AppointmentDetailDrawer({
                   <SelectItem value="Cancelada">Cancelada</SelectItem>
                 </SelectContent>
               </Select>
+
+              {/* Google Calendar Style Quick Actions */}
+              <button
+                onClick={() => {
+                  onClose();
+                  router.push(`/appointments/${event.id}`);
+                }}
+                className="h-8 w-8 rounded-lg border border-slate-200 flex items-center justify-center hover:bg-slate-100 text-slate-600 transition-colors"
+                title="Editar cita completa (Google Calendar)"
+              >
+                <Pencil className="h-4 w-4" />
+              </button>
+
+              <button
+                onClick={async () => {
+                  if (confirm(`¿Estás seguro de eliminar la cita de ${event.patient}?`)) {
+                    await supabase.from("appointments").delete().eq("id", event.id);
+                    window.dispatchEvent(new CustomEvent("appointment-created"));
+                    onClose();
+                  }
+                }}
+                className="h-8 w-8 rounded-lg border border-slate-200 flex items-center justify-center hover:bg-rose-50 text-slate-600 hover:text-rose-600 transition-colors"
+                title="Eliminar cita"
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
             </div>
           </div>
         </DialogHeader>
@@ -128,6 +157,19 @@ export function AppointmentDetailDrawer({
             </div>
 
             <div className="flex items-center gap-2">
+              {event.patientId && (
+                <Button 
+                  onClick={() => {
+                    onClose();
+                    router.push(`/patients/${event.patientId}`);
+                  }}
+                  size="sm" 
+                  variant="outline" 
+                  className="h-8 text-xs rounded-lg border-slate-300"
+                >
+                  Ver Ficha Paciente
+                </Button>
+              )}
               <Button size="sm" variant="outline" className="h-8 text-xs rounded-lg border-slate-300">
                 WhatsApp
               </Button>

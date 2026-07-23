@@ -10,7 +10,7 @@ import { Sparkles, Building2, User, Stethoscope, Calculator, CalendarCheck, Chev
 import { cn } from "@/lib/utils";
 import { format, startOfWeek, addDays, subDays, addWeeks, subWeeks, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isSameMonth, addMonths, subMonths, parseISO, set } from "date-fns";
 import { es } from "date-fns/locale";
-import { DndContext, DragEndEvent, useDraggable, useDroppable } from '@dnd-kit/core';
+import { DndContext, DragEndEvent, useDraggable, useDroppable, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 import { PatientSelect, Patient } from "@/components/patients/patient-select";
 import { AppointmentDetailDrawer } from "@/components/calendar/appointment-detail-drawer";
@@ -48,6 +48,7 @@ export type AppointmentEvent = {
   durationMinutes: number;
   clinicId: string;
   patient: string;
+  patientId?: string;
   patientHistoriaId?: string;
   patientPhone?: string;
   patientEmail?: string;
@@ -100,7 +101,7 @@ function DroppableCell({ id, day, slot, isToday, onCellClick, children }: any) {
   );
 }
 
-function DraggableEvent({ event, clinic, heightPx, onClick }: any) {
+function DraggableEvent({ event, clinic, heightPx, onClick, onDoubleClick, viewMode, dayIndex }: any) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: event.id,
     data: event
@@ -114,27 +115,45 @@ function DraggableEvent({ event, clinic, heightPx, onClick }: any) {
     opacity: isDragging ? 0.8 : 1,
   };
 
+  // Smart Tooltip positioning so it never overflows offscreen
+  const tooltipClass = cn(
+    "absolute hidden group-hover/event:block bg-slate-900 text-white text-xs p-3 rounded-xl shadow-2xl w-56 z-[100] pointer-events-none transition-all",
+    viewMode === "day"
+      ? "left-0 top-full mt-2" // Day view: show below event inside the day column
+      : dayIndex >= 4
+      ? "right-full mr-2 top-0" // Fri, Sat, Sun: show to the left
+      : "left-full ml-2 top-0"  // Mon, Tue, Wed, Thu: show to the right
+  );
+
   return (
     <div
       ref={setNodeRef}
       {...listeners}
       {...attributes}
-      onClick={(e) => { e.stopPropagation(); onClick(event, e); }}
+      onClick={(e) => { 
+        e.stopPropagation(); 
+        onClick(event, e); 
+      }}
+      onDoubleClick={(e) => {
+        e.stopPropagation();
+        if (onDoubleClick) onDoubleClick(event);
+      }}
       className={cn(
-        "absolute inset-x-1 rounded-lg px-2 py-1 cursor-grab active:cursor-grabbing shadow-sm hover:shadow-md transition-all border-l-4 overflow-visible group/event",
+        "absolute inset-x-1 rounded-lg px-2 py-1 cursor-pointer active:cursor-grabbing shadow-sm hover:shadow-md transition-all border-l-4 overflow-visible group/event select-none",
         clinic.color, clinic.borderColor, "text-white"
       )}
       style={style}
     >
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between pointer-events-none">
         <p className="text-[11px] font-bold leading-tight truncate">{event.patient}</p>
         <span className="text-[9px] opacity-80 font-mono">{event.startTime} ({event.durationMinutes}m)</span>
       </div>
-      <p className="text-[10px] opacity-90 truncate">{event.title} · {clinic.name}</p>
+      <p className="text-[10px] opacity-90 truncate pointer-events-none">{event.title} · {clinic.name}</p>
       
       {/* Tooltip Quick Preview */}
-      <div className="absolute top-0 right-full mr-2 hidden group-hover/event:block bg-slate-900 text-white text-xs p-3 rounded-lg shadow-xl w-52 z-[100] pointer-events-none">
+      <div className={tooltipClass}>
         <p className="font-bold text-sm mb-1">{event.patient}</p>
+        <p className="text-slate-300 text-[11px] font-medium mb-1">{event.title}</p>
         {event.patientHistoriaId && <p className="text-slate-300 text-[11px] flex items-center gap-1.5"><User className="h-3 w-3" /> {event.patientHistoriaId}</p>}
         {event.patientPhone && <p className="text-slate-300 text-[11px] flex items-center gap-1.5 mt-0.5"><Phone className="h-3 w-3" /> {event.patientPhone}</p>}
         {event.patientEmail && <p className="text-slate-300 text-[11px] flex items-center gap-1.5 mt-0.5"><Mail className="h-3 w-3" /> {event.patientEmail}</p>}
@@ -148,6 +167,14 @@ export function CalendarView({ selectedClinicId = "all" }: { selectedClinicId?: 
   const [currentDate, setCurrentDate] = useState<Date>(today);
   const [events, setEvents] = useState<AppointmentEvent[]>([]);
   const [clinics, setClinics] = useState<Clinic[]>(DEFAULT_CLINICS);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    })
+  );
 
   const fetchAppointments = useCallback(async () => {
     try {
@@ -203,6 +230,7 @@ export function CalendarView({ selectedClinicId = "all" }: { selectedClinicId?: 
             durationMinutes: 45,
             clinicId: actualClinicId,
             patient: p ? `${p.first_name} ${p.last_name}` : "Paciente",
+            patientId: p?.id,
             patientHistoriaId: p?.historia_id ?? undefined,
             patientPhone: p?.phone ?? undefined,
             patientEmail: p?.email ?? undefined,
@@ -452,7 +480,7 @@ export function CalendarView({ selectedClinicId = "all" }: { selectedClinicId?: 
 
       {/* ---------------- VISTA SEMANAL / DÍA GRID (15-MIN SLOTS - Direct Page Scroll) ---------------- */}
       {(viewMode === "week" || viewMode === "day") && (
-        <DndContext onDragEnd={handleDragEnd}>
+        <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
           <div className="w-full">
             <div
               className="grid"
@@ -487,7 +515,7 @@ export function CalendarView({ selectedClinicId = "all" }: { selectedClinicId?: 
                     ) : null}
                   </div>
 
-                  {(viewMode === "week" ? weekDays : [currentDate]).map((day) => {
+                  {(viewMode === "week" ? weekDays : [currentDate]).map((day, dayIndex) => {
                     const slotEvents = displayEvents.filter(
                       (e) => isSameDay(e.date, day) && e.startTime === slot
                     );
@@ -512,6 +540,9 @@ export function CalendarView({ selectedClinicId = "all" }: { selectedClinicId?: 
                               clinic={cl}
                               heightPx={heightPx}
                               onClick={handleEventClick}
+                              onDoubleClick={(e: any) => window.location.href = `/appointments/${e.id}`}
+                              viewMode={viewMode}
+                              dayIndex={dayIndex}
                             />
                           );
                         })}
