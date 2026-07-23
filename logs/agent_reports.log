@@ -1,0 +1,20 @@
+================================================================ statistics test log line
+================================================================================
+[REPORTE DE ERROR / CONTEXTO IA - viernes, 24 de julio de 2026, 1:12:20]
+ID Sesión          : k00a9vsxos4fr3p6tf5b3
+Fecha y Hora       : viernes, 24 de julio de 2026, 1:12:20 (2026-07-23T23:12:20.412Z)
+Agentes Involucrados: Musly Router, Agente General / QA (01-melosmile-agent-qa)
+Comentario Usuario : "munir tiene una cita para el 24 julio y el agente me dice que no hay citas agendadas para el paciente que le pregunte"
+
+------------------- HISTORIAL DE LA CONVERSACIÓN -------------------
+[1] ASISTENTE (Musly) [Intención: general_query]:
+Hola 👋 Soy Musly, tu asistente IA. Puedo agendar citas, consultar la agenda del día, gestionar pacientes y facturación. ¿En qué te ayudo hoy?
+
+[2] USUARIO:
+cuando es la proxima cita de munir?
+
+[3] ASISTENTE (Musly) [Intención: general_query]:
+No encontré ninguna cita para Munir. ¿Deseas agendar una nueva cita para él?
+
+================================================================================
+
