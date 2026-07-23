@@ -1,19 +1,69 @@
 import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase/client";
 
+function parseAppointmentDate(inputDate?: string): string {
+  if (!inputDate) return new Date().toISOString();
+
+  const parsed = new Date(inputDate);
+  if (!isNaN(parsed.getTime())) return parsed.toISOString();
+
+  const now = new Date();
+  const target = new Date(now);
+
+  const lower = inputDate.toLowerCase();
+  if (lower.includes("mañana")) {
+    target.setDate(target.getDate() + 1);
+  } else if (lower.includes("pasado mañana")) {
+    target.setDate(target.getDate() + 2);
+  }
+
+  const timeMatch = lower.match(/(\d{1,2})(?::(\d{2}))?/);
+  if (timeMatch) {
+    const hours = parseInt(timeMatch[1], 10);
+    const minutes = timeMatch[2] ? parseInt(timeMatch[2], 10) : 0;
+    target.setHours(hours, minutes, 0, 0);
+  } else {
+    target.setHours(10, 0, 0, 0);
+  }
+
+  return target.toISOString();
+}
+
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export async function POST(req: Request) {
   try {
     const body = await req.json();
     const { appointment_id, patient_id, appointment_date, reason, status, notes } = body;
 
     let targetId = appointment_id;
+    let resolvedPatientId = patient_id;
 
-    if (!targetId && patient_id) {
-      // Get most recent appointment for patient
+    if (patient_id && !UUID_REGEX.test(patient_id)) {
+      const terms = String(patient_id).split(/\s+/).filter(Boolean);
+      const orConditions = terms
+        .flatMap((term) => [
+          `first_name.ilike.%${term}%`,
+          `last_name.ilike.%${term}%`,
+          `phone.ilike.%${term}%`,
+        ])
+        .join(",");
+
+      const { data: found } = await (supabase as any)
+        .from("patients")
+        .select("id")
+        .or(orConditions)
+        .limit(1)
+        .maybeSingle();
+
+      if (found) resolvedPatientId = found.id;
+    }
+
+    if (!targetId && resolvedPatientId) {
       const { data: latest } = await (supabase as any)
         .from("appointments")
         .select("id")
-        .eq("patient_id", patient_id)
+        .eq("patient_id", resolvedPatientId)
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
@@ -26,7 +76,7 @@ export async function POST(req: Request) {
     }
 
     const updates: Record<string, any> = {};
-    if (appointment_date) updates.appointment_date = appointment_date;
+    if (appointment_date) updates.appointment_date = parseAppointmentDate(appointment_date);
     if (reason) updates.reason = reason;
     if (status) updates.status = status;
     if (notes) updates.notes = notes;
