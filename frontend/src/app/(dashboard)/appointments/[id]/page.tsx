@@ -4,7 +4,8 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   User, Calendar as CalendarIcon, Clock, Building2, Stethoscope, FileText, Upload,
   CreditCard, MessageSquare, CheckCircle2, Save, Loader2, AlertCircle, ArrowLeft, Receipt,
-  TrendingDown, TrendingUp, AlertTriangle, FlaskConical, Plus, Sparkles, ExternalLink
+  TrendingDown, TrendingUp, AlertTriangle, FlaskConical, Plus, Sparkles, ExternalLink,
+  Pill, Activity, ShieldAlert, ChevronRight, Check
 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -30,6 +31,9 @@ type AppointmentData = {
   patientPhone: string;
   patientEmail: string;
   patientNif: string;
+  patientAllergies: string | null;
+  patientDiseases: string | null;
+  patientMedication: string | null;
   billingId: string | null;
   customPrice: number;
   actualLabCost: number;
@@ -73,6 +77,9 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
   const [reason, setReason] = useState("");
   const [notes, setNotes] = useState("");
   const [toothRef, setToothRef] = useState("");
+  const [prescribedMedication, setPrescribedMedication] = useState("");
+  const [nextStepNotes, setNextStepNotes] = useState("");
+
   const [paymentStatus, setPaymentStatus] = useState("Pendiente");
   const [price, setPrice] = useState("0");
   const [labCost, setLabCost] = useState("0");
@@ -97,14 +104,14 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
     if (!targetId) return;
     setLoading(true);
     try {
-      // 1. Fetch appointment details
+      // Fetch appointment details + patient allergies
       const { data: a } = await supabase
         .from("appointments")
         .select(`
           id, appointment_date, reason, status, notes,
           clinics ( name ),
           professionals ( first_name, last_name ),
-          patients ( id, first_name, last_name, historia_id, phone, email, nif_cif, billing_name, billing_address, billing_city, billing_postal_code )
+          patients ( id, first_name, last_name, historia_id, phone, email, nif_cif, allergies, important_diseases, current_medication, billing_name, billing_address, billing_city, billing_postal_code )
         `)
         .eq("id", targetId)
         .limit(1)
@@ -118,7 +125,7 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
           .eq("appointment_id", a.id)
           .maybeSingle();
 
-        // Fetch treatments list catalog
+        // Fetch treatments catalog
         const { data: tData } = await (supabase as any)
           .from("treatments")
           .select("id, service_name, default_price")
@@ -126,7 +133,7 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
           .order("service_name");
         if (tData) setTreatmentsList(tData);
 
-        // Fetch documents attached to this appointment
+        // Fetch attached documents
         const { data: dData } = await (supabase as any)
           .from("documents")
           .select("id, file_name, document_type, description, created_at")
@@ -152,6 +159,9 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
           patientPhone: p?.phone ?? "",
           patientEmail: p?.email ?? "",
           patientNif: p?.nif_cif ?? "",
+          patientAllergies: p?.allergies ?? null,
+          patientDiseases: p?.important_diseases ?? null,
+          patientMedication: p?.current_medication ?? null,
           billingId: bData?.id ?? null,
           customPrice: bData?.custom_price ?? 0,
           actualLabCost: bData?.actual_lab_cost ?? 0,
@@ -166,7 +176,37 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
         setAppt(loadedAppt);
         setStatus(loadedAppt.status);
         setReason(loadedAppt.reason);
-        setNotes(loadedAppt.notes ?? "");
+
+        // Parse notes for Tooth, Medication, NextSteps if embedded
+        const rawNotes = loadedAppt.notes ?? "";
+        let parsedNotes = rawNotes;
+        let parsedTooth = "";
+        let parsedMeds = "";
+        let parsedNext = "";
+
+        const toothMatch = rawNotes.match(/\[Pieza\/Zona:\s*(.*?)\]/i);
+        if (toothMatch) {
+          parsedTooth = toothMatch[1];
+          parsedNotes = parsedNotes.replace(toothMatch[0], "").trim();
+        }
+
+        const medMatch = rawNotes.match(/\[Receta\/Medicación:\s*(.*?)\]/i);
+        if (medMatch) {
+          parsedMeds = medMatch[1];
+          parsedNotes = parsedNotes.replace(medMatch[0], "").trim();
+        }
+
+        const nextMatch = rawNotes.match(/\[Seguimiento\/Próxima cita:\s*(.*?)\]/i);
+        if (nextMatch) {
+          parsedNext = nextMatch[1];
+          parsedNotes = parsedNotes.replace(nextMatch[0], "").trim();
+        }
+
+        setNotes(parsedNotes);
+        setToothRef(parsedTooth);
+        setPrescribedMedication(parsedMeds);
+        setNextStepNotes(parsedNext);
+
         setPaymentStatus(loadedAppt.paymentStatus ?? "Pendiente");
         setPrice(String(loadedAppt.customPrice));
         setLabCost(String(loadedAppt.actualLabCost));
@@ -186,12 +226,16 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
     if (!appt) return;
     setSaving(true);
     try {
-      const fullNotes = toothRef ? `[Pieza/Zona: ${toothRef}]\n${notes}` : notes;
+      // Reconstruct formatted notes (Notion-style structured blocks)
+      let combinedNotes = notes;
+      if (toothRef) combinedNotes += `\n[Pieza/Zona: ${toothRef}]`;
+      if (prescribedMedication) combinedNotes += `\n[Receta/Medicación: ${prescribedMedication}]`;
+      if (nextStepNotes) combinedNotes += `\n[Seguimiento/Próxima cita: ${nextStepNotes}]`;
 
       await supabase.from("appointments").update({
         status: status as any,
         reason,
-        notes: fullNotes,
+        notes: combinedNotes.trim(),
       }).eq("id", appt.id);
 
       const numPrice = parseFloat(price) || 0;
@@ -210,7 +254,6 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
           profitability_status: profStatus,
         }).eq("id", appt.billingId);
       } else {
-        // Create billing record if doesn't exist yet
         await (supabase as any).from("billing_records").insert({
           appointment_id: appt.id,
           patient_id: appt.patientId,
@@ -321,7 +364,7 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
     return (
       <div className="flex items-center justify-center h-96">
         <Loader2 className="h-8 w-8 animate-spin text-rose-500" />
-        <span className="ml-3 text-slate-600 font-medium">Cargando datos de la cita...</span>
+        <span className="ml-3 text-slate-600 font-medium">Cargando Ficha de Cita...</span>
       </div>
     );
   }
@@ -346,17 +389,44 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
         </Link>
       </div>
 
-      {/* Top Title Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
-            Ficha de Gestión de Cita <span className="text-slate-400 font-normal">#{appt.id.slice(0, 8)}</span>
-          </h1>
-          <p className="text-xs text-slate-500 mt-0.5">Gestión clínica, procedimientos, notas de evolución y contabilidad Odoo.</p>
+      {/* Notion-Style Top Header Banner */}
+      <div className="bg-white border border-slate-200/80 rounded-2xl shadow-sm p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex items-start gap-4">
+          <div className="h-14 w-14 rounded-2xl bg-rose-50 border border-rose-100 flex items-center justify-center text-rose-600 font-black text-xl shrink-0">
+            {appt.patientName[0]}
+          </div>
+          <div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <h1 className="text-2xl font-black text-slate-900">{appt.patientName}</h1>
+              <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-rose-50 text-rose-600 border border-rose-100">
+                {appt.patientHistoriaId}
+              </span>
+            </div>
+            <p className="text-xs text-slate-500 flex flex-wrap items-center gap-3 mt-1">
+              <span className="flex items-center gap-1 font-semibold text-slate-700">
+                <CalendarIcon className="h-3.5 w-3.5 text-rose-500" />
+                {apptDate.toLocaleDateString("es-ES", { day: "2-digit", month: "long", year: "numeric" })}
+              </span>
+              <span>·</span>
+              <span className="flex items-center gap-1 font-semibold text-slate-700">
+                <Clock className="h-3.5 w-3.5 text-rose-500" />
+                {apptDate.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" })}
+              </span>
+              <span>·</span>
+              <span className="flex items-center gap-1 font-medium text-slate-600">
+                <Building2 className="h-3.5 w-3.5 text-slate-400" /> {appt.clinicName}
+              </span>
+              <span>·</span>
+              <span className="flex items-center gap-1 font-medium text-slate-600">
+                <Stethoscope className="h-3.5 w-3.5 text-slate-400" /> {appt.professionalName}
+              </span>
+            </p>
+          </div>
         </div>
+
         <div className="flex items-center gap-2">
           <Select value={status} onValueChange={(val) => setStatus(val || "")}>
-            <SelectTrigger className="w-[160px] bg-white border-slate-200 text-xs font-semibold">
+            <SelectTrigger className="w-[160px] bg-white border-slate-200 text-xs font-bold shadow-sm">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -368,66 +438,46 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
               <SelectItem value="No Presentado">No Presentado</SelectItem>
             </SelectContent>
           </Select>
-          <Button onClick={handleSave} disabled={saving} className="gap-2 bg-rose-500 hover:bg-rose-600 text-white font-bold text-xs rounded-xl shadow-md shadow-rose-500/20">
-            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} Guardar Cambios
+
+          <Button
+            onClick={handleSave}
+            disabled={saving}
+            className="gap-2 bg-rose-500 hover:bg-rose-600 text-white font-bold text-xs rounded-xl shadow-md shadow-rose-500/20"
+          >
+            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} Guardar Ficha
           </Button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Column: Clinical & Session Details */}
-        <div className="lg:col-span-2 space-y-6">
-          <Card className="border-0 shadow-md rounded-2xl bg-white overflow-hidden">
-            <div className="p-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="h-12 w-12 rounded-full bg-rose-100 flex items-center justify-center text-rose-600 font-bold text-lg">
-                  {appt.patientName[0]}
-                </div>
-                <div>
-                  <h2 className="text-base font-bold text-slate-900">
-                    {appt.patientName} <span className="text-xs text-rose-600 font-bold">({appt.patientHistoriaId})</span>
-                  </h2>
-                  <div className="flex gap-4 text-xs text-slate-500 mt-0.5">
-                    {appt.patientPhone && <span>{appt.patientPhone}</span>}
-                    {appt.patientEmail && <span>{appt.patientEmail}</span>}
-                  </div>
-                </div>
-              </div>
-              <Link href={`/patients/${appt.patientId}`}>
-                <Button size="sm" variant="outline" className="text-xs rounded-xl font-semibold">Ver Ficha Cliente</Button>
-              </Link>
+      {/* Notion Callout Banner for Patient Medical Alerts */}
+      {(appt.patientAllergies || appt.patientDiseases || appt.patientMedication) && (
+        <div className="bg-amber-50/80 border border-amber-200/80 rounded-2xl p-4 flex items-start gap-3 text-amber-900 shadow-sm">
+          <ShieldAlert className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+          <div className="text-xs space-y-1">
+            <p className="font-bold text-amber-950 uppercase tracking-wider text-[11px]">
+              Alerta Médica de Anamnesis para la Consulta:
+            </p>
+            <div className="flex flex-wrap gap-x-4 gap-y-1 text-amber-800 font-medium">
+              {appt.patientAllergies && <span><strong>Alergias:</strong> {appt.patientAllergies}</span>}
+              {appt.patientDiseases && <span><strong>Antecedentes:</strong> {appt.patientDiseases}</span>}
+              {appt.patientMedication && <span><strong>Medicación habitual:</strong> {appt.patientMedication}</span>}
             </div>
+          </div>
+        </div>
+      )}
 
-            <CardContent className="p-6 space-y-6">
-              {/* Date / Clinic / Doctor badges */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 rounded-xl bg-slate-50 border border-slate-100">
-                <div>
-                  <Label className="text-[10px] uppercase font-bold text-slate-400">Fecha</Label>
-                  <p className="font-semibold text-slate-900 text-xs flex items-center gap-1.5 mt-0.5">
-                    <CalendarIcon className="h-3.5 w-3.5 text-slate-400" /> {apptDate.toLocaleDateString("es-ES", { day: "2-digit", month: "long", year: "numeric" })}
-                  </p>
-                </div>
-                <div>
-                  <Label className="text-[10px] uppercase font-bold text-slate-400">Hora</Label>
-                  <p className="font-semibold text-slate-900 text-xs flex items-center gap-1.5 mt-0.5">
-                    <Clock className="h-3.5 w-3.5 text-slate-400" /> {apptDate.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" })}
-                  </p>
-                </div>
-                <div>
-                  <Label className="text-[10px] uppercase font-bold text-slate-400">Clínica / Sede</Label>
-                  <p className="font-semibold text-slate-900 text-xs flex items-center gap-1.5 mt-0.5">
-                    <Building2 className="h-3.5 w-3.5 text-slate-400" /> {appt.clinicName}
-                  </p>
-                </div>
-                <div>
-                  <Label className="text-[10px] uppercase font-bold text-slate-400">Doctor/a</Label>
-                  <p className="font-semibold text-slate-900 text-xs flex items-center gap-1.5 mt-0.5">
-                    <Stethoscope className="h-3.5 w-3.5 text-slate-400" /> {appt.professionalName}
-                  </p>
-                </div>
-              </div>
-
-              {/* Procedimiento & Pieza Dental */}
+      {/* Main Grid Content */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left Column: Clinical Canvas & Evolution Notes */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Procedimiento & Pieza Dental */}
+          <Card className="border-0 shadow-md rounded-2xl bg-white">
+            <CardHeader className="pb-3 border-b border-slate-100">
+              <CardTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
+                <Stethoscope className="h-5 w-5 text-rose-500" /> Detalle del Tratamiento & Pieza Dental
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-6 space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="sm:col-span-2 space-y-1.5">
                   <Label className="text-xs font-semibold text-slate-800">Tratamiento / Procedimiento Realizado</Label>
@@ -441,7 +491,7 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
                           setPrice(String(found.default_price));
                         }
                       }}
-                      className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-rose-500"
+                      className="w-full h-10 rounded-xl border border-slate-200 bg-white px-3 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-rose-500"
                     >
                       <option value={reason}>{reason || "-- Seleccionar del catálogo --"}</option>
                       {treatmentsList.map((t) => (
@@ -456,32 +506,67 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
                 </div>
 
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-semibold text-slate-800">Pieza Dental / Zona</Label>
+                  <Label className="text-xs font-semibold text-slate-800">Pieza / Cuadrante</Label>
                   <Input
                     value={toothRef}
                     onChange={(e) => setToothRef(e.target.value)}
                     placeholder="Ej: Pieza 36 / Cuadrante 2"
-                    className="rounded-lg text-xs"
+                    className="rounded-xl text-xs"
                   />
                 </div>
-              </div>
-
-              {/* Anotaciones & Evolución Clínica */}
-              <div className="space-y-2">
-                <Label className="text-xs font-semibold text-slate-800 flex items-center gap-2">
-                  <MessageSquare className="h-4 w-4 text-rose-500" /> Evolución Clínica & Observaciones del Doctor
-                </Label>
-                <Textarea
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  className="min-h-[140px] bg-slate-50/50 border-slate-200 text-xs leading-relaxed resize-y rounded-xl"
-                  placeholder="Detalles clínicos de la sesión, hallazgos, tratamiento realizado, medicación recetada e instrucciones para la próxima visita..."
-                />
               </div>
             </CardContent>
           </Card>
 
-          {/* Documentos & Registro Fotográfico de la Cita */}
+          {/* Anotaciones & Evolución Clínica (Notion Style Block) */}
+          <Card className="border-0 shadow-md rounded-2xl bg-white">
+            <CardHeader className="pb-3 border-b border-slate-100">
+              <CardTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
+                <MessageSquare className="h-5 w-5 text-rose-500" /> Evolución Clínica & Observaciones del Doctor
+              </CardTitle>
+            </CardHeader>
+
+            <CardContent className="p-6 space-y-4">
+              <div className="space-y-2">
+                <Label className="text-xs font-semibold text-slate-700">Notas de Evolución (Formato Libre / Notion Block)</Label>
+                <Textarea
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  className="min-h-[160px] bg-slate-50/60 border-slate-200 text-xs leading-relaxed resize-y rounded-xl p-4 font-normal"
+                  placeholder="Escribe aquí los detalles clínicos de la sesión, respuesta del paciente, técnica empleada..."
+                />
+              </div>
+
+              {/* Prescripción de Medicamentos & Próximas Indicaciones */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
+                    <Pill className="h-3.5 w-3.5 text-purple-600" /> Medicación Recetada / Pauta
+                  </Label>
+                  <Input
+                    value={prescribedMedication}
+                    onChange={(e) => setPrescribedMedication(e.target.value)}
+                    placeholder="Ej: Amoxicilina 875mg c/8h por 7 días"
+                    className="rounded-xl text-xs"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
+                    <Activity className="h-3.5 w-3.5 text-blue-600" /> Pauta Próxima Cita / Seguimiento
+                  </Label>
+                  <Input
+                    value={nextStepNotes}
+                    onChange={(e) => setNextStepNotes(e.target.value)}
+                    placeholder="Ej: Citar en 3 semanas para quitar puntos"
+                    className="rounded-xl text-xs"
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Adjuntos & Registro Fotográfico (Vectorizado) */}
           <Card className="border-0 shadow-md rounded-2xl bg-white">
             <CardHeader className="flex flex-row items-center justify-between pb-3 border-b border-slate-100">
               <CardTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
@@ -494,7 +579,7 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
                 disabled={uploadingDoc}
                 className="gap-2 rounded-xl text-xs font-semibold"
               >
-                {uploadingDoc ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />} Adjuntar Archivo
+                {uploadingDoc ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />} Subir Archivo
               </Button>
             </CardHeader>
 
@@ -513,8 +598,8 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
               >
                 <div className="flex flex-col items-center gap-2 text-slate-500">
                   <Upload className="h-7 w-7 text-slate-300" />
-                  <p className="text-xs font-semibold text-slate-700">Arrastra fotos de la sesión, radiografías o consentimientos</p>
-                  <p className="text-[11px] text-slate-400">Los archivos se vectorizan automáticamente para el Agente IA</p>
+                  <p className="text-xs font-semibold text-slate-700">Arrastra fotografías clínicas, RX o informes en PDF</p>
+                  <p className="text-[11px] text-slate-400">Procesamiento vectorial automático por n8n para el Agente IA</p>
                 </div>
               </div>
 
@@ -528,7 +613,7 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
                         <p className="text-xs font-bold text-slate-800 truncate">{doc.file_name}</p>
                         <p className="text-[10px] text-slate-400">{doc.description || "Vectorizado 🧠"}</p>
                       </div>
-                      <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-violet-100 text-violet-700">
+                      <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-violet-100 text-violet-700 border border-violet-200">
                         IA 🧠
                       </span>
                     </div>
@@ -615,7 +700,7 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
                   </div>
                 </div>
 
-                {/* Profitability Indicator Section */}
+                {/* Profitability Section */}
                 {(() => {
                   const p = parseFloat(price) || 0;
                   const l = parseFloat(labCost) || 0;
@@ -671,7 +756,7 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
               <div className="space-y-2 pt-2">
                 <Button
                   onClick={() => setPaymentModalOpen(true)}
-                  className="w-full bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl gap-2 font-bold text-xs h-10 shadow-md shadow-emerald-600/20"
+                  className="w-full bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl gap-2 font-bold text-xs h-10 shadow-md shadow-emerald-600/20 cursor-pointer"
                 >
                   <Plus className="h-4 w-4" /> Registrar Pago de esta Cita
                 </Button>
@@ -686,7 +771,7 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
                   <Button
                     onClick={handleOdooInvoice}
                     disabled={syncingOdoo}
-                    className="w-full bg-purple-600 hover:bg-purple-700 text-white border-0 gap-2 font-bold text-xs h-10 rounded-xl shadow-md shadow-purple-600/20"
+                    className="w-full bg-purple-600 hover:bg-purple-700 text-white border-0 gap-2 font-bold text-xs h-10 rounded-xl shadow-md shadow-purple-600/20 cursor-pointer"
                   >
                     {syncingOdoo ? <Loader2 className="h-4 w-4 animate-spin" /> : <Receipt className="h-4 w-4" />}
                     Generar Factura en Odoo
