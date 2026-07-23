@@ -40,12 +40,12 @@ export function GlobalAIAgentModal() {
       {/* Centered AI Agent Modal Overlay */}
       {isOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="relative w-full max-w-3xl bg-slate-950 rounded-2xl shadow-2xl border border-slate-800 overflow-hidden animate-in zoom-in-95 duration-200">
+          <div className="relative w-full max-w-2xl bg-slate-950 rounded-2xl shadow-2xl border border-slate-800 overflow-hidden animate-in zoom-in-95 duration-200">
             {/* Header */}
-            <div className="bg-slate-900 border-b border-slate-800 px-5 py-3.5 flex items-center justify-between">
+            <div className="bg-slate-900/80 border-b border-slate-800 px-5 py-3 flex items-center justify-between">
               <div className="flex items-center gap-2 text-white">
-                <Sparkles className="h-5 w-5 text-violet-400" />
-                <span className="font-bold text-sm tracking-wide">Asistente IA Melosmile</span>
+                <Sparkles className="h-4 w-4 text-violet-400" />
+                <span className="font-bold text-sm tracking-wide">Dispatcher IA · Melosmile</span>
               </div>
               <Button
                 variant="ghost"
@@ -58,9 +58,7 @@ export function GlobalAIAgentModal() {
             </div>
 
             {/* Embedded AI Agent Bar */}
-            <div className="p-4 md:p-6">
-              <AIAgentBar />
-            </div>
+            <AIAgentBar />
           </div>
         </div>
       )}

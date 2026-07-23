@@ -206,7 +206,11 @@ export function CalendarView({ selectedClinicId = "all" }: { selectedClinicId?: 
             patientHistoriaId: p?.historia_id ?? undefined,
             patientPhone: p?.phone ?? undefined,
             patientEmail: p?.email ?? undefined,
-            doctor: prof ? `${prof.first_name} ${prof.last_name}` : "Dra. Osly Melo",
+            doctor: (() => {
+              const baseDoc = prof ? `${prof.first_name} ${prof.last_name}` : "Dra. Osly Melo";
+              const guestMatch = a.notes ? a.notes.match(/\[DoctorInvitado:\s*(.*?)\]/i) : null;
+              return guestMatch ? `${baseDoc} (+ ${guestMatch[1]})` : baseDoc;
+            })(),
             price: 0,
             labCost: 0,
           };

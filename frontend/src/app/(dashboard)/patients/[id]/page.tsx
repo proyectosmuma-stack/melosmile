@@ -6,7 +6,7 @@ import {
   Activity, Upload, CheckCircle2, AlertCircle, ShieldAlert, Pill,
   Stethoscope, ArrowLeft, Clock, MapPin, Loader2, Building2, Edit3,
   Bell, Plus, Receipt, ChevronRight, X, UserCheck, Baby,
-  BadgeCheck, Sparkles, ExternalLink, Tag as TagIcon
+  BadgeCheck, Sparkles, ExternalLink, Tag as TagIcon, Save, Smile, MessageSquare
 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,9 @@ import { TagItem, getTagStyle } from "@/components/patients/tag-input";
 import { cn } from "@/lib/utils";
 import { triggerNewAppointmentModal } from "@/components/calendar/new-appointment-modal";
 import { PaymentRegistrationModal } from "@/components/billing/payment-registration-modal";
+import { Odontogram, OdontogramData } from "@/components/appointments/odontogram";
+import { NewReminderModal } from "@/components/reminders/new-reminder-modal";
+import { Send as SendIcon } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -56,6 +59,7 @@ type Appointment = {
   clinicName: string;
   clinicId: string;
   professionalName: string;
+  guestDoctor?: string | null;
   treatmentName: string;
 };
 
@@ -250,6 +254,16 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [selectedBillingIds, setSelectedBillingIds] = useState<string[]>([]);
   const [generatingInvoice, setGeneratingInvoice] = useState(false);
+  const [generatingAiSummary, setGeneratingAiSummary] = useState(false);
+
+  // Reminders Modal State
+  const [newReminderModalOpen, setNewReminderModalOpen] = useState(false);
+  const [sendingReminderId, setSendingReminderId] = useState<string | null>(null);
+
+  // Patient Master Odontogram State
+  const [patientOdontogram, setPatientOdontogram] = useState<OdontogramData>({});
+  const [isEditingOdontogram, setIsEditingOdontogram] = useState<boolean>(false);
+  const [savingOdontogram, setSavingOdontogram] = useState<boolean>(false);
 
   const fetchAll = useCallback(async () => {
     if (!targetId) return;
@@ -301,17 +315,52 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
         .order("appointment_date", { ascending: false });
 
       if (apptData) {
-        setAppointments(apptData.map((a: any) => ({
-          id: a.id,
-          appointment_date: a.appointment_date,
-          reason: a.reason ?? "Visita",
-          status: a.status ?? "Pendiente",
-          notes: a.notes,
-          clinicId: a.clinic_id,
-          clinicName: a.clinics?.name ?? "—",
-          professionalName: a.professionals ? `${a.professionals.first_name} ${a.professionals.last_name}` : "—",
-          treatmentName: a.treatments?.service_name ?? "—",
-        })));
+        setAppointments(apptData.map((a: any) => {
+          const guestMatch = a.notes ? a.notes.match(/\[DoctorInvitado:\s*(.*?)\]/i) : null;
+          const guestDoc = guestMatch ? guestMatch[1] : null;
+          const baseProf = a.professionals ? `${a.professionals.first_name} ${a.professionals.last_name}` : "Dra. Osly Melo";
+
+          return {
+            id: a.id,
+            appointment_date: a.appointment_date,
+            reason: a.reason ?? "Visita",
+            status: a.status ?? "Pendiente",
+            notes: a.notes,
+            clinicId: a.clinic_id,
+            clinicName: a.clinics?.name ?? "—",
+            professionalName: baseProf,
+            guestDoctor: guestDoc,
+            treatmentName: a.treatments?.service_name ?? "—",
+          };
+        }));
+
+        // Consolidate Odontogram across all appointments (chronological from oldest to newest)
+        let mergedOdonto: OdontogramData = {};
+        const sortedAppts = [...apptData].sort((a, b) => new Date(a.appointment_date).getTime() - new Date(b.appointment_date).getTime());
+        sortedAppts.forEach((a: any) => {
+          if (a.notes) {
+            const odontoMatch = a.notes.match(/\[Odontograma:\s*([\s\S]*?)\]/i);
+            if (odontoMatch) {
+              try {
+                const parsed = JSON.parse(odontoMatch[1]);
+                mergedOdonto = { ...mergedOdonto, ...parsed };
+              } catch (e) {}
+            }
+          }
+        });
+
+        // Check if patient's treatment_plan contains explicit [OdontogramaBase: ...] override
+        if (p.treatment_plan) {
+          const baseMatch = p.treatment_plan.match(/\[OdontogramaBase:\s*([\s\S]*?)\]/i);
+          if (baseMatch) {
+            try {
+              const baseParsed = JSON.parse(baseMatch[1]);
+              mergedOdonto = { ...mergedOdonto, ...baseParsed };
+            } catch (e) {}
+          }
+        }
+
+        setPatientOdontogram(mergedOdonto);
 
         // 3. Billing
         if (apptData.length > 0) {
@@ -526,7 +575,7 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-6 border-t border-slate-100">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6 border-t border-slate-100">
             {/* Contact */}
             <div className="space-y-3">
               <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2">
@@ -575,30 +624,158 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
                 )}
               </div>
             </div>
+          </div>
+        </CardContent>
+      </Card>
 
-            {/* Treatment Plan */}
-            <div className="space-y-3">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2">
-                <Stethoscope className="h-4 w-4 text-rose-500" /> Plan de Tratamiento
-              </h3>
-              <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80">
+      {/* ── 2-Column Clinical Intelligence Grid: AI Summary (Left) + Odontogram (Right) ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        
+        {/* Left Column: AI Clinical Summary & Treatment Plan */}
+        <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-6 space-y-4 flex flex-col justify-between">
+          <div className="space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                <Sparkles className="h-5 w-5 text-violet-600" /> Resumen Técnico IA & Plan de Tratamiento
+              </h2>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={generatingAiSummary}
+                onClick={async () => {
+                  setGeneratingAiSummary(true);
+                  try {
+                    const res = await fetch("/api/ai/patient-summary", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ patientId: patient.id }),
+                    });
+                    const json = await res.json();
+                    if (json.success) {
+                      fetchAll();
+                    } else {
+                      alert(`Error: ${json.error || "No se pudo generar el informe"}`);
+                    }
+                  } catch (e: any) {
+                    alert(`Error: ${e.message}`);
+                  } finally {
+                    setGeneratingAiSummary(false);
+                  }
+                }}
+                className="h-8 px-3 text-xs font-bold text-violet-700 bg-violet-50 hover:bg-violet-100 border-violet-200 gap-1.5 rounded-xl cursor-pointer"
+              >
+                {generatingAiSummary ? <Loader2 className="h-3.5 w-3.5 animate-spin text-violet-600" /> : <Sparkles className="h-3.5 w-3.5 text-violet-600" />}
+                {patient.aiSummary ? "Re-generar Informe IA" : "Generar Informe IA"}
+              </Button>
+            </div>
+
+            {/* AI Summary Card */}
+            {patient.aiSummary ? (
+              <div className="p-4 rounded-xl bg-violet-50/80 border border-violet-200 space-y-2 shadow-xs">
+                <div className="flex items-center justify-between text-xs font-bold text-violet-800">
+                  <span className="flex items-center gap-1.5"><Sparkles className="h-3.5 w-3.5 text-violet-600" /> Resumen Clínico Consolidado</span>
+                  <span className="text-[10px] bg-violet-200/70 text-violet-900 px-2 py-0.5 rounded-full font-extrabold">IA Basada en Notas Reales</span>
+                </div>
+                <p className="text-xs text-violet-950 leading-relaxed font-medium whitespace-pre-line">{patient.aiSummary}</p>
+              </div>
+            ) : (
+              <div className="p-6 rounded-xl bg-slate-50 border border-dashed border-slate-200 text-center space-y-2">
+                <Sparkles className="h-7 w-7 text-slate-300 mx-auto" />
+                <p className="text-xs font-semibold text-slate-600">Sin informe de IA generado aún</p>
+                <p className="text-[11px] text-slate-400">Haz clic en &quot;Generar Informe IA&quot; para sintetizar todas las notas clínicas del paciente.</p>
+              </div>
+            )}
+
+            {/* Treatment Plan Section */}
+            <div className="space-y-1.5 pt-2 border-t border-slate-100">
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                <Stethoscope className="h-3.5 w-3.5 text-rose-500" /> Plan de Tratamiento Registrado
+              </span>
+              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80">
                 <p className="text-xs text-slate-800 font-semibold leading-relaxed">
-                  {patient.treatmentPlan ?? "Sin plan registrado"}
+                  {patient.treatmentPlan ? patient.treatmentPlan.replace(/\[OdontogramaBase:\s*[\s\S]*?\]/gi, '').trim() || "Sin plan registrado" : "Sin plan registrado"}
                 </p>
               </div>
-              {/* AI Summary */}
-              {patient.aiSummary && (
-                <div className="p-3.5 rounded-xl bg-violet-50 border border-violet-100">
-                  <div className="flex items-center gap-1.5 text-xs font-bold text-violet-700 mb-1.5">
-                    <Sparkles className="h-3.5 w-3.5" /> Resumen IA
-                  </div>
-                  <p className="text-xs text-violet-800 leading-relaxed">{patient.aiSummary}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Right Column: Odontogram General (Visión de Boca) */}
+        <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-6 space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
+            <div>
+              <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                <Smile className="h-5 w-5 text-rose-500" /> Odontograma General (Visión de Boca)
+              </h2>
+              <p className="text-[11px] text-slate-500 mt-0.5">
+                Estado consolidado de las piezas dentales. Por defecto en solo lectura.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2">
+              {!isEditingOdontogram ? (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setIsEditingOdontogram(true)}
+                  className="h-8 text-xs font-bold gap-1.5 rounded-xl border-slate-300 text-slate-700 hover:bg-slate-50 cursor-pointer"
+                >
+                  <Edit3 className="h-3.5 w-3.5" /> Editar Base
+                </Button>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setIsEditingOdontogram(false)}
+                    className="h-8 text-xs font-bold rounded-xl text-slate-600 border-slate-200"
+                  >
+                    Cancelar
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    disabled={savingOdontogram}
+                    onClick={async () => {
+                      setSavingOdontogram(true);
+                      try {
+                        const tagText = `\n[OdontogramaBase: ${JSON.stringify(patientOdontogram)}]`;
+                        const existingPlan = patient.treatmentPlan || "";
+                        let newPlan = existingPlan;
+                        if (newPlan.includes("[OdontogramaBase:")) {
+                          newPlan = newPlan.replace(/\[OdontogramaBase:\s*([\s\S]*?)\]/i, tagText.trim());
+                        } else {
+                          newPlan = (newPlan + tagText).trim();
+                        }
+                        await supabase.from("patients").update({ treatment_plan: newPlan }).eq("id", patient.id);
+                        setIsEditingOdontogram(false);
+                        await fetchAll();
+                        alert("Odontograma base guardado correctamente");
+                      } catch (e: any) {
+                        alert(`Error guardando odontograma: ${e.message}`);
+                      } finally {
+                        setSavingOdontogram(false);
+                      }
+                    }}
+                    className="h-8 text-xs font-bold gap-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer"
+                  >
+                    {savingOdontogram ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />} Guardar Base
+                  </Button>
                 </div>
               )}
             </div>
           </div>
-        </CardContent>
-      </Card>
+
+          <Odontogram
+            initialData={patientOdontogram}
+            isMinor={ageInfo?.isMinor}
+            readOnly={!isEditingOdontogram}
+            onChange={(updated) => setPatientOdontogram(updated)}
+          />
+        </div>
+      </div>
 
       {/* ── Stats Row ───────────────────────────────────────────── */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -671,7 +848,7 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
                 {appointments.map((app) => {
                   const d = formatDate(app.appointment_date);
                   return (
-                    <div key={app.id} className="px-5 py-4 flex items-center justify-between hover:bg-slate-50 transition-colors cursor-pointer group">
+                    <Link key={app.id} href={`/appointments/${app.id}`} className="px-5 py-4 flex items-center justify-between hover:bg-slate-50 transition-colors cursor-pointer group">
                       <div className="flex items-start gap-4">
                         <div className="h-12 w-12 rounded-xl bg-rose-50 flex flex-col items-center justify-center shrink-0 border border-rose-100">
                           <span className="text-sm font-black text-slate-800">{d.day}</span>
@@ -682,7 +859,11 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
                             {app.reason} — {app.treatmentName}
                           </p>
                           <p className="text-xs text-slate-500 flex flex-wrap items-center gap-2 mt-0.5">
-                            <span className="flex items-center gap-1"><User className="h-3 w-3" />{app.professionalName}</span>
+                            <span className="flex items-center gap-1">
+                              <User className="h-3 w-3" />
+                              {app.professionalName}
+                              {app.guestDoctor && <span className="font-bold text-rose-600 ml-0.5">(+ {app.guestDoctor})</span>}
+                            </span>
                             <span className="flex items-center gap-1"><Building2 className="h-3 w-3" />{app.clinicName}</span>
                             <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{d.time}</span>
                           </p>
@@ -693,7 +874,7 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
                         <Badge variant="outline" className={`text-xs font-semibold ${getStatusBadge(app.status)}`}>{app.status}</Badge>
                         <ChevronRight className="h-4 w-4 text-slate-300 group-hover:text-rose-400 transition-colors" />
                       </div>
-                    </div>
+                    </Link>
                   );
                 })}
               </div>
@@ -931,36 +1112,105 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
         {activeTab === "recordatorios" && (
           <div className="p-0">
             <div className="flex items-center justify-between px-5 py-3 border-b border-slate-50">
-              <p className="text-xs text-slate-500 font-medium">Recordatorios programados y enviados</p>
-              <Button size="sm" className="h-7 gap-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-[11px] font-semibold shadow-sm">
-                <Plus className="h-3 w-3" /> Nuevo Recordatorio
+              <p className="text-xs text-slate-500 font-medium">Recordatorios por Email, WhatsApp y SMS</p>
+              <Button
+                size="sm"
+                onClick={() => setNewReminderModalOpen(true)}
+                className="h-8 gap-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md shadow-emerald-600/20 cursor-pointer"
+              >
+                <Plus className="h-3.5 w-3.5" /> Nuevo Recordatorio
               </Button>
             </div>
             {reminders.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-16 text-slate-400">
-                <Bell className="h-10 w-10 mb-3 text-slate-200" />
-                <p className="font-semibold text-sm">Sin recordatorios programados</p>
-                <p className="text-xs mt-1">Puedes pedirle al Agente IA que programe uno</p>
+              <div className="flex flex-col items-center justify-center py-16 text-slate-400 space-y-3">
+                <Bell className="h-10 w-10 text-slate-200" />
+                <div className="text-center">
+                  <p className="font-bold text-slate-700 text-sm">Sin recordatorios programados</p>
+                  <p className="text-xs text-slate-400 mt-0.5">Programa notificaciones por WhatsApp o Email para el paciente</p>
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setNewReminderModalOpen(true)}
+                  className="rounded-xl text-xs font-bold gap-1.5 text-emerald-700 border-emerald-200 bg-emerald-50 hover:bg-emerald-100"
+                >
+                  <Plus className="h-3.5 w-3.5" /> Crear Primer Recordatorio
+                </Button>
               </div>
             ) : (
               <div className="divide-y divide-slate-50">
                 {reminders.map((r) => {
                   const d = formatDate(r.scheduled_at);
+                  const isWhatsapp = r.channel === "whatsapp";
+                  const isEmail = r.channel === "email";
+                  const isPending = r.status === "pendiente";
+
                   return (
                     <div key={r.id} className="px-5 py-4 flex items-center justify-between hover:bg-slate-50 transition-colors">
                       <div className="flex items-start gap-3">
-                        <div className="h-9 w-9 rounded-xl bg-amber-50 border border-amber-100 flex items-center justify-center shrink-0">
-                          <Bell className="h-4 w-4 text-amber-500" />
+                        <div className={`h-10 w-10 rounded-xl flex items-center justify-center shrink-0 border ${
+                          isWhatsapp ? "bg-emerald-50 border-emerald-100 text-emerald-600" :
+                          isEmail ? "bg-blue-50 border-blue-100 text-blue-600" :
+                          "bg-purple-50 border-purple-100 text-purple-600"
+                        }`}>
+                          {isWhatsapp ? <MessageSquare className="h-5 w-5" /> : isEmail ? <Mail className="h-5 w-5" /> : <Bell className="h-5 w-5" />}
                         </div>
                         <div>
-                          <p className="font-bold text-slate-900 text-sm">{r.subject || REMINDER_TYPE_LABELS[r.reminder_type]}</p>
-                          <p className="text-xs text-slate-500">{d.full} · {r.channel}</p>
-                          <p className="text-[11px] text-slate-400 mt-0.5 truncate max-w-sm">{r.message}</p>
+                          <div className="flex items-center gap-2">
+                            <p className="font-bold text-slate-900 text-sm">{r.subject || REMINDER_TYPE_LABELS[r.reminder_type]}</p>
+                            <span className={`text-[10px] uppercase font-extrabold px-2 py-0.5 rounded-full ${
+                              isWhatsapp ? "bg-emerald-100 text-emerald-800" :
+                              isEmail ? "bg-blue-100 text-blue-800" :
+                              "bg-purple-100 text-purple-800"
+                            }`}>
+                              {r.channel}
+                            </span>
+                          </div>
+                          <p className="text-xs text-slate-500 mt-0.5">Programado para: {d.full}</p>
+                          <p className="text-xs text-slate-600 mt-1 italic bg-slate-50 p-2 rounded-lg border border-slate-100 max-w-lg">
+                            &quot;{r.message}&quot;
+                          </p>
                         </div>
                       </div>
-                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold border ${getStatusBadge(r.status)}`}>
-                        {r.status}
-                      </span>
+
+                      <div className="flex items-center gap-2">
+                        <span className={`text-[10px] px-2.5 py-0.5 rounded-full font-bold border ${getStatusBadge(r.status)}`}>
+                          {r.status}
+                        </span>
+
+                        {isPending && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={sendingReminderId === r.id}
+                            onClick={async () => {
+                              setSendingReminderId(r.id);
+                              try {
+                                const res = await fetch("/api/reminders/send-now", {
+                                  method: "POST",
+                                  headers: { "Content-Type": "application/json" },
+                                  body: JSON.stringify({ reminderId: r.id }),
+                                });
+                                const data = await res.json();
+                                if (data.success) {
+                                  alert(`Recordatorio enviado por ${r.channel}`);
+                                  fetchAll();
+                                } else {
+                                  alert(`Error: ${data.error || "No se pudo enviar"}`);
+                                }
+                              } catch (e: any) {
+                                alert(`Error: ${e.message}`);
+                              } finally {
+                                setSendingReminderId(null);
+                              }
+                            }}
+                            className="h-8 px-2.5 text-[11px] font-bold text-emerald-700 bg-emerald-50 border-emerald-200 hover:bg-emerald-100 rounded-xl gap-1"
+                          >
+                            {sendingReminderId === r.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <SendIcon className="h-3 w-3" />}
+                            Enviar Ahora
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   );
                 })}
@@ -969,6 +1219,20 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
           </div>
         )}
       </div>
+
+      {/* New Reminder Modal */}
+      {patient && (
+        <NewReminderModal
+          open={newReminderModalOpen}
+          onOpenChange={setNewReminderModalOpen}
+          patientId={patient.id}
+          patientName={`${patient.firstName} ${patient.lastName}`}
+          patientPhone={patient.phone || ""}
+          patientEmail={patient.email || ""}
+          appointments={appointments}
+          onSuccess={fetchAll}
+        />
+      )}
 
       {/* ── Documentos y Consentimientos (full width, bottom) ───── */}
       <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">

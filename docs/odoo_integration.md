@@ -128,3 +128,87 @@ Campos agregados en la tabla `treatments`:
 Campos agregados en la tabla `treatment_clinic_prices`:
 - `odoo_pricelist_item_id` (integer): ID del elemento de tarifa (`product.pricelist.item`) en Odoo.
 
+
+---
+
+## 5. Facturación Multi-Cobro Seleccionable (Desde Ficha Paciente)
+
+### Flujo de Facturación Agrupada
+
+El endpoint `POST /api/odoo/invoice` fue extendido para soportar **múltiples cobros en una sola factura**. El body acepta tanto el formato de factura única (legacy) como el nuevo formato de ítems múltiples:
+
+**Body para facturación multi-cobro (nuevo):**
+```json
+{
+  "patientId": "uuid-del-paciente",
+  "items": [
+    { "id": "uuid-billing-record-1", "name": "Ortodoncia Control 1", "price": 120.00 },
+    { "id": "uuid-billing-record-2", "name": "Ortodoncia Control 2", "price": 120.00 }
+  ],
+  "patientDetails": {
+    "firstName": "Francisco",
+    "lastName": "Leal Rey",
+    "historiaId": "PAC-045",
+    "nifCif": "12345678A",
+    "billingName": "Francisco Leal Rey",
+    "billingAddress": "Calle Mayor 1",
+    "billingCity": "Madrid",
+    "billingPostalCode": "28001",
+    "email": "paciente@email.com",
+    "phone": "+34600000000"
+  }
+}
+```
+
+**Respuesta:**
+```json
+{
+  "success": true,
+  "invoiceId": 214,
+  "invoiceNumber": "INV/2026/0214"
+}
+```
+
+### Post-Facturación: Actualización en Supabase
+
+Tras recibir la respuesta de Odoo, el endpoint actualiza en `billing_records` todos los cobros incluidos en la factura:
+- `odoo_invoice_id` → ID numérico de Odoo
+- `odoo_invoice_number` → Número de factura (ej. `INV/2026/0214`)
+- `status` → `Facturado Odoo`
+
+Esto provoca que, en la próxima carga de la ficha del paciente, los cobros facturados muestren el badge `Facturada (INV/2026/0214)` y sus checkboxes aparezcan deshabilitados.
+
+---
+
+## 6. Visibilidad para el Agente IA (`/api/ai-context`)
+
+El endpoint `/api/ai-context` incluye ahora el desglose de cobros agrupados por estado de facturación:
+
+```json
+{
+  "facturacion": {
+    "facturados_odoo": [
+      {
+        "id": "uuid",
+        "motivo": "Ortodoncia Control 1",
+        "importe": 120.00,
+        "numero_factura": "INV/2026/0214",
+        "fecha": "2026-01-20"
+      }
+    ],
+    "por_facturar": [
+      {
+        "id": "uuid",
+        "motivo": "Ortodoncia Control 3",
+        "importe": 120.00,
+        "fecha": "2026-03-17"
+      }
+    ]
+  }
+}
+```
+
+Esto permite al **Agente IA** (n8n + Gemini) responder preguntas del tipo:
+- *"¿Qué cobros de Francisco están pendientes de facturar?"*
+- *"¿Cuánto se ha facturado en Odoo este trimestre?"*
+- *"¿Qué pagos hay que incluir en la próxima factura?"*

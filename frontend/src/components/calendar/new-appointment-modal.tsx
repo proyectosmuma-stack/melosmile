@@ -97,6 +97,7 @@ export function NewAppointmentModalGlobal() {
 
   const [selectedClinicId, setSelectedClinicId] = useState<string>("");
   const [selectedProfessionalId, setSelectedProfessionalId] = useState<string>("");
+  const [guestDoctor, setGuestDoctor] = useState<string>("");
 
   const [price, setPrice] = useState<string>("50");
   const [labCost, setLabCost] = useState<string>("0");
@@ -125,8 +126,11 @@ export function NewAppointmentModalGlobal() {
           name: `Dra. ${p.first_name} ${p.last_name}`,
         }));
         setProfessionals(mapped);
+        const oslyMatch = mapped.find((m) => m.name.toLowerCase().includes("osly"));
+        const defaultProId = oslyMatch ? oslyMatch.id : mapped[0].id;
+
         setSelectedProfessionalId((prev) => {
-          if (!prev || !mapped.find((m) => m.id === prev)) return mapped[0].id;
+          if (!prev || !mapped.find((m) => m.id === prev)) return defaultProId;
           return prev;
         });
       }
@@ -211,43 +215,48 @@ export function NewAppointmentModalGlobal() {
       const fullDateStr = `${appointmentDate}T${selectedStartTime}:00`;
 
       // 3. Insert Appointment into Supabase
+      const finalNotes = guestDoctor.trim()
+        ? `${naturalText || ""}\n[DoctorInvitado: ${guestDoctor.trim()}]`.trim()
+        : (naturalText || null);
+
       const { data: newAppt, error: apptErr } = await supabase
         .from("appointments")
-        .insert({
-          patient_id: targetPatientId,
-          clinic_id: selectedClinicId || null,
-          professional_id: selectedProfessionalId || null,
-          appointment_date: fullDateStr,
-          reason: treatment || "Consulta Odontológica",
-          notes: naturalText || null,
-          ai_raw_input: naturalText || null,
+          .insert({
+            patient_id: targetPatientId,
+            clinic_id: selectedClinicId || null,
+            professional_id: selectedProfessionalId || null,
+            appointment_date: fullDateStr,
+            reason: treatment || "Consulta Odontológica",
+            notes: finalNotes,
+            ai_raw_input: naturalText || null,
+            status: "Pendiente",
+          } as any)
+          .select("id")
+          .single();
+
+        if (apptErr || !newAppt) {
+          throw new Error(`Error guardando cita: ${apptErr?.message}`);
+        }
+
+        // 4. Create Billing Record
+        const numericPrice = parseFloat(price) || 0;
+        const numericLabCost = parseFloat(labCost) || 0;
+
+        await (supabase as any).from("billing_records").insert({
+          appointment_id: newAppt.id,
+          billing_month: appointmentDate.substring(0, 7),
+          custom_price: numericPrice,
+          calculated_total: numericPrice - numericLabCost,
           status: "Pendiente",
-        } as any)
-        .select("id")
-        .single();
+        });
 
-      if (apptErr || !newAppt) {
-        throw new Error(`Error guardando cita: ${apptErr?.message}`);
-      }
-
-      // 4. Create Billing Record
-      const numericPrice = parseFloat(price) || 0;
-      const numericLabCost = parseFloat(labCost) || 0;
-
-      await (supabase as any).from("billing_records").insert({
-        appointment_id: newAppt.id,
-        billing_month: appointmentDate.substring(0, 7),
-        custom_price: numericPrice,
-        calculated_total: numericPrice - numericLabCost,
-        status: "Pendiente",
-      });
-
-      setIsOpen(false);
-      // Reset form
-      setTreatment("");
-      setNaturalText("");
-      setPatientName("");
-      setPatientId("");
+        setIsOpen(false);
+        // Reset form
+        setTreatment("");
+        setNaturalText("");
+        setGuestDoctor("");
+        setPatientName("");
+        setPatientId("");
 
       // Refresh router and dispatch event so calendar updates instantly
       router.refresh();
@@ -416,6 +425,16 @@ export function NewAppointmentModalGlobal() {
                 </SelectContent>
               </Select>
             </div>
+          </div>
+
+          <div className="space-y-1">
+            <Label className="text-xs font-semibold text-slate-700">Dr. Invitado / Colaborador (Opcional)</Label>
+            <Input
+              value={guestDoctor}
+              onChange={(e) => setGuestDoctor(e.target.value)}
+              placeholder="Ej: Dr. Carlos Pérez (Cirujano invitado)"
+              className="text-xs rounded-lg h-9 bg-white"
+            />
           </div>
         </div>
 

@@ -1,0 +1,126 @@
+{
+  "name": "[MELOSMILE] AI Dispatcher",
+  "nodes": [
+    {
+      "id": "1",
+      "name": "Webhook_Receiver",
+      "onError": "continueRegularOutput",
+      "parameters": {
+        "httpMethod": "POST",
+        "options": {},
+        "path": "melosmile-ai-dispatcher",
+        "responseMode": "responseNode"
+      },
+      "position": [250, 300],
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1
+    },
+    {
+      "id": "2",
+      "name": "Gemini_Chat_Model",
+      "parameters": {
+        "modelName": "models/gemini-2.0-flash"
+      },
+      "position": [450, 450],
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1
+    },
+    {
+      "id": "3",
+      "name": "Dispatcher_AI_Agent",
+      "parameters": {
+        "options": {
+          "systemMessage": "Role: Eres el Agente Supervisor y Enrutador Principal (AI Dispatcher) de la plataforma médica Melosmile.\n\nObjective: Analizar las instrucciones en lenguaje natural del personal médico, identificar la intención principal, extraer entidades clave y delegar la ejecución al sub-agente especializado adecuado a través de las herramientas sub-workflow nativas de n8n.\n\nApproach Step-by-Step:\n1. Analizar la entrada del usuario determinando la categoría de la solicitud:\n   - 'schedule_appointment': crear, modificar, mover o cancelar citas dentales.\n   - 'patient_info': buscar paciente, consultar historial médico, notas clínicas o anamnesis.\n   - 'billing': consultar saldos pendientes, cobros por facturar o emisión de facturas en Odoo ERP.\n   - 'clinical_note': registrar evolución médica o actualizar ficha.\n   - 'general_query': preguntas generales sobre la clínica o catálogo de servicios.\n2. Extraer las entidades mencionadas (nombre del paciente, fechas relativas/absolutas, clínica, tratamientos, montos).\n3. Invocar la herramienta del Sub-Agente nativo correspondiente pasándole el contexto.\n4. Sintetizar la respuesta devuelta por la herramienta en un formato JSON estructurado.\n\nDetails & Constraints:\n- Responde siempre en JSON estructurado con {\"intent\": \"...\", \"extracted_entities\": {...}, \"summary\": \"...\"}."
+        },
+        "promptType": "define",
+        "text": "={{ $json.body.message || $json.body.prompt }}"
+      },
+      "position": [450, 300],
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7
+    },
+    {
+      "id": "4",
+      "name": "Tool_SubAgent_Scheduling",
+      "parameters": {
+        "description": "Sub-agente especializado en agendar, modificar o cancelar citas dentales de pacientes en Melosmile.",
+        "source": "database",
+        "toolDescription": "Usa esta herramienta para agendar, modificar, mover o cancelar citas dentales de pacientes en Melosmile. Requiere mensaje o entidades extraídas.",
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "jTWHg9bHaNOdzL13"
+        }
+      },
+      "position": [700, 150],
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2
+    },
+    {
+      "id": "5",
+      "name": "Tool_SubAgent_Clinical",
+      "parameters": {
+        "description": "Sub-agente especializado en consultar datos clínicos, antecedentes médicos, anamnesis y síntesis de pacientes.",
+        "source": "database",
+        "toolDescription": "Usa esta herramienta para consultar datos clínicos, antecedentes médicos, anamnesis, alergias o síntesis de pacientes.",
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "Q7oxrbUuohca81Gn"
+        }
+      },
+      "position": [700, 300],
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2
+    },
+    {
+      "id": "6",
+      "name": "Tool_SubAgent_Billing",
+      "parameters": {
+        "description": "Sub-agente especializado en consultar cobros pendientes, balances y emitir facturas en Odoo ERP.",
+        "source": "database",
+        "toolDescription": "Usa esta herramienta para consultar cobros pendientes por facturar, balances de pacientes o emitir facturas agrupadas en Odoo ERP.",
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "XSLNwq6ihH1SHPRl"
+        }
+      },
+      "position": [700, 450],
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2
+    },
+    {
+      "id": "7",
+      "name": "Parse_AI_Response",
+      "parameters": {
+        "jsCode": "let rawText = $input.first().json.output || $input.first().json.text || \"\";\nlet parsed = {};\n\ntry {\n  let jsonMatch = rawText.match(/```(?:json)?\\s*([\\s\\S]*?)\\s*```/);\n  if (jsonMatch) {\n    parsed = JSON.parse(jsonMatch[1]);\n  } else {\n    parsed = JSON.parse(rawText);\n  }\n} catch (e) {\n  parsed = {\n    intent: \"general_query\",\n    extracted_entities: {},\n    summary: rawText\n  };\n}\n\nreturn {\n  json: {\n    status: \"success\",\n    intent: parsed.intent || \"general_query\",\n    extracted_entities: parsed.extracted_entities || {},\n    summary: parsed.summary || rawText,\n    raw_response: rawText\n  }\n};\n"
+      },
+      "position": [950, 300],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
+    },
+    {
+      "id": "8",
+      "name": "Respond_to_Webhook",
+      "parameters": {
+        "options": {},
+        "respondWith": "allIncomingItems"
+      },
+      "position": [1200, 300],
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5
+    }
+  ],
+  "connections": {
+    "Webhook_Receiver": { "main": [[{ "node": "Dispatcher_AI_Agent", "type": "main", "index": 0 }]] },
+    "Gemini_Chat_Model": { "ai_languageModel": [[{ "node": "Dispatcher_AI_Agent", "type": "ai_languageModel", "index": 0 }]] },
+    "Tool_SubAgent_Scheduling": { "ai_tool": [[{ "node": "Dispatcher_AI_Agent", "type": "ai_tool", "index": 0 }]] },
+    "Tool_SubAgent_Clinical": { "ai_tool": [[{ "node": "Dispatcher_AI_Agent", "type": "ai_tool", "index": 0 }]] },
+    "Tool_SubAgent_Billing": { "ai_tool": [[{ "node": "Dispatcher_AI_Agent", "type": "ai_tool", "index": 0 }]] },
+    "Dispatcher_AI_Agent": { "main": [[{ "node": "Parse_AI_Response", "type": "main", "index": 0 }]] },
+    "Parse_AI_Response": { "main": [[{ "node": "Respond_to_Webhook", "type": "main", "index": 0 }]] },
+    "Respond_to_Webhook": { "main": [] }
+  },
+  "tags": ["Melosmile"]
+}

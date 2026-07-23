@@ -480,12 +480,18 @@ tools_documentation({topic: "javascript_code_node_guide", depth: "full"})
 tools_documentation({topic: "python_code_node_guide", depth: "full"})
 ```
 
-### AI Agent Guide
+### AI Agent Guide & Multi-Agent Architecture
 
 ```javascript
 // Comprehensive AI workflow guide
 ai_agents_guide()
 // Returns: Architecture, connections, tools, validation, best practices
+
+// Multi-Agent Architecture Pattern (toolWorkflow):
+// 1. Dispatcher Agent uses @n8n/n8n-nodes-langchain.toolWorkflow nodes
+// 2. Connects Sub-Agents natively via workflowId + toolDescription + sourceOutput: "ai_tool"
+// 3. Sub-Agents triggered by n8n-nodes-base.executeWorkflowTrigger
+// Refer to n8n-multi-agent-architect skill for complete templates!
 ```
 
 ### Health Check

@@ -1,0 +1,91 @@
+{
+  "name": "[MELOSMILE] Sub-Agent: Contabilidad",
+  "nodes": [
+    {
+      "id": "1",
+      "name": "Webhook_Billing",
+      "onError": "continueRegularOutput",
+      "parameters": {
+        "httpMethod": "POST",
+        "options": {},
+        "path": "melosmile-agent-billing",
+        "responseMode": "responseNode"
+      },
+      "position": [250, 300],
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1
+    },
+    {
+      "id": "2",
+      "name": "Gemini_Chat_Model",
+      "parameters": {
+        "modelName": "models/gemini-2.0-flash"
+      },
+      "position": [450, 450],
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1
+    },
+    {
+      "id": "3",
+      "name": "Agent_Billing",
+      "parameters": {
+        "options": {
+          "systemMessage": "Role: Eres el Sub-agente Especialista en Contabilidad y Facturación Odoo de Melosmile.\n\nObjective: Consultar cobros pendientes por facturar, desglose financiero de sesiones clínicas y procesar la emisión de facturas borrador en Odoo ERP (`res.partner` y `account.move`), además de enviar avisos de cobro.\n\nApproach Step-by-Step:\n1. Recibir la solicitud financiera (paciente, cobros seleccionados, monto).\n2. Usar 'Tool_Odoo_Invoice' para registrar el cliente y emitir la factura en Odoo ERP.\n3. Si se solicita aviso de cobro, utilizar 'Tool_Reminders_Dispatcher'.\n4. Retornar el resumen contable con el número de factura generado (INV/2026/XXXX) e importe total."
+        },
+        "promptType": "define",
+        "text": "={{ $json.body.extracted_entities ? JSON.stringify($json.body.extracted_entities) : $json.body.message }}"
+      },
+      "position": [450, 300],
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7
+    },
+    {
+      "id": "4",
+      "name": "Tool_Odoo_Invoice",
+      "parameters": {
+        "jsonBody": "={{ JSON.stringify({ patient_id: $json.patient_id, billing_record_ids: $json.billing_record_ids }) }}",
+        "method": "POST",
+        "sendBody": true,
+        "toolDescription": "Emite facturas agrupadas en Odoo ERP (res.partner y account.move) para los cobros seleccionados de un paciente.",
+        "url": "https://melosmile.app/api/odoo/invoice"
+      },
+      "position": [700, 200],
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1
+    },
+    {
+      "id": "5",
+      "name": "Tool_Reminders_Dispatcher",
+      "parameters": {
+        "jsonBody": "={{ JSON.stringify({ patient_id: $json.patient_id, type: \"billing_reminder\", channel: \"whatsapp\" }) }}",
+        "method": "POST",
+        "sendBody": true,
+        "toolDescription": "Despacha avisos de cobro y recordatorios de pago por WhatsApp, Email o SMS al paciente.",
+        "url": "https://melosmile.app/api/reminders/send-now"
+      },
+      "position": [700, 400],
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1
+    },
+    {
+      "id": "6",
+      "name": "Respond_to_Webhook",
+      "parameters": {
+        "options": {},
+        "respondWith": "allIncomingItems"
+      },
+      "position": [950, 300],
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5
+    }
+  ],
+  "connections": {
+    "Webhook_Billing": { "main": [[{ "node": "Agent_Billing", "type": "main", "index": 0 }]] },
+    "Gemini_Chat_Model": { "ai_languageModel": [[{ "node": "Agent_Billing", "type": "ai_languageModel", "index": 0 }]] },
+    "Tool_Odoo_Invoice": { "ai_tool": [[{ "node": "Agent_Billing", "type": "ai_tool", "index": 0 }]] },
+    "Tool_Reminders_Dispatcher": { "ai_tool": [[{ "node": "Agent_Billing", "type": "ai_tool", "index": 0 }]] },
+    "Agent_Billing": { "main": [[{ "node": "Respond_to_Webhook", "type": "main", "index": 0 }]] },
+    "Respond_to_Webhook": { "main": [] }
+  },
+  "tags": ["Melosmile"]
+}

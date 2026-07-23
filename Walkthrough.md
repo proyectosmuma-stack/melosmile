@@ -1,55 +1,112 @@
-# Walkthrough de Implementación — Melosmile
+# Walkthrough Maestro — Melosmile
 
-> ⚠️ **REGLA DE RAMAS**: Este archivo pertenece exclusivamente a la rama `develop` y NUNCA debe fusionarse a la rama `main`.
-
-Este documento detalla todas las funcionalidades desarrolladas, configuraciones de infraestructura y pruebas validadas en el proyecto **Melosmile**.
+Este documento es el **Walkthrough Maestro del Proyecto**, donde se acumula la trazabilidad histórica de todas las versiones, componentes desarrollados, refactorizaciones y avances del sistema Melosmile.
 
 ---
 
-## 1. Unificación del Popup Modal de Nueva Cita (`NewAppointmentModalGlobal`)
+## 🏛️ Estado Global de la Arquitectura
 
-- **Ubicación**: `frontend/src/components/calendar/new-appointment-modal.tsx`
-- **Funcionalidad Unificada**:
-  - **Popup Único**: Tanto el botón `+ Nueva Cita` en el header, los botones de agendamiento en la ficha del paciente, como el clic en cualquier celda de horario del calendario abren exactamente el **mismo popup modal**.
-  - **Campos Esenciales Únicamente**: Se eliminaron los campos de cobro, comisiones y gastos de laboratorio del popup modal de creación. Toda la gestión financiera se maneja como información adicional dentro de la página dedicada de cada cita (`/appointments/[id]`).
-
----
-
-## 2. Rediseño de la Agenda y Navegación Interactiva
-
-- **Ubicación**: `frontend/src/app/(dashboard)/page.tsx`
-- **Cambios en Widgets**:
-  - **Eliminación de la Insignia**: Se eliminó la etiqueta `Vista Semanal / 15-min` junto a "Agenda Principal".
-  - **Eliminación del 4to Widget**: Se retiró la tarjeta `Procesado por n8n IA / 38 Registros`.
-  - **Rediseño Compacto de Widgets**: Las 3 tarjetas restantes (*Citas para Hoy*, *Facturado Este Mes*, *Pacientes Atendidos*) se diseñaron con un estilo más compacto y estilizado.
-  - **Interacción "Citas para Hoy"**: Al hacer clic en la tarjeta **Citas para Hoy**, la agenda cambia automáticamente a la fecha de **Hoy** y conmuta el calendario a la **Vista de Día** (`day view`).
+- **Framework**: Next.js 16 (App Router) + React 19 + TypeScript.
+- **Estilos**: TailwindCSS v4 + Lucide Icons + Shadcn UI.
+- **Backend & Base de Datos**: Supabase PostgreSQL + RLS + Triggers PL/pgSQL.
+- **Integraciones Externas**:
+  - **Odoo ERP**: Conexión JSON-RPC nativa para sincronización de contactos y facturación agrupada (`account.move`).
+  - **VPS Storage**: Almacenamiento físico en servidor VPS (`/opt/melosmile/pacientes/{id}/...`) discriminando fotos clínicas (sin vectorizar) de documentos PDF.
+  - **n8n Automation Engine**: 9 flujos activos — 6 flujos operativos previos + 1 Dispatcher IA + 3 Sub-Agentes especializados.
+  - **OpenRouter**: Modelo `google/gemini-2.5-flash` para todos los agentes IA conversacionales.
 
 ---
 
-## 3. Ficha de Cita Dedicada (`/appointments/[id]`)
+## 📅 Historial de Entregas & Sesiones
 
-- **Ubicación**: `frontend/src/app/(dashboard)/appointments/[id]/page.tsx`
-- **Funcionalidades**:
-  - **Gestión Financiera**: Concentra los campos de precio total, comisión %, descuento de laboratorio y cálculo del neto.
-  - **Evolución Médica**: Anotaciones clínicas para seguimiento continuado estilo Notion.
-  - **Sección Contable Odoo**: Sincronización de facturación borrador (`account.move`).
+### Sesión Anterior: Módulo de Citas, Ficha de Paciente, Recordatorios & Asignación de Doctores
 
----
+#### 1. Ficha de Gestión de Cita (`/appointments/[id]`)
+- Header Notion con botones `Dr. Colaborador` y `Contabilidad ($)`.
+- Banner de Alerta Médica (Alergias, Antecedentes, Medicación).
+- Multi-procedimiento con precios Odoo, calculadora financiera y odontograma FDI.
+- Registro fotográfico directo a VPS y adjuntos con vectorización n8n.
+- Análisis IA automático con anillo degradado morado alrededor del avatar.
 
-## 4. Directorio, Fichas de Pacientes y Sistema de Etiquetas (`/patients`, `/patients/[id]`, `/patients/[id]/edit`)
-
-- **Ubicaciones**: 
-  - `frontend/src/app/(dashboard)/patients/page.tsx`
-  - `frontend/src/app/(dashboard)/patients/[id]/page.tsx`
-  - `frontend/src/app/(dashboard)/patients/[id]/edit/page.tsx`
-  - `frontend/src/components/patients/tag-input.tsx`
-- **Funcionalidades Avanzadas**:
-  - **Sistema de Etiquetas (WordPress Style)**: Autocompletado AJAX/JSON en tiempo real, creación *on-the-fly* y barra de filtros interactiva.
-  - **Asignación Dinámica de Sedes**: Habilitadas políticas RLS en Supabase Cloud.
+#### 2. Ficha del Paciente (`/patients/[id]`)
+- Layout 2 columnas, odontograma consolidado en solo lectura.
+- Historial de citas con doctor principal + invitado.
+- Facturación multi-cobro Odoo con checkboxes y badges de estado.
+- Recordatorios multi-canal (WhatsApp, Email, SMS) vía n8n.
 
 ---
 
-## 5. Integración Supabase y Vercel (Staging)
+### Sesión Actual: Sistema de IA Multi-Agente — Dispatcher + Sub-Agentes
 
-- **Referencia Supabase**: `amhfdzfcmpastmlsosou`
-- **URL Staging Activa**: [https://melosmile-staging-7m6bblzux-proyectosmuma-stacks-projects.vercel.app](https://melosmile-staging-7m6bblzux-proyectosmuma-stacks-projects.vercel.app)
+#### Fecha: 2026-07-23
+
+#### 1. Arquitectura Multi-Agente n8n Implementada
+
+Se diseñó e implementó un sistema de IA conversacional completo con patrón Dispatcher → Sub-Agentes:
+
+```
+[Frontend Chat] → [Next.js /api/dispatcher proxy] → [n8n Dispatcher (Yv9X1EGUvQg8qErW)]
+                                                           ↓ (toolWorkflow nativo)
+                                         ┌─────────────────┼─────────────────┐
+                                         ↓                 ↓                 ↓
+                              [Sub-Agent Scheduling]  [Sub-Agent Clinical]  [Sub-Agent Billing]
+                              (jTWHg9bHaNOdzL13)     (Q7oxrbUuohca81Gn)   (XSLNwq6ihH1SHPRl)
+```
+
+**Modelo LLM**: `google/gemini-2.5-flash` vía **OpenRouter** (credencial `openRouterApi` id `4nco5fDnIohG6g9f`).
+
+#### 2. Flujos n8n Creados / Actualizados
+
+| ID n8n | Nombre | Trigger | Estado |
+|--------|--------|---------|--------|
+| `Yv9X1EGUvQg8qErW` | `[MELOSMILE] AI Dispatcher` | Webhook POST `/webhook/melosmile-ai-dispatcher` | ✅ Activo |
+| `jTWHg9bHaNOdzL13` | `[MELOSMILE] Sub-Agent: Agendamiento` | `executeWorkflowTrigger` (passthrough) | ✅ Activo |
+| `Q7oxrbUuohca81Gn` | `[MELOSMILE] Sub-Agent: Clinico` | `executeWorkflowTrigger` (passthrough) | ✅ Activo |
+| `XSLNwq6ihH1SHPRl` | `[MELOSMILE] Sub-Agent: Contabilidad` | `executeWorkflowTrigger` (passthrough) | ✅ Activo |
+
+#### 3. Ficheros Frontend Creados / Modificados
+
+| Archivo | Acción | Descripción |
+|---------|--------|-------------|
+| [`src/components/dashboard/ai-agent-bar.tsx`](file:///Users/munircallaos/Antigravity%20Projects/melosmile/frontend/src/components/dashboard/ai-agent-bar.tsx) | **Reescrito** | Interfaz de chat completo con historial de mensajes, burbujas diferenciadas usuario/agente, badge de intent, entidades extraídas colapsables, spinner de carga, sugerencias rápidas |
+| [`src/components/dashboard/global-ai-agent-modal.tsx`](file:///Users/munircallaos/Antigravity%20Projects/melosmile/frontend/src/components/dashboard/global-ai-agent-modal.tsx) | **Actualizado** | Modal simplificado que embebe directamente el chat sin padding extra |
+| [`src/app/api/dispatcher/route.ts`](file:///Users/munircallaos/Antigravity%20Projects/melosmile/frontend/src/app/api/dispatcher/route.ts) | **[NUEVO]** | Proxy server-side Next.js que reenvía las peticiones del browser a n8n, eliminando el error CORS. Gestiona respuestas vacías, timeouts de 30s y normalización JSON |
+| [`frontend/.env.local`](file:///Users/munircallaos/Antigravity%20Projects/melosmile/frontend/.env.local) | **Actualizado** | Añadida `N8N_API_KEY` completa |
+| [`.agents/skills/n8n-multi-agent-architect/SKILL.md`](file:///Users/munircallaos/Antigravity%20Projects/melosmile/.agents/skills/n8n-multi-agent-architect/SKILL.md) | **[NUEVO]** | Skill de workspace documentando el patrón de arquitectura multi-agente n8n |
+
+#### 4. Diagnósticos y Resoluciones
+
+| Problema | Causa | Solución |
+|----------|-------|---------|
+| Error CORS en browser | n8n solo permite `access-control-allow-origin: https://n8n.mumaweb.com` | Proxy Next.js `/api/dispatcher/route.ts` |
+| `404 models/gemini-1.5-flash` | Modelo deprecado | Cambiado a `google/gemini-2.5-flash` vía OpenRouter |
+| `429 Free Tier exceeded` | Cuota Gemini API agotada | Migrado a OpenRouter (sin límite de cuota en cuenta del usuario) |
+| `Missing node to start execution` | Sub-agentes usaban `Webhook` como trigger en lugar de `executeWorkflowTrigger` | Reemplazado el trigger en los 3 sub-agentes con `executeWorkflowTrigger v1.1 (passthrough)` |
+
+#### 5. Resultados de Pruebas End-to-End
+
+```bash
+# TEST 1: Agendamiento ✅ EXITOSO
+POST /webhook/melosmile-ai-dispatcher
+{ "message": "cita para munir para mañana a las 15:00 en goya..." }
+→ intent: "schedule_appointment"
+→ entities: { patient_name: "Munir", date: "mañana", time: "15:00", clinic: "Albacete", treatments: [...] }
+→ summary: "La cita de Munir para mañana a las 15:00 para limpieza y revisión de brackets... ha sido agendada."
+
+# TEST 2: Facturación ⚠️ PARCIAL (intent OK, herramientas placeholder)
+→ intent: "billing" ✅, entities: { time_frame: "esta semana", scope: "todas las clinicas" } ✅
+→ Tool_Reminders_Dispatcher → URL placeholder (pendiente conexión Odoo real)
+
+# TEST 3: Clínico ⚠️ PARCIAL (intent OK, herramientas placeholder)
+→ intent: "patient_info" ✅, entities: { patient_name: "Munir Callaos" } ✅
+→ melosmile.app/api/patients → endpoint pendiente implementación
+```
+
+---
+
+## ✅ Verificación de Entorno
+
+- **TypeScript**: `npx tsc --noEmit` → **0 errores** ✅
+- **Servidor Dev**: Operativo en `http://localhost:3028/`
+- **Dispatcher n8n**: Activo en `https://n8n.mumaweb.com/webhook/melosmile-ai-dispatcher`
+- **4 Workflows n8n**: Todos activos (`active: true`)
