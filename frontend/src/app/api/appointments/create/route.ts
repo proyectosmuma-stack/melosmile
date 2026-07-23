@@ -29,7 +29,7 @@ export async function POST(req: Request) {
       professional_id: p_id,
       appointment_date,
       reason: reason || treatment || "Nueva cita (IA)",
-      status: "Programada",
+      status: status || "Confirmada",
       notes: "Agendada por Asistente IA"
     }).select().single();
 
