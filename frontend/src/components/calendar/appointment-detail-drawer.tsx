@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useRouter } from "next/navigation";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
   User, 
@@ -40,6 +41,8 @@ export function AppointmentDetailDrawer({
   onUpdateEvent,
 }: AppointmentDetailDrawerProps) {
   if (!event) return null;
+
+  const router = useRouter();
 
   const [status, setStatus] = useState<string>("Confirmada");
   const [comments, setComments] = useState<string[]>([
@@ -128,7 +131,15 @@ export function AppointmentDetailDrawer({
               <Button size="sm" variant="outline" className="h-8 text-xs rounded-lg border-slate-300">
                 WhatsApp
               </Button>
-              <Button size="sm" variant="outline" className="h-8 text-xs rounded-lg border-slate-300">
+              <Button 
+                onClick={() => {
+                  onClose();
+                  router.push(`/appointments/${event.id}`);
+                }}
+                size="sm" 
+                variant="outline" 
+                className="h-8 text-xs rounded-lg border-slate-300"
+              >
                 Ver Ficha Completa
               </Button>
             </div>

@@ -122,14 +122,35 @@ export async function POST(req: Request) {
       if (profs) p_id = profs.id;
     }
 
+    let t_id = null;
+    let finalReason = rawReason || "Nueva cita (IA)";
+
+    if (rawReason) {
+      const terms = rawReason.split(/\s+/).filter(Boolean);
+      const orConditions = terms.map((term: string) => `service_name.ilike.%${term}%`).join(",");
+      
+      const { data: matchedTreatment } = await (supabase as any)
+        .from("treatments")
+        .select("id, service_name")
+        .or(orConditions)
+        .limit(1)
+        .maybeSingle();
+
+      if (matchedTreatment) {
+        t_id = matchedTreatment.id;
+        finalReason = matchedTreatment.service_name;
+      }
+    }
+
     const isoDate = parseAppointmentDate(rawDate, rawTime);
 
     const { data, error } = await (supabase as any).from("appointments").insert({
       patient_id: resolvedPatientId,
       clinic_id: c_id,
       professional_id: p_id,
+      treatment_id: t_id,
       appointment_date: isoDate,
-      reason: rawReason || "Nueva cita (IA)",
+      reason: finalReason,
       status: body.status || "Confirmada",
       notes: rawClinic ? `Agendada por Asistente IA (${rawClinic})` : "Agendada por Asistente IA"
     }).select().single();
