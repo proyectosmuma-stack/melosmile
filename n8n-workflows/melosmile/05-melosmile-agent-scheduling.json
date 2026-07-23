@@ -11,7 +11,10 @@
         "path": "melosmile-agent-scheduling",
         "responseMode": "responseNode"
       },
-      "position": [250, 300],
+      "position": [
+        250,
+        300
+      ],
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1
     },
@@ -21,7 +24,10 @@
       "parameters": {
         "modelName": "models/gemini-2.0-flash"
       },
-      "position": [450, 450],
+      "position": [
+        450,
+        450
+      ],
       "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
       "typeVersion": 1
     },
@@ -35,7 +41,10 @@
         "promptType": "define",
         "text": "={{ $json.body.extracted_entities ? JSON.stringify($json.body.extracted_entities) : $json.body.message }}"
       },
-      "position": [450, 300],
+      "position": [
+        450,
+        300
+      ],
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 1.7
     },
@@ -43,16 +52,15 @@
       "id": "4",
       "name": "Tool_Search_Patients",
       "parameters": {
+        "name": "Tool_Search_Patients",
+        "description": "Busca pacientes por nombre, apellido o teléfono en Melosmile",
         "method": "GET",
-        "placeholderDefinitions": {
-          "values": [
-            { "description": "Nombre o teléfono del paciente a buscar", "name": "query" }
-          ]
-        },
-        "toolDescription": "Busca pacientes en Melosmile por nombre o teléfono para obtener su ID de paciente oficial.",
-        "url": "https://melosmile.app/api/patients/search?q={query}"
+        "url": "=https://frontend-eight-dusky-42.vercel.app/api/patients/search?q={{ $fromAI('query', 'Nombre, apellido o teléfono del paciente') }}"
       },
-      "position": [700, 200],
+      "position": [
+        700,
+        200
+      ],
       "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
       "typeVersion": 1.1
     },
@@ -60,13 +68,18 @@
       "id": "5",
       "name": "Tool_Appointment_Manager",
       "parameters": {
-        "jsonBody": "={{ JSON.stringify({ patient_id: $json.patient_id, date: $json.date, treatment: $json.treatment }) }}",
+        "name": "Tool_Appointment_Manager",
+        "description": "Crea o agenda una nueva cita para un paciente",
         "method": "POST",
+        "url": "https://frontend-eight-dusky-42.vercel.app/api/appointments/create",
         "sendBody": true,
-        "toolDescription": "Crea o actualiza una cita dental en la base de datos de Melosmile. Requiere patient_id, date e importe/tratamiento.",
-        "url": "https://melosmile.app/api/appointments"
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"patient_name\": \"{{ $fromAI('patient_name', 'Nombre o UUID del paciente') }}\",\n  \"appointment_date\": \"{{ $fromAI('appointment_date', 'Fecha y hora de la cita, ej: mañana a las 14:00') }}\",\n  \"reason\": \"{{ $fromAI('reason', 'Motivo o tratamiento de la cita') }}\"\n}"
       },
-      "position": [700, 400],
+      "position": [
+        700,
+        400
+      ],
       "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
       "typeVersion": 1.1
     },
@@ -77,18 +90,75 @@
         "options": {},
         "respondWith": "allIncomingItems"
       },
-      "position": [950, 300],
+      "position": [
+        950,
+        300
+      ],
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5
     }
   ],
   "connections": {
-    "Webhook_Scheduling": { "main": [[{ "node": "Agent_Scheduling", "type": "main", "index": 0 }]] },
-    "Gemini_Chat_Model": { "ai_languageModel": [[{ "node": "Agent_Scheduling", "type": "ai_languageModel", "index": 0 }]] },
-    "Tool_Search_Patients": { "ai_tool": [[{ "node": "Agent_Scheduling", "type": "ai_tool", "index": 0 }]] },
-    "Tool_Appointment_Manager": { "ai_tool": [[{ "node": "Agent_Scheduling", "type": "ai_tool", "index": 0 }]] },
-    "Agent_Scheduling": { "main": [[{ "node": "Respond_to_Webhook", "type": "main", "index": 0 }]] },
-    "Respond_to_Webhook": { "main": [] }
+    "Webhook_Scheduling": {
+      "main": [
+        [
+          {
+            "node": "Agent_Scheduling",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini_Chat_Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Agent_Scheduling",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tool_Search_Patients": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agent_Scheduling",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tool_Appointment_Manager": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agent_Scheduling",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agent_Scheduling": {
+      "main": [
+        [
+          {
+            "node": "Respond_to_Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Respond_to_Webhook": {
+      "main": []
+    }
   },
-  "tags": ["Melosmile"]
+  "tags": [
+    "Melosmile"
+  ]
 }
