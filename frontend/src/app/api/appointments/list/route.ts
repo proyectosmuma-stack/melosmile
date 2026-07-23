@@ -1,15 +1,19 @@
 import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase/client";
 
-function getDateRange(dateStr?: string): { startISO: string; endISO: string; dateLabel: string } {
+function getDateRange(dateStr?: string, fullUrl?: string): { startISO: string; endISO: string; dateLabel: string } {
   const now = new Date();
   const target = new Date(now);
 
-  let clean = dateStr || "hoy";
+  let clean = dateStr || "";
   try {
     clean = decodeURIComponent(clean);
-  } catch (e) {
-    // Ignore decode error if already plain string
+  } catch (e) {}
+
+  if (fullUrl) {
+    try {
+      clean += " " + decodeURIComponent(fullUrl);
+    } catch (e) {}
   }
 
   clean = clean.replace(/^["']|["']$/g, "").toLowerCase().trim();
@@ -22,9 +26,16 @@ function getDateRange(dateStr?: string): { startISO: string; endISO: string; dat
     target.setDate(target.getDate() - 1);
   } else if (clean.includes("hoy") || clean.includes("today")) {
     // Keep target as today
-  } else if (dateStr && !isNaN(new Date(clean).getTime())) {
-    const custom = new Date(clean);
-    target.setFullYear(custom.getFullYear(), custom.getMonth(), custom.getDate());
+  } else {
+    // Try to match ISO date string like 2026-07-24
+    const isoMatch = clean.match(/\d{4}-\d{2}-\d{2}/);
+    if (isoMatch && !isNaN(new Date(isoMatch[0]).getTime())) {
+      const custom = new Date(isoMatch[0]);
+      target.setFullYear(custom.getFullYear(), custom.getMonth(), custom.getDate());
+    } else {
+      // Default to tomorrow if not specified
+      target.setDate(target.getDate() + 1);
+    }
   }
 
   const startOfDay = new Date(target);
@@ -43,10 +54,10 @@ function getDateRange(dateStr?: string): { startISO: string; endISO: string; dat
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
-    let rawDate = searchParams.get("date") || searchParams.get("q") || "hoy";
+    let rawDate = searchParams.get("date") || searchParams.get("q") || searchParams.get("message") || "";
     let patientQuery = searchParams.get("patient") || searchParams.get("patient_name");
 
-    const { startISO, endISO, dateLabel } = getDateRange(rawDate);
+    const { startISO, endISO, dateLabel } = getDateRange(rawDate, req.url);
 
     let query = (supabase as any)
       .from("appointments")
