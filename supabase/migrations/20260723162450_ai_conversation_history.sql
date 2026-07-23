@@ -13,6 +13,6 @@ CREATE INDEX IF NOT EXISTS idx_ai_conversation_history_session_id ON public.ai_c
 -- Set up RLS (Row Level Security)
 ALTER TABLE public.ai_conversation_history ENABLE ROW LEVEL SECURITY;
 
--- Allow inserts and selects for authenticated roles or service roles as needed
-CREATE POLICY "Enable insert for authenticated users" ON public.ai_conversation_history FOR INSERT TO authenticated WITH CHECK (true);
-CREATE POLICY "Enable select for authenticated users" ON public.ai_conversation_history FOR SELECT TO authenticated USING (true);
+-- Allow inserts and selects for anon/public and authenticated roles
+CREATE POLICY "Enable insert for all users" ON public.ai_conversation_history FOR INSERT TO public WITH CHECK (true);
+CREATE POLICY "Enable select for all users" ON public.ai_conversation_history FOR SELECT TO public USING (true);
