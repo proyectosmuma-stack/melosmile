@@ -45,6 +45,7 @@ export async function POST(req: Request) {
     const rawDate = body.appointment_date || body.date;
     const rawTime = body.time;
     const rawReason = body.reason || body.treatment || body.appointment_type || body.concept;
+    const rawClinic = body.clinic || body.clinic_name || body.location;
 
     if (!rawPatient) {
       return NextResponse.json({ error: "patient identification is required" }, { status: 400 });
@@ -80,10 +81,21 @@ export async function POST(req: Request) {
     let c_id = body.clinic_id;
     let p_id = body.professional_id;
 
+    if (rawClinic && (!c_id || !UUID_REGEX.test(c_id))) {
+      const { data: matchedClinic } = await (supabase as any)
+        .from("clinics")
+        .select("id")
+        .or(`name.ilike.%${rawClinic}%,address.ilike.%${rawClinic}%`)
+        .limit(1)
+        .maybeSingle();
+      if (matchedClinic) c_id = matchedClinic.id;
+    }
+
     if (!c_id || !UUID_REGEX.test(c_id)) {
       const { data: clinics } = await (supabase as any).from("clinics").select("id").limit(1).single();
       if (clinics) c_id = clinics.id;
     }
+
     if (!p_id || !UUID_REGEX.test(p_id)) {
       const { data: profs } = await (supabase as any).from("professionals").select("id").limit(1).single();
       if (profs) p_id = profs.id;
@@ -98,7 +110,7 @@ export async function POST(req: Request) {
       appointment_date: isoDate,
       reason: rawReason || "Nueva cita (IA)",
       status: body.status || "Confirmada",
-      notes: "Agendada por Asistente IA"
+      notes: rawClinic ? `Agendada por Asistente IA (${rawClinic})` : "Agendada por Asistente IA"
     }).select().single();
 
     if (error) throw error;
