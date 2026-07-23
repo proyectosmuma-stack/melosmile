@@ -7,12 +7,14 @@ function getDateRange(dateStr?: string): { startISO: string; endISO: string; dat
 
   const lower = (dateStr || "hoy").toLowerCase().trim();
 
-  if (lower.includes("mañana") && !lower.includes("pasado")) {
+  if (lower.includes("mañana") || lower.includes("tomorrow")) {
     target.setDate(target.getDate() + 1);
   } else if (lower.includes("pasado mañana")) {
     target.setDate(target.getDate() + 2);
-  } else if (lower.includes("ayer")) {
+  } else if (lower.includes("ayer") || lower.includes("yesterday")) {
     target.setDate(target.getDate() - 1);
+  } else if (lower.includes("hoy") || lower.includes("today")) {
+    // Keep target as today
   } else if (dateStr && !isNaN(new Date(dateStr).getTime())) {
     const custom = new Date(dateStr);
     target.setFullYear(custom.getFullYear(), custom.getMonth(), custom.getDate());
