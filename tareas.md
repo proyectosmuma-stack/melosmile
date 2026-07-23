@@ -42,18 +42,19 @@ Este documento registra el estado del proyecto, el listado exhaustivo de los **f
 - [x] Pestaña Facturación con selección multi-cobro mediante checkboxes y facturación agrupada Odoo (`Facturada INV/2026/XXXX` vs `Por Facturar`).
 - [x] Pestaña Recordatorios con modal `NewReminderModal` multi-canal (WhatsApp, Email, SMS) y botón `Enviar Ahora`.
 
-### 🤖 Sistema IA Conversacional Multi-Agente
-- [x] Dispatcher IA en n8n con OpenRouter `google/gemini-2.5-flash` (workflow `Yv9X1EGUvQg8qErW`).
+### 🤖 Sistema IA Conversacional Multi-Agente (Musly)
+- [x] Dispatcher IA (Musly) en n8n con OpenRouter `google/gemini-2.5-flash` (workflow `Yv9X1EGUvQg8qErW`).
 - [x] Sub-Agente Agendamiento con `executeWorkflowTrigger` + OpenRouter (workflow `jTWHg9bHaNOdzL13`).
 - [x] Sub-Agente Clínico con `executeWorkflowTrigger` + OpenRouter (workflow `Q7oxrbUuohca81Gn`).
 - [x] Sub-Agente Contabilidad con `executeWorkflowTrigger` + OpenRouter (workflow `XSLNwq6ihH1SHPRl`).
-- [x] Chat UI completo en frontend con burbujas, historial, badges de intent y entidades colapsables.
+- [x] Chat UI completo en frontend con burbujas, historial, badges de intent y entidades colapsables. Renombrado globalmente a **Musly**.
 - [x] Proxy Next.js `/api/dispatcher` para evitar CORS (browser → servidor → n8n).
-- [x] Botón flotante + botón en header con modal de chat global.
-- [ ] **Conectar herramientas de Sub-Agentes a APIs reales de Supabase** (pacientes, citas).
-- [ ] **Conectar herramientas de Sub-Agente Contabilidad a Odoo ERP** (facturas pendientes).
-- [ ] **Añadir memoria conversacional** (Window Buffer Memory nativo n8n + `session_id` en frontend).
-- [ ] **Persistencia de historial en Supabase** (tabla `ai_conversation_history` para auditoría).
+- [x] Botón flotante solo con icono de estrella (sin texto) + sidebar colapsable por defecto con tooltips.
+- [x] **Conectar herramientas de Sub-Agentes a APIs reales de Supabase** (pacientes, citas con emparejamiento automático en la tabla `treatments`).
+- [x] **Conectar herramientas de Sub-Agente Contabilidad a Odoo ERP** (facturas pendientes).
+- [x] **Añadir memoria conversacional** (Inyección de historial conversacional desde `ai-agent-bar.tsx` hacia los nodos de n8n).
+- [x] **Persistencia de historial en Supabase** (tabla `ai_conversation_history` para auditoría).
+- [x] **Navegación directa desde el Calendario**: Botón "Ver Ficha Completa" en la ficha flotante para editar la cita en `/appointments/[id]`.
 
 ### ⚙️ Interfaz & Ajustes UI
 - [x] **Ajuste Asistente IA Flotante**: TextArea expandible con atajo `Enter` (enviar) y `Shift+Enter` (salto de línea).

@@ -102,6 +102,18 @@ POST /webhook/melosmile-ai-dispatcher
 → melosmile.app/api/patients → endpoint pendiente implementación
 ```
 
+#### 6. Últimos Ajustes & Mejoras (2026-07-23)
+
+| Componente | Mejora / Corrección | Detalle Técnico |
+|------------|---------------------|-----------------|
+| **Renombrado del Agente** | **Musly** | Cambiadas todas las referencias de "Agente IA" o "Dispatcher" a **Musly** en la interfaz y mensajes |
+| **Sidebar Naves** | Colapsable por defecto | Estado inicial colapsado con `tooltips` explicativos en hover y corrección de superposición con el logo |
+| **Memoria Conversacional** | Historial de Contexto | `ai-agent-bar.tsx` envía los últimos 10 mensajes del chat en la petición a n8n para mantener contexto continuo ("para mañana") |
+| **Persistencia de Auditoría** | Supabase Migration | Creada tabla `ai_conversation_history` en Supabase para registrar conversaciones y respuestas |
+| **Herramientas n8n** | Corrección de Sintaxis JSON | Reparada la evaluación de `$fromAI` en los cuerpos de las herramientas HTTP de n8n para enviar JSON válido a la API |
+| **Emparejamiento de Tratamientos** | Buscador Difuso en API | Endpoint `api/appointments/create` busca coincidencias en la tabla `treatments` de Supabase para asociar `treatment_id` y usar el nombre oficial |
+| **Ficha de Cita en Calendario** | Navegación a Ficha Completa | Botón "Ver Ficha Completa" en `AppointmentDetailDrawer` redirige directamente a la página `/appointments/[id]` |
+
 ---
 
 ## ✅ Verificación de Entorno
@@ -110,3 +122,4 @@ POST /webhook/melosmile-ai-dispatcher
 - **Servidor Dev**: Operativo en `http://localhost:3028/`
 - **Dispatcher n8n**: Activo en `https://n8n.mumaweb.com/webhook/melosmile-ai-dispatcher`
 - **4 Workflows n8n**: Todos activos (`active: true`)
+- **Git**: Cambios empujados a la rama `develop` ✅
