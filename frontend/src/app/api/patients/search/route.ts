@@ -29,7 +29,16 @@ export async function GET(request: Request) {
 
     if (error) throw error;
 
-    return NextResponse.json(data || []);
+    const patients = data || [];
+    const summary = patients.length > 0
+      ? patients.map(p => `Paciente: ${p.first_name} ${p.last_name} | ID Historia: ${p.historia_id} | Tel: ${p.phone || 'N/A'} | Email: ${p.email || 'N/A'}`).join("\n")
+      : "No se encontraron pacientes con ese término de búsqueda.";
+
+    return NextResponse.json({
+      success: true,
+      patients,
+      summary,
+    });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
