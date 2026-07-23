@@ -49,14 +49,35 @@ export async function POST(req: NextRequest) {
       : "No se proporcionó historial.";
 
     const logFooter = `\n================================================================================\n\n`;
-
     const fullLogEntry = logHeader + logTitle + logDetails + "\n" + historyText + logFooter;
 
-    // Ensure logs directory exists in project root and frontend root
-    const projectRootLogs = path.join(process.cwd(), "..", "logs");
-    const frontendLogs = path.join(process.cwd(), "logs");
+    // 1. Save to Supabase ai_agent_reports table
+    let dbSuccess = false;
+    try {
+      const { error: dbErr } = await (supabase as any).from("ai_agent_reports").insert({
+        session_id,
+        user_comment: user_comment.trim(),
+        participating_agents,
+        conversation_history,
+        created_at: timestamp,
+      });
+      if (dbErr) {
+        console.error("Error al guardar reporte en Supabase:", dbErr);
+      } else {
+        dbSuccess = true;
+      }
+    } catch (err: any) {
+      console.error("Excepción guardando reporte en Supabase:", err);
+    }
 
-    [projectRootLogs, frontendLogs].forEach((dirPath) => {
+    // 2. Safe file log append (works in local environment and Vercel /tmp)
+    const logDirectories = [
+      path.join(process.cwd(), "logs"),
+      path.join(process.cwd(), "..", "logs"),
+      "/tmp",
+    ];
+
+    for (const dirPath of logDirectories) {
       try {
         if (!fs.existsSync(dirPath)) {
           fs.mkdirSync(dirPath, { recursive: true });
@@ -64,27 +85,14 @@ export async function POST(req: NextRequest) {
         const logFilePath = path.join(dirPath, "agent_reports.log");
         fs.appendFileSync(logFilePath, fullLogEntry, "utf-8");
       } catch (fileErr) {
-        console.error(`Error escribiendo log en ${dirPath}:`, fileErr);
+        // Ignore read-only filesystem errors in production Vercel root
       }
-    });
-
-    // Optionally attempt saving to Supabase if table exists
-    try {
-      await (supabase as any).from("ai_agent_reports").insert({
-        session_id,
-        user_comment: user_comment.trim(),
-        participating_agents,
-        conversation_history,
-        created_at: timestamp,
-      });
-    } catch (dbErr) {
-      // Table might not exist yet, log to file is primary
-      console.warn("Notice: ai_agent_reports DB table skip/notice:", dbErr);
     }
 
     return NextResponse.json({
       success: true,
-      message: "Reporte registrado correctamente en logs/agent_reports.log",
+      db_saved: dbSuccess,
+      message: "Reporte de error guardado con éxito.",
       timestamp,
     });
   } catch (error: any) {
