@@ -63,10 +63,10 @@ export default function DashboardLayout({
             <Button
               onClick={() => triggerAIAgentModal()}
               className="h-10 px-3.5 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white font-semibold text-xs shadow-md shadow-indigo-500/20 gap-2 transition-all cursor-pointer"
-              title="Abrir Asistente IA Melosmile (⌘K)"
+              title="Abrir Musly (⌘K)"
             >
               <Sparkles className="h-4 w-4" />
-              <span>Agente IA</span>
+              <span>Musly</span>
               <kbd className="hidden sm:inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-white/20 text-[10px] font-mono tracking-tighter">
                 ⌘K
               </kbd>

@@ -1000,12 +1000,12 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
 
                 <div className="space-y-1.5">
                   <Label className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
-                    <Activity className="h-3.5 w-3.5 text-blue-600" /> Pauta Próxima Cita / Seguimiento (Agente IA)
+                    <Activity className="h-3.5 w-3.5 text-blue-600" /> Pauta Próxima Cita / Seguimiento (Musly)
                   </Label>
                   <Textarea
                     value={nextStepNotes}
                     onChange={(e) => setNextStepNotes(e.target.value)}
-                    placeholder="Escribe la pauta para la próxima cita (ej. Citar en 3 semanas para quitar puntos). El Agente IA analizará esto al guardar."
+                    placeholder="Escribe la pauta para la próxima cita (ej. Citar en 3 semanas para quitar puntos). Musly analizará esto al guardar."
                     className="rounded-xl text-xs min-h-[90px] bg-slate-50/60"
                   />
                 </div>

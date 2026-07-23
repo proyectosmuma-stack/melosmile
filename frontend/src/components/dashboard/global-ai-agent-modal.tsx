@@ -43,18 +43,14 @@ export function GlobalAIAgentModal() {
 
   return (
     <>
-      {/* Floating AI Agent Trigger Button (Available on all pages) */}
+      {/* Floating AI Agent Trigger Button (Available on all pages - Icon Only) */}
       {!isOpen && (
         <Button
           onClick={() => setIsOpen(true)}
-          className="fixed bottom-6 right-6 h-14 px-4 rounded-full shadow-2xl bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white z-50 flex items-center justify-center gap-2 border-2 border-white/20 transition-transform hover:scale-105 active:scale-95 cursor-pointer"
+          className="fixed bottom-6 right-6 h-14 w-14 p-0 rounded-full shadow-2xl bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white z-50 flex items-center justify-center border-2 border-white/20 transition-transform hover:scale-110 active:scale-95 cursor-pointer"
           title="Abrir Musly (⌘K)"
         >
           <Sparkles className="h-6 w-6 animate-pulse" />
-          <span className="font-semibold text-xs pr-1">Agente IA</span>
-          <kbd className="hidden sm:inline-flex items-center px-1.5 py-0.5 rounded bg-white/20 text-[10px] font-mono font-bold tracking-tighter">
-            ⌘K
-          </kbd>
         </Button>
       )}
 
