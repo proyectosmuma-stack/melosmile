@@ -5,7 +5,14 @@ function getDateRange(dateStr?: string): { startISO: string; endISO: string; dat
   const now = new Date();
   const target = new Date(now);
 
-  const clean = (dateStr || "hoy").replace(/^["']|["']$/g, "").toLowerCase().trim();
+  let clean = dateStr || "hoy";
+  try {
+    clean = decodeURIComponent(clean);
+  } catch (e) {
+    // Ignore decode error if already plain string
+  }
+
+  clean = clean.replace(/^["']|["']$/g, "").toLowerCase().trim();
 
   if (clean.includes("mañana") || clean.includes("tomorrow")) {
     target.setDate(target.getDate() + 1);
@@ -37,12 +44,7 @@ export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     let rawDate = searchParams.get("date") || searchParams.get("q") || "hoy";
-    rawDate = decodeURIComponent(rawDate).replace(/^["']|["']$/g, "").trim();
-
     let patientQuery = searchParams.get("patient") || searchParams.get("patient_name");
-    if (patientQuery) {
-      patientQuery = decodeURIComponent(patientQuery).replace(/^["']|["']$/g, "").trim();
-    }
 
     const { startISO, endISO, dateLabel } = getDateRange(rawDate);
 
@@ -93,7 +95,9 @@ export async function GET(req: Request) {
     });
 
     if (patientQuery) {
-      const term = patientQuery.toLowerCase();
+      let cleanPatient = patientQuery;
+      try { cleanPatient = decodeURIComponent(cleanPatient); } catch (e) {}
+      const term = cleanPatient.replace(/^["']|["']$/g, "").toLowerCase().trim();
       results = results.filter((r: any) => r.paciente.toLowerCase().includes(term));
     }
 
