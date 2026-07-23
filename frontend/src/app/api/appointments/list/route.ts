@@ -181,3 +181,12 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
+
+export async function POST(req: Request) {
+  let body: any = {};
+  try { body = await req.json(); } catch (e) {}
+  const fakeUrl = new URL("http://localhost/api/appointments/list");
+  if (body.date) fakeUrl.searchParams.set("date", body.date);
+  if (body.q || body.query || body.patient) fakeUrl.searchParams.set("q", body.q || body.query || body.patient);
+  return GET(new Request(fakeUrl.toString()));
+}
