@@ -16,6 +16,7 @@ import { supabase } from "@/lib/supabase/client";
 import { TagItem, getTagStyle } from "@/components/patients/tag-input";
 import { cn } from "@/lib/utils";
 import { triggerNewAppointmentModal } from "@/components/calendar/new-appointment-modal";
+import { PaymentRegistrationModal } from "@/components/billing/payment-registration-modal";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -165,8 +166,6 @@ function DocumentDropZone({ patientId, onUpload }: { patientId: string; onUpload
   const handleFiles = useCallback(async (files: FileList | null) => {
     if (!files || files.length === 0) return;
     setUploading(true);
-    // TODO: upload to VPS/Supabase Storage and register in documents table
-    // For now: register file metadata in documents table (file_path = placeholder)
     for (const file of Array.from(files)) {
       const ext = file.name.split(".").pop()?.toLowerCase() || "";
       let docType: string = "otro";
@@ -174,15 +173,32 @@ function DocumentDropZone({ patientId, onUpload }: { patientId: string; onUpload
       else if (["jpg","jpeg","png","webp"].includes(ext)) docType = "foto_clinica";
       else if (["pdf"].includes(ext)) docType = "informe";
 
-      await (supabase as any).from("documents").insert({
+      const filePath = `/opt/melosmile/docs/${patientId}/${Date.now()}_${file.name}`;
+      const { data: newDoc, error } = await (supabase as any).from("documents").insert({
         patient_id: patientId,
         document_type: docType,
         file_name: file.name,
-        file_path: `/opt/melosmile/docs/${patientId}/${Date.now()}_${file.name}`,
+        file_path: filePath,
         file_size_bytes: file.size,
         mime_type: file.type,
         uploaded_by: "Dra. Melo",
-      });
+        description: "Enviado a IA vectorizadora ⏳",
+      }).select("id").single();
+
+      if (newDoc && !error) {
+        // Trigger n8n vectorization
+        fetch("/api/documents/vectorize", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            documentId: newDoc.id,
+            patientId,
+            fileName: file.name,
+            filePath,
+            documentType: docType,
+          }),
+        }).catch((e) => console.warn("Error enviando vectorización:", e));
+      }
     }
     setUploading(false);
     onUpload();
@@ -229,6 +245,11 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
   const [reminders, setReminders] = useState<Reminder[]>([]);
   const [documents, setDocuments] = useState<Document[]>([]);
   const [tags, setTags] = useState<TagItem[]>([]);
+
+  // Payment & Invoicing states
+  const [paymentModalOpen, setPaymentModalOpen] = useState(false);
+  const [selectedBillingIds, setSelectedBillingIds] = useState<string[]>([]);
+  const [generatingInvoice, setGeneratingInvoice] = useState(false);
 
   const fetchAll = useCallback(async () => {
     if (!targetId) return;
@@ -683,23 +704,104 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
         {/* FACTURACIÓN */}
         {activeTab === "facturacion" && (
           <div className="p-0">
-            {/* Billing data */}
-            <div className="px-5 py-3 border-b border-slate-50 flex items-center justify-between">
-              <div className="flex items-center gap-4">
+            {/* Billing data & action header */}
+            <div className="px-5 py-3.5 border-b border-slate-100 flex flex-wrap items-center justify-between gap-3 bg-slate-50/50">
+              <div className="flex items-center gap-6">
                 <div>
-                  <p className="text-[11px] text-slate-400 font-medium">Total cobrado</p>
+                  <p className="text-[10px] uppercase font-bold text-slate-400">Total cobrado</p>
                   <p className="text-base font-black text-emerald-600">{totalPaid.toFixed(2)} €</p>
                 </div>
                 {totalPending > 0 && (
                   <div>
-                    <p className="text-[11px] text-slate-400 font-medium">Pendiente</p>
+                    <p className="text-[10px] uppercase font-bold text-slate-400">Pendiente cobro</p>
                     <p className="text-base font-black text-amber-600">{totalPending.toFixed(2)} €</p>
                   </div>
                 )}
+                {selectedBillingIds.length > 0 && (
+                  <div className="pl-4 border-l border-slate-200">
+                    <p className="text-[10px] uppercase font-bold text-violet-500">Seleccionados para Factura</p>
+                    <p className="text-sm font-black text-violet-700">
+                      {selectedBillingIds.length} cobro(s) · {
+                        billing
+                          .filter((b) => selectedBillingIds.includes(b.id))
+                          .reduce((acc, b) => acc + (b.custom_price || 0), 0)
+                          .toFixed(2)
+                      } €
+                    </p>
+                  </div>
+                )}
               </div>
-              <Button size="sm" className="h-7 gap-1.5 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-[11px] font-semibold shadow-sm">
-                <Receipt className="h-3 w-3" /> Generar Factura Odoo
-              </Button>
+
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  onClick={() => setPaymentModalOpen(true)}
+                  className="h-9 px-3.5 gap-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-sm cursor-pointer"
+                >
+                  <Plus className="h-4 w-4" /> Crear Pago
+                </Button>
+
+                <Button
+                  size="sm"
+                  disabled={selectedBillingIds.length === 0 || generatingInvoice}
+                  onClick={async () => {
+                    if (selectedBillingIds.length === 0) return;
+                    setGeneratingInvoice(true);
+                    try {
+                      const selectedItems = billing.filter((b) => selectedBillingIds.includes(b.id));
+                      const res = await fetch("/api/odoo/invoice", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                          patientId: patient.id,
+                          items: selectedItems.map((it) => ({
+                            id: it.id,
+                            name: it.appointment_reason || "Servicio Dental",
+                            price: it.custom_price,
+                          })),
+                          patientDetails: {
+                            firstName: patient.firstName,
+                            lastName: patient.lastName,
+                            historiaId: patient.historiaId,
+                            nifCif: patient.nifCif,
+                            billingName: patient.billingName,
+                            billingAddress: patient.billingAddress,
+                            billingCity: patient.billingCity,
+                            billingPostalCode: patient.billingPostalCode,
+                            email: patient.email,
+                            phone: patient.phone,
+                          },
+                        }),
+                      });
+                      const json = await res.json();
+                      if (json.success) {
+                        alert(`Factura Odoo generada exitosamente: ${json.invoiceNumber || `#${json.invoiceId}`}`);
+                        setSelectedBillingIds([]);
+                        fetchAll();
+                      } else {
+                        throw new Error(json.error || "Error al facturar en Odoo");
+                      }
+                    } catch (e: any) {
+                      console.error("Error generando factura Odoo:", e);
+                      alert(`Error: ${e.message}`);
+                    } finally {
+                      setGeneratingInvoice(false);
+                    }
+                  }}
+                  className={`h-9 px-3.5 gap-1.5 rounded-xl text-xs font-bold shadow-sm transition-all ${
+                    selectedBillingIds.length > 0
+                      ? "bg-violet-600 hover:bg-violet-700 text-white cursor-pointer"
+                      : "bg-slate-200 text-slate-400 border-slate-200 cursor-not-allowed"
+                  }`}
+                >
+                  {generatingInvoice ? (
+                    <Loader2 className="h-4 w-4 animate-spin text-white" />
+                  ) : (
+                    <Receipt className="h-4 w-4" />
+                  )}
+                  Generar Factura Odoo {selectedBillingIds.length > 0 ? `(${selectedBillingIds.length})` : ""}
+                </Button>
+              </div>
             </div>
 
             {/* Billing data fields */}
@@ -727,32 +829,99 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
               <div className="flex flex-col items-center justify-center py-16 text-slate-400">
                 <CreditCard className="h-10 w-10 mb-3 text-slate-200" />
                 <p className="font-semibold text-sm">Sin registros financieros</p>
+                <p className="text-xs text-slate-400 mt-1">Usa el botón &quot;Crear Pago&quot; para añadir el primer cobro</p>
               </div>
             ) : (
-              <div className="divide-y divide-slate-50">
-                {billing.map((b) => {
-                  const monthDate = new Date(b.billing_month);
-                  const monthLabel = monthDate.toLocaleDateString("es-ES", { month: "long", year: "numeric" });
-                  return (
-                    <div key={b.id} className="px-5 py-4 flex items-center justify-between hover:bg-slate-50 transition-colors">
-                      <div>
-                        <p className="font-bold text-slate-900 text-sm capitalize">{b.appointment_reason}</p>
-                        <p className="text-xs text-slate-500">{monthLabel} {b.payment_method && `· ${b.payment_method}`}</p>
-                        {b.odoo_invoice_number && (
-                          <p className="text-[11px] text-violet-600 font-semibold mt-0.5 flex items-center gap-1">
-                            <Receipt className="h-3 w-3" /> {b.odoo_invoice_number}
-                          </p>
-                        )}
+              <div>
+                {/* Select All Checkbox Header */}
+                <div className="px-5 py-2.5 bg-slate-100/70 border-b border-slate-200/80 flex items-center justify-between text-xs font-semibold text-slate-600">
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={
+                        billing.filter((b) => !b.odoo_invoice_id && b.status !== "Facturado Odoo" && !b.odoo_invoice_number).length > 0 &&
+                        billing
+                          .filter((b) => !b.odoo_invoice_id && b.status !== "Facturado Odoo" && !b.odoo_invoice_number)
+                          .every((b) => selectedBillingIds.includes(b.id))
+                      }
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          const nonInvoicedIds = billing
+                            .filter((b) => !b.odoo_invoice_id && b.status !== "Facturado Odoo" && !b.odoo_invoice_number)
+                            .map((b) => b.id);
+                          setSelectedBillingIds(nonInvoicedIds);
+                        } else {
+                          setSelectedBillingIds([]);
+                        }
+                      }}
+                      className="accent-violet-600 h-4 w-4 rounded cursor-pointer"
+                    />
+                    <span>Seleccionar todos los cobros pendientes de factura</span>
+                  </div>
+                  <span className="text-[11px] text-slate-400 font-normal">Los cobros ya facturados no se pueden volver a seleccionar</span>
+                </div>
+
+                <div className="divide-y divide-slate-100">
+                  {billing.map((b) => {
+                    const monthDate = new Date(b.billing_month);
+                    const monthLabel = monthDate.toLocaleDateString("es-ES", { month: "long", year: "numeric" });
+                    const isFacturado = !!b.odoo_invoice_id || b.status === "Facturado Odoo" || !!b.odoo_invoice_number;
+                    const invoiceRef = b.odoo_invoice_number || (b.odoo_invoice_id ? `INV/#${b.odoo_invoice_id}` : null);
+                    const isSelected = selectedBillingIds.includes(b.id);
+
+                    return (
+                      <div
+                        key={b.id}
+                        className={`px-5 py-3.5 flex items-center justify-between transition-colors ${
+                          isSelected ? "bg-violet-50/50" : isFacturado ? "bg-slate-50/40" : "hover:bg-slate-50"
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <input
+                            type="checkbox"
+                            disabled={isFacturado}
+                            checked={isSelected}
+                            onChange={() => {
+                              if (isFacturado) return;
+                              setSelectedBillingIds((prev) =>
+                                prev.includes(b.id) ? prev.filter((id) => id !== b.id) : [...prev, b.id]
+                              );
+                            }}
+                            className={`h-4 w-4 rounded accent-violet-600 ${
+                              isFacturado ? "cursor-not-allowed opacity-40" : "cursor-pointer"
+                            }`}
+                          />
+
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <p className="font-bold text-slate-900 text-sm capitalize">{b.appointment_reason}</p>
+                              {isFacturado ? (
+                                <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full font-bold bg-violet-100 text-violet-800 border border-violet-200">
+                                  <Receipt className="h-3 w-3 text-violet-600" /> Facturada ({invoiceRef})
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full font-bold bg-amber-50 text-amber-800 border border-amber-200">
+                                  Por Facturar
+                                </span>
+                              )}
+                            </div>
+
+                            <p className="text-xs text-slate-500 mt-0.5">
+                              {monthLabel} {b.payment_method && `· ${b.payment_method}`}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="text-right flex flex-col items-end gap-1">
+                          <p className="font-black text-slate-900 text-sm">{b.custom_price.toFixed(2)} €</p>
+                          <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold border ${getStatusBadge(b.status)}`}>
+                            {b.status}
+                          </span>
+                        </div>
                       </div>
-                      <div className="text-right flex flex-col items-end gap-1">
-                        <p className="font-black text-slate-900 text-sm">{b.custom_price.toFixed(2)} €</p>
-                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold border ${getStatusBadge(b.status)}`}>
-                          {b.status}
-                        </span>
-                      </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
               </div>
             )}
           </div>
@@ -841,6 +1010,21 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
           )}
         </div>
       </div>
+      {/* Payment Registration Modal */}
+      {patient && (
+        <PaymentRegistrationModal
+          open={paymentModalOpen}
+          onOpenChange={setPaymentModalOpen}
+          patientId={patient.id}
+          patientName={`${patient.firstName} ${patient.lastName}`}
+          appointments={appointments.map((a) => ({
+            id: a.id,
+            reason: a.reason,
+            appointment_date: a.appointment_date,
+          }))}
+          onSuccess={fetchAll}
+        />
+      )}
     </div>
   );
 }

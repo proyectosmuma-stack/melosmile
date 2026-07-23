@@ -11,7 +11,7 @@ const supabase = createClient(
  * Returns the full context the AI agent needs to:
  * - Calculate profitability and commissions
  * - Suggest treatment prices per clinic
- * - Generate billing reports
+ * - Generate billing & payment status reports (Facturados vs Por Facturar)
  */
 export async function GET() {
   try {
@@ -22,13 +22,15 @@ export async function GET() {
       { data: treatments },
       { data: commissionRules },
       { data: clinicTreatments },
+      { data: billingRecords },
     ] = await Promise.all([
-      (supabase as any).from("clinics").select("id, name, address, phone, email, base_commission_pct, color_hex"),
+      (supabase as any).from("clinics").select("id, name, address, phone, email, base_commission_pct, color_hex, odoo_pricelist_id"),
       supabase.from("professionals").select("id, first_name, last_name, specialty, base_commission_percentage, clinic_id"),
       (supabase as any).from("treatment_families").select("id, name, description, color_hex, sort_order").order("sort_order"),
       (supabase as any).from("treatments").select("id, service_name, abbreviation, service_type, default_price, lab_cost, typical_lab_cost, family_id, is_active").eq("is_active", true),
       (supabase as any).from("clinic_commission_rules").select("id, clinic_id, family_id, commission_pct, lab_discount_pct"),
       (supabase as any).from("clinic_treatments").select("clinic_id, treatment_id, price"),
+      (supabase as any).from("billing_records").select("id, patient_id, appointment_reason, total_amount, custom_price, status, odoo_invoice_id, odoo_invoice_number, payment_method, created_at").order("created_at", { ascending: false }).limit(100),
     ]);
 
     // Build enriched treatments with family names
@@ -65,6 +67,36 @@ export async function GET() {
       })),
     }));
 
+    // Categorize billing records into Invoiced (Facturado Odoo) vs Pending Invoicing (Por Facturar)
+    const billingInvoiced: any[] = [];
+    const billingPendingInvoice: any[] = [];
+    let totalInvoicedEur = 0;
+    let totalPendingInvoiceEur = 0;
+
+    (billingRecords || []).forEach((rec: any) => {
+      const isFacturado = !!rec.odoo_invoice_id || rec.status === "Facturado Odoo" || !!rec.odoo_invoice_number;
+      const amt = Number(rec.custom_price || rec.total_amount || 0);
+
+      const recordItem = {
+        id: rec.id,
+        patient_id: rec.patient_id,
+        concept: rec.appointment_reason || "Servicio Dental",
+        amount: amt,
+        payment_method: rec.payment_method || "No especificado",
+        status: rec.status,
+        odoo_invoice_number: rec.odoo_invoice_number || (rec.odoo_invoice_id ? `INV/#${rec.odoo_invoice_id}` : null),
+        date: rec.created_at,
+      };
+
+      if (isFacturado) {
+        billingInvoiced.push(recordItem);
+        totalInvoicedEur += amt;
+      } else {
+        billingPendingInvoice.push(recordItem);
+        totalPendingInvoiceEur += amt;
+      }
+    });
+
     const context = {
       generated_at: new Date().toISOString(),
       summary: {
@@ -72,6 +104,15 @@ export async function GET() {
         professionals_count: (professionals || []).length,
         treatment_families_count: (families || []).length,
         treatments_count: (treatments || []).length,
+        total_billing_records_recent: (billingRecords || []).length,
+        invoiced_records_count: billingInvoiced.length,
+        pending_invoice_records_count: billingPendingInvoice.length,
+        total_invoiced_eur: totalInvoicedEur,
+        total_pending_invoice_eur: totalPendingInvoiceEur,
+      },
+      billing_summary: {
+        facturados_odoo: billingInvoiced,
+        por_facturar: billingPendingInvoice,
       },
       clinics: enrichedClinics,
       professionals: (professionals || []).map((p: any) => ({
@@ -85,6 +126,7 @@ export async function GET() {
         profitability: "loss: net < 0 | warning: net/price < 0.15 | ok: otherwise",
         clinic_price: "Use clinic_treatments[clinic_id][treatment_id] if exists, otherwise treatment.default_price",
         commission_priority: "Use clinic_commission_rules if exists for the family, otherwise use clinic.base_commission_pct",
+        invoicing_status: "Check billing_summary.facturados_odoo for already invoiced records and billing_summary.por_facturar for items awaiting Odoo invoice generation.",
       },
     };
 
