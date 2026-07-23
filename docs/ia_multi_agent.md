@@ -97,8 +97,17 @@ Este documento describe la arquitectura del sistema de Inteligencia Artificial c
 
 | Herramienta | URL | Función |
 |-------------|-----|---------|
-| `Tool_Odoo_Invoice` | `GET /api/invoices?query={query}` | Consulta facturas Odoo |
-| `Tool_Reminders_Dispatcher` | `POST /api/billing/reminders` | Envía recordatorio de cobro |
+| `Tool_Odoo_Invoice` | `GET /api/billing/pending?patient_id={patient_id}` | Consulta cobros y facturas pendientes |
+| `Tool_Create_Invoice` | `POST /api/odoo/invoice` | Genera borrador de factura en Odoo ERP |
+
+### 3.4 Reglas de Verificación de Identidad de Pacientes
+
+En todos los Sub-Agentes (especialmente Agendamiento y Clínico), el comportamiento ante la búsqueda de pacientes sigue 3 reglas estrictas:
+
+1. **Coincidencia Única (1 solo paciente)**: La orden (crear cita, modificar cita o consultar historial) se **ejecuta automáticamente**.
+2. **Múltiples Coincidencias (>1 pacientes)**: El agente **NO ejecuta** ninguna orden aún. Muestra las opciones encontradas (nombre, apellidos y teléfono) y solicita al profesional confirmar cuál es el paciente correcto.
+3. **Ninguna Coincidencia (0 pacientes)**: El agente **NO ejecuta** la orden. Muestra el nombre y apellido buscado para confirmación visual del profesional y ofrece la opción de registrar un nuevo paciente con `Tool_Create_Patient`.
+
 
 ---
 
