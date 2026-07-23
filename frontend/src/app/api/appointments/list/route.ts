@@ -1,48 +1,42 @@
 import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase/client";
 
-function getDateRange(dateStr?: string, fullUrl?: string, hasPatientQuery?: boolean): { startISO: string; endISO: string | null; dateLabel: string } {
+function getDateRange(dateStr?: string, patientQuery?: string): { startISO: string; endISO: string | null; dateLabel: string } {
   const now = new Date();
-  const todayLabel = now.toISOString().split("T")[0];
   const target = new Date(now);
 
-  let clean = dateStr || "";
+  let clean = (dateStr || "").replace(/^["']|["']$/g, "").toLowerCase().trim();
   try {
     clean = decodeURIComponent(clean);
   } catch (e) {}
 
-  clean = clean.replace(/^["']|["']$/g, "").toLowerCase().trim();
-
-  let isSpecificDateRequested = false;
+  let isSpecificFutureDate = false;
 
   if (clean.includes("mañana") || clean.includes("tomorrow")) {
     target.setDate(target.getDate() + 1);
-    isSpecificDateRequested = true;
+    isSpecificFutureDate = true;
   } else if (clean.includes("pasado mañana")) {
     target.setDate(target.getDate() + 2);
-    isSpecificDateRequested = true;
+    isSpecificFutureDate = true;
   } else if (clean.includes("ayer") || clean.includes("yesterday")) {
     target.setDate(target.getDate() - 1);
-    isSpecificDateRequested = true;
+    isSpecificFutureDate = true;
   } else {
     const isoMatch = clean.match(/\d{4}-\d{2}-\d{2}/);
     if (isoMatch && !isNaN(new Date(isoMatch[0]).getTime())) {
       const custom = new Date(isoMatch[0]);
       target.setFullYear(custom.getFullYear(), custom.getMonth(), custom.getDate());
-      // Only treat as specific date filter if it's NOT just today's auto-filled date
-      if (isoMatch[0] !== todayLabel) {
-        isSpecificDateRequested = true;
-      }
+      isSpecificFutureDate = true;
     }
   }
 
-  // If a patient is specified and no specific future/past date (like "mañana") was requested, search all upcoming from today
-  if (hasPatientQuery && !isSpecificDateRequested) {
+  // If patient query is present and no explicit relative/ISO date (like "mañana") was passed, search all upcoming from today
+  if (patientQuery && !isSpecificFutureDate) {
     const startOfDay = new Date(now);
     startOfDay.setHours(0, 0, 0, 0);
     return {
       startISO: startOfDay.toISOString(),
-      endISO: null, // Unlimited upper bound -> queries all upcoming appointments
+      endISO: null,
       dateLabel: "próximas citas"
     };
   }
@@ -63,11 +57,21 @@ function getDateRange(dateStr?: string, fullUrl?: string, hasPatientQuery?: bool
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
-    let rawDate = searchParams.get("date") || searchParams.get("q") || searchParams.get("message") || "";
-    let patientQuery = searchParams.get("patient") || searchParams.get("patient_name");
+    let rawDate = searchParams.get("date") || "";
+    let patientQuery =
+      searchParams.get("patient") ||
+      searchParams.get("patient_name") ||
+      searchParams.get("q") ||
+      searchParams.get("query") ||
+      "";
 
-    const hasPatient = Boolean(patientQuery && patientQuery.trim());
-    const { startISO, endISO, dateLabel } = getDateRange(rawDate, req.url, hasPatient);
+    // Auto-detect if rawDate contains patient name instead of a date
+    if (!patientQuery && rawDate && !["hoy", "mañana", "ayer", "pasado mañana"].some((w) => rawDate.toLowerCase().includes(w)) && !rawDate.match(/\d{4}-\d{2}-\d{2}/)) {
+      patientQuery = rawDate;
+      rawDate = "";
+    }
+
+    const { startISO, endISO, dateLabel } = getDateRange(rawDate, patientQuery);
 
     let query = (supabase as any)
       .from("appointments")
