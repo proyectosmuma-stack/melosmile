@@ -36,7 +36,7 @@
       "name": "Agent_Scheduling",
       "parameters": {
         "options": {
-          "systemMessage": "Role: Eres el Sub-agente Especialista en Agendamiento de la clínica dental Melosmile.\n\nObjective: Gestionar la búsqueda de pacientes y la programación, modificación o cancelación de citas siguiendo reglas estrictas de verificación de identidad.\n\nREGLAS DE IDENTIFICACIÓN DE PACIENTE:\n1. SIEMPRE ejecuta primero 'Tool_Search_Patients' pasando el nombre o apellido mencionado.\n2. EVALÚA LOS RESULTADOS DE BÚSQUEDA:\n   - COINCIDENCIA ÚNICA (1 solo paciente devuelto): Ejecuta la orden AUTOMÁTICAMENTE agendando/modificando la cita con 'Tool_Appointment_Manager'.\n   - MÚLTIPLES COINCIDENCIAS (>1 pacientes): NO agendes aún. Pide aclaración de nombre y apellido completo o teléfono mostrando las opciones encontradas para que el profesional confirme.\n   - NINGUNA COINCIDENCIA (0 pacientes): NO agendes la cita. Confirma mostrando el nombre y apellido buscado y pregunta si se desea crear un nuevo paciente con 'Tool_Create_Patient'.\n\nREGLAS DE CLÍNICA:\n- Si el usuario menciona una clínica (ej: \"Goya\", \"Albacete\", etc.), pásala a 'Tool_Appointment_Manager' en el parámetro 'clinic'.\n- NUNCA le preguntes al usuario a qué clínica se refiere. Si no se menciona ninguna clínica, el backend asigna automáticamente la clínica principal por defecto. Procede SIEMPRE a agendar la cita de inmediato.\n\nDetails:\n- Formato de fecha para la cita: ISO o fecha expresada claramente.\n- Responde de forma ejecutiva, concisa y profesional."
+          "systemMessage": "Role: Eres el Sub-agente Especialista en Agendamiento de la clínica dental Melosmile.\n\nObjective: Gestionar la búsqueda de pacientes, consulta de citas existentes, y la programación, modificación o cancelación de citas siguiendo reglas estrictas de verificación de identidad.\n\nREGLAS DE ACTUACIÓN:\n1. SI ES UNA CONSULTA DE CITAS EXISTENTES (ej: \"¿cuándo es la próxima cita de X?\", \"citas de hoy\", \"ver citas de Munir\"):\n   - Ejecuta AUTOMÁTICAMENTE 'Tool_List_Appointments' pasando el nombre del paciente o la fecha.\n   - Responde con la fecha, hora, doctor, clínica y motivo de la cita encontrada.\n\n2. SI ES PARA AGENDAR / MODIFICAR / CANCELAR UNA CITA:\n   - Ejecuta primero 'Tool_Search_Patients' pasando el nombre o apellido mencionado.\n   - EVALÚA LOS RESULTADOS DE BÚSQUEDA:\n     - COINCIDENCIA ÚNICA: Ejecuta la orden AUTOMÁTICAMENTE agendando/modificando la cita con 'Tool_Appointment_Manager'.\n     - MÚLTIPLES COINCIDENCIAS: NO agendes aún. Pide aclaración mostrando las opciones encontradas.\n     - NINGUNA COINCIDENCIA: NO agendes. Muestra el nombre buscado y pregunta si se desea crear un nuevo paciente con 'Tool_Create_Patient'.\n\nREGLAS DE CLÍNICA:\n- Si el usuario menciona una clínica (ej: \"Goya\", \"Albacete\", etc.), pásala a 'Tool_Appointment_Manager' en el parámetro 'clinic'.\n- NUNCA le preguntes al usuario a qué clínica se refiere. Si no se menciona ninguna clínica, el backend asigna automáticamente la clínica principal por defecto.\n\nDetails:\n- Responde de forma ejecutiva, concisa y profesional."
         },
         "promptType": "define",
         "text": "={{ $json.body.extracted_entities ? JSON.stringify($json.body.extracted_entities) : $json.body.message }}"
@@ -53,9 +53,19 @@
       "name": "Tool_Search_Patients",
       "parameters": {
         "name": "Tool_Search_Patients",
-        "description": "Busca pacientes por nombre, apellido o teléfono en Melosmile",
+        "description": "Busca pacientes por nombre, apellido, código de historia (PAC-###) o teléfono en Melosmile",
         "method": "GET",
-        "url": "=https://frontend-eight-dusky-42.vercel.app/api/patients/search?q={{ $fromAI('query', 'Nombre, apellido o teléfono del paciente') }}"
+        "sendQuery": true,
+        "specifyQuery": "keypair",
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "q",
+              "value": "={{ $fromAI('query', 'Nombre, apellido, código PAC-### o teléfono del paciente', 'string') }}"
+            }
+          ]
+        },
+        "url": "https://frontend-eight-dusky-42.vercel.app/api/patients/search"
       },
       "position": [
         700,
@@ -79,6 +89,32 @@
       "position": [
         700,
         400
+      ],
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1
+    },
+    {
+      "id": "7",
+      "name": "Tool_List_Appointments",
+      "parameters": {
+        "name": "Tool_List_Appointments",
+        "description": "Consulta y lista las citas de un paciente especifico (por nombre/apellido) o de una fecha especifica (hoy, mañana, etc.)",
+        "method": "GET",
+        "sendQuery": true,
+        "specifyQuery": "keypair",
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "q",
+              "value": "={{ $fromAI('query', 'Nombre del paciente o fecha a consultar (ej: Munir, hoy, mañana)', 'string') }}"
+            }
+          ]
+        },
+        "url": "https://frontend-eight-dusky-42.vercel.app/api/appointments/list"
+      },
+      "position": [
+        700,
+        600
       ],
       "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
       "typeVersion": 1.1
@@ -133,6 +169,17 @@
       ]
     },
     "Tool_Appointment_Manager": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agent_Scheduling",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tool_List_Appointments": {
       "ai_tool": [
         [
           {
