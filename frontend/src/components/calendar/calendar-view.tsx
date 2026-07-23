@@ -323,210 +323,207 @@ export function CalendarView({ selectedClinicId = "all" }: { selectedClinicId?: 
   });
 
   return (
-    <Card className="border-0 shadow-xl rounded-2xl bg-white overflow-hidden">
-      <CardContent className="p-0">
-        {/* Toolbar Header */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between px-6 py-4 border-b border-slate-100 gap-4">
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-1">
-              <button
-                onClick={handlePrev}
-                className="h-9 w-9 rounded-xl border border-slate-200 flex items-center justify-center hover:bg-slate-50 transition-colors"
-                title="Anterior"
-              >
-                <ChevronLeft className="h-4 w-4 text-slate-600" />
-              </button>
-              <button
-                onClick={handleNext}
-                className="h-9 w-9 rounded-xl border border-slate-200 flex items-center justify-center hover:bg-slate-50 transition-colors"
-                title="Siguiente"
-              >
-                <ChevronRight className="h-4 w-4 text-slate-600" />
-              </button>
-            </div>
-
+    <div className="w-full bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+      {/* Toolbar Header */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between px-6 py-4 border-b border-slate-100 gap-4">
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1">
             <button
-              onClick={handleToday}
-              className="flex items-center gap-1.5 text-xs font-bold px-3 py-2 rounded-xl bg-rose-50 text-rose-600 border border-rose-200 hover:bg-rose-100 transition-colors shadow-xs"
+              onClick={handlePrev}
+              className="h-9 w-9 rounded-xl border border-slate-200 flex items-center justify-center hover:bg-slate-50 transition-colors cursor-pointer"
+              title="Anterior"
             >
-              <Sun className="h-3.5 w-3.5" />
-              Hoy
-            </button>
-
-            <h2 className="text-base font-bold text-slate-800 ml-2">
-              {format(currentDate, "MMMM yyyy", { locale: es }).toUpperCase()}
-            </h2>
-          </div>
-
-          <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-xl">
-            <button
-              onClick={() => setViewMode("month")}
-              className={cn(
-                "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all",
-                viewMode === "month" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-900"
-              )}
-            >
-              <CalendarDays className="h-3.5 w-3.5" />
-              Mes
+              <ChevronLeft className="h-4 w-4 text-slate-600" />
             </button>
             <button
-              onClick={() => setViewMode("week")}
-              className={cn(
-                "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all",
-                viewMode === "week" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-900"
-              )}
+              onClick={handleNext}
+              className="h-9 w-9 rounded-xl border border-slate-200 flex items-center justify-center hover:bg-slate-50 transition-colors cursor-pointer"
+              title="Siguiente"
             >
-              <CalendarIcon className="h-3.5 w-3.5" />
-              Semana
-            </button>
-            <button
-              onClick={() => setViewMode("day")}
-              className={cn(
-                "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all",
-                viewMode === "day" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-900"
-              )}
-            >
-              <Clock className="h-3.5 w-3.5" />
-              Día
+              <ChevronRight className="h-4 w-4 text-slate-600" />
             </button>
           </div>
+
+          <button
+            onClick={handleToday}
+            className="flex items-center gap-1.5 text-xs font-bold px-3 py-2 rounded-xl bg-rose-50 text-rose-600 border border-rose-200 hover:bg-rose-100 transition-colors shadow-xs cursor-pointer"
+          >
+            <Sun className="h-3.5 w-3.5" />
+            Hoy
+          </button>
+
+          <h2 className="text-base font-bold text-slate-800 ml-2">
+            {format(currentDate, "MMMM yyyy", { locale: es }).toUpperCase()}
+          </h2>
         </div>
 
-        {/* ---------------- VISTA MENSUAL ---------------- */}
-        {viewMode === "month" && (
-          <div className="p-4">
-            <div className="grid grid-cols-7 text-center font-semibold text-xs text-slate-400 py-2 border-b border-slate-100">
-              {["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"].map((d) => (
-                <div key={d}>{d}</div>
-              ))}
-            </div>
-            <div className="grid grid-cols-7 auto-rows-fr gap-1 pt-2">
-              {eachDayOfInterval({
-                start: startOfWeek(startOfMonth(currentDate), { weekStartsOn: 1 }),
-                end: addDays(startOfWeek(startOfMonth(currentDate), { weekStartsOn: 1 }), 34),
-              }).map((day) => {
-                const dayEvents = displayEvents.filter((e) => isSameDay(e.date, day));
-                const isCurrentMonth = isSameMonth(day, currentDate);
-                const isToday = isSameDay(day, today);
-                return (
-                  <div
-                    key={day.toISOString()}
-                    onClick={() => {
-                      setCurrentDate(day);
-                      setViewMode("day");
-                    }}
-                    className={cn(
-                      "min-h-[95px] p-2 border rounded-xl cursor-pointer transition-all hover:border-rose-300",
-                      isCurrentMonth ? "bg-white border-slate-100" : "bg-slate-50/50 border-transparent text-slate-300",
-                      isToday && "ring-2 ring-rose-500 bg-rose-50/20"
-                    )}
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className={cn("text-xs font-bold", isToday ? "text-rose-600" : "text-slate-700")}>
-                        {format(day, "d")}
-                      </span>
-                      {dayEvents.length > 0 && (
-                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-600">
-                          {dayEvents.length}
-                        </span>
-                      )}
-                    </div>
-                    <div className="space-y-1 mt-1.5 overflow-hidden">
-                      {dayEvents.slice(0, 2).map((evt) => {
-                        const cl = getClinic(evt.clinicId);
-                        return (
-                          <div
-                            key={evt.id}
-                            className={cn("text-[10px] px-1.5 py-0.5 rounded truncate font-medium text-white", cl.color)}
-                          >
-                            {evt.startTime} {evt.patient}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+        <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-xl">
+          <button
+            onClick={() => setViewMode("month")}
+            className={cn(
+              "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer",
+              viewMode === "month" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-900"
+            )}
+          >
+            <CalendarDays className="h-3.5 w-3.5" />
+            Mes
+          </button>
+          <button
+            onClick={() => setViewMode("week")}
+            className={cn(
+              "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer",
+              viewMode === "week" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-900"
+            )}
+          >
+            <CalendarIcon className="h-3.5 w-3.5" />
+            Semana
+          </button>
+          <button
+            onClick={() => setViewMode("day")}
+            className={cn(
+              "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer",
+              viewMode === "day" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-900"
+            )}
+          >
+            <Clock className="h-3.5 w-3.5" />
+            Día
+          </button>
+        </div>
+      </div>
+
+      {/* ---------------- VISTA MENSUAL ---------------- */}
+      {viewMode === "month" && (
+        <div className="p-4">
+          <div className="grid grid-cols-7 text-center font-semibold text-xs text-slate-400 py-2 border-b border-slate-100">
+            {["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"].map((d) => (
+              <div key={d}>{d}</div>
+            ))}
           </div>
-        )}
-
-        {/* ---------------- VISTA SEMANAL / DÍA GRID (15-MIN SLOTS) ---------------- */}
-        {(viewMode === "week" || viewMode === "day") && (
-          <DndContext onDragEnd={handleDragEnd}>
-            <div className="overflow-auto" style={{ maxHeight: "calc(100vh - 300px)", minHeight: 520 }}>
-              <div
-                className="grid"
-                style={{
-                  gridTemplateColumns: `70px repeat(${viewMode === "week" ? 7 : 1}, 1fr)`,
-                  minWidth: viewMode === "week" ? 800 : 350,
-                }}
-              >
-                <div className="sticky top-0 z-10 bg-white border-b border-slate-100 h-14" />
-                {(viewMode === "week" ? weekDays : [currentDate]).map((day) => (
-                  <div
-                    key={day.toISOString()}
-                    className={cn(
-                      "sticky top-0 z-10 bg-white border-b border-slate-100 h-14 flex flex-col items-center justify-center gap-0.5",
-                      isSameDay(day, today) && "bg-rose-50"
+          <div className="grid grid-cols-7 auto-rows-fr gap-1 pt-2">
+            {eachDayOfInterval({
+              start: startOfWeek(startOfMonth(currentDate), { weekStartsOn: 1 }),
+              end: addDays(startOfWeek(startOfMonth(currentDate), { weekStartsOn: 1 }), 34),
+            }).map((day) => {
+              const dayEvents = displayEvents.filter((e) => isSameDay(e.date, day));
+              const isCurrentMonth = isSameMonth(day, currentDate);
+              const isToday = isSameDay(day, today);
+              return (
+                <div
+                  key={day.toISOString()}
+                  onClick={() => {
+                    setCurrentDate(day);
+                    setViewMode("day");
+                  }}
+                  className={cn(
+                    "min-h-[95px] p-2 border rounded-xl cursor-pointer transition-all hover:border-rose-300",
+                    isCurrentMonth ? "bg-white border-slate-100" : "bg-slate-50/50 border-transparent text-slate-300",
+                    isToday && "ring-2 ring-rose-500 bg-rose-50/20"
+                  )}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className={cn("text-xs font-bold", isToday ? "text-rose-600" : "text-slate-700")}>
+                      {format(day, "d")}
+                    </span>
+                    {dayEvents.length > 0 && (
+                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-600">
+                        {dayEvents.length}
+                      </span>
                     )}
-                  >
-                    <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
-                      {format(day, "EEEE", { locale: es })}
-                    </span>
-                    <span className={cn("text-base font-bold leading-none", isSameDay(day, today) ? "text-rose-500" : "text-slate-800")}>
-                      {format(day, "d MMM")}
-                    </span>
                   </div>
-                ))}
-
-                {TIME_SLOTS.map((slot) => (
-                  <React.Fragment key={slot}>
-                    <div className="flex items-start justify-end pr-2.5 pt-0.5 border-r border-slate-100 h-9 bg-slate-50/30">
-                      {slot.endsWith(":00") || slot.endsWith(":30") ? (
-                        <span className="text-[10px] text-slate-400 font-semibold">{slot}</span>
-                      ) : null}
-                    </div>
-
-                    {(viewMode === "week" ? weekDays : [currentDate]).map((day) => {
-                      const slotEvents = displayEvents.filter(
-                        (e) => isSameDay(e.date, day) && e.startTime === slot
-                      );
-                      const isToday = isSameDay(day, today);
-                      const cellId = `${format(day, "yyyy-MM-dd")}|${slot}`;
+                  <div className="space-y-1 mt-1.5 overflow-hidden">
+                    {dayEvents.slice(0, 2).map((evt) => {
+                      const cl = getClinic(evt.clinicId);
                       return (
-                        <DroppableCell
-                          key={cellId}
-                          id={cellId}
-                          day={day}
-                          slot={slot}
-                          isToday={isToday}
-                          onCellClick={handleCellClick}
+                        <div
+                          key={evt.id}
+                          className={cn("text-[10px] px-1.5 py-0.5 rounded truncate font-medium text-white", cl.color)}
                         >
-                          {slotEvents.map((evt) => {
-                            const cl = getClinic(evt.clinicId);
-                            const heightPx = Math.max(32, (evt.durationMinutes / 15) * 36 - 4);
-                            return (
-                              <DraggableEvent
-                                key={evt.id}
-                                event={evt}
-                                clinic={cl}
-                                heightPx={heightPx}
-                                onClick={handleEventClick}
-                              />
-                            );
-                          })}
-                        </DroppableCell>
+                          {evt.startTime} {evt.patient}
+                        </div>
                       );
                     })}
-                  </React.Fragment>
-                ))}
-              </div>
-            </div>
-          </DndContext>
-        )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
-      </CardContent>
+      {/* ---------------- VISTA SEMANAL / DÍA GRID (15-MIN SLOTS - Direct Page Scroll) ---------------- */}
+      {(viewMode === "week" || viewMode === "day") && (
+        <DndContext onDragEnd={handleDragEnd}>
+          <div className="w-full">
+            <div
+              className="grid"
+              style={{
+                gridTemplateColumns: `70px repeat(${viewMode === "week" ? 7 : 1}, 1fr)`,
+                minWidth: viewMode === "week" ? 800 : 350,
+              }}
+            >
+              <div className="sticky top-0 z-10 bg-white border-b border-slate-100 h-14" />
+              {(viewMode === "week" ? weekDays : [currentDate]).map((day) => (
+                <div
+                  key={day.toISOString()}
+                  className={cn(
+                    "sticky top-0 z-10 bg-white border-b border-slate-100 h-14 flex flex-col items-center justify-center gap-0.5",
+                    isSameDay(day, today) && "bg-rose-50"
+                  )}
+                >
+                  <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+                    {format(day, "EEEE", { locale: es })}
+                  </span>
+                  <span className={cn("text-base font-bold leading-none", isSameDay(day, today) ? "text-rose-500" : "text-slate-800")}>
+                    {format(day, "d MMM")}
+                  </span>
+                </div>
+              ))}
+
+              {TIME_SLOTS.map((slot) => (
+                <React.Fragment key={slot}>
+                  <div className="flex items-start justify-end pr-2.5 pt-0.5 border-r border-slate-100 h-9 bg-slate-50/30">
+                    {slot.endsWith(":00") || slot.endsWith(":30") ? (
+                      <span className="text-[10px] text-slate-400 font-semibold">{slot}</span>
+                    ) : null}
+                  </div>
+
+                  {(viewMode === "week" ? weekDays : [currentDate]).map((day) => {
+                    const slotEvents = displayEvents.filter(
+                      (e) => isSameDay(e.date, day) && e.startTime === slot
+                    );
+                    const isToday = isSameDay(day, today);
+                    const cellId = `${format(day, "yyyy-MM-dd")}|${slot}`;
+                    return (
+                      <DroppableCell
+                        key={cellId}
+                        id={cellId}
+                        day={day}
+                        slot={slot}
+                        isToday={isToday}
+                        onCellClick={handleCellClick}
+                      >
+                        {slotEvents.map((evt) => {
+                          const cl = getClinic(evt.clinicId);
+                          const heightPx = Math.max(32, (evt.durationMinutes / 15) * 36 - 4);
+                          return (
+                            <DraggableEvent
+                              key={evt.id}
+                              event={evt}
+                              clinic={cl}
+                              heightPx={heightPx}
+                              onClick={handleEventClick}
+                            />
+                          );
+                        })}
+                      </DroppableCell>
+                    );
+                  })}
+                </React.Fragment>
+              ))}
+            </div>
+          </div>
+        </DndContext>
+      )}
 
       {/* ---------------- APPOINTMENT DETAIL DRAWER ---------------- */}
       <AppointmentDetailDrawer
@@ -535,6 +532,6 @@ export function CalendarView({ selectedClinicId = "all" }: { selectedClinicId?: 
         onClose={() => setIsDetailOpen(false)}
         onUpdateEvent={handleUpdateEvent}
       />
-    </Card>
+    </div>
   );
 }
