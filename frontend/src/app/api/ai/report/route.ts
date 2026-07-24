@@ -2,6 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
 import { supabase } from "@/lib/supabase/client";
+import { createClient } from "@supabase/supabase-js";
+
+// Admin client with service role key — bypasses RLS for server-side write operations
+const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL || "https://amhfdzfcmpastmlsosou.supabase.co",
+  process.env.SUPABASE_SERVICE_ROLE_KEY || ""
+);
 
 /**
  * GET /api/ai/report
@@ -174,7 +181,7 @@ export async function PATCH(req: NextRequest) {
     }
 
     if (delete_report) {
-      const { error: delErr } = await (supabase as any)
+      const { error: delErr } = await (supabaseAdmin as any)
         .from("ai_agent_reports")
         .delete()
         .eq("id", id);
@@ -188,7 +195,7 @@ export async function PATCH(req: NextRequest) {
     }
 
     // Mark as resolved
-    const { data: updatedData, error: updateErr } = await (supabase as any)
+    const { data: updatedData, error: updateErr } = await (supabaseAdmin as any)
       .from("ai_agent_reports")
       .update({
         resolved: true,

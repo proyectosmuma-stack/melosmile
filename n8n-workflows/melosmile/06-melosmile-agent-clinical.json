@@ -11,7 +11,10 @@
         "path": "melosmile-agent-clinical",
         "responseMode": "responseNode"
       },
-      "position": [250, 300],
+      "position": [
+        250,
+        300
+      ],
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2.1
     },
@@ -21,7 +24,10 @@
       "parameters": {
         "modelName": "models/gemini-2.0-flash"
       },
-      "position": [450, 450],
+      "position": [
+        450,
+        450
+      ],
       "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
       "typeVersion": 1
     },
@@ -30,12 +36,15 @@
       "name": "Agent_Clinical",
       "parameters": {
         "options": {
-          "systemMessage": "Role: Eres el Sub-agente Especialista Clínico de Melosmile.\n\nObjective: Responder consultas sobre el historial médico del paciente, notas de evolución por cita, anamnesis, alergias y generar síntesis técnicas verificadas.\n\nApproach Step-by-Step:\n1. Analizar el paciente o sesión solicitada.\n2. Invocación de 'Tool_Clinical_Context' para recuperar el historial médico real y tratamientos realizados.\n3. Si el usuario requiere sintetizar la ficha médica, invocar 'Tool_Patient_Summary'.\n4. Formatear la respuesta clínica en markdown profesional con alertas médicas (alergias a antibióticos, antecedentes) claramente destacadas.\n\nConstraints:\n- Prohibido alucinar diagnósticos o tratamientos no registrados en la ficha."
+          "systemMessage": "Role: Eres el Sub-agente Especialista Clínico de Melosmile.\n\nObjective: Responder consultas sobre el historial médico del paciente, notas de evolución por cita, anamnesis, alergias y generar síntesis técnicas verificadas.\n\nApproach Step-by-Step:\n1. Analizar el paciente o sesión solicitada.\n2. Invocación de 'Tool_Clinical_Context' para recuperar el historial médico real y tratamientos realizados.\n3. Si el usuario requiere sintetizar la ficha médica, invocar 'Tool_Patient_Summary'.\n4. Formatear la respuesta clínica en markdown profesional con alertas médicas (alergias a antibióticos, antecedentes) claramente destacadas.\n\nConstraints:\n- Prohibido alucinar diagnósticos o tratamientos no registrados en la ficha.\n\nREGLA ANTI-ALUCINACIÓN — OBLIGATORIA:\nCuando NO entiendas claramente la intención del usuario o faltan datos necesarios:\n1. NUNCA ejecutes una herramienta con datos inventados o incorrectos.\n2. NUNCA generes una respuesta de contenido que no haya sido devuelta por una herramienta.\n3. EN SU LUGAR, pregunta al usuario para confirmar usando opciones concretas.\n   Ejemplos de cómo pedir aclaración:\n   - \"¿Me puedes aclarar si quieres [opción A] o [opción B]?\"\n   - \"Entiendo que quieres [X], ¿es correcto? Necesito también [dato que falta].\"\n   - \"No he reconocido bien la petición. ¿Te refieres a [X] o a [Y]?\"\n4. Cada aclaración del profesional es aprendizaje: úsala para interpretar mejor sus próximas expresiones similares."
         },
         "promptType": "define",
         "text": "={{ $json.body.extracted_entities ? JSON.stringify($json.body.extracted_entities) : $json.body.message }}"
       },
-      "position": [450, 300],
+      "position": [
+        450,
+        300
+      ],
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 1.7
     },
@@ -47,7 +56,10 @@
         "toolDescription": "Obtiene el contexto médico completo de la clínica (catalogo de tratamientos, reglas clínicas e historial de pacientes).",
         "url": "https://melosmile.app/api/ai-context"
       },
-      "position": [700, 200],
+      "position": [
+        700,
+        200
+      ],
       "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
       "typeVersion": 1.1
     },
@@ -61,7 +73,10 @@
         "toolDescription": "Genera una síntesis técnica clínica en el perfil del paciente basada en sus notas de citas reales.",
         "url": "https://melosmile.app/api/ai/patient-summary"
       },
-      "position": [700, 400],
+      "position": [
+        700,
+        400
+      ],
       "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
       "typeVersion": 1.1
     },
@@ -72,18 +87,75 @@
         "options": {},
         "respondWith": "allIncomingItems"
       },
-      "position": [950, 300],
+      "position": [
+        950,
+        300
+      ],
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.5
     }
   ],
   "connections": {
-    "Webhook_Clinical": { "main": [[{ "node": "Agent_Clinical", "type": "main", "index": 0 }]] },
-    "Gemini_Chat_Model": { "ai_languageModel": [[{ "node": "Agent_Clinical", "type": "ai_languageModel", "index": 0 }]] },
-    "Tool_Clinical_Context": { "ai_tool": [[{ "node": "Agent_Clinical", "type": "ai_tool", "index": 0 }]] },
-    "Tool_Patient_Summary": { "ai_tool": [[{ "node": "Agent_Clinical", "type": "ai_tool", "index": 0 }]] },
-    "Agent_Clinical": { "main": [[{ "node": "Respond_to_Webhook", "type": "main", "index": 0 }]] },
-    "Respond_to_Webhook": { "main": [] }
+    "Webhook_Clinical": {
+      "main": [
+        [
+          {
+            "node": "Agent_Clinical",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini_Chat_Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Agent_Clinical",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tool_Clinical_Context": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agent_Clinical",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tool_Patient_Summary": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agent_Clinical",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agent_Clinical": {
+      "main": [
+        [
+          {
+            "node": "Respond_to_Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Respond_to_Webhook": {
+      "main": []
+    }
   },
-  "tags": ["Melosmile"]
+  "tags": [
+    "Melosmile"
+  ]
 }

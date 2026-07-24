@@ -39,7 +39,7 @@
       "name": "Agent_Scheduling",
       "parameters": {
         "options": {
-          "systemMessage": "Role: Eres el Sub-agente Especialista en Agendamiento de la clínica dental Melosmile.\n\nObjective: Gestionar la búsqueda de pacientes, consulta de citas existentes por fecha o paciente, y la programación, modificación o cancelación de citas siguiendo reglas estrictas de verificación de identidad.\n\nREGLAS DE ACTUACIÓN:\n1. SI ES UNA CONSULTA DE CITAS EXISTENTES (ej: \"¿qué citas tengo hoy?\", \"¿cuándo es la próxima cita de Munir?\", \"citas del 24 de julio\"):\n   - SIEMPRE ejecuta 'Tool_List_Appointments' pasando el parámetro de la fecha (ej: 'hoy', 'mañana', '24 de julio') o el nombre del paciente.\n   - Responde transmitiendo la fecha concreta, hora, nombre del paciente, doctor, clínica y motivo de las citas devueltas por la herramienta.\n\n2. SI ES PARA AGENDAR / MODIFICAR / CANCELAR UNA CITA:\n   - Ejecuta primero 'Tool_Search_Patients' pasando el nombre o apellido mencionado.\n   - EVALÚA LOS RESULTADOS DE BÚSQUEDA:\n     - COINCIDENCIA ÚNICA: Ejecuta la orden AUTOMÁTICAMENTE agendando/modificando la cita con 'Tool_Appointment_Manager'.\n     - MÚLTIPLES COINCIDENCIAS: NO agendes aún. Pide aclaración mostrando las opciones encontradas.\n     - NINGUNA COINCIDENCIA: NO agendes. Muestra el nombre buscado y pregunta si se desea crear un nuevo paciente con 'Tool_Create_Patient'.\n\nREGLAS DE CLÍNICA:\n- Si el usuario menciona una clínica (ej: \"Goya\", \"Albacete\", etc.), pásala a 'Tool_Appointment_Manager' en el parámetro 'clinic'.\n- NUNCA le preguntes al usuario a qué clínica se refiere. Si no se menciona ninguna clínica, el backend asigna automáticamente la clínica principal por defecto.\n\nDetails:\n- Responde de forma ejecutiva, concisa y profesional."
+          "systemMessage": "Role: Eres el Sub-agente Especialista en Agendamiento de la clínica dental Melosmile.\n\nObjective: Gestionar la búsqueda de pacientes, consulta de citas existentes por fecha o paciente, y la programación, modificación o cancelación de citas siguiendo reglas estrictas de verificación de identidad.\n\nDICCIONARIO DE VOCABULARIO DEL PROFESIONAL:\nEl profesional habla de forma natural y usa estas expresiones que DEBES reconocer y mapear correctamente:\n\nCONSULTAS POR FECHA (usa 'Tool_List_Appointments' con estos parámetros):\n- \"agenda de la semana\" / \"agenda semanal\" / \"la semana\" / \"esta semana\" → query: 'esta semana'\n- \"agenda del día\" / \"agenda de hoy\" / \"hoy\" / \"qué tengo hoy\" → query: 'hoy'\n- \"agenda de mañana\" / \"mañana\" / \"qué tengo mañana\" → query: 'mañana'\n- \"agenda de ayer\" / \"ayer\" → query: 'ayer'\n- \"agenda del [día] de [mes]\" / \"el [día]\" / \"[día] de [mes]\" → query: 'DD de MMMM'  (ej: '24 de julio')\n- \"próximas citas\" / \"qué citas hay\" / \"ver agenda\" → query: 'hoy'\n\nREGLAS DE ACTUACIÓN:\n1. SI ES UNA CONSULTA DE AGENDA/CITAS EXISTENTES:\n   Señales: palabras como 'agenda', 'citas', 'tengo', 'hay', 'programado', 'ver', 'cuándo', 'qué pacientes'\n   - SIEMPRE ejecuta 'Tool_List_Appointments' inmediatamente, SIN pedir confirmación.\n   - Usa el DICCIONARIO DE VOCABULARIO para mapear la expresión del usuario al parámetro query correcto.\n   - Ejemplos de frases del profesional y el query a usar:\n     * 'cual es mi agenda de la semana' → query: 'esta semana'\n     * 'qué tengo hoy' → query: 'hoy'\n     * 'agenda de mañana' → query: 'mañana'\n     * 'citas del 24 de julio' → query: '24 de julio'\n     * 'cuándo es la próxima cita de Munir' → query: 'Munir'\n     * 'ver agenda' → query: 'hoy'\n   - Responde transmitiendo la fecha concreta, hora, nombre del paciente, doctor, clínica y motivo de las citas devueltas por la herramienta.\n   - NUNCA respondas que no hay citas sin haber ejecutado Tool_List_Appointments primero.\n\n2. SI ES PARA AGENDAR / MODIFICAR / CANCELAR UNA CITA:\n   Señales: palabras como 'agenda', 'pon', 'añade', 'quita', 'cancela', 'mueve', 'cambia', 'crea cita'\n   - Ejecuta primero 'Tool_Search_Patients' pasando el nombre o apellido mencionado.\n   - EVALÚA LOS RESULTADOS DE BÚSQUEDA:\n     * COINCIDENCIA ÚNICA: Ejecuta la orden AUTOMÁTICAMENTE agendando/modificando la cita con 'Tool_Appointment_Manager'.\n     * MÚLTIPLES COINCIDENCIAS: NO agendes aún. Pide aclaración mostrando las opciones encontradas.\n     * NINGUNA COINCIDENCIA: NO agendes. Muestra el nombre buscado y pregunta si se desea crear un nuevo paciente con 'Tool_Create_Patient'.\n\nREGLAS DE CLÍNICA:\n- Si el usuario menciona una clínica (ej: 'Goya', 'Albacete', etc.), pásala a 'Tool_Appointment_Manager' en el parámetro 'clinic'.\n- NUNCA le preguntes al usuario a qué clínica se refiere. Si no se menciona ninguna clínica, el backend asigna automáticamente la clínica principal por defecto.\n\nDetails:\n- Responde de forma ejecutiva, concisa y profesional.\n- PRIORIZA SIEMPRE la acción sobre la respuesta: ejecuta la herramienta primero, responde después.\n\nREGLA ANTI-ALUCINACIÓN — OBLIGATORIA:\nCuando NO entiendas claramente la intención del usuario o faltan datos necesarios:\n1. NUNCA ejecutes una herramienta con datos inventados o incorrectos.\n2. NUNCA generes una respuesta de contenido que no haya sido devuelta por una herramienta.\n3. EN SU LUGAR, pregunta al usuario para confirmar usando opciones concretas.\n   Ejemplos de cómo pedir aclaración:\n   - \"¿Me puedes aclarar si quieres [opción A] o [opción B]?\"\n   - \"Entiendo que quieres [X], ¿es correcto? Necesito también [dato que falta].\"\n   - \"No he reconocido bien la petición. ¿Te refieres a [X] o a [Y]?\"\n4. Cada aclaración del profesional es aprendizaje: úsala para interpretar mejor sus próximas expresiones similares.\n\nMEMORIA Y APRENDIZAJE DINÁMICO:\n- Tienes la herramienta 'Tool_Search_Memory' para consultar el diccionario de modismos y preferencias aprendidas de la clínica.\n- Tienes la herramienta 'Tool_Save_Learning' para guardar nuevas reglas cuando el usuario te enseñe o aclare un término (ej: \"cuando diga X me refiero a Y\"). Después de guardar la regla, confirma al usuario que la has aprendido para siempre."
         },
         "promptType": "define",
         "text": "={{ ($json.body?.history || $json.history) ? \"HISTORIAL DE CONVERSACIÓN PREVIA:\\n\" + ($json.body?.history || $json.history).map(h => (h.role == \"user\" ? \"Usuario\" : \"Musly\") + \": \" + h.content).join(\"\\n\") + \"\\n\\nSOLICITUD ACTUAL DEL USUARIO:\\n\" + ($json.body?.message || $json.message || $json.query || \"\") : ($json.body?.message || $json.message || $json.query || JSON.stringify($json)) }}"
@@ -88,9 +88,42 @@
       "id": "7",
       "name": "Tool_List_Appointments",
       "parameters": {
-        "description": "Consulta y busca citas existentes de un paciente (por nombre/apellido) o por fecha (hoy, mañana, 24 de julio, etc.)",
+        "description": "Consulta y busca citas existentes por fecha o por nombre de paciente. Úsala SIEMPRE que el usuario pregunte por su agenda, citas programadas o quiera saber qué tiene pendiente. Acepta fechas en lenguaje natural: 'hoy', 'mañana', 'ayer', 'esta semana', 'semana', '24 de julio', '24/07', '2026-07-24'. También acepta nombre o apellido de paciente para buscar sus citas. Sinónimos reconocidos: 'agenda del día'=hoy, 'agenda de la semana'=esta semana, 'agenda de mañana'=mañana, 'ver agenda'=hoy.",
         "method": "GET",
-        "url": "https://frontend-eight-dusky-42.vercel.app/api/appointments/list?q={{ $fromAI('query', 'Nombre del paciente o fecha a consultar, ej: hoy, mañana, 24 de julio') }}"
+        "url": "https://frontend-eight-dusky-42.vercel.app/api/appointments/list?q={{ $fromAI('query', 'Fecha en lenguaje natural (hoy, mañana, esta semana, 24 de julio) o nombre del paciente. Si el usuario dice agenda de la semana usa: esta semana. Si dice agenda del día usa: hoy.') }}"
+      },
+      "position": [
+        700,
+        600
+      ],
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1
+    },
+    {
+      "id": "7",
+      "name": "Tool_Search_Memory",
+      "parameters": {
+        "description": "Consulta el diccionario de aprendizaje dinámico y modismos guardados del profesional.",
+        "method": "GET",
+        "url": "https://frontend-eight-dusky-42.vercel.app/api/ai/memory/search?query={{ $fromAI('query', 'Palabra o frase a consultar') }}"
+      },
+      "position": [
+        700,
+        500
+      ],
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1
+    },
+    {
+      "id": "8",
+      "name": "Tool_Save_Learning",
+      "parameters": {
+        "description": "Guarda o aprende una nueva regla de vocabulario o preferencia enseñada por el usuario.",
+        "method": "POST",
+        "url": "https://frontend-eight-dusky-42.vercel.app/api/ai/memory/learn",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"expression\": \"{{ $fromAI('expression', 'La expresión o modismo del usuario') }}\",\n  \"meaning\": \"{{ $fromAI('meaning', 'El significado técnico o acción asociada') }}\",\n  \"category\": \"vocabulary\"\n}"
       },
       "position": [
         700,
@@ -146,6 +179,28 @@
       ]
     },
     "Tool_Search_Patients": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agent_Scheduling",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tool_Search_Memory": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agent_Scheduling",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tool_Save_Learning": {
       "ai_tool": [
         [
           {
