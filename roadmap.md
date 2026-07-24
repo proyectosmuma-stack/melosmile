@@ -85,3 +85,14 @@ Este documento establece el plan de desarrollo, hitos alcanzados y próximas fas
 - [x] **Sistema de Reporte de Errores y Contexto IA (`logs/agent_reports.log`)**: Botón en respuestas del asistente para reportar fallos de lógica con formulario modal, fecha/hora, comentario del usuario, agentes involucrados e historial completo.
 - [x] **Regla Global de Profesional Tratante por Defecto**: Asignación automática de la **Dra. Osly Melo** en la creación y visualización de citas por el agente o API.
 - [x] **Fix de Edición y Carga de Citas (`/appointments/[id]`)**: Auto-emparejamiento con el catálogo `treatments`, carga automática de precios por defecto y gastos de laboratorio sin pérdida de datos al guardar o recargar.
+
+---
+
+## 🧠 Fase 6: Aprendizaje Dinámico Autónomo & Memoria Semántica (COMPLETADO)
+- [x] **Tabla `agent_learnings` en Supabase**: PostgreSQL con índices y políticas RLS para lectura y escritura de modismos y preferencias.
+- [x] **Endpoints Backend Next.js**:
+  - `GET /api/ai/memory/search`: Búsqueda difusa/semántica de reglas activas.
+  - `POST /api/ai/memory/learn`: Guardado en caliente (*upsert*) de nuevos aprendizajes del agente.
+- [x] **Regla Global Anti-Alucinación**: Inyectada en los 4 agentes n8n para forzar la confirmación con el usuario antes de asumir o alucinar datos.
+- [x] **Herramientas n8n Desplegadas**: `Tool_Search_Memory` y `Tool_Save_Learning` en producción.
+

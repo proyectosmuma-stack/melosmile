@@ -15,8 +15,8 @@
 - **Frontend**: Next.js 16 (App Router), React 19, TypeScript.
 - **Hosting & CI/CD**: Vercel (`melosmile-staging`, configurado solo para compilar desde la rama `develop`).
 - **Estilos y UI**: TailwindCSS 4, Shadcn UI, Lucide Icons, `@dnd-kit/core` (Drag & Drop).
-- **Backend & Base de Datos**: Supabase Cloud (`amhfdzfcmpastmlsosou`, PostgreSQL relacional, CLI `supabase`).
-- **Automatización e IA**: Agente **Musly** (Dispatcher + 3 Sub-agentes especializados en n8n alojado en VPS IONOS), modelo `google/gemini-2.5-flash` vía OpenRouter.
+- **Backend & Base de Datos**: Supabase Cloud (`amhfdzfcmpastmlsosou`, PostgreSQL relacional, CLI `supabase`, tabla `agent_learnings` para memoria dinámica).
+- **Automatización e IA**: Agente **Musly** (Dispatcher + 3 Sub-agentes especializados en n8n alojado en VPS IONOS), modelo `google/gemini-2.5-flash` vía OpenRouter, sistema de Aprendizaje Dinámico Autónomo (`/api/ai/memory/search` y `/api/ai/memory/learn`).
 - **Integraciones externas**: Odoo API (Facturación y Contabilidad), WhatsApp/Email/SMS vía n8n.
 
 ---

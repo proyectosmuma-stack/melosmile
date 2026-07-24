@@ -36,7 +36,34 @@ Este documento es el **Walkthrough Maestro del Proyecto**, donde se acumula la t
 
 ---
 
-### Sesión Actual: Sistema de IA Multi-Agente — Dispatcher + Sub-Agentes
+### Sesión Actual: Sistema de Aprendizaje Dinámico Autónomo, Regla Anti-Alucinación & RLS Fixes
+
+#### Fecha: 2026-07-24
+
+#### 1. Sistema de Aprendizaje Dinámico Autónomo (Memoria Persistente)
+- **Base de Datos Supabase (`agent_learnings`)**: Tabla relacional creada con políticas de seguridad Row-Level Security (RLS) para lectura/escritura pública autenticada. Permite almacenar modismos (`expression`), significados/acciones (`meaning`), categorías (`vocabulary`, `preference`, `clinical_alias`, `billing_rule`) y contador de frecuencia (`usage_count`).
+- **Endpoints de Backend Next.js**:
+  - [`/api/ai/memory/search`](file:///Users/munircallaos/Antigravity%20Projects/melosmile/frontend/src/app/api/ai/memory/search/route.ts): Realiza búsquedas difusas/semánticas de expresiones activas para inyectar al prompt del agente.
+  - [`/api/ai/memory/learn`](file:///Users/munircallaos/Antigravity%20Projects/melosmile/frontend/src/app/api/ai/memory/learn/route.ts): Permite al agente o usuario registrar/actualizar modismos en tiempo real (*upsert*).
+- **Herramientas de n8n Desplegadas**:
+  - `Tool_Search_Memory`: Consulta el diccionario dinámico de modismos antes de ejecutar una acción.
+  - `Tool_Save_Learning`: Guarda autónomamente aprendizajes cuando el profesional le enseña una regla (ej: *"Aprende esto: cuando diga X me refiero a Y"*).
+
+#### 2. Protocolo Anti-Alucinación ("Fallback Strategy")
+- Propagación de la regla obligatoria a **todos los agentes n8n** (`Dispatcher_AI_Agent`, `Agent_Scheduling`, `Agent_Clinical` y `Agent_Billing`):
+  > *REGLA ANTI-ALUCINACIÓN — OBLIGATORIA:*
+  > Cuando NO entiendas claramente la intención del usuario o faltan datos necesarios:
+  > 1. NUNCA ejecutes una herramienta con datos inventados o incorrectos.
+  > 2. NUNCA generes una respuesta de contenido no devuelta por una herramienta.
+  > 3. EN SU LUGAR, pregunta al usuario para confirmar usando opciones concretas.
+
+#### 3. Refactorización de APIs y Fixes de Despliegue en Vercel
+- **Bypass de RLS en Backend**: `supabaseAdmin` implementado con la clave de servicio en `/api/ai/report/route.ts` y `/api/appointments/edit/route.ts`.
+- **Robustez de Clientes Supabase**: Añadido fallback defensivo a `createClient` en rutas `/api/ai/report` y `/api/ai-context` para evitar errores durante la recopilación de páginas estáticas en la compilación de Turbopack/Next.js en Vercel.
+
+---
+
+### Sesión Anterior: Sistema de IA Multi-Agente — Dispatcher + Sub-Agentes
 
 #### Fecha: 2026-07-23
 

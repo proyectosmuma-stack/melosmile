@@ -58,6 +58,8 @@ Este documento registra el estado del proyecto, el listado exhaustivo de los **f
 - [x] **Sistema de Reporte de Errores y Contexto IA (`logs/agent_reports.log`)**: Botón en respuestas del asistente para reportar fallos de lógica con formulario modal, fecha/hora, comentario del usuario, agentes involucrados e historial completo.
 - [x] **Regla Global de Profesional Tratante por Defecto**: Asignación automática de la **Dra. Osly Melo** en la creación y visualización de citas por el agente o API.
 - [x] **Fix de Edición y Carga de Citas (`/appointments/[id]`)**: Auto-emparejamiento con el catálogo `treatments`, carga automática de precios por defecto y gastos de laboratorio sin pérdida de datos al guardar o recargar.
+- [x] **Regla Global Anti-Alucinación**: Implementación de la directiva de confirmación previa en los 4 agentes en n8n (`Dispatcher`, `Scheduling`, `Clinical`, `Billing`).
+- [x] **Sistema de Aprendizaje Dinámico Autónomo**: Tabla Supabase `agent_learnings`, endpoints `/api/ai/memory/search` y `/api/ai/memory/learn`, y herramientas n8n `Tool_Search_Memory` + `Tool_Save_Learning`.
 
 ### ⚙️ Interfaz & Ajustes UI
 - [x] **Ajuste Asistente IA Flotante**: TextArea expandible con atajo `Enter` (enviar) y `Shift+Enter` (salto de línea).
