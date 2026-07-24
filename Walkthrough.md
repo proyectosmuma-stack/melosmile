@@ -67,6 +67,13 @@ Este documento es el **Walkthrough Maestro del Proyecto**, donde se acumula la t
 - **Actualización del Agente de Agendamiento en n8n**: Desplegada la herramienta `Tool_Update_Appointment` con parámetros de actualización y borrado físico.
 - **Resolución de Reportes `agent_log`**: Auditados y marcados como **RESUELTOS** los reportes de error en Supabase `ai_agent_reports`.
 
+#### 5. Memoria de Sesión & Resolución de Contexto Anafórico Multiturno
+- **Transmisión de Historial Conversacional en Dispatcher (`04-melosmile-ai-dispatcher-v2.json`)**: Inyectado el historial completo de mensajes previos (`history`) en el prompt de `Dispatcher_AI_Agent`, permitiendo al enrutador mantener el hilo completo de la conversación en tiempo real.
+- **Reescritura Contextual de Peticiones Anafóricas**: Inyectada regla obligatoria en Dispatcher que, ante solicitudes relativas ("cambia esa cita", "pásala a las 12:00", "cancélala"), enriquece y reescribe automáticamente la petición con el nombre del paciente, clínica y fecha previa antes de llamar a los sub-agentes.
+- **Soporte Multiparámetro en `Tool_Update_Appointment` (`05-melosmile-agent-scheduling.json`)**: Mapeados los parámetros `$fromAI` de `patient_name`, `patient`, `appointment_date`, `date` y `time` para garantizar que la herramienta reciba datos completos independientemente de la forma en que el LLM extraiga las entidades.
+- **Regla Cognitiva para Respuestas de Reagendamiento**: Inyectada instrucción obligatoria en `Agent_Scheduling` aclarando que la herramienta devuelve el registro de la cita ya modificada a la hora nueva, forzando la confirmación de éxito en lugar de lecturas erróneas.
+- **Consolidación en Backend (`/api/appointments/update/route.ts`)**: Soporte para combinar inteligentemente `patient_name || patient` y `date || appointment_date` + `time`, convirtiendo fechas relativas en marcas UTC válidas en Supabase.
+
 ---
 
 ### Sesión Anterior: Sistema de IA Multi-Agente — Dispatcher + Sub-Agentes
@@ -115,16 +122,17 @@ Se diseñó e implementó un sistema de IA conversacional completo con patrón D
 | `404 models/gemini-1.5-flash` | Modelo deprecado | Cambiado a `google/gemini-2.5-flash` vía OpenRouter |
 | `429 Free Tier exceeded` | Cuota Gemini API agotada | Migrado a OpenRouter (sin límite de cuota en cuenta del usuario) |
 | `Missing node to start execution` | Sub-agentes usaban `Webhook` como trigger en lugar de `executeWorkflowTrigger` | Reemplazado el trigger en los 3 sub-agentes con `executeWorkflowTrigger v1.1 (passthrough)` |
+| **Fallo en consultas de citas ("No encontré cita para Munir")** | 1. `Parse_AI_Response` en n8n fallaba al recibir markdown (` ```json `), cayendo a intent `general_query`.<br> 2. Vercel tenía caché antigua. | 1. Reescrito el regex en `04-melosmile-ai-dispatcher-v2.json`.<br> 2. Actualizados **EN VIVO vía MCP n8n** los flujos Dispatcher y Agendamiento con la URL oficial de Vercel. ✅ **RESUELTO Y PROBADO END-TO-END** |
 
 #### 5. Resultados de Pruebas End-to-End
 
 ```bash
 # TEST 1: Agendamiento ✅ EXITOSO
-POST /webhook/melosmile-ai-dispatcher
-{ "message": "cita para munir para mañana a las 15:00 en goya..." }
+POST /webhook/melosmile-dispatcher
+{ "message": "cuando es la proxima cita de munir?" }
 → intent: "schedule_appointment"
-→ entities: { patient_name: "Munir", date: "mañana", time: "15:00", clinic: "Albacete", treatments: [...] }
-→ summary: "La cita de Munir para mañana a las 15:00 para limpieza y revisión de brackets... ha sido agendada."
+→ entities: { patient_name: "Munir" }
+→ summary: "El paciente Munir Manuel Callaos Cardama tiene una cita confirmada el 24 de julio de 2026 a las 16:30 en la Clínica Goya..."
 
 # TEST 2: Facturación ⚠️ PARCIAL (intent OK, herramientas placeholder)
 → intent: "billing" ✅, entities: { time_frame: "esta semana", scope: "todas las clinicas" } ✅
@@ -153,6 +161,7 @@ POST /webhook/melosmile-ai-dispatcher
 
 - **TypeScript**: `npx tsc --noEmit` → **0 errores** ✅
 - **Servidor Dev**: Operativo en `http://localhost:3028/`
-- **Dispatcher n8n**: Activo en `https://n8n.mumaweb.com/webhook/melosmile-ai-dispatcher`
+- **Dispatcher n8n**: Activo en `https://n8n.mumaweb.com/webhook/melosmile-dispatcher`
 - **4 Workflows n8n**: Todos activos (`active: true`)
 - **Git**: Cambios empujados a la rama `develop` ✅
+

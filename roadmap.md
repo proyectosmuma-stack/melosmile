@@ -99,5 +99,6 @@ Este documento establece el plan de desarrollo, hitos alcanzados y próximas fas
   - Endpoint `/api/appointments/update` soporta `action: "delete"` para eliminar citas físicamente de la base de datos a petición del usuario.
   - Endpoint `/api/appointments/list` excluye automáticamente citas canceladas por defecto para mantener la agenda diaria/semanal limpia.
   - Herramienta `Tool_Update_Appointment` en n8n desplegada con soporte para modificación y borrado físico.
+- [x] **Resolución de Memoria de Sesión y Contexto Anafórico (Multiturno)**: Transmisión del historial conversacional completo en n8n Dispatcher, reescritura automática de peticiones relativas ("cambia esa cita"), mapeo robusto de parámetros (`patient_name`, `patient`, `date`, `time`) en `Tool_Update_Appointment` y resolución en backend Next.js.
 - [x] **Auditoría & Resolución Continua de `agent_log`**: Proceso activo de lectura, corrección de causas raíz y resolución de reportes de error en Supabase (`ai_agent_reports`).
 
