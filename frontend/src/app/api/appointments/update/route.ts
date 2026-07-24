@@ -40,6 +40,22 @@ function parseAppointmentDate(inputDate?: string): string {
     targetYear = d.getFullYear();
     targetMonth = d.getMonth();
     targetDay = d.getDate();
+  } else if (str.includes("sábado") || str.includes("sabado")) {
+    const d = new Date(now);
+    const currentDay = d.getDay();
+    const distance = (6 - currentDay + 7) % 7 || 7;
+    d.setDate(d.getDate() + distance);
+    targetYear = d.getFullYear();
+    targetMonth = d.getMonth();
+    targetDay = d.getDate();
+  } else if (str.includes("domingo")) {
+    const d = new Date(now);
+    const currentDay = d.getDay();
+    const distance = (0 - currentDay + 7) % 7 || 7;
+    d.setDate(d.getDate() + distance);
+    targetYear = d.getFullYear();
+    targetMonth = d.getMonth();
+    targetDay = d.getDate();
   } else if (str.includes("ayer")) {
     const d = new Date(now);
     d.setDate(d.getDate() - 1);
@@ -66,6 +82,23 @@ function parseAppointmentDate(inputDate?: string): string {
   // Construct UTC date
   const result = new Date(Date.UTC(targetYear, targetMonth, targetDay, hours, minutes, 0, 0));
   return result.toISOString();
+}
+
+function scorePatientMatch(patient: any, targetQuery: string): number {
+  const fullName = `${patient.first_name || ""} ${patient.last_name || ""}`.toLowerCase().trim();
+  const target = targetQuery.toLowerCase().trim();
+
+  if (fullName === target) return 100;
+  if (fullName.startsWith(target)) return 90;
+  if (fullName.includes(target)) return 80;
+
+  const terms = target.split(/\s+/).filter(Boolean);
+  let matchedCount = 0;
+  for (const t of terms) {
+    if (fullName.includes(t)) matchedCount++;
+  }
+
+  return matchedCount * 20;
 }
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -119,14 +152,16 @@ export async function POST(req: Request) {
           ])
           .join(",");
 
-        const { data: found } = await dbClient
+        const { data: candidates } = await dbClient
           .from("patients")
-          .select("id")
+          .select("id, first_name, last_name")
           .or(orConditions)
-          .limit(1)
-          .maybeSingle();
+          .limit(10);
 
-        if (found) resolvedPatientId = found.id;
+        if (candidates && candidates.length > 0) {
+          candidates.sort((a: any, b: any) => scorePatientMatch(b, String(rawPatient)) - scorePatientMatch(a, String(rawPatient)));
+          resolvedPatientId = candidates[0].id;
+        }
       }
     }
 
@@ -156,7 +191,6 @@ export async function POST(req: Request) {
         deleteQuery = deleteQuery.gte("appointment_date", startOfDay).lte("appointment_date", endOfDay);
       }
 
-      // Also support deleting already-cancelled appointments for day if status cancelled was passed
       if (!resolvedPatientId && !rawDate && !targetId) {
         return NextResponse.json(
           { error: "Se requiere appointment_id, patient_name o fecha para eliminar citas." },
@@ -211,7 +245,7 @@ export async function POST(req: Request) {
         .update(updates)
         .eq("patient_id", resolvedPatientId);
 
-      if (rawDate) {
+      if (rawDate && (status === "cancelled" || status === "cancelada" || status === "Cancelada")) {
         const parsedDateStr = parseAppointmentDate(rawDate);
         const parsedDate = new Date(parsedDateStr);
         const startOfDay = new Date(Date.UTC(parsedDate.getUTCFullYear(), parsedDate.getUTCMonth(), parsedDate.getUTCDate(), 0, 0, 0, 0)).toISOString();

@@ -14,6 +14,23 @@ function cleanSearchTerm(term: string): string {
   return cleaned.length > 0 ? cleaned : clean;
 }
 
+function scorePatientMatch(patient: any, targetQuery: string): number {
+  const fullName = `${patient.first_name || ""} ${patient.last_name || ""}`.toLowerCase().trim();
+  const target = targetQuery.toLowerCase().trim();
+
+  if (fullName === target) return 100;
+  if (fullName.startsWith(target)) return 90;
+  if (fullName.includes(target)) return 80;
+
+  const terms = target.split(/\s+/).filter(Boolean);
+  let matchedCount = 0;
+  for (const t of terms) {
+    if (fullName.includes(t)) matchedCount++;
+  }
+
+  return matchedCount * 20;
+}
+
 async function handleSearch(rawQ: string | null | undefined) {
   if (!rawQ?.trim()) {
     return NextResponse.json({ error: "Missing query parameter 'q'" }, { status: 400 });
@@ -36,11 +53,16 @@ async function handleSearch(rawQ: string | null | undefined) {
       .from("patients")
       .select("id, first_name, last_name, historia_id, dob, phone, email, allergies, current_medication")
       .or(orConditions)
-      .limit(5);
+      .limit(10);
 
     if (error) throw error;
 
-    const patients = data || [];
+    let patients = data || [];
+
+    // Sort patients by exactness/relevance match to sanitized search term
+    patients.sort((a: any, b: any) => scorePatientMatch(b, sanitized) - scorePatientMatch(a, sanitized));
+    patients = patients.slice(0, 5);
+
     const summary = patients.length > 0
       ? patients.map((p: any) => `Paciente: ${p.first_name} ${p.last_name} | ID Historia: ${p.historia_id} | Tel: ${p.phone || 'N/A'} | Email: ${p.email || 'N/A'}`).join("\n")
       : "No se encontraron pacientes con ese término de búsqueda.";
