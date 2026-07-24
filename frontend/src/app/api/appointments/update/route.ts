@@ -87,6 +87,8 @@ export async function POST(req: Request) {
       treatment_id,
       professional_id,
       clinic_id,
+      action,
+      delete_appointment,
     } = body;
 
     let targetId = appointment_id || id;
@@ -94,10 +96,17 @@ export async function POST(req: Request) {
     let rawDate = appointment_date || date;
     let resolvedPatientId = null;
 
+    const isDelete =
+      action === "delete" ||
+      delete_appointment === true ||
+      String(status).toLowerCase().includes("delete") ||
+      String(status).toLowerCase().includes("borrar") ||
+      String(status).toLowerCase().includes("eliminar");
+
     const dbClient = (supabaseAdmin || supabase) as any;
 
     // 1. Resolve Patient ID if text or name is passed
-    if (rawPatient) {
+    if (rawPatient && !String(rawPatient).toLowerCase().includes("todas") && !String(rawPatient).toLowerCase().includes("todo")) {
       if (UUID_REGEX.test(rawPatient)) {
         resolvedPatientId = rawPatient;
       } else {
@@ -121,7 +130,46 @@ export async function POST(req: Request) {
       }
     }
 
-    // 2. Prepare updates object
+    // 2. HARD DELETE OPERATION
+    if (isDelete) {
+      if (targetId) {
+        const { data, error } = await dbClient
+          .from("appointments")
+          .delete()
+          .eq("id", targetId)
+          .select();
+        if (error) throw error;
+        return NextResponse.json({ success: true, action: "deleted", count: data?.length || 0, data });
+      }
+
+      let deleteQuery = dbClient.from("appointments").delete();
+
+      if (resolvedPatientId) {
+        deleteQuery = deleteQuery.eq("patient_id", resolvedPatientId);
+      }
+
+      if (rawDate) {
+        const parsedDateStr = parseAppointmentDate(rawDate);
+        const parsedDate = new Date(parsedDateStr);
+        const startOfDay = new Date(Date.UTC(parsedDate.getUTCFullYear(), parsedDate.getUTCMonth(), parsedDate.getUTCDate(), 0, 0, 0, 0)).toISOString();
+        const endOfDay = new Date(Date.UTC(parsedDate.getUTCFullYear(), parsedDate.getUTCMonth(), parsedDate.getUTCDate(), 23, 59, 59, 999)).toISOString();
+        deleteQuery = deleteQuery.gte("appointment_date", startOfDay).lte("appointment_date", endOfDay);
+      }
+
+      // Also support deleting already-cancelled appointments for day if status cancelled was passed
+      if (!resolvedPatientId && !rawDate && !targetId) {
+        return NextResponse.json(
+          { error: "Se requiere appointment_id, patient_name o fecha para eliminar citas." },
+          { status: 400 }
+        );
+      }
+
+      const { data, error } = await deleteQuery.select();
+      if (error) throw error;
+      return NextResponse.json({ success: true, action: "deleted", count: data?.length || 0, data });
+    }
+
+    // 3. UPDATE / CANCEL OPERATION
     const updates: Record<string, any> = {};
     if (rawDate && status !== "cancelled" && status !== "cancelada" && status !== "Cancelada") {
       updates.appointment_date = parseAppointmentDate(rawDate);
@@ -144,7 +192,7 @@ export async function POST(req: Request) {
     if (professional_id) updates.professional_id = professional_id;
     if (clinic_id) updates.clinic_id = clinic_id;
 
-    // 3. Perform update by targetId if present
+    // Perform update by targetId if present
     if (targetId) {
       const { data, error } = await dbClient
         .from("appointments")
@@ -153,10 +201,10 @@ export async function POST(req: Request) {
         .select();
 
       if (error) throw error;
-      return NextResponse.json({ success: true, count: data?.length || 0, data });
+      return NextResponse.json({ success: true, action: "updated", count: data?.length || 0, data });
     }
 
-    // 4. Perform update by patient + optional date
+    // Perform update by patient + optional date
     if (resolvedPatientId) {
       let query = dbClient
         .from("appointments")
@@ -192,11 +240,11 @@ export async function POST(req: Request) {
             .select();
 
           if (errLatest) throw errLatest;
-          return NextResponse.json({ success: true, count: updatedLatest?.length || 0, data: updatedLatest });
+          return NextResponse.json({ success: true, action: "updated", count: updatedLatest?.length || 0, data: updatedLatest });
         }
       }
 
-      return NextResponse.json({ success: true, count: data?.length || 0, data });
+      return NextResponse.json({ success: true, action: "updated", count: data?.length || 0, data });
     }
 
     return NextResponse.json(

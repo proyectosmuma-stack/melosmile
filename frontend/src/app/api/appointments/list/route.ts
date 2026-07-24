@@ -212,6 +212,8 @@ export async function GET(req: Request) {
       ({ startISO, endISO, dateLabel } = getDateRange("hoy"));
     }
 
+    const includeCancelled = searchParams.get("include_cancelled") === "true";
+
     let query = (supabase as any)
       .from("appointments")
       .select(`
@@ -226,6 +228,10 @@ export async function GET(req: Request) {
       `)
       .gte("appointment_date", startISO)
       .order("appointment_date", { ascending: true });
+
+    if (!includeCancelled) {
+      query = query.neq("status", "Cancelada");
+    }
 
     if (endISO) {
       query = query.lte("appointment_date", endISO);
