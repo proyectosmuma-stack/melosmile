@@ -73,6 +73,13 @@ melosmile/
     └── src/
         ├── app/
         │   ├── api/
+        │   │   ├── appointments/
+        │   │   │   ├── list/route.ts            # GET Citas por rango de fechas (excluye Canceladas por defecto)
+        │   │   │   └── update/route.ts          # POST Actualizar, cancelar o Hard Delete (`action=delete`) de citas
+        │   │   ├── ai/
+        │   │   │   ├── memory/search/route.ts   # GET Búsqueda difusa de modismos aprendidos en Supabase
+        │   │   │   ├── memory/learn/route.ts    # POST Aprendizaje autónomo de vocabulario (upsert)
+        │   │   │   └── report/route.ts          # GET/POST/PATCH Sistema de reportes de fallos en Supabase
         │   │   └── odoo/
         │   │       ├── products/route.ts        # GET catálogo productos Odoo
         │   │       └── invoice/route.ts         # POST upsert partner + crear factura Odoo

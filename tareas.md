@@ -60,6 +60,9 @@ Este documento registra el estado del proyecto, el listado exhaustivo de los **f
 - [x] **Fix de Edición y Carga de Citas (`/appointments/[id]`)**: Auto-emparejamiento con el catálogo `treatments`, carga automática de precios por defecto y gastos de laboratorio sin pérdida de datos al guardar o recargar.
 - [x] **Regla Global Anti-Alucinación**: Implementación de la directiva de confirmación previa en los 4 agentes en n8n (`Dispatcher`, `Scheduling`, `Clinical`, `Billing`).
 - [x] **Sistema de Aprendizaje Dinámico Autónomo**: Tabla Supabase `agent_learnings`, endpoints `/api/ai/memory/search` y `/api/ai/memory/learn`, y herramientas n8n `Tool_Search_Memory` + `Tool_Save_Learning`.
+- [x] **Borrado Físico (HARD DELETE) de Citas**: Soporte para `action: "delete"` en `/api/appointments/update` e integración de `Tool_Update_Appointment` en n8n para eliminar citas físicamente a petición del usuario.
+- [x] **Filtro Automático de Agenda Limpia**: Exclusión de citas con estado `Cancelada` por defecto en `/api/appointments/list` para evitar contaminar la consulta diaria o semanal del profesional.
+- [x] **Auditoría & Resolución de `agent_log`**: Verificación y resolución continua de reportes de error en Supabase (`ai_agent_reports`).
 
 ### ⚙️ Interfaz & Ajustes UI
 - [x] **Ajuste Asistente IA Flotante**: TextArea expandible con atajo `Enter` (enviar) y `Shift+Enter` (salto de línea).

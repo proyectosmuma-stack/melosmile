@@ -58,8 +58,14 @@ Este documento es el **Walkthrough Maestro del Proyecto**, donde se acumula la t
   > 3. EN SU LUGAR, pregunta al usuario para confirmar usando opciones concretas.
 
 #### 3. Refactorización de APIs y Fixes de Despliegue en Vercel
-- **Bypass de RLS en Backend**: `supabaseAdmin` implementado con la clave de servicio en `/api/ai/report/route.ts` y `/api/appointments/edit/route.ts`.
-- **Robustez de Clientes Supabase**: Añadido fallback defensivo a `createClient` en rutas `/api/ai/report` y `/api/ai-context` para evitar errores durante la recopilación de páginas estáticas en la compilación de Turbopack/Next.js en Vercel.
+- **Corregida ruta del Webhook Dispatcher**: Ajustada la constante `DISPATCHER_PATH` en `/api/dispatcher` de `/webhook/melosmile-ai-dispatcher` a `/webhook/melosmile-dispatcher`.
+- **Resolución de Errores Vercel Static Build**: Inyectadas claves fallback seguras de Supabase en `/api/ai/report` y `/api/ai-context` para prevenir fallos durante la fase de recolección estática en CI/CD.
+
+#### 4. Borrado Físico (HARD DELETE) & Filtro Automático de Citas Canceladas
+- **Borrado Físico en Base de Datos (`/api/appointments/update`)**: Añadido soporte para `action: 'delete'` y detección de palabras claves ("eliminar", "borrar de la agenda") para realizar eliminaciones físicas en Supabase (`.delete()`) cuando el profesional lo solicite.
+- **Filtro Inteligente de Agenda (`/api/appointments/list`)**: Excluye automáticamente citas con estado `Cancelada` a menos que se solicite explícitamente `include_cancelled=true`. Esto garantiza que la consulta de la agenda semanal o diaria de Musly no se ensucie con citas previamente anuladas.
+- **Actualización del Agente de Agendamiento en n8n**: Desplegada la herramienta `Tool_Update_Appointment` con parámetros de actualización y borrado físico.
+- **Resolución de Reportes `agent_log`**: Auditados y marcados como **RESUELTOS** los reportes de error en Supabase `ai_agent_reports`.
 
 ---
 

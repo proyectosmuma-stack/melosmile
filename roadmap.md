@@ -95,4 +95,9 @@ Este documento establece el plan de desarrollo, hitos alcanzados y próximas fas
   - `POST /api/ai/memory/learn`: Guardado en caliente (*upsert*) de nuevos aprendizajes del agente.
 - [x] **Regla Global Anti-Alucinación**: Inyectada en los 4 agentes n8n para forzar la confirmación con el usuario antes de asumir o alucinar datos.
 - [x] **Herramientas n8n Desplegadas**: `Tool_Search_Memory` y `Tool_Save_Learning` en producción.
+- [x] **Borrado Físico (HARD DELETE) & Filtro Inteligente de Agenda**:
+  - Endpoint `/api/appointments/update` soporta `action: "delete"` para eliminar citas físicamente de la base de datos a petición del usuario.
+  - Endpoint `/api/appointments/list` excluye automáticamente citas canceladas por defecto para mantener la agenda diaria/semanal limpia.
+  - Herramienta `Tool_Update_Appointment` en n8n desplegada con soporte para modificación y borrado físico.
+- [x] **Auditoría & Resolución Continua de `agent_log`**: Proceso activo de lectura, corrección de causas raíz y resolución de reportes de error en Supabase (`ai_agent_reports`).
 
