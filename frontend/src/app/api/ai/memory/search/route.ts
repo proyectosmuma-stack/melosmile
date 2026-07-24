@@ -1,11 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
-
-// Admin client with service role key to bypass RLS policies
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || "https://amhfdzfcmpastmlsosou.supabase.co",
-  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ""
-);
+import { supabase } from "@/lib/supabase/client";
 
 /**
  * GET /api/ai/memory/search?query=...&category=...
@@ -17,8 +11,8 @@ export async function GET(req: NextRequest) {
     const queryStr = searchParams.get("query") || searchParams.get("q") || "";
     const category = searchParams.get("category") || "vocabulary";
 
-    // 1. Fetch learnings from Supabase using supabaseAdmin
-    let dbQuery = (supabaseAdmin as any)
+    // 1. Fetch learnings from Supabase
+    let dbQuery = (supabase as any)
       .from("agent_learnings")
       .select("*")
       .order("usage_count", { ascending: false });
@@ -63,7 +57,7 @@ export async function GET(req: NextRequest) {
       Promise.all(
         idsToIncrement.map((id: string) => {
           const item = matchedLearnings.find((m: any) => m.id === id);
-          return (supabaseAdmin as any)
+          return (supabase as any)
             .from("agent_learnings")
             .update({ usage_count: (item?.usage_count || 0) + 1, updated_at: new Date().toISOString() })
             .eq("id", id);

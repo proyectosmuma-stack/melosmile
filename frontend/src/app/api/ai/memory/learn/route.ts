@@ -1,11 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
-
-// Admin client with service role key to bypass RLS policies
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || "https://amhfdzfcmpastmlsosou.supabase.co",
-  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ""
-);
+import { supabase } from "@/lib/supabase/client";
 
 /**
  * POST /api/ai/memory/learn
@@ -35,7 +29,7 @@ export async function POST(req: NextRequest) {
     const cleanMeaning = meaning.trim();
 
     // Check if learning expression already exists
-    const { data: existing } = await (supabaseAdmin as any)
+    const { data: existing } = await (supabase as any)
       .from("agent_learnings")
       .select("id, usage_count")
       .eq("expression", cleanExpression)
@@ -45,7 +39,7 @@ export async function POST(req: NextRequest) {
 
     if (existing && existing.id) {
       // Update existing record
-      const { data, error } = await (supabaseAdmin as any)
+      const { data, error } = await (supabase as any)
         .from("agent_learnings")
         .update({
           meaning: cleanMeaning,
@@ -61,7 +55,7 @@ export async function POST(req: NextRequest) {
       resultData = data;
     } else {
       // Insert new record
-      const { data, error } = await (supabaseAdmin as any)
+      const { data, error } = await (supabase as any)
         .from("agent_learnings")
         .insert({
           category,
