@@ -265,8 +265,8 @@ export async function POST(req: Request) {
       const { data, error } = await query.select();
       if (error) throw error;
 
-      // If no date was provided and no rows were updated, update the most recent appointment
-      if ((!data || data.length === 0) && !rawDate) {
+      // If no rows were updated, update the most recent active appointment for that patient
+      if (!data || data.length === 0) {
         const { data: latest } = await dbClient
           .from("appointments")
           .select("id")
