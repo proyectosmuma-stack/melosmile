@@ -126,7 +126,9 @@ export async function POST(req: Request) {
 
     let targetId = appointment_id || id;
     let rawPatient = patient_id || patient_name || patient;
-    let rawDate = appointment_date || date;
+    let timeStr = body.time || body.appointment_time || "";
+    let rawDateStr = appointment_date || date || body.day || "";
+    let rawDate = (rawDateStr + " " + timeStr).trim() || rawDateStr;
     let resolvedPatientId = null;
 
     const isDelete =
@@ -226,6 +228,13 @@ export async function POST(req: Request) {
     if (professional_id) updates.professional_id = professional_id;
     if (clinic_id) updates.clinic_id = clinic_id;
 
+    if (Object.keys(updates).length === 0) {
+      return NextResponse.json(
+        { error: "No se especificaron cambios válidos para actualizar la cita." },
+        { status: 400 }
+      );
+    }
+
     // Perform update by targetId if present
     if (targetId) {
       const { data, error } = await dbClient
@@ -278,7 +287,13 @@ export async function POST(req: Request) {
         }
       }
 
-      return NextResponse.json({ success: true, action: "updated", count: data?.length || 0, data });
+      return NextResponse.json({
+        success: true,
+        message: "Cita modificada exitosamente en la agenda.",
+        action: "updated",
+        count: data?.length || 0,
+        data
+      });
     }
 
     return NextResponse.json(

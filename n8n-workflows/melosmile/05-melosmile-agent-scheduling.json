@@ -24,7 +24,7 @@
       "id": "2",
       "name": "OpenRouter_Chat_Model",
       "parameters": {
-        "model": "google/gemini-2.0-flash-001",
+        "model": "google/gemini-2.5-flash",
         "options": {}
       },
       "position": [

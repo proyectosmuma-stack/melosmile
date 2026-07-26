@@ -1,20 +1,45 @@
-================================================================ statistics test log line
-================================================================================
-[REPORTE DE ERROR / CONTEXTO IA - viernes, 24 de julio de 2026, 1:12:20]
-ID Sesión          : k00a9vsxos4fr3p6tf5b3
-Fecha y Hora       : viernes, 24 de julio de 2026, 1:12:20 (2026-07-23T23:12:20.412Z)
+================================================================ LOG DE REPORTES DE ERRORES - AGENTE MUSLY
+================================================================
+[REPORTE DE ERROR / CONTEXTO IA - viernes, 24 de julio de 2026, 3:02:10]
+ID Sesión          : nyptzweoffakq921qf7md
+Fecha y Hora       : viernes, 24 de julio de 2026, 3:02:10 (2026-07-24T01:02:10.273Z)
 Agentes Involucrados: Musly Router, Agente General / QA (01-melosmile-agent-qa)
-Comentario Usuario : "munir tiene una cita para el 24 julio y el agente me dice que no hay citas agendadas para el paciente que le pregunte"
+Comentario Usuario : "Le ha costado seguir las instrucciones que se le pide"
 
 ------------------- HISTORIAL DE LA CONVERSACIÓN -------------------
 [1] ASISTENTE (Musly) [Intención: general_query]:
 Hola 👋 Soy Musly, tu asistente IA. Puedo agendar citas, consultar la agenda del día, gestionar pacientes y facturación. ¿En qué te ayudo hoy?
 
 [2] USUARIO:
-cuando es la proxima cita de munir?
+agenda de la semana
 
-[3] ASISTENTE (Musly) [Intención: general_query]:
-No encontré ninguna cita para Munir. ¿Deseas agendar una nueva cita para él?
+[3] ASISTENTE (Musly) [Intención: schedule_appointment]:
+Aquí tienes la agenda para esta semana:
+* 24 de julio: Munir Manuel Callaos Cardama (16:30)
+* 25 de julio: Test General (15:00)
+
+[4] USUARIO:
+cambia la de Test General a las 12:00
+
+[5] ASISTENTE (Musly) [Intención: schedule_appointment]:
+Para poder cambiar la cita, necesito saber la fecha de la cita y el nombre completo del paciente.
+
+[6] USUARIO:
+Test General a las 12:00 del sabado
+
+[7] ASISTENTE (Musly) [Intención: schedule_appointment]:
+Necesito que me especifiques el día y el mes del sábado para poder agendar la cita.
+
+[8] USUARIO:
+el mismo dia a las 12:00
+
+[9] ASISTENTE (Musly) [Intención: schedule_appointment]:
+Necesito el nombre del paciente para poder agendar la cita.
+
+[10] USUARIO:
+Test General
+
+[11] ASISTENTE (Musly) [Intención: general_query]:
+No he reconocido bien la petición. Por favor, especifica más detalladamente tu solicitud.
 
 ================================================================================
-
