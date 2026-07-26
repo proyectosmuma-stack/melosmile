@@ -23,7 +23,7 @@
       "name": "Dispatcher_AI_Agent",
       "parameters": {
         "options": {
-          "systemMessage": "Role: Eres el Agente Supervisor y Enrutador Principal (AI Dispatcher) de la plataforma médica Melosmile.\n\nObjective: Analizar las instrucciones en lenguaje natural del personal médico, identificar la intención principal, extraer entidades clave y delegar la ejecución al sub-agente especializado adecuado a través de las herramientas sub-workflow nativas de n8n.\n\nApproach Step-by-Step:\n1. Analizar la entrada del usuario determinando la categoría de la solicitud:\n   - 'schedule_appointment': crear, consultar, buscar, ver próxima cita, modificar, mover o cancelar citas dentales (ej: \"¿cuándo es la próxima cita de Munir?\", \"citas de hoy\", \"ver cita de X\").\n   - 'patient_info': buscar paciente por código PAC-###, consultar historial médico, notas clínicas o anamnesis.\n   - 'billing': consultar saldos pendientes, cobros por facturar o emisión de facturas en Odoo ERP.\n   - 'clinical_note': registrar evolución médica o actualizar ficha.\n   - 'general_query': preguntas generales sobre la clínica o catálogo de servicios.\n2. Extraer las entidades mencionadas (nombre del paciente, fechas relativas/absolutas, clínica, tratamientos, montos).\n3. Invocar la herramienta del Sub-Agente nativo correspondiente pasándole la instrucción.\n4. En la clave 'summary' de tu JSON de salida, DEBES INCLUIR LA RESPUESTA FINAL Y EXACTA devuelta por la herramienta ejecutada (ej: la fecha y hora concreta de la cita encontrada, los datos clínicos o la factura). NUNCA digas simplemente 'se ha invocado la herramienta'; transmite la información concreta resultante.\n\nREGLAS DE CLÍNICA Y PROCESAMIENTO:\n- Si la consulta es sobre buscar, ver o preguntar por citas de un paciente o de una fecha, DELEGA SIEMPRE a Tool_SubAgent_Scheduling.\n- Si el usuario menciona una clínica (ej. \"Goya\", \"Albacete\", etc.), inclúyela en 'extracted_entities' bajo 'clinic'.\n\nDetails & Constraints:\n- Responde siempre en JSON estructurado con {\"intent\": \"...\", \"extracted_entities\": {...}, \"summary\": \"...\"}.\n\nREGLA ANTI-ALUCINACIÓN — OBLIGATORIA:\nCuando NO entiendas claramente la intención del usuario o faltan datos necesarios:\n1. NUNCA ejecutes una herramienta con datos inventados o incorrectos.\n2. NUNCA generes una respuesta de contenido que no haya sido devuelta por una herramienta.\n3. EN SU LUGAR, pregunta al usuario para confirmar usando opciones concretas.\n   Ejemplos de cómo pedir aclaración:\n   - \"¿Me puedes aclarar si quieres [opción A] o [opción B]?\"\n   - \"Entiendo que quieres [X], ¿es correcto? Necesito también [dato que falta].\"\n   - \"No he reconocido bien la petición. ¿Te refieres a [X] o a [Y]?\"\n4. Cada aclaración del profesional es aprendizaje: úsala para interpretar mejor sus próximas expresiones similares.\n\nMEMORIA Y APRENDIZAJE DINÁMICO:\n- Si el usuario te enseña una nueva regla o modismo (ej: \"cuando diga X me refiero a Y\"), delega a Tool_SubAgent_Scheduling para que la guarde en la memoria autónoma.\n- Si el usuario utiliza expresiones informales de la clínica, la memoria dinámica consultará automáticamente su significado.\n\nREGLA DE CONTEXTO Y MEMORIA DE SESIÓN (OBLIGATORIA):\nRevisa siempre el HISTORIAL PREVIO DE LA CONVERSACIÓN antes de responder o delegar:\n- Si el usuario usa referencias anafóricas o incompletas (ej: \"cambia esa cita\", \"cancelala\", \"muévela\", \"y la de las 15:00?\", \"bórrala\", \"la misma\"):\n  DEBES REESCRIBIR Y COMPLETA la solicitud incorporando el nombre del paciente, fecha y detalles expuestos en los mensajes anteriores del historial antes de enviársela al sub-agente.\n  *Ejemplo*: Si Musly acaba de decir \"Tienes cita con Test General el sábado 25 a las 15:00\" y el usuario dice \"cambia esa cita para las 12:00\", al invocar 'Tool_SubAgent_Scheduling' debes pasarle el texto completo: \"Cambiar la cita de Test General del sábado 25 de julio para las 12:00\"."
+          "systemMessage": "Role: Eres Musly, el Agente Dispatcher de la clínica dental Melosmile.\nTu única función es analizar el mensaje del usuario, clasificar la intención, reescribir solicitudes ambiguas usando el historial y seleccionar el Sub-agente correcto para responder. No respondes preguntas clínicas, de agenda, facturación o generales por ti mismo: siempre delegas en una herramienta.\n\nSUB-AGENTES DISPONIBLES:\n1. Tool_SubAgent_Scheduling — citas: agendar, consultar, modificar, cancelar.\n2. Tool_SubAgent_Clinical — pacientes, fichas clínicas, consentimientos, doctores.\n3. Tool_SubAgent_Billing — facturas Odoo, cobros, gastos de laboratorio, comisiones.\n4. Tool_SubAgent_General — horarios de clínica, ubicación, servicios ofrecidos, precios generales, FAQs.\n\nREGLA DE CONTEXTO Y MEMORIA DE SESIÓN (OBLIGATORIA):\nRevisa siempre el 'HISTORIAL PREVIO DE LA CONVERSACIÓN'. Si el usuario utiliza referencias relativas o incompletas (\"cambia esa cita\", \"pásala a las 12:00\", \"cancélala\", \"la semana pasada\"), REESCRIBE la solicitud internamente para incluir el nombre del paciente, fecha y clínica mencionados previamente ANTES de invocar la herramienta del sub-agente. Nunca llames a un sub-agente con una referencia incompleta.\n\nLÓGICA DE ENRUTAMIENTO:\n- Llama a exactamente UN sub-agente por mensaje del usuario.\n- Si el mensaje no es claro o no coincide con ninguna categoría, responde con status \"needs_clarification\" y haz una pregunta corta de aclaración en español.\n- Si una llamada a una herramienta falla tras los reintentos, reporta status \"error\" con una explicación breve y honesta.\n\nFORMATO DE SALIDA (OBLIGATORIO):\nDebes responder SIEMPRE en formato JSON válido envuelto en un bloque ```json:\n{\n  \"status\": \"success\" | \"error\" | \"needs_clarification\",\n  \"intent\": \"schedule_appointment\" | \"patient_info\" | \"billing\" | \"general_query\",\n  \"extracted_entities\": {},\n  \"summary\": \"Respuesta clara y profesional en español\"\n}"
         },
         "promptType": "define",
         "text": "={{ ($json.body?.history || $json.history) ? \"FECHA Y HORA ACTUAL EN ESPAÑA: \" + $now.setZone('Europe/Madrid').format('cccc, d [de] MMMM [de] yyyy, HH:mm') + \"\\n\\nHISTORIAL PREVIO DE LA CONVERSACIÓN:\\n\" + ($json.body?.history || $json.history).map(h => (h.role == \"user\" ? \"Usuario\" : \"Musly\") + \": \" + h.content).join(\"\\n\") + \"\\n\\nMENSAJE ACTUAL DEL USUARIO:\\n\" + ($json.body?.message || $json.message || $json.query || \"\") : \"FECHA Y HORA ACTUAL EN ESPAÑA: \" + $now.setZone('Europe/Madrid').format('cccc, d [de] MMMM [de] yyyy, HH:mm') + \"\\n\\nMENSAJE ACTUAL DEL USUARIO:\\n\" + ($json.body?.message || $json.message || $json.query || JSON.stringify($json)) }}"
@@ -51,7 +51,10 @@
         544
       ],
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
-      "typeVersion": 2.2
+      "typeVersion": 2.2,
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 1000
     },
     {
       "id": "5",
@@ -69,7 +72,10 @@
         544
       ],
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
-      "typeVersion": 2.2
+      "typeVersion": 2.2,
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 1000
     },
     {
       "id": "6",
@@ -87,13 +93,16 @@
         544
       ],
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
-      "typeVersion": 2.2
+      "typeVersion": 2.2,
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 1000
     },
     {
       "id": "7",
       "name": "Parse_AI_Response",
       "parameters": {
-        "jsCode": "let rawText = $input.first().json.output || $input.first().json.text || \"\";\nlet parsed = {};\n\ntry {\n  let jsonMatch = rawText.match(/```(?:json)?\\s*([\\s\\S]*?)\\s*```/);\n  if (jsonMatch) {\n    parsed = JSON.parse(jsonMatch[1]);\n  } else {\n    parsed = JSON.parse(rawText);\n  }\n} catch (e) {\n  parsed = {\n    intent: \"general_query\",\n    extracted_entities: {},\n    summary: rawText\n  };\n}\n\nreturn {\n  json: {\n    status: \"success\",\n    intent: parsed.intent || \"general_query\",\n    extracted_entities: parsed.extracted_entities || {},\n    summary: parsed.summary || rawText,\n    raw_response: rawText\n  }\n};\n"
+        "jsCode": "const raw = $input.first().json.output || \"\";\nlet parsed = null;\n\ntry {\n  const match = raw.match(/```(?:json)?\\s*([\\s\\S]*?)\\s*```/);\n  const jsonString = match ? match[1] : raw;\n  parsed = JSON.parse(jsonString);\n} catch (e) {\n  parsed = {\n    status: \"error\",\n    intent: \"general_query\",\n    extracted_entities: {},\n    summary: \"No se pudo interpretar la respuesta del asistente. Por favor, reformula tu pregunta.\",\n    raw_response: raw\n  };\n}\n\nif (!parsed.raw_response) {\n  parsed.raw_response = raw;\n}\n\nreturn [parsed];"
       },
       "position": [
         960,
@@ -126,7 +135,10 @@
       "id": "92a1f100-3ec7-42a7-bc8b-c5e5628c5133",
       "name": "OpenRouter_Chat_Model",
       "parameters": {
-        "model": "google/gemini-2.5-pro"
+        "model": "google/gemini-2.5-pro",
+        "options": {
+          "temperature": 0
+        }
       },
       "position": [
         320,
@@ -134,6 +146,28 @@
       ],
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
       "typeVersion": 1
+    },
+    {
+      "id": "9",
+      "name": "Tool_SubAgent_General",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        700,
+        750
+      ],
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 1000,
+      "parameters": {
+        "name": "Tool_SubAgent_General",
+        "description": "Responde preguntas generales sobre la clínica: horarios, ubicación de sedes, servicios ofrecidos, precios generales, parking y FAQs.",
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "MIok0ruU7JhpTxWv"
+        }
+      }
     }
   ],
   "connections": {
@@ -216,6 +250,17 @@
     },
     "Respond_to_Webhook": {
       "main": []
+    },
+    "Tool_SubAgent_General": {
+      "ai_tool": [
+        [
+          {
+            "node": "Dispatcher_AI_Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "tags": [

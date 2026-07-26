@@ -1,0 +1,136 @@
+{
+  "name": "[MELOSMILE] Sub-Agent: General",
+  "nodes": [
+    {
+      "id": "trigger-1",
+      "name": "Execute_Workflow_Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        250,
+        300
+      ],
+      "parameters": {
+        "inputSource": "passthrough"
+      }
+    },
+    {
+      "id": "2",
+      "name": "OpenRouter_Chat_Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        450,
+        450
+      ],
+      "credentials": {
+        "openRouterApi": {
+          "id": "4nco5fDnIohG6g9f",
+          "name": "OpenRouter account"
+        }
+      },
+      "parameters": {
+        "model": "google/gemini-2.5-flash",
+        "options": {
+          "temperature": 0
+        }
+      }
+    },
+    {
+      "id": "3",
+      "name": "Agent_General",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        450,
+        300
+      ],
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ ($json.body?.history || $json.history) ? \"FECHA Y HORA ACTUAL EN ESPAÑA: \" + $now.setZone('Europe/Madrid').format('cccc, d [de] MMMM [de] yyyy, HH:mm') + \"\\n\\nHISTORIAL DE CONVERSACIÓN PREVIA:\\n\" + ($json.body?.history || $json.history).map(h => (h.role == \"user\" ? \"Usuario\" : \"Musly\") + \": \" + h.content).join(\"\\n\") + \"\\n\\nSOLICITUD ACTUAL DEL USUARIO:\\n\" + ($json.body?.message || $json.message || $json.query || \"\") : \"FECHA Y HORA ACTUAL EN ESPAÑA: \" + $now.setZone('Europe/Madrid').format('cccc, d [de] MMMM [de] yyyy, HH:mm') + \"\\n\\nSOLICITUD:\\n\" + ($json.body?.message || $json.message || $json.query || JSON.stringify($json)) }}",
+        "options": {
+          "systemMessage": "Role: Eres Musly, el Sub-agente Especialista en Información General de la clínica dental Melosmile.\nObjetivo: Responder preguntas frecuentes sobre la clínica: horarios de atención, ubicación de las sedes (Goya, Albacete, Las Rozas), servicios y especialidades ofrecidas, precios generales orientativos, aparcamiento y contacto.\n\nREGLAS DE RESPUESTA:\n- Responde siempre de forma amable, clara y profesional en español.\n- Sedes y Horarios:\n  * Clínica Goya (Madrid): Calle de Goya 45. Lunes a Viernes de 09:00 a 20:00, Sábados de 09:00 a 14:00.\n  * Clínica Albacete: Calle Mayor 12. Lunes a Viernes de 09:00 a 20:00.\n  * Clínica Las Rozas: Av. de la Constitución 8. Lunes a Viernes de 09:00 a 20:00.\n- Si no conoces un dato específico, indícalo educadamente e invita al usuario a consultar con recepción."
+        }
+      }
+    },
+    {
+      "id": "4",
+      "name": "Tool_Search_Memory",
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "position": [
+        700,
+        300
+      ],
+      "parameters": {
+        "description": "Consulta el diccionario de aprendizaje dinámico y modismos guardados del profesional.",
+        "method": "GET",
+        "url": "https://frontend-eight-dusky-42.vercel.app/api/ai/memory/search?query={{ $fromAI('query', 'Palabra o frase a consultar') }}"
+      }
+    },
+    {
+      "id": "5",
+      "name": "Tool_Save_Learning",
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "position": [
+        700,
+        500
+      ],
+      "parameters": {
+        "description": "Guarda o aprende una nueva regla de vocabulario o preferencia enseñada por el usuario.",
+        "method": "POST",
+        "url": "https://frontend-eight-dusky-42.vercel.app/api/ai/memory/learn",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"expression\": \"{{ $fromAI('expression', 'La expresión o modismo del usuario') }}\",\n  \"meaning\": \"{{ $fromAI('meaning', 'El significado técnico o acción asociada') }}\",\n  \"category\": \"vocabulary\"\n}"
+      }
+    }
+  ],
+  "connections": {
+    "Execute_Workflow_Trigger": {
+      "main": [
+        [
+          {
+            "node": "Agent_General",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter_Chat_Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Agent_General",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tool_Search_Memory": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agent_General",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tool_Save_Learning": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agent_General",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

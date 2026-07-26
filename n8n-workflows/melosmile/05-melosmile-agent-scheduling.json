@@ -25,7 +25,9 @@
       "name": "OpenRouter_Chat_Model",
       "parameters": {
         "model": "google/gemini-2.5-flash",
-        "options": {}
+        "options": {
+          "temperature": 0
+        }
       },
       "position": [
         450,
