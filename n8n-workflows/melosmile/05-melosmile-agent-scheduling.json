@@ -92,11 +92,11 @@
       "parameters": {
         "description": "Consulta y busca citas existentes por fecha o por nombre de paciente. Acepta fechas relativas: 'hoy', 'mañana', 'ayer', 'esta semana', 'semana pasada', 'próxima semana', 'este mes', 'mes pasado', 'próximo mes', o días de la semana ('lunes', 'martes', 'próximo viernes'). Úsala para revisar huecos o franjas horarias ocupadas en la agenda de la clínica.",
         "method": "GET",
-        "url": "https://frontend-eight-dusky-42.vercel.app/api/appointments/list?date={{ $fromAI('date_range', 'Fecha o rango a consultar: hoy, mañana, semana pasada, 25 de julio, nombre del paciente, etc.') }}&clinic={{ $fromAI('clinic', 'Nombre de la clínica si fue mencionada por el usuario, ej: Goya') }}"
+        "url": "https://frontend-eight-dusky-42.vercel.app/api/appointments/list?date={{ $fromAI('date_range', 'Fecha o rango a consultar: hoy, mañana, semana pasada, esta semana, próxima semana, 25 de julio, nombre del paciente, etc.') }}&clinic={{ $fromAI('clinic', 'Nombre de la clínica si fue mencionada, ej: Goya') }}"
       },
       "position": [
-        700,
-        600
+        704,
+        800
       ],
       "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
       "typeVersion": 1.1,
