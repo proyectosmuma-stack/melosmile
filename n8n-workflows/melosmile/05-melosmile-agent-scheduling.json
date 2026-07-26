@@ -8,8 +8,8 @@
         "inputSource": "passthrough"
       },
       "position": [
-        250,
-        300
+        256,
+        304
       ],
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.1
@@ -30,8 +30,8 @@
         }
       },
       "position": [
-        450,
-        450
+        80,
+        544
       ],
       "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
       "typeVersion": 1
@@ -47,8 +47,8 @@
         "text": "={{ (() => { const rawHistory = $json.body?.history || $json.history || []; const filteredHistory = rawHistory.filter(h => { const content = (h.content || '').trim(); return !(h.role !== 'user' && (content.includes('Hola 👋 Soy Musly') || content.includes('Puedo agendar citas'))); }); const currentMessage = $json.body?.message || $json.message || $json.query || ''; const now = $now.setZone('Europe/Madrid').format('cccc, d [de] MMMM [de] yyyy, HH:mm'); return filteredHistory.length ? 'FECHA Y HORA ACTUAL EN ESPAÑA: ' + now + '\\n\\nHISTORIAL PREVIO DE LA CONVERSACIÓN:\\n' + filteredHistory.map(h => (h.role === 'user' ? 'Usuario' : 'Musly') + ': ' + h.content).join('\\n') + '\\n\\nSOLICITUD ACTUAL DEL USUARIO:\\n' + currentMessage : 'FECHA Y HORA ACTUAL EN ESPAÑA: ' + now + '\\n\\nSOLICITUD ACTUAL DEL USUARIO:\\n' + currentMessage; })() }}"
       },
       "position": [
-        450,
-        300
+        464,
+        304
       ],
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 1.7
@@ -62,8 +62,8 @@
         "url": "https://frontend-eight-dusky-42.vercel.app/api/patients/search?q={{ $fromAI('query', 'Nombre, apellido, código PAC-### o teléfono del paciente') }}"
       },
       "position": [
-        700,
-        200
+        840,
+        750
       ],
       "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
       "typeVersion": 1.1
@@ -73,21 +73,43 @@
       "name": "Tool_Appointment_Manager",
       "parameters": {
         "description": "Crea o agenda una nueva cita para un paciente",
-        "jsonBody": "={\n  \"patient_name\": \"{{ $fromAI('patient_name', 'Nombre o UUID del paciente') }}\",\n  \"appointment_date\": \"{{ $fromAI('appointment_date', 'Fecha y hora de la cita, ej: mañana a las 14:00') }}\",\n  \"reason\": \"{{ $fromAI('reason', 'Motivo o tratamiento de la cita') }}\",\n  \"clinic\": \"{{ $fromAI('clinic', 'Nombre de la clínica si fue mencionada por el usuario, ej: Goya') }}\"\n}",
         "method": "POST",
+        "url": "https://frontend-eight-dusky-42.vercel.app/api/appointments/create",
         "sendBody": true,
-        "specifyBody": "json",
-        "url": "https://frontend-eight-dusky-42.vercel.app/api/appointments/create"
+        "specifyBody": "keypair",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "patient_name",
+              "value": "={{ $fromAI('patient_name', 'Nombre o UUID del paciente') }}"
+            },
+            {
+              "name": "appointment_date",
+              "value": "={{ $fromAI('appointment_date', 'Fecha y hora de la cita, ej: mañana a las 14:00') }}"
+            },
+            {
+              "name": "reason",
+              "value": "={{ $fromAI('reason', 'Motivo o tratamiento de la cita') }}"
+            },
+            {
+              "name": "clinic",
+              "value": "={{ $fromAI('clinic', 'Nombre de la clínica') }}"
+            }
+          ]
+        }
       },
       "position": [
-        700,
-        400
+        660,
+        750
       ],
       "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
-      "typeVersion": 1.1
+      "typeVersion": 1.1,
+      "retryOnFail": true,
+      "maxTries": 2,
+      "waitBetweenTries": 1000
     },
     {
-      "id": "7",
+      "id": "10",
       "name": "Tool_List_Appointments",
       "parameters": {
         "description": "Consulta y busca citas existentes por fecha o por nombre de paciente. Acepta fechas relativas: 'hoy', 'mañana', 'ayer', 'esta semana', 'semana pasada', 'próxima semana', 'este mes', 'mes pasado', 'próximo mes', o días de la semana ('lunes', 'martes', 'próximo viernes'). Úsala para revisar huecos o franjas horarias ocupadas en la agenda de la clínica.",
@@ -95,8 +117,8 @@
         "url": "https://frontend-eight-dusky-42.vercel.app/api/appointments/list?date={{ $fromAI('date_range', 'Fecha o rango a consultar: hoy, mañana, semana pasada, esta semana, próxima semana, 25 de julio, nombre del paciente, etc.') }}&clinic={{ $fromAI('clinic', 'Nombre de la clínica si fue mencionada, ej: Goya') }}"
       },
       "position": [
-        704,
-        800
+        480,
+        750
       ],
       "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
       "typeVersion": 1.1,
@@ -113,8 +135,8 @@
         "url": "https://frontend-eight-dusky-42.vercel.app/api/ai/memory/search?query={{ $fromAI('query', 'Palabra o frase a consultar') }}"
       },
       "position": [
-        700,
-        500
+        704,
+        512
       ],
       "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
       "typeVersion": 1.1
@@ -128,29 +150,60 @@
         "url": "https://frontend-eight-dusky-42.vercel.app/api/ai/memory/learn",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"expression\": \"{{ $fromAI('expression', 'La expresión o modismo del usuario') }}\",\n  \"meaning\": \"{{ $fromAI('meaning', 'El significado técnico o acción asociada') }}\",\n  \"category\": \"vocabulary\"\n}"
+        "jsonBody": "={\n  \"expression\": \"{{ $fromAI('expression', 'La expresión o modismo del usuario') }}\",\n  \"meaning\": \"{{ $fromAI('meaning', 'El significado técnico o acción asociada') }}\",\n  \"category\": \"vocabulary\"\n}",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        }
       },
       "position": [
-        700,
-        600
+        300,
+        750
       ],
       "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
       "typeVersion": 1.1
     },
     {
-      "id": "9",
+      "id": "6",
       "name": "Tool_Update_Appointment",
       "parameters": {
         "description": "Modifica, cambia la fecha u hora, cancela o elimina físicamente citas de la agenda por paciente o fecha.",
-        "jsonBody": "={\n  \"patient_name\": \"{{ $fromAI('patient_name', 'Nombre del paciente') }}\",\n  \"date\": \"{{ $fromAI('date', 'Nueva fecha de la cita, o la fecha original si no cambia') }}\",\n  \"time\": \"{{ $fromAI('time', 'Nueva hora de la cita, o la hora original si no cambia') }}\",\n  \"clinic\": \"{{ $fromAI('clinic', 'Nombre de la clínica si fue mencionada') }}\"\n}",
         "method": "POST",
+        "url": "https://frontend-eight-dusky-42.vercel.app/api/appointments/update",
         "sendBody": true,
-        "specifyBody": "json",
-        "url": "https://frontend-eight-dusky-42.vercel.app/api/appointments/update"
+        "specifyBody": "keypair",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "patient_name",
+              "value": "={{ $fromAI('patient_name', 'Nombre del paciente') }}"
+            },
+            {
+              "name": "appointment_date",
+              "value": "={{ $fromAI('appointment_date', 'Nueva fecha y hora de la cita, ej: miércoles 29 de julio a las 13:00') }}"
+            },
+            {
+              "name": "date",
+              "value": "={{ $fromAI('date', 'Nueva fecha de la cita') }}"
+            },
+            {
+              "name": "time",
+              "value": "={{ $fromAI('time', 'Nueva hora de la cita') }}"
+            },
+            {
+              "name": "clinic",
+              "value": "={{ $fromAI('clinic', 'Nombre de la clínica si fue mencionada') }}"
+            }
+          ]
+        }
       },
       "position": [
-        700,
-        700
+        120,
+        750
       ],
       "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
       "typeVersion": 1.1,
@@ -182,29 +235,18 @@
         ]
       ]
     },
-    "Tool_Appointment_Manager": {
-      "ai_tool": [
-        [
-          {
-            "node": "Agent_Scheduling",
-            "type": "ai_tool",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Tool_List_Appointments": {
-      "ai_tool": [
-        [
-          {
-            "node": "Agent_Scheduling",
-            "type": "ai_tool",
-            "index": 0
-          }
-        ]
-      ]
-    },
     "Tool_Search_Patients": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agent_Scheduling",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tool_Appointment_Manager": {
       "ai_tool": [
         [
           {
@@ -247,9 +289,18 @@
           }
         ]
       ]
+    },
+    "Tool_List_Appointments": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agent_Scheduling",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
-  "tags": [
-    "Melosmile"
-  ]
+  "settings": {}
 }
