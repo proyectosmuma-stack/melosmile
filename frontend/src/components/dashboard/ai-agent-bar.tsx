@@ -497,9 +497,9 @@ export function AIAgentBar({ fullHeight = false }: { fullHeight?: boolean }) {
     setPrompt("");
 
     try {
-      // Build conversation history (last 10 real messages, excluding loading states)
+      // Build conversation history (last 10 real messages, excluding loading & static welcome greeting)
       const historySnapshot = messages
-        .filter((m) => !m.isLoading)
+        .filter((m) => !m.isLoading && !(m.role === "assistant" && m.text.includes("Hola 👋 Soy Musly")))
         .slice(-10)
         .map((m) => ({
           role: m.role,
