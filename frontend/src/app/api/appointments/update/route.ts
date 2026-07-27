@@ -123,7 +123,9 @@ const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12
 
 export async function POST(req: Request) {
   try {
-    const body = await req.json();
+    const url = new URL(req.url);
+    const searchParams = url.searchParams;
+    const body = await req.json().catch(() => ({}));
     const {
       appointment_id,
       id,
@@ -138,9 +140,11 @@ export async function POST(req: Request) {
       treatment_id,
       professional_id,
       clinic_id,
-      action,
+      action: bodyAction,
       delete_appointment,
     } = body;
+
+    const action = bodyAction || searchParams.get("action") || "";
 
     let targetId = (appointment_id || id || body.id || "").trim() || undefined;
     let rawPatient = (patient_id || patient_name || patient || body.paciente || "").trim() || undefined;
