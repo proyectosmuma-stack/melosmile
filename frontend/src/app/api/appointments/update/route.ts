@@ -140,11 +140,10 @@ export async function POST(req: Request) {
       treatment_id,
       professional_id,
       clinic_id,
-      action: bodyAction,
       delete_appointment,
     } = body;
 
-    const action = bodyAction || searchParams.get("action") || "";
+    const rawAction = String(body.action || body.action_type || searchParams.get("action") || "").trim();
 
     let targetId = (appointment_id || id || body.id || "").trim() || undefined;
     let rawPatient = (patient_id || patient_name || patient || body.paciente || "").trim() || undefined;
@@ -165,14 +164,17 @@ export async function POST(req: Request) {
     let resolvedPatientId = null;
 
     const isCreate =
-      action === "create" ||
+      rawAction === "create" ||
       body.create === true ||
-      String(action).toLowerCase().includes("crea") ||
-      String(action).toLowerCase().includes("agendar");
+      rawAction.toLowerCase().includes("crea") ||
+      rawAction.toLowerCase().includes("agendar");
 
     const isDelete =
-      action === "delete" ||
+      rawAction === "delete" ||
       delete_appointment === true ||
+      rawAction.toLowerCase().includes("delete") ||
+      rawAction.toLowerCase().includes("borrar") ||
+      rawAction.toLowerCase().includes("eliminar") ||
       String(status).toLowerCase().includes("delete") ||
       String(status).toLowerCase().includes("borrar") ||
       String(status).toLowerCase().includes("eliminar");
