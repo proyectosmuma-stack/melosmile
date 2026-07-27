@@ -206,6 +206,24 @@
       "retryOnFail": true,
       "maxTries": 2,
       "waitBetweenTries": 1000
+    },
+    {
+      "id": "http-create-1",
+      "name": "HTTP_Create_Appointment",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        750,
+        304
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://frontend-eight-dusky-42.vercel.app/api/appointments/update",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"action\": \"create\",\n  \"patient_name\": \"{{ $json.extracted_entities?.patient_name || 'Manuel Cardama' }}\",\n  \"appointment_date\": \"{{ $json.extracted_entities?.date || 'este viernes' }}\",\n  \"reason\": \"{{ $json.extracted_entities?.reason || 'control de ortodoncia' }}\",\n  \"clinic\": \"{{ $json.extracted_entities?.clinic || 'RyA' }}\"\n}",
+        "options": {}
+      }
     }
   ],
   "connections": {
@@ -292,6 +310,17 @@
           {
             "node": "Agent_Scheduling",
             "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agent_Scheduling": {
+      "main": [
+        [
+          {
+            "node": "HTTP_Create_Appointment",
+            "type": "main",
             "index": 0
           }
         ]
