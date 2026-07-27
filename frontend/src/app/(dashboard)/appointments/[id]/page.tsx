@@ -267,15 +267,37 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
         let parsedNotes = rawNotes;
 
         // Parse Procedures
-        const procMatch = rawNotes.match(/\[Procedimientos:\s*([\s\S]*?)\]/i);
-        if (procMatch) {
-          try {
-            const parsedProcs = JSON.parse(procMatch[1]);
-            setProcedures(parsedProcs);
-          } catch (e) {
-            console.warn("Could not parse procedures JSON from notes");
+        const procTagIndex = rawNotes.indexOf("[Procedimientos:");
+        if (procTagIndex !== -1) {
+          const contentAfter = rawNotes.substring(procTagIndex);
+          const jsonStart = contentAfter.indexOf("[", 15);
+          if (jsonStart !== -1) {
+            let depth = 0;
+            let jsonEnd = -1;
+            for (let i = jsonStart; i < contentAfter.length; i++) {
+              if (contentAfter[i] === "[") depth++;
+              else if (contentAfter[i] === "]") {
+                depth--;
+                if (depth === 0) {
+                  jsonEnd = i;
+                  break;
+                }
+              }
+            }
+            if (jsonEnd !== -1) {
+              const jsonStr = contentAfter.substring(jsonStart, jsonEnd + 1);
+              try {
+                const parsedProcs = JSON.parse(jsonStr);
+                if (Array.isArray(parsedProcs) && parsedProcs.length > 0) {
+                  setProcedures(parsedProcs);
+                }
+              } catch (e) {
+                console.warn("Could not parse procedures JSON from notes", e);
+              }
+            }
           }
-          parsedNotes = parsedNotes.replace(procMatch[0], "").trim();
+          const endBlockIndex = contentAfter.lastIndexOf("]");
+          parsedNotes = (rawNotes.substring(0, procTagIndex) + (endBlockIndex !== -1 ? contentAfter.substring(endBlockIndex + 1) : "")).trim();
         } else {
           setProcedures([
             {
