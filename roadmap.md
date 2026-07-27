@@ -115,3 +115,14 @@ Este documento establece el plan de desarrollo, hitos alcanzados y próximas fas
 - [x] **Resolución de Memoria de Sesión y Contexto Anafórico (Multiturno)**: Transmisión del historial conversacional completo en n8n Dispatcher, reescritura automática de peticiones relativas ("cambia esa cita"), mapeo robusto de parámetros (`patient_name`, `patient`, `date`, `time`) en `Tool_Update_Appointment` y resolución en backend Next.js.
 - [x] **Auditoría & Resolución Continua de `agent_log`**: Proceso activo de lectura, corrección de causas raíz y resolución de reportes de error en Supabase (`ai_agent_reports`).
 
+
+---
+
+## 🔧 Pendiente — Agente: Añadir Procedimientos a Citas Existentes
+
+- [ ] **Intención `add_procedure_to_appointment`**: El agente n8n actualmente solo soporta la creación de nuevas citas (`schedule_appointment`). Se debe añadir soporte para que el agente pueda añadir procedimientos adicionales a una cita ya existente sin sobrescribir los procedimientos anteriores.
+  - Detectar si existe una cita activa para el paciente en la fecha solicitada.
+  - Llamar a `POST /api/appointments/update` en lugar de `create`, haciendo append al array `[Procedimientos:]` en el campo `notes`.
+  - Mantener el `treatment_id` original intacto (solo añadir al array, no reemplazar el campo principal).
+  - Verificar en Supabase que todos los procedimientos anteriores siguen presentes tras el append.
+  - Registrado: `2026-07-27` durante pruebas de simulación con agente.
