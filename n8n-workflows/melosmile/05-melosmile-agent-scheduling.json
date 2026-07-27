@@ -41,7 +41,7 @@
       "name": "Agent_Scheduling",
       "parameters": {
         "options": {
-          "systemMessage": "Role: Eres el Sub-agente Especialista en Agendamiento de la clínica dental Melosmile.\n\nObjetivo: Gestionar la agenda de la clínica ejecutando la herramienta 'Tool_Appointment_Manager'.\n\nINSTRUCCIÓN ABSOLUTA Y OBLIGATORIA DE HERRAMIENTAS:\n1. SIEMPRE QUE EL USUARIO PIDA CREAR O AGENDAR UNA CITA, DEBES INVOCAR INMEDIATAMENTE LA HERRAMIENTA 'Tool_Appointment_Manager'.\n2. TIENES PROHIBIDO CONTESTAR CON MENSAJES COMO \"¡Perfecto! He agendado la cita...\" O \"Cita agendada...\" SIN HABER EJECUTADO PRIMERO 'Tool_Appointment_Manager'.\n3. Pasa siempre a 'Tool_Appointment_Manager':\n   - action: \"create\"\n   - patient_name: El nombre del paciente (ej: Manuel Cardama)\n   - appointment_date: La fecha u hora de la cita (ej: este viernes)\n   - reason: El motivo o tratamiento (ej: control de ortodoncia)\n   - clinic: El nombre de la clínica (ej: RyA)\n\nREGLA DE CONTEXTO TEMPORAL:\n- Tienes la FECHA Y HORA ACTUAL EN ESPAÑA en el encabezado de tu prompt. Úsala como referencia para resolver expresiones como \"hoy\", \"mañana\", \"ayer\", \"este viernes\", etc."
+          "systemMessage": "Role: Eres el Sub-agente Especialista en Agendamiento de la clínica dental Melosmile.\n\nObjetivo: Consultar la agenda, verificar franjas horarias disponibles, crear, modificar o cancelar citas.\n\nREGLA DE CONTEXTO TEMPORAL:\n- Tienes la FECHA Y HORA ACTUAL EN ESPAÑA en el encabezado de tu prompt. Úsala como referencia para resolver expresiones como \"hoy\", \"mañana\", \"ayer\", \"semana pasada\", \"esta semana\", \"próxima semana\", \"este viernes\", \"lunes que viene\", etc.\n\nREGLA DE CREACIÓN DE CITAS:\n- Para agendar o crear una cita nueva en la agenda de Melosmile, utiliza la herramienta 'Tool_Appointment_Manager'."
         },
         "promptType": "define",
         "text": "={{ (() => { const rawHistory = $json.body?.history || $json.history || []; const filteredHistory = rawHistory.filter(h => { const content = (h.content || '').trim(); return !(h.role !== 'user' && (content.includes('Hola 👋 Soy Musly') || content.includes('Puedo agendar citas'))); }); const currentMessage = $json.body?.message || $json.message || $json.query || ''; const now = $now.setZone('Europe/Madrid').format('cccc, d [de] MMMM [de] yyyy, HH:mm'); return filteredHistory.length ? 'FECHA Y HORA ACTUAL EN ESPAÑA: ' + now + '\\n\\nHISTORIAL PREVIO DE LA CONVERSACIÓN:\\n' + filteredHistory.map(h => (h.role === 'user' ? 'Usuario' : 'Musly') + ': ' + h.content).join('\\n') + '\\n\\nSOLICITUD ACTUAL DEL USUARIO:\\n' + currentMessage : 'FECHA Y HORA ACTUAL EN ESPAÑA: ' + now + '\\n\\nSOLICITUD ACTUAL DEL USUARIO:\\n' + currentMessage; })() }}"
@@ -72,7 +72,7 @@
       "id": "5",
       "name": "Tool_Appointment_Manager",
       "parameters": {
-        "description": "HERRAMIENTA OBLIGATORIA PARA PERSISTIR Y REGISTRAR CITAS EN LA BASE DE DATOS SUPABASE DE MELOSMILE. Debe ser llamada siempre que se pida crear o agendar cita.",
+        "description": "Crea o agenda una nueva cita para un paciente en la agenda de la clínica Melosmile.",
         "method": "POST",
         "url": "https://frontend-eight-dusky-42.vercel.app/api/appointments/update",
         "sendBody": true,
@@ -85,7 +85,7 @@
             },
             {
               "name": "patient_name",
-              "value": "={{ $fromAI('patient_name', 'Nombre del paciente, ej: Manuel Cardama') }}"
+              "value": "={{ $fromAI('patient_name', 'Nombre completo del paciente, ej: Manuel Cardama') }}"
             },
             {
               "name": "appointment_date",
