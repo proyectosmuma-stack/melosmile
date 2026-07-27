@@ -142,10 +142,18 @@ export async function POST(req: Request) {
       delete_appointment,
     } = body;
 
-    let targetId = appointment_id || id;
-    let rawPatient = patient_id || patient_name || patient;
-    let timeStr = body.time || body.new_time || body.appointment_time || "";
-    let rawDateStr = appointment_date || date || body.new_date || body.day || "";
+    let targetId = (appointment_id || id || body.id || "").trim() || undefined;
+    let rawPatient = (patient_id || patient_name || patient || body.paciente || "").trim() || undefined;
+
+    const findFirstNonEmpty = (...vals: (any)[]) => {
+      for (const v of vals) {
+        if (v && String(v).trim().length > 0) return String(v).trim();
+      }
+      return "";
+    };
+
+    let rawDateStr = findFirstNonEmpty(appointment_date, date, body.new_date, body.day, body.fecha);
+    let timeStr = findFirstNonEmpty(body.time, body.new_time, body.appointment_time, body.hora);
     let rawDate = (rawDateStr + " " + timeStr).trim() || rawDateStr;
     let resolvedPatientId = null;
 
