@@ -1,3 +1,4 @@
+// Force Vercel deployment refresh: 2026-07-27T00:54:50
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
