@@ -144,6 +144,9 @@ export async function POST(req: Request) {
 
     let targetId = (appointment_id || id || body.id || "").trim() || undefined;
     let rawPatient = (patient_id || patient_name || patient || body.paciente || "").trim() || undefined;
+    let rawClinic = (clinic_id || body.clinic || body.sede || body.clinic_name || "").trim() || undefined;
+    let rawReason = (reason || body.reason || body.treatment || body.motivo || "").trim() || undefined;
+    let rawDoctor = (professional_id || body.doctor || body.professional || "").trim() || undefined;
 
     const findFirstNonEmpty = (...vals: (any)[]) => {
       for (const v of vals) {
@@ -231,11 +234,11 @@ export async function POST(req: Request) {
 
       // Resolve clinic
       let c_id = clinic_id;
-      if (clinic && (!c_id || !UUID_REGEX.test(c_id))) {
+      if (rawClinic && (!c_id || !UUID_REGEX.test(c_id))) {
         const { data: matchedClinic } = await dbClient
           .from("clinics")
           .select("id")
-          .or(`name.ilike.%${clinic}%,address.ilike.%${clinic}%`)
+          .or(`name.ilike.%${rawClinic}%,address.ilike.%${rawClinic}%`)
           .limit(1)
           .maybeSingle();
         if (matchedClinic) c_id = matchedClinic.id;
@@ -259,12 +262,12 @@ export async function POST(req: Request) {
 
       // Match treatment & price
       let t_id: string | null = null;
-      let finalReason = reason || "Consulta General";
+      let finalReason = rawReason || "Consulta General";
       let matchedPrice = 0;
       let matchedLabCost = 0;
 
-      if (reason && typeof reason === "string") {
-        const rawClean = reason.trim();
+      if (rawReason && typeof rawReason === "string") {
+        const rawClean = rawReason.trim();
         const { data: exactMatch } = await dbClient
           .from("treatments")
           .select("id, service_name, default_price, lab_cost")
@@ -324,8 +327,8 @@ export async function POST(req: Request) {
         },
       ];
 
-      let initialNotes = clinic
-        ? `Agendada por Asistente IA (${clinic})`
+      let initialNotes = rawClinic
+        ? `Agendada por Asistente IA (${rawClinic})`
         : "Agendada por Asistente IA";
       initialNotes += `\n[Procedimientos: ${JSON.stringify(initialProcedures)}]`;
 

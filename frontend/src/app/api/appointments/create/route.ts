@@ -86,7 +86,7 @@ export async function POST(req: Request) {
         ])
         .join(",");
 
-      const { data: found } = await (supabaseAdmin as any)
+      const { data: found } = await supabaseAdmin
         .from("patients")
         .select("id")
         .or(orConditions)
@@ -102,7 +102,7 @@ export async function POST(req: Request) {
         const lastName = parts.slice(1).join(" ") || "General";
         const generatedHistoriaId = `PAC-${Math.floor(1000 + Math.random() * 9000)}`;
 
-        const { data: created, error: createErr } = await (supabaseAdmin as any)
+        const { data: created, error: createErr } = await supabaseAdmin
           .from("patients")
           .insert({
             first_name: firstName,
@@ -116,7 +116,7 @@ export async function POST(req: Request) {
           .single();
 
         if (createErr || !created) {
-          const { data: fallback } = await (supabaseAdmin as any).from("patients").select("id").limit(1).single();
+          const { data: fallback } = await supabaseAdmin.from("patients").select("id").limit(1).single();
           resolvedPatientId = fallback?.id;
         } else {
           resolvedPatientId = created.id;
@@ -128,7 +128,7 @@ export async function POST(req: Request) {
     let p_id = body.professional_id;
 
     if (rawClinic && (!c_id || !UUID_REGEX.test(c_id))) {
-      const { data: matchedClinic } = await (supabaseAdmin as any)
+      const { data: matchedClinic } = await supabaseAdmin
         .from("clinics")
         .select("id")
         .or(`name.ilike.%${rawClinic}%,address.ilike.%${rawClinic}%`)
@@ -138,7 +138,7 @@ export async function POST(req: Request) {
     }
 
     if (!c_id || !UUID_REGEX.test(c_id)) {
-      const { data: clinics } = await (supabaseAdmin as any).from("clinics").select("id").limit(1).single();
+      const { data: clinics } = await supabaseAdmin.from("clinics").select("id").limit(1).single();
       if (clinics) c_id = clinics.id;
     }
 
@@ -146,7 +146,7 @@ export async function POST(req: Request) {
     if (rawDoctor && UUID_REGEX.test(rawDoctor)) {
       p_id = rawDoctor;
     } else if (rawDoctor && typeof rawDoctor === "string" && rawDoctor.trim().length > 0) {
-      const { data: matchedDoctor } = await (supabaseAdmin as any)
+      const { data: matchedDoctor } = await supabaseAdmin
         .from("professionals")
         .select("id")
         .or(`first_name.ilike.%${rawDoctor}%,last_name.ilike.%${rawDoctor}%`)
@@ -156,7 +156,7 @@ export async function POST(req: Request) {
     }
 
     if (!p_id || !UUID_REGEX.test(p_id)) {
-      const { data: osly } = await (supabaseAdmin as any)
+      const { data: osly } = await supabaseAdmin
         .from("professionals")
         .select("id")
         .or("first_name.ilike.%Osly%,last_name.ilike.%Melo%")
@@ -166,7 +166,7 @@ export async function POST(req: Request) {
       if (osly) {
         p_id = osly.id;
       } else {
-        const { data: profs } = await (supabaseAdmin as any).from("professionals").select("id").limit(1).single();
+        const { data: profs } = await supabaseAdmin.from("professionals").select("id").limit(1).single();
         if (profs) p_id = profs.id;
       }
     }
@@ -181,7 +181,7 @@ export async function POST(req: Request) {
       const rawClean = rawReason.trim();
       
       // 1. Try exact match first
-      const { data: exactMatch } = await (supabaseAdmin as any)
+      const { data: exactMatch } = await supabaseAdmin
         .from("treatments")
         .select("id, service_name, default_price, lab_cost")
         .ilike("service_name", rawClean)
@@ -206,7 +206,7 @@ export async function POST(req: Request) {
             .flatMap((t) => [`service_name.ilike.%${t}%`, `abbreviation.ilike.%${t}%`])
             .join(",");
 
-          const { data: fuzzyMatch } = await (supabaseAdmin as any)
+          const { data: fuzzyMatch } = await supabaseAdmin
             .from("treatments")
             .select("id, service_name, default_price, lab_cost")
             .or(orConditions)
@@ -247,7 +247,7 @@ export async function POST(req: Request) {
       : "Agendada por Asistente IA";
     initialNotes += `\n[Procedimientos: ${JSON.stringify(initialProcedures)}]`;
 
-    const { data, error } = await (supabaseAdmin as any)
+    const { data, error } = await supabaseAdmin
       .from("appointments")
       .insert({
         patient_id: resolvedPatientId,
