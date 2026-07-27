@@ -72,12 +72,12 @@
       "id": "5",
       "name": "Tool_Appointment_Manager",
       "parameters": {
-        "description": "Crea o agenda una nueva cita para un paciente en la agenda de Melosmile",
+        "description": "Crea o agende una nueva cita para un paciente en la agenda de Melosmile",
         "method": "POST",
-        "url": "https://frontend-eight-dusky-42.vercel.app/api/appointments/create",
+        "url": "https://frontend-eight-dusky-42.vercel.app/api/appointments/update",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"patient_name\": \"{{ $fromAI('patient_name', 'Nombre completo del paciente') }}\",\n  \"appointment_date\": \"{{ $fromAI('appointment_date', 'Fecha y hora de la cita, ej: este viernes') }}\",\n  \"reason\": \"{{ $fromAI('reason', 'Motivo o tratamiento de la cita, ej: control de ortodoncia') }}\",\n  \"clinic\": \"{{ $fromAI('clinic', 'Nombre de la clínica, ej: RyA') }}\"\n}"
+        "jsonBody": "={\n  \"action\": \"create\",\n  \"patient_name\": \"{{ $fromAI('patient_name', 'Nombre completo del paciente') }}\",\n  \"appointment_date\": \"{{ $fromAI('appointment_date', 'Fecha y hora de la cita, ej: este viernes') }}\",\n  \"reason\": \"{{ $fromAI('reason', 'Motivo o tratamiento de la cita, ej: control de ortodoncia') }}\",\n  \"clinic\": \"{{ $fromAI('clinic', 'Nombre de la clínica, ej: RyA') }}\"\n}"
       },
       "position": [
         660,
