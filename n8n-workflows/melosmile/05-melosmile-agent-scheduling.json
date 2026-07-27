@@ -72,17 +72,13 @@
       "id": "5",
       "name": "Tool_Appointment_Manager",
       "parameters": {
-        "description": "HERRAMIENTA OBLIGATORIA para crear, agendar o registrar cualquier nueva cita en la agenda de la clínica Melosmile.",
+        "description": "Crea o agende una nueva cita para un paciente en la agenda de Melosmile",
         "method": "POST",
-        "url": "https://frontend-eight-dusky-42.vercel.app/api/appointments/update",
+        "url": "https://frontend-eight-dusky-42.vercel.app/api/appointments/update?action=create",
         "sendBody": true,
         "specifyBody": "keypair",
         "bodyParameters": {
           "parameters": [
-            {
-              "name": "action",
-              "value": "create"
-            },
             {
               "name": "patient_name",
               "value": "={{ $fromAI('patient_name', 'Nombre completo del paciente') }}"
