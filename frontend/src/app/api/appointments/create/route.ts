@@ -1,8 +1,11 @@
 import { NextResponse } from "next/server";
-import { supabase } from "@/lib/supabase/client";
 import { createClient } from "@supabase/supabase-js";
 
-// Vercel deployment trigger fix for appointments create route
+const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL || "https://amhfdzfcmpastmlsosou.supabase.co",
+  process.env.SUPABASE_SERVICE_ROLE_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFtaGZkemZjbXBhc3RtbHNvc291Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NDczNTM3NCwiZXhwIjoyMTAwMzExMzc0fQ.yPLQaV1xbfnuJJcNktxqbneP9Yb5UGlWfXA1tKYx6ZM"
+);
+
 function parseAppointmentDate(inputDate?: string, inputTime?: string): string {
   let combined = inputDate || "";
   if (inputTime && !combined.includes(inputTime)) {
@@ -80,7 +83,7 @@ export async function POST(req: Request) {
         ])
         .join(",");
 
-      const { data: found } = await (supabase as any)
+      const { data: found } = await (supabaseAdmin as any)
         .from("patients")
         .select("id")
         .or(orConditions)
@@ -96,7 +99,7 @@ export async function POST(req: Request) {
         const lastName = parts.slice(1).join(" ") || "General";
         const generatedHistoriaId = `PAC-${Math.floor(1000 + Math.random() * 9000)}`;
 
-        const { data: created, error: createErr } = await (supabase as any)
+        const { data: created, error: createErr } = await (supabaseAdmin as any)
           .from("patients")
           .insert({
             first_name: firstName,
@@ -110,7 +113,7 @@ export async function POST(req: Request) {
           .single();
 
         if (createErr || !created) {
-          const { data: fallback } = await (supabase as any).from("patients").select("id").limit(1).single();
+          const { data: fallback } = await (supabaseAdmin as any).from("patients").select("id").limit(1).single();
           resolvedPatientId = fallback?.id;
         } else {
           resolvedPatientId = created.id;
@@ -122,7 +125,7 @@ export async function POST(req: Request) {
     let p_id = body.professional_id;
 
     if (rawClinic && (!c_id || !UUID_REGEX.test(c_id))) {
-      const { data: matchedClinic } = await (supabase as any)
+      const { data: matchedClinic } = await (supabaseAdmin as any)
         .from("clinics")
         .select("id")
         .or(`name.ilike.%${rawClinic}%,address.ilike.%${rawClinic}%`)
@@ -132,7 +135,7 @@ export async function POST(req: Request) {
     }
 
     if (!c_id || !UUID_REGEX.test(c_id)) {
-      const { data: clinics } = await (supabase as any).from("clinics").select("id").limit(1).single();
+      const { data: clinics } = await (supabaseAdmin as any).from("clinics").select("id").limit(1).single();
       if (clinics) c_id = clinics.id;
     }
 
@@ -140,7 +143,7 @@ export async function POST(req: Request) {
     if (rawDoctor && UUID_REGEX.test(rawDoctor)) {
       p_id = rawDoctor;
     } else if (rawDoctor && typeof rawDoctor === "string" && rawDoctor.trim().length > 0) {
-      const { data: matchedDoctor } = await (supabase as any)
+      const { data: matchedDoctor } = await (supabaseAdmin as any)
         .from("professionals")
         .select("id")
         .or(`first_name.ilike.%${rawDoctor}%,last_name.ilike.%${rawDoctor}%`)
@@ -150,7 +153,7 @@ export async function POST(req: Request) {
     }
 
     if (!p_id || !UUID_REGEX.test(p_id)) {
-      const { data: osly } = await (supabase as any)
+      const { data: osly } = await (supabaseAdmin as any)
         .from("professionals")
         .select("id")
         .or("first_name.ilike.%Osly%,last_name.ilike.%Melo%")
@@ -160,7 +163,7 @@ export async function POST(req: Request) {
       if (osly) {
         p_id = osly.id;
       } else {
-        const { data: profs } = await (supabase as any).from("professionals").select("id").limit(1).single();
+        const { data: profs } = await (supabaseAdmin as any).from("professionals").select("id").limit(1).single();
         if (profs) p_id = profs.id;
       }
     }
@@ -175,7 +178,7 @@ export async function POST(req: Request) {
       const rawClean = rawReason.trim();
       
       // 1. Try exact match first
-      const { data: exactMatch } = await (supabase as any)
+      const { data: exactMatch } = await (supabaseAdmin as any)
         .from("treatments")
         .select("id, service_name, default_price, lab_cost")
         .ilike("service_name", rawClean)
@@ -200,7 +203,7 @@ export async function POST(req: Request) {
             .flatMap((t) => [`service_name.ilike.%${t}%`, `abbreviation.ilike.%${t}%`])
             .join(",");
 
-          const { data: fuzzyMatch } = await (supabase as any)
+          const { data: fuzzyMatch } = await (supabaseAdmin as any)
             .from("treatments")
             .select("id, service_name, default_price, lab_cost")
             .or(orConditions)
@@ -241,7 +244,7 @@ export async function POST(req: Request) {
       : "Agendada por Asistente IA";
     initialNotes += `\n[Procedimientos: ${JSON.stringify(initialProcedures)}]`;
 
-    const { data, error } = await (supabase as any)
+    const { data, error } = await (supabaseAdmin as any)
       .from("appointments")
       .insert({
         patient_id: resolvedPatientId,
@@ -262,7 +265,7 @@ export async function POST(req: Request) {
     if (data?.id) {
       try {
         const netTotal = matchedPrice * 0.6 - matchedLabCost * 0.5;
-        await (supabase as any).from("billing_records").insert({
+        await (supabaseAdmin as any).from("billing_records").insert({
           appointment_id: data.id,
           custom_price: matchedPrice,
           applied_commission_rate: 60,
