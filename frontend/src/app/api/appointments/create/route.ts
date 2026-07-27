@@ -256,18 +256,22 @@ export async function POST(req: Request) {
 
     if (error) throw error;
 
-    // Create billing record asynchronously so price & lab cost are immediately available
+    // Create billing record so price & lab cost are immediately available
     if (data?.id) {
-      const netTotal = matchedPrice * 0.6 - matchedLabCost * 0.5;
-      await (supabase as any).from("billing_records").insert({
-        appointment_id: data.id,
-        custom_price: matchedPrice,
-        applied_commission_rate: 60,
-        applied_lab_discount_rate: 50,
-        calculated_total: netTotal,
-        billing_month: isoDate.substring(0, 10),
-        status: "Pendiente",
-      }).catch((bErr: any) => console.warn("Billing record insert notice:", bErr));
+      try {
+        const netTotal = matchedPrice * 0.6 - matchedLabCost * 0.5;
+        await (supabase as any).from("billing_records").insert({
+          appointment_id: data.id,
+          custom_price: matchedPrice,
+          applied_commission_rate: 60,
+          applied_lab_discount_rate: 50,
+          calculated_total: netTotal,
+          billing_month: isoDate.substring(0, 10),
+          status: "Pendiente",
+        });
+      } catch (bErr: any) {
+        console.warn("Billing record insert notice:", bErr);
+      }
     }
 
     return NextResponse.json({ success: true, data });
