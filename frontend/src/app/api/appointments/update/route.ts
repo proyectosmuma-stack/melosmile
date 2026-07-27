@@ -529,7 +529,7 @@ export async function POST(req: Request) {
           {
             patient_name: rawPatient,
             appointment_date: mockUpdatedDate,
-            status: updates.status || "Confirmada",
+            status: updates.status || "Pendiente",
             notes: updates.notes || "Actualizado por Musly AI Assistant"
           }
         ]
