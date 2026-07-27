@@ -64,9 +64,10 @@ melosmile/
 │       └── 20260722000003_tags_schema.sql     # Esquema etiquetas pacientes
 ├── n8n-workflows/
 │   └── melosmile/
-│       ├── 01-melosmile-ai-conversational-agent.json
-│       ├── 02-melosmile-imap-email-watcher.json
-│       └── 03-melosmile-ai-dispatcher.json
+│       ├── 04-melosmile-ai-dispatcher-v2.json   # Dispatcher principal (Yv9X1EGUvQg8qErW)
+│       ├── 05-melosmile-agent-scheduling.json   # Sub-agente Agendamiento (jTWHg9bHaNOdzL13)
+│       ├── 06-melosmile-agent-clinical.json     # Sub-agente Clínico (Qn0Sj0gq2T55YlXk)
+│       └── 07-melosmile-agent-general.json      # Sub-agente General / FAQs (MIok0ruU7JhpTxWv)
 └── frontend/
     ├── package.json
     ├── .env.local                   # Credenciales Supabase, Odoo, VPS, n8n
