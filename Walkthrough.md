@@ -36,7 +36,38 @@ Este documento es el **Walkthrough Maestro del Proyecto**, donde se acumula la t
 
 ---
 
-### Sesión Actual: Sistema de Aprendizaje Dinámico Autónomo, Regla Anti-Alucinación & RLS Fixes
+### Sesión Actual: Arquitectura Dispatcher 7-Pasos, Sub-Agente General, Desambiguación de Identidad & Verificación Supabase
+
+#### Fecha: 2026-07-27
+
+#### 1. Rediseño Completo de Arquitectura Multi-Agente n8n
+- **Sub-Agente General (FAQs) [`07-melosmile-agent-general.json`]**: Creado y activado el 4º sub-agente (`MIok0ruU7JhpTxWv`). Responde preguntas sobre horarios de sedes (Goya, Albacete, Las Rozas), ubicaciones, servicios ofrecidos y precios orientativos.
+- **Configuración Determinista (`temperature: 0`)**: Aplicado `temperature: 0` en los nodos de modelo OpenRouter del Dispatcher y todos los sub-agentes para enrutamiento consistente.
+- **Tolerancia a Fallos en Herramientas (`Retry on Fail`)**: Activado `retryOnFail: true` (2 intentos, 1000ms de espera) en todos los nodos de herramientas `toolWorkflow`.
+- **Estructuración de Fallback JSON (`Parse_AI_Response`)**: Corregido el bloque `catch` del nodo Code para retornar siempre `status: "error"` válido ante respuestas inesperadas.
+- **Payload Nativo `specifyBody: "keypair"`**: Configurado el envío de parámetros en formato `keypair` en `Tool_Update_Appointment` y `Tool_Appointment_Manager` en n8n para evitar errores de escape JSON.
+
+#### 2. Optimización de Tokens, Memoria de Sesión & Desambiguación de Identidad
+- **Filtro de Saludo Estático de UI**: El mensaje de bienvenida (`"Hola 👋 Soy Musly..."`) se filtra en el Frontend (`historySnapshot` en `ai-agent-bar.tsx`) y en la expresión `text` de n8n, ahorrando ~45 tokens por turno.
+- **Regla Crítica de Identidad de Paciente**: Inyectada instrucción obligatoria en `Dispatcher_AI_Agent` y `Agent_Scheduling` para desambiguar a la persona que realiza la consulta (ej. *"Dra. Osly Melo"*) del paciente real de la cita (ej. *"Test General"* o *"Munir Manuel Callaos Cardama"*).
+- **Regla de Transferencia Explicita al Sub-Agente en Dispatcher**: Al recibir peticiones anafóricas ("cambia esa cita"), `Dispatcher_AI_Agent` reescribe el prompt transferido al sub-agente e incluye explícitamente el nombre del paciente (`patient_name: "Test General"`) y clínica de la cita previa del historial.
+- **Regla de Acción e Invocación Inmediata en Agendamiento**: `Agent_Scheduling` ejecuta inmediatamente la herramienta `Tool_Update_Appointment` en el primer turno sin devolver mensajes descriptivos preliminares ("Se ha solicitado...").
+
+#### 3. Nodo `Tool_List_Appointments`, `Tool_Update_Appointment` & Backend Fixes
+- **Parsing de Días en Español & Horas (`parseAppointmentDate`)**: Corregida en `/api/appointments/update/route.ts` la resolución de días en español (`miércoles`, `lunes`, `martes`, etc.) aislando las horas para evitar colisiones con el día del mes.
+- **Esquema Unificado keypair**: Mapeados exactamente 3 parámetros (`patient_name`, `appointment_date`, `clinic`) en `Tool_Update_Appointment` para evitar valores vacíos producidos por llaves duplicadas.
+
+#### 4. Verificación Directa contra Supabase Ground Truth
+- **Verificación DB Directa**: Auditada la tabla `appointments` en Supabase Cloud vía SDK `SUPABASE_SERVICE_ROLE_KEY`.
+- **Restauración de Citas de Munir**: Restablecida la cita de Munir Manuel Callaos Cardama a su fecha original (**Viernes 24 de Julio de 2026 a las 16:30**).
+- **Prueba End-to-End Conversacional Verificada contra DB**:
+  - *Turno 1*: `"¿Qué agenda tuviste la semana pasada?"` $\rightarrow$ Retorna citas de Munir (24/07) ✅ (**100% coincidencia Supabase DB**).
+  - *Turno 2*: `"¿Qué agenda tienes esta semana?"` $\rightarrow$ Retorna cita de Test General para Martes 28/07 ✅ (**100% coincidencia Supabase DB**).
+  - *Turno 3*: `"cambia esa cita para el miércoles a las 13:00"` $\rightarrow$ Reagenda en tiempo real la cita de Test General al **Miércoles 29 de Julio a las 13:00** en Supabase DB ✅ (**100% coincidencia Supabase DB**).
+
+---
+
+### Sesión Anterior: Sistema de Aprendizaje Dinámico Autónomo, Regla Anti-Alucinación & RLS Fixes
 
 #### Fecha: 2026-07-24
 
