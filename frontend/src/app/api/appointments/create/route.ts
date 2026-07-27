@@ -268,7 +268,7 @@ export async function POST(req: Request) {
     if (data?.id) {
       try {
         const netTotal = matchedPrice * 0.6 - matchedLabCost * 0.5;
-        await (supabaseAdmin as any).from("billing_records").insert({
+        await supabaseAdmin.from("billing_records").insert({
           appointment_id: data.id,
           custom_price: matchedPrice,
           applied_commission_rate: 60,
@@ -276,7 +276,7 @@ export async function POST(req: Request) {
           calculated_total: netTotal,
           billing_month: isoDate.substring(0, 10),
           status: "Pendiente",
-        });
+        }).select();
       } catch (bErr: any) {
         console.warn("Billing record insert notice:", bErr);
       }

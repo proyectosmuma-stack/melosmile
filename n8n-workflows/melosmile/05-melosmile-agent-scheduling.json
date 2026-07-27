@@ -74,15 +74,11 @@
       "parameters": {
         "description": "Crea o agenda una nueva cita para un paciente",
         "method": "POST",
-        "url": "https://frontend-eight-dusky-42.vercel.app/api/appointments/update",
+        "url": "https://frontend-eight-dusky-42.vercel.app/api/appointments/create",
         "sendBody": true,
         "specifyBody": "keypair",
         "bodyParameters": {
           "parameters": [
-            {
-              "name": "action",
-              "value": "create"
-            },
             {
               "name": "patient_name",
               "value": "={{ $fromAI('patient_name', 'Nombre completo del paciente') }}"
