@@ -290,9 +290,40 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
                 const parsedProcs = JSON.parse(jsonStr);
                 if (Array.isArray(parsedProcs) && parsedProcs.length > 0) {
                   setProcedures(parsedProcs);
+                } else {
+                  setProcedures([
+                    {
+                      id: Date.now().toString(),
+                      treatmentId: matchedTreatmentId,
+                      serviceName: matchedTreatment ? matchedTreatment.service_name : (loadedAppt.reason || "Consulta General"),
+                      toothRef: "",
+                      dbPrice: defaultPrice,
+                      dbCommission: loadedAppt.customCommission || 60,
+                      dbLabCost: defaultLabCost,
+                      overridePrice: null,
+                      overrideCommission: null,
+                      overrideLabCost: null,
+                      showOverride: false,
+                    },
+                  ]);
                 }
               } catch (e) {
                 console.warn("Could not parse procedures JSON from notes", e);
+                setProcedures([
+                  {
+                    id: Date.now().toString(),
+                    treatmentId: matchedTreatmentId,
+                    serviceName: matchedTreatment ? matchedTreatment.service_name : (loadedAppt.reason || "Consulta General"),
+                    toothRef: "",
+                    dbPrice: defaultPrice,
+                    dbCommission: loadedAppt.customCommission || 60,
+                    dbLabCost: defaultLabCost,
+                    overridePrice: null,
+                    overrideCommission: null,
+                    overrideLabCost: null,
+                    showOverride: false,
+                  },
+                ]);
               }
             }
           }
