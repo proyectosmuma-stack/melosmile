@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase/client";
+import { createClient } from "@supabase/supabase-js";
 
+// Vercel deployment trigger fix for appointments create route
 function parseAppointmentDate(inputDate?: string, inputTime?: string): string {
   let combined = inputDate || "";
   if (inputTime && !combined.includes(inputTime)) {
