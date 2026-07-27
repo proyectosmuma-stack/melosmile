@@ -98,6 +98,19 @@ Este documento establece el plan de desarrollo, hitos alcanzados y próximas fas
 - [x] **Borrado Físico (HARD DELETE) & Filtro Inteligente de Agenda**:
   - Endpoint `/api/appointments/update` soporta `action: "delete"` para eliminar citas físicamente de la base de datos a petición del usuario.
   - Endpoint `/api/appointments/list` excluye automáticamente citas canceladas por defecto para mantener la agenda diaria/semanal limpia.
+
+---
+
+## 🛡️ Fase 7: Arquitectura Dispatcher 7-Pasos, Sub-Agente General, Desambiguación de Identidad & Verificación Supabase (COMPLETADO)
+- [x] **Sub-Agente General de FAQs (`07-melosmile-agent-general.json`)**: Implementado y activado el 4º sub-agente (`MIok0ruU7JhpTxWv`) para consultas de horarios de sedes (Goya, Albacete, Las Rozas), ubicaciones, servicios ofrecidos y precios orientativos.
+- [x] **Temperatura Determinista 0 & Retry en Herramientas**: Configurado `temperature: 0` en OpenRouter Chat Model y `retryOnFail` (2 intentos) en todas las llamadas `toolWorkflow`.
+- [x] **Filtro de Tokens Estáticos**: Exclusión del saludo de bienvenida inicial (`"Hola 👋 Soy Musly..."`) en Frontend (`historySnapshot`) y n8n para reducir el consumo innecesario de tokens.
+- [x] **Regla Crítica de Identidad de Paciente & Corrección de Seguimiento**: Desambiguación estricta entre la persona que consulta (ej. *"Dra. Osly Melo"*) y el paciente real de la cita (`patient_name`), con reutilización de contexto en mensajes de seguimiento cortos.
+- [x] **Verificación Nativa & Restauración Supabase**:
+  - Auditada la tabla `appointments` vía SDK Supabase (`SUPABASE_SERVICE_ROLE_KEY`).
+  - Restablecida la cita de Munir Manuel Callaos Cardama a su fecha original (**Viernes 24 de Julio de 2026 a las 16:30**).
+  - Evaluada la cita de Test General (**Martes 28 de Julio de 2026 a las 13:00 / 15:00**).
+  - Verificada la prueba conversacional en 4 turnos comparada 100% contra el estado real de Supabase.
   - Herramienta `Tool_Update_Appointment` en n8n desplegada con soporte para modificación y borrado físico.
 - [x] **Resolución de Memoria de Sesión y Contexto Anafórico (Multiturno)**: Transmisión del historial conversacional completo en n8n Dispatcher, reescritura automática de peticiones relativas ("cambia esa cita"), mapeo robusto de parámetros (`patient_name`, `patient`, `date`, `time`) en `Tool_Update_Appointment` y resolución en backend Next.js.
 - [x] **Auditoría & Resolución Continua de `agent_log`**: Proceso activo de lectura, corrección de causas raíz y resolución de reportes de error en Supabase (`ai_agent_reports`).
