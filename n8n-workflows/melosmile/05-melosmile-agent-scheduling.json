@@ -175,8 +175,23 @@
         "method": "POST",
         "url": "https://frontend-eight-dusky-42.vercel.app/api/appointments/update",
         "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={\n  \"patient_name\": \"{{ $fromAI('patient_name', 'Nombre del paciente exacto de la cita a modificar, ej: Test General') }}\",\n  \"appointment_date\": \"{{ $fromAI('appointment_date', 'Nueva fecha y hora para la cita, ej: 2026-07-29 13:00 o miércoles 29 de julio a las 13:00') }}\",\n  \"clinic\": \"{{ $fromAI('clinic', 'Nombre de la clínica si fue mencionada, ej: Clínica Goya') }}\"\n}"
+        "specifyBody": "keypair",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "patient_name",
+              "value": "={{ $fromAI('patient_name', 'Nombre del paciente de la cita a modificar, ej: Test General') }}"
+            },
+            {
+              "name": "appointment_date",
+              "value": "={{ $fromAI('appointment_date', 'Nueva fecha u hora para la cita, ej: miércoles 29 de julio a las 13:00') }}"
+            },
+            {
+              "name": "clinic",
+              "value": "={{ $fromAI('clinic', 'Nombre de la clínica') }}"
+            }
+          ]
+        }
       },
       "position": [
         120,
