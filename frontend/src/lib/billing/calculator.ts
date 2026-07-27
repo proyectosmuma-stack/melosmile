@@ -24,6 +24,9 @@ export interface RawLineInput {
   payment_status?: 'pending' | 'paid' | 'partial' | 'not_tracked';
   payment_amount?: number;
   sort_order?: number;
+  appointment_id?: string;
+  procedure_index?: number;
+  source_type?: 'appointment' | 'manual' | 'excel_import';
 }
 
 export interface ProcessedBillingLine {
@@ -70,6 +73,9 @@ export interface ProcessedBillingLine {
   price_deviation_pct: number;
   payment_status: 'pending' | 'paid' | 'partial' | 'not_tracked';
   payment_amount: number;
+  appointment_id?: string;
+  procedure_index: number;
+  source_type: 'appointment' | 'manual' | 'excel_import';
 }
 
 export interface SessionTotals {
@@ -358,7 +364,10 @@ export function processBillingLine(
     catalog_price,
     price_deviation_pct,
     payment_status: input.payment_status || 'not_tracked',
-    payment_amount: input.payment_amount ?? 0
+    payment_amount: input.payment_amount ?? 0,
+    appointment_id: input.appointment_id,
+    procedure_index: input.procedure_index || 0,
+    source_type: input.source_type || 'manual'
   };
 }
 

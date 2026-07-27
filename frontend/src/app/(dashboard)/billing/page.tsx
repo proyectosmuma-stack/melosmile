@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { 
   Receipt, 
   Plus, 
@@ -57,6 +58,8 @@ export default function BillingHubPage() {
   const [clinics, setClinics] = useState<Clinic[]>([]);
   const [sessions, setSessions] = useState<BillingSession[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [isGenerating, setIsGenerating] = useState<string | null>(null); // track generating state by clinic-month
+  const router = useRouter();
 
   // Fetch Clinics & Sessions
   useEffect(() => {
@@ -111,6 +114,29 @@ export default function BillingHubPage() {
         return <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-300">⚪ Borrador</span>;
       default:
         return null;
+    }
+  };
+
+  const handleGenerateSession = async (clinicId: string, month: number) => {
+    setIsGenerating(`${clinicId}-${month}`);
+    try {
+      const res = await fetch(`/api/billing/sessions/generate?clinic_id=${clinicId}&month=${month}&year=${selectedYear}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.session_id) {
+          router.push(`/billing/${data.session_id}`);
+        } else {
+          alert('No se pudo generar la sesión: ' + (data.error || 'Error desconocido'));
+        }
+      } else {
+        const errData = await res.json();
+        alert('Error: ' + errData.error);
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error de conexión');
+    } finally {
+      setIsGenerating(null);
     }
   };
 
@@ -319,15 +345,26 @@ export default function BillingHubPage() {
                       </div>
                     </Link>
                   ) : (
-                    <Link key={monthNum} href={`/billing/new?clinic_id=${clinic.id}&month=${monthNum}&year=${selectedYear}`}>
-                      <div className="group bg-slate-50/50 hover:bg-emerald-50/40 p-4 rounded-xl border border-dashed border-slate-200 hover:border-emerald-400 transition-all cursor-pointer flex flex-col items-center justify-center text-center h-36 gap-2">
-                        <span className="font-semibold text-slate-400 group-hover:text-emerald-700 text-sm">{monthName}</span>
-                        <div className="p-2 rounded-full bg-slate-100 group-hover:bg-emerald-100 text-slate-400 group-hover:text-emerald-600 transition-all">
-                          <Plus className="w-4 h-4" />
+                    <div 
+                      key={monthNum} 
+                      onClick={() => handleGenerateSession(clinic.id, monthNum)}
+                      className={`group bg-slate-50/50 hover:bg-emerald-50/40 p-4 rounded-xl border border-dashed border-slate-200 hover:border-emerald-400 transition-all cursor-pointer flex flex-col items-center justify-center text-center h-36 gap-2 ${isGenerating === `${clinic.id}-${monthNum}` ? 'opacity-50 pointer-events-none' : ''}`}
+                    >
+                      {isGenerating === `${clinic.id}-${monthNum}` ? (
+                        <div className="flex flex-col items-center justify-center h-full text-slate-500">
+                          <div className="inline-block animate-spin rounded-full h-6 w-6 border-2 border-emerald-500 border-t-transparent mb-2"></div>
+                          <span className="text-xs font-medium">Generando...</span>
                         </div>
-                        <span className="text-xs text-slate-400 group-hover:text-emerald-600">Crear contabilidad</span>
-                      </div>
-                    </Link>
+                      ) : (
+                        <>
+                          <span className="font-semibold text-slate-400 group-hover:text-emerald-700 text-sm">{monthName}</span>
+                          <div className="p-2 rounded-full bg-slate-100 group-hover:bg-emerald-100 text-slate-400 group-hover:text-emerald-600 transition-all">
+                            <Plus className="w-4 h-4" />
+                          </div>
+                          <span className="text-xs text-slate-400 group-hover:text-emerald-600">Crear desde citas</span>
+                        </>
+                      )}
+                    </div>
                   );
                 })}
               </div>

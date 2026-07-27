@@ -132,6 +132,15 @@ Este documento establece el plan de desarrollo, hitos alcanzados y próximos fas
 - [x] **Fix de Ficha de Cita (`/appointments/[id]`)**:
   - Mapeo robusto de cadenas de texto en `notes` a objetos `ProcedureItem` con `treatmentId` válido para pre-seleccionar correctamente el dropdown de tratamiento.
 
+### Fase 5: Billing Driven by Appointments & Document Cleaner 🟢
+- [x] Motor de Generación de Sesiones Contables desde Citas (`appointments-to-lines.ts`).
+- [x] Múltiples líneas contables por cita (soporte para N procedimientos en una misma cita).
+- [x] Endpoint `GET /api/billing/sessions/generate` para crear/refrescar la sesión en base a citas `Realizadas`.
+- [x] Integración en UI `/billing/[id]` de botón "Actualizar desde Citas" que preserva ajustes manuales.
+- [x] Portal de Importación Multimodal `Document Cleaner Portal` en `/billing/new` conectado a proxy `/api/billing/document-cleaner`.
+- [x] Flujo N8N `10-melosmile-agent-document-cleaner.json` (Gemini 2.5 Flash) implementado para estructurar Excel/Textos en formato JSON de citas.
+- [x] Limpieza de DB (Pacientes/Sesiones de prueba) y actualización de cita de prueba.
+
 ---
 
 ## 🔧 Pendiente — Agente: Añadir Procedimientos a Citas Existentes

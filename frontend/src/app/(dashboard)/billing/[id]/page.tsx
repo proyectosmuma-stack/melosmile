@@ -91,6 +91,7 @@ export default function BillingDetailPage({ params }: { params: Promise<{ id: st
   const [loading, setLoading] = useState<boolean>(true);
   const [saving, setSaving] = useState<boolean>(false);
   const [approving, setApproving] = useState<boolean>(false);
+  const [refreshing, setRefreshing] = useState<boolean>(false);
   const [feedbackMessage, setFeedbackMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   // Editable session settings
@@ -363,6 +364,29 @@ export default function BillingDetailPage({ params }: { params: Promise<{ id: st
     }
   };
 
+  // Refresh from Appointments
+  const handleRefreshFromAppointments = async () => {
+    if (!session || session.status === "approved") return;
+    if (!confirm('¿Desea actualizar las líneas leyendo las citas realizadas del mes? Sus ajustes manuales se preservarán.')) return;
+
+    setRefreshing(true);
+    try {
+      const res = await fetch(`/api/billing/sessions/generate?clinic_id=${session.clinic_id}&month=${session.month}&year=${session.year}`);
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.error || 'Error al actualizar');
+      }
+      
+      // Recargar la data completa
+      await loadSessionData();
+      setFeedbackMessage({ type: 'success', text: 'Líneas actualizadas correctamente desde las citas.' });
+    } catch (err: any) {
+      setFeedbackMessage({ type: 'error', text: err.message });
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-50 p-12 text-center text-slate-500">
@@ -444,6 +468,19 @@ export default function BillingDetailPage({ params }: { params: Promise<{ id: st
               Ver PDF / Imprimir
             </Button>
           </a>
+
+          {session.status !== "approved" && (
+            <Button
+              onClick={handleRefreshFromAppointments}
+              disabled={refreshing || saving}
+              variant="outline"
+              size="sm"
+              className="gap-2 border-indigo-300 text-indigo-700 hover:bg-indigo-50"
+            >
+              <FileText className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+              {refreshing ? "Actualizando..." : "Actualizar desde Citas"}
+            </Button>
+          )}
 
           <Button
             onClick={handleSave}

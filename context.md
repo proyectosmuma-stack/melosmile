@@ -35,9 +35,19 @@
    $$\text{Neto} = \text{Comisión} - \text{Gasto Lab Dto}$$
    $$\text{Honorarios Médico} = \text{Neto} \times \% \text{Dr. Principal}$$
 
-3. **Módulo de Cálculo y Facturación Contable (Modelo ALBACETE)**:
-   - **Organización**: Por `(clinic_id, year, month)` único. Cada sesión contable pertenece a una clínica y un mes/año específicos.
-   - **Auto-Vinculación & Alta Secuencial de Pacientes (`PAC-XXX`)**: Para cada línea extraída, el sistema busca al paciente en `patients`. Si no existe, **lo crea automáticamente** asignando un `historia_id` secuencial con formato Melosmile (`PAC-001`, `PAC-002`, `PAC-003`...).
+3. **Módulo Billing y Contabilidad (Modelo ALBACETE)**
+
+El motor financiero ha pivotado a una arquitectura de **Single Source of Truth basada en Citas**.
+
+**Flujo Contable:**
+1. Las citas con estado `Realizada` (en `appointments`) son la base.
+2. Si un paciente tiene N procedimientos en una sola cita, se parsea el JSON de `notes` y se genera una **línea contable independiente** por procedimiento (con su respectivo `appointment_id` y `procedure_index`).
+3. El endpoint `/api/billing/sessions/generate` compila estas citas para el mes/año/clínica solicitados, calculando comisión (por defecto 60%), laboratorio (sugerido basado en catálogo, 50% de descuento estándar) y NETO.
+4. Las líneas se pueden ajustar manualmente en `/billing/[id]`. Si se traen nuevas citas haciendo click en "Actualizar desde Citas", **los ajustes manuales previos se preservan**.
+
+**Agente Limpiador de Documentos:**
+El ingreso manual/importación de Excel se ha delegado al **Document Cleaner Portal** (`/billing/new`). El usuario sube un archivo o texto bruto, que se envía al flujo N8N `10-melosmile-agent-document-cleaner`. El modelo (`gemini-2.5-flash`) extrae JSON estructurado de pacientes y procedimientos para transformarlo en citas, las cuales luego poblarán la tabla de contabilidad.
+
    - **Dropdowns Interactivos con Catálogo de la BD**:
      - *Paciente*: Selección desde la base de datos o creación secuencial con enlace directo a la ficha del paciente.
      - *Tratamiento*: Select interactivo con todo el catálogo de tratamientos de la BD que auto-rellena el precio oficial al seleccionar.
