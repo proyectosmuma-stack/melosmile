@@ -167,7 +167,8 @@ export async function POST(req: Request) {
       rawAction === "create" ||
       body.create === true ||
       rawAction.toLowerCase().includes("crea") ||
-      rawAction.toLowerCase().includes("agendar");
+      rawAction.toLowerCase().includes("agendar") ||
+      (!targetId && Boolean(rawPatient) && Boolean(rawDateStr));
 
     const isDelete =
       rawAction === "delete" ||
