@@ -144,8 +144,8 @@ export async function POST(req: Request) {
 
     let targetId = appointment_id || id;
     let rawPatient = patient_id || patient_name || patient;
-    let timeStr = body.time || body.appointment_time || "";
-    let rawDateStr = appointment_date || date || body.day || "";
+    let timeStr = body.time || body.new_time || body.appointment_time || "";
+    let rawDateStr = appointment_date || date || body.new_date || body.day || "";
     let rawDate = (rawDateStr + " " + timeStr).trim() || rawDateStr;
     let resolvedPatientId = null;
 
