@@ -218,10 +218,10 @@
       ],
       "parameters": {
         "method": "POST",
-        "url": "https://frontend-eight-dusky-42.vercel.app/api/appointments/update",
+        "url": "https://frontend-eight-dusky-42.vercel.app/api/appointments/create",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"action\": \"create\",\n  \"patient_name\": \"{{ $json.extracted_entities?.patient_name || 'Manuel Cardama' }}\",\n  \"appointment_date\": \"{{ $json.extracted_entities?.date || 'este viernes' }}\",\n  \"reason\": \"{{ $json.extracted_entities?.reason || 'control de ortodoncia' }}\",\n  \"clinic\": \"{{ $json.extracted_entities?.clinic || 'RyA' }}\"\n}",
+        "jsonBody": "={\n  \"patient_name\": \"{{ $json.extracted_entities?.patient_name || 'Manuel Cardama' }}\",\n  \"appointment_date\": \"{{ $json.extracted_entities?.date || 'este viernes' }}\",\n  \"reason\": \"{{ $json.extracted_entities?.reason || 'control de ortodoncia' }}\",\n  \"clinic\": \"{{ $json.extracted_entities?.clinic || 'RyA' }}\",\n  \"status\": \"Pendiente\"\n}",
         "options": {}
       }
     }
