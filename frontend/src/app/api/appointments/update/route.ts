@@ -364,7 +364,7 @@ export async function POST(req: Request) {
             calculated_total: netTotal,
             billing_month: isoDate.substring(0, 10),
             status: "Pendiente",
-          });
+          }).select();
         } catch (bErr: any) {
           console.warn("Billing record notice:", bErr);
         }

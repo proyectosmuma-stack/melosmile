@@ -113,7 +113,7 @@ export async function POST(req: Request) {
             dob: "1990-01-01",
             historia_id: generatedHistoriaId,
           })
-          .select("id")
+          .select()
           .single();
 
         if (createErr || !created) {
