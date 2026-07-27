@@ -250,85 +250,43 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
         setAppt(loadedAppt);
         setStatus(loadedAppt.status);
 
-        // Match treatment against catalog if not present in notes
+        // Match treatment from catalog using treatment_id (primary source of truth from DB)
         const matchedTreatment = (tData || []).find((t: any) =>
           a.treatment_id ? t.id === a.treatment_id : t.service_name?.toLowerCase() === loadedAppt.reason?.toLowerCase()
         ) || (tData || []).find((t: any) =>
           loadedAppt.reason?.toLowerCase().includes(t.service_name?.toLowerCase()) ||
           t.service_name?.toLowerCase().includes(loadedAppt.reason?.toLowerCase())
         );
-
         const defaultPrice = matchedTreatment ? Number(matchedTreatment.default_price) || 0 : Number(trt?.default_price) || loadedAppt.customPrice || 0;
         const defaultLabCost = matchedTreatment ? Number(matchedTreatment.lab_cost) || 0 : Number(trt?.lab_cost) || loadedAppt.actualLabCost || 0;
         const matchedTreatmentId = matchedTreatment ? matchedTreatment.id : (a.treatment_id || trt?.id || "");
 
+        // Build the guaranteed fallback procedure from treatment_id (always available)
+        const fallbackProcedure = {
+          id: Date.now().toString(),
+          treatmentId: matchedTreatmentId,
+          serviceName: matchedTreatment
+            ? matchedTreatment.service_name
+            : (loadedAppt.reason || "Consulta General"),
+          toothRef: "",
+          dbPrice: defaultPrice,
+          dbCommission: loadedAppt.customCommission || 60,
+          dbLabCost: defaultLabCost,
+          overridePrice: null,
+          overrideCommission: null,
+          overrideLabCost: null,
+          showOverride: false,
+        };
+
+        // Try to enrich from structured [Procedimientos: [...]] block in notes
         // Parse structured blocks from notes
         const rawNotes = loadedAppt.notes ?? "";
         let parsedNotes = rawNotes;
+        let proceduresSet = false;
 
-        // Parse Procedures
         const procTagIndex = rawNotes.indexOf("[Procedimientos:");
         if (procTagIndex !== -1) {
-          const contentAfter = rawNotes.substring(procTagIndex);
-          const jsonStart = contentAfter.indexOf("[", 15);
-          if (jsonStart !== -1) {
-            let depth = 0;
-            let jsonEnd = -1;
-            for (let i = jsonStart; i < contentAfter.length; i++) {
-              if (contentAfter[i] === "[") depth++;
-              else if (contentAfter[i] === "]") {
-                depth--;
-                if (depth === 0) {
-                  jsonEnd = i;
-                  break;
-                }
-              }
-            }
-            if (jsonEnd !== -1) {
-              const jsonStr = contentAfter.substring(jsonStart, jsonEnd + 1);
-              try {
-                const parsedProcs = JSON.parse(jsonStr);
-                if (Array.isArray(parsedProcs) && parsedProcs.length > 0) {
-                  setProcedures(parsedProcs);
-                } else {
-                  setProcedures([
-                    {
-                      id: Date.now().toString(),
-                      treatmentId: matchedTreatmentId,
-                      serviceName: matchedTreatment ? matchedTreatment.service_name : (loadedAppt.reason || "Consulta General"),
-                      toothRef: "",
-                      dbPrice: defaultPrice,
-                      dbCommission: loadedAppt.customCommission || 60,
-                      dbLabCost: defaultLabCost,
-                      overridePrice: null,
-                      overrideCommission: null,
-                      overrideLabCost: null,
-                      showOverride: false,
-                    },
-                  ]);
-                }
-              } catch (e) {
-                console.warn("Could not parse procedures JSON from notes", e);
-                setProcedures([
-                  {
-                    id: Date.now().toString(),
-                    treatmentId: matchedTreatmentId,
-                    serviceName: matchedTreatment ? matchedTreatment.service_name : (loadedAppt.reason || "Consulta General"),
-                    toothRef: "",
-                    dbPrice: defaultPrice,
-                    dbCommission: loadedAppt.customCommission || 60,
-                    dbLabCost: defaultLabCost,
-                    overridePrice: null,
-                    overrideCommission: null,
-                    overrideLabCost: null,
-                    showOverride: false,
-                  },
-                ]);
-              }
-            }
-          }
-          // Strip entire [Procedimientos: [...]] block from notes text
-          // We need to find the matching closing ] for the outer tag
+          // Strip outer [Procedimientos: ...] block from notes text using bracket depth counter
           let outerDepth = 0;
           let outerEnd = -1;
           for (let i = procTagIndex; i < rawNotes.length; i++) {
@@ -341,23 +299,43 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
               }
             }
           }
-          parsedNotes = (rawNotes.substring(0, procTagIndex) + (outerEnd !== -1 ? rawNotes.substring(outerEnd + 1) : "")).trim();
-        } else {
-          setProcedures([
-            {
-              id: Date.now().toString(),
-              treatmentId: matchedTreatmentId,
-              serviceName: matchedTreatment ? matchedTreatment.service_name : (loadedAppt.reason || "Consulta General"),
-              toothRef: "",
-              dbPrice: defaultPrice,
-              dbCommission: loadedAppt.customCommission || 60,
-              dbLabCost: defaultLabCost,
-              overridePrice: null,
-              overrideCommission: null,
-              overrideLabCost: null,
-              showOverride: false,
-            },
-          ]);
+          if (outerEnd !== -1) {
+            parsedNotes = (rawNotes.substring(0, procTagIndex) + rawNotes.substring(outerEnd + 1)).trim();
+            // Extract inner JSON array using bracket depth counter
+            const contentAfter = rawNotes.substring(procTagIndex);
+            const jsonStart = contentAfter.indexOf("[", 15);
+            if (jsonStart !== -1) {
+              let innerDepth = 0;
+              let innerEnd = -1;
+              for (let i = jsonStart; i < contentAfter.length; i++) {
+                if (contentAfter[i] === "[") innerDepth++;
+                else if (contentAfter[i] === "]") {
+                  innerDepth--;
+                  if (innerDepth === 0) {
+                    innerEnd = i;
+                    break;
+                  }
+                }
+              }
+              if (innerEnd !== -1) {
+                try {
+                  const jsonStr = contentAfter.substring(jsonStart, innerEnd + 1);
+                  const parsedProcs = JSON.parse(jsonStr);
+                  if (Array.isArray(parsedProcs) && parsedProcs.length > 0) {
+                    setProcedures(parsedProcs);
+                    proceduresSet = true;
+                  }
+                } catch (e) {
+                  console.warn("Could not parse procedures JSON from notes, using fallback", e);
+                }
+              }
+            }
+          }
+        }
+
+        // Always ensure at least one procedure is visible (fallback = treatment from DB)
+        if (!proceduresSet) {
+          setProcedures([fallbackProcedure]);
         }
 
         // Parse Odontogram
