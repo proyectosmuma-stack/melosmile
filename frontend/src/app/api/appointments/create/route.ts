@@ -4,15 +4,10 @@ export const revalidate = 0;
 export const runtime = "nodejs";
 
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
 
-// Clean build version tag to force Vercel SWC cache purge
-const BUILD_VERSION = "2026-07-27T02:34:00-clean-build-v3";
-
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || "https://amhfdzfcmpastmlsosou.supabase.co",
-  process.env.SUPABASE_SERVICE_ROLE_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFtaGZkemZjbXBhc3RtbHNvc291Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NDczNTM3NCwiZXhwIjoyMTAwMzExMzc0fQ.yPLQaV1xbfnuJJcNktxqbneP9Yb5UGlWfXA1tKYx6ZM"
-);
+const BUILD_VERSION = "2026-07-27T03:15:00-pure-rest-v1";
+const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFtaGZkemZjbXBhc3RtbHNvc291Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NDczNTM3NCwiZXhwIjoyMTAwMzExMzc0fQ.yPLQaV1xbfnuJJcNktxqbneP9Yb5UGlWfXA1tKYx6ZM";
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://amhfdzfcmpastmlsosou.supabase.co";
 
 function parseAppointmentDate(inputDate?: string, inputTime?: string): string {
   let combined = inputDate || "";
@@ -48,7 +43,6 @@ function parseAppointmentDate(inputDate?: string, inputTime?: string): string {
     target.setHours(10, 0, 0, 0);
   }
 
-  // Round minutes to nearest 15-min slot and clear seconds/ms
   const roundedMins = Math.round(target.getMinutes() / 15) * 15;
   if (roundedMins === 60) {
     target.setHours(target.getHours() + 1, 0, 0, 0);
@@ -60,17 +54,29 @@ function parseAppointmentDate(inputDate?: string, inputTime?: string): string {
 }
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
 const STOP_WORDS = new Set([
   "de", "del", "la", "el", "los", "las", "en", "para", "con", "sin", "por",
   "cita", "manana", "mañana", "hoy", "revision", "revisión", "control", "consulta", "ajuste"
 ]);
 
+async function dbFetch(path: string, options: RequestInit = {}) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+    ...options,
+    headers: {
+      "apikey": SERVICE_ROLE_KEY,
+      "Authorization": `Bearer ${SERVICE_ROLE_KEY}`,
+      "Content-Type": "application/json",
+      ...(options.headers || {})
+    }
+  });
+  const data = await res.json().catch(() => null);
+  return { ok: res.ok, status: res.status, data };
+}
+
 export async function POST(req: Request) {
   try {
-    const body = await req.json();
+    const body = await req.json().catch(() => ({}));
 
-    // Accept multiple naming conventions passed by different LLM tool calls
     const rawPatient = body.patient_id || body.patient_name || body.patient || body.name || "Paciente General";
     const rawDate = body.appointment_date || body.date;
     const rawTime = body.time;
@@ -91,25 +97,19 @@ export async function POST(req: Request) {
         ])
         .join(",");
 
-      const { data: found } = await supabaseAdmin
-        .from("patients")
-        .select("id")
-        .or(orConditions)
-        .limit(1)
-        .maybeSingle();
-
-      if (found) {
-        resolvedPatientId = found.id;
+      const searchRes = await dbFetch(`patients?select=id&or=(${encodeURIComponent(orConditions)})&limit=1`);
+      if (searchRes.ok && searchRes.data && searchRes.data.length > 0) {
+        resolvedPatientId = searchRes.data[0].id;
       } else {
-        // Create patient on the fly if not found
         const parts = (rawPatient || "Paciente General").trim().split(/\s+/);
         const firstName = parts[0] || "Paciente";
         const lastName = parts.slice(1).join(" ") || "General";
         const generatedHistoriaId = `PAC-${Math.floor(1000 + Math.random() * 9000)}`;
 
-        const { data: created, error: createErr } = await supabaseAdmin
-          .from("patients")
-          .insert({
+        const createRes = await dbFetch(`patients`, {
+          method: "POST",
+          headers: { "Prefer": "return=representation" },
+          body: JSON.stringify({
             first_name: firstName,
             last_name: lastName,
             phone: "+34 600 000 000",
@@ -117,14 +117,13 @@ export async function POST(req: Request) {
             dob: "1990-01-01",
             historia_id: generatedHistoriaId,
           })
-          .select()
-          .single();
+        });
 
-        if (createErr || !created) {
-          const { data: fallback } = await supabaseAdmin.from("patients").select("id").limit(1).single();
-          resolvedPatientId = fallback?.id;
+        if (createRes.ok && createRes.data && createRes.data.length > 0) {
+          resolvedPatientId = createRes.data[0].id;
         } else {
-          resolvedPatientId = created.id;
+          const fallbackRes = await dbFetch(`patients?select=id&limit=1`);
+          resolvedPatientId = fallbackRes.data?.[0]?.id;
         }
       }
     }
@@ -133,50 +132,33 @@ export async function POST(req: Request) {
     let p_id = body.professional_id;
 
     if (rawClinic && (!c_id || !UUID_REGEX.test(c_id))) {
-      const { data: matchedClinic } = await supabaseAdmin
-        .from("clinics")
-        .select("id")
-        .or(`name.ilike.%${rawClinic}%,address.ilike.%${rawClinic}%`)
-        .limit(1)
-        .maybeSingle();
-      if (matchedClinic) c_id = matchedClinic.id;
+      const clinicSearch = await dbFetch(`clinics?select=id&or=(name.ilike.%${encodeURIComponent(rawClinic)}%,address.ilike.%${encodeURIComponent(rawClinic)}%)&limit=1`);
+      if (clinicSearch.ok && clinicSearch.data?.[0]?.id) c_id = clinicSearch.data[0].id;
     }
 
     if (!c_id || !UUID_REGEX.test(c_id)) {
-      const { data: clinics } = await supabaseAdmin.from("clinics").select("id").limit(1).single();
-      if (clinics) c_id = clinics.id;
+      const defaultClinic = await dbFetch(`clinics?select=id&limit=1`);
+      if (defaultClinic.data?.[0]?.id) c_id = defaultClinic.data[0].id;
     }
 
-    // Default professional is ALWAYS Dra. Osly Melo unless explicitly requested otherwise
     if (rawDoctor && UUID_REGEX.test(rawDoctor)) {
       p_id = rawDoctor;
     } else if (rawDoctor && typeof rawDoctor === "string" && rawDoctor.trim().length > 0) {
-      const { data: matchedDoctor } = await supabaseAdmin
-        .from("professionals")
-        .select("id")
-        .or(`first_name.ilike.%${rawDoctor}%,last_name.ilike.%${rawDoctor}%`)
-        .limit(1)
-        .maybeSingle();
-      if (matchedDoctor) p_id = matchedDoctor.id;
+      const docSearch = await dbFetch(`professionals?select=id&or=(first_name.ilike.%${encodeURIComponent(rawDoctor)}%,last_name.ilike.%${encodeURIComponent(rawDoctor)}%)&limit=1`);
+      if (docSearch.ok && docSearch.data?.[0]?.id) p_id = docSearch.data[0].id;
     }
 
     if (!p_id || !UUID_REGEX.test(p_id)) {
-      const { data: osly } = await supabaseAdmin
-        .from("professionals")
-        .select("id")
-        .or("first_name.ilike.%Osly%,last_name.ilike.%Melo%")
-        .limit(1)
-        .maybeSingle();
-
-      if (osly) {
-        p_id = osly.id;
+      const oslySearch = await dbFetch(`professionals?select=id&or=(first_name.ilike.%Osly%,last_name.ilike.%Melo%)&limit=1`);
+      if (oslySearch.ok && oslySearch.data?.[0]?.id) {
+        p_id = oslySearch.data[0].id;
       } else {
-        const { data: profs } = await supabaseAdmin.from("professionals").select("id").limit(1).single();
-        if (profs) p_id = profs.id;
+        const fallbackProf = await dbFetch(`professionals?select=id&limit=1`);
+        if (fallbackProf.data?.[0]?.id) p_id = fallbackProf.data[0].id;
       }
     }
 
-    // Smart Treatment & Procedure Catalog Matching
+    // Treatment Matching
     let t_id: string | null = null;
     let finalReason = rawReason || "Consulta General";
     let matchedPrice = 0;
@@ -184,22 +166,13 @@ export async function POST(req: Request) {
 
     if (rawReason && typeof rawReason === "string") {
       const rawClean = rawReason.trim();
-      
-      // 1. Try exact match first
-      const { data: exactMatch } = await supabaseAdmin
-        .from("treatments")
-        .select("id, service_name, default_price, lab_cost")
-        .ilike("service_name", rawClean)
-        .limit(1)
-        .maybeSingle();
-
-      if (exactMatch) {
-        t_id = exactMatch.id;
-        finalReason = exactMatch.service_name;
-        matchedPrice = Number(exactMatch.default_price) || 0;
-        matchedLabCost = Number(exactMatch.lab_cost) || 0;
+      const exactSearch = await dbFetch(`treatments?select=id,service_name,default_price,lab_cost&service_name=ilike.${encodeURIComponent(rawClean)}&limit=1`);
+      if (exactSearch.ok && exactSearch.data?.[0]) {
+        t_id = exactSearch.data[0].id;
+        finalReason = exactSearch.data[0].service_name;
+        matchedPrice = Number(exactSearch.data[0].default_price) || 0;
+        matchedLabCost = Number(exactSearch.data[0].lab_cost) || 0;
       } else {
-        // 2. Filter terms without stop words
         const filteredTerms = rawClean
           .toLowerCase()
           .replace(/[^a-záéíóúñ0-9\s]/gi, "")
@@ -211,26 +184,18 @@ export async function POST(req: Request) {
             .flatMap((t) => [`service_name.ilike.%${t}%`, `abbreviation.ilike.%${t}%`])
             .join(",");
 
-          const { data: fuzzyMatch } = await supabaseAdmin
-            .from("treatments")
-            .select("id, service_name, default_price, lab_cost")
-            .or(orConditions)
-            .limit(1)
-            .maybeSingle();
-
-          if (fuzzyMatch) {
-            t_id = fuzzyMatch.id;
-            finalReason = fuzzyMatch.service_name;
-            matchedPrice = Number(fuzzyMatch.default_price) || 0;
-            matchedLabCost = Number(fuzzyMatch.lab_cost) || 0;
+          const fuzzySearch = await dbFetch(`treatments?select=id,service_name,default_price,lab_cost&or=(${encodeURIComponent(orConditions)})&limit=1`);
+          if (fuzzySearch.ok && fuzzySearch.data?.[0]) {
+            t_id = fuzzySearch.data[0].id;
+            finalReason = fuzzySearch.data[0].service_name;
+            matchedPrice = Number(fuzzySearch.data[0].default_price) || 0;
+            matchedLabCost = Number(fuzzySearch.data[0].lab_cost) || 0;
           }
         }
       }
     }
 
     const isoDate = parseAppointmentDate(rawDate, rawTime);
-
-    // Initial Procedures Structure
     const initialProcedures = [
       {
         id: Date.now().toString(),
@@ -252,17 +217,9 @@ export async function POST(req: Request) {
       : "Agendada por Asistente IA";
     initialNotes += `\n[Procedimientos: ${JSON.stringify(initialProcedures)}]`;
 
-    const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFtaGZkemZjbXBhc3RtbHNvc291Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NDczNTM3NCwiZXhwIjoyMTAwMzExMzc0fQ.yPLQaV1xbfnuJJcNktxqbneP9Yb5UGlWfXA1tKYx6ZM";
-    const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://amhfdzfcmpastmlsosou.supabase.co";
-
-    const insertApptRes = await fetch(`${SUPABASE_URL}/rest/v1/appointments`, {
+    const insertApptRes = await dbFetch(`appointments`, {
       method: "POST",
-      headers: {
-        "apikey": SERVICE_ROLE_KEY,
-        "Authorization": `Bearer ${SERVICE_ROLE_KEY}`,
-        "Content-Type": "application/json",
-        "Prefer": "return=representation"
-      },
+      headers: { "Prefer": "return=representation" },
       body: JSON.stringify({
         patient_id: resolvedPatientId,
         clinic_id: c_id,
@@ -275,25 +232,19 @@ export async function POST(req: Request) {
       })
     });
 
-    const apptData = await insertApptRes.json();
-    if (!insertApptRes.ok) {
-      throw new Error(apptData.message || JSON.stringify(apptData));
+    if (!insertApptRes.ok || !insertApptRes.data) {
+      return NextResponse.json({ error: insertApptRes.data?.message || JSON.stringify(insertApptRes.data) }, { status: 500 });
     }
 
-    const newAppt = Array.isArray(apptData) ? apptData[0] : apptData;
+    const newAppt = Array.isArray(insertApptRes.data) ? insertApptRes.data[0] : insertApptRes.data;
 
     // Create billing record so price & lab cost are immediately available
     if (newAppt?.id) {
       try {
         const netTotal = matchedPrice * 0.6 - matchedLabCost * 0.5;
-        await fetch(`${SUPABASE_URL}/rest/v1/billing_records`, {
+        await dbFetch(`billing_records`, {
           method: "POST",
-          headers: {
-            "apikey": SERVICE_ROLE_KEY,
-            "Authorization": `Bearer ${SERVICE_ROLE_KEY}`,
-            "Content-Type": "application/json",
-            "Prefer": "return=minimal"
-          },
+          headers: { "Prefer": "return=minimal" },
           body: JSON.stringify({
             appointment_id: newAppt.id,
             custom_price: matchedPrice,
