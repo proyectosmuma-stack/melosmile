@@ -74,26 +74,30 @@
       "parameters": {
         "description": "Crea o agenda una nueva cita para un paciente",
         "method": "POST",
-        "url": "https://frontend-eight-dusky-42.vercel.app/api/appointments/create",
+        "url": "https://frontend-eight-dusky-42.vercel.app/api/appointments/update",
         "sendBody": true,
         "specifyBody": "keypair",
         "bodyParameters": {
           "parameters": [
             {
+              "name": "action",
+              "value": "create"
+            },
+            {
               "name": "patient_name",
-              "value": "={{ $fromAI('patient_name', 'Nombre o UUID del paciente') }}"
+              "value": "={{ $fromAI('patient_name', 'Nombre completo del paciente') }}"
             },
             {
               "name": "appointment_date",
-              "value": "={{ $fromAI('appointment_date', 'Fecha y hora de la cita, ej: mañana a las 14:00') }}"
+              "value": "={{ $fromAI('appointment_date', 'Fecha y hora de la cita, ej: este viernes') }}"
             },
             {
               "name": "reason",
-              "value": "={{ $fromAI('reason', 'Motivo o tratamiento de la cita') }}"
+              "value": "={{ $fromAI('reason', 'Motivo o tratamiento de la cita, ej: control de ortodoncia') }}"
             },
             {
               "name": "clinic",
-              "value": "={{ $fromAI('clinic', 'Nombre de la clínica') }}"
+              "value": "={{ $fromAI('clinic', 'Nombre de la clínica, ej: RyA') }}"
             }
           ]
         }

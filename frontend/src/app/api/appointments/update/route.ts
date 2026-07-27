@@ -157,6 +157,12 @@ export async function POST(req: Request) {
     let rawDate = (rawDateStr + " " + timeStr).trim() || rawDateStr;
     let resolvedPatientId = null;
 
+    const isCreate =
+      action === "create" ||
+      body.create === true ||
+      String(action).toLowerCase().includes("crea") ||
+      String(action).toLowerCase().includes("agendar");
+
     const isDelete =
       action === "delete" ||
       delete_appointment === true ||
@@ -191,6 +197,173 @@ export async function POST(req: Request) {
           resolvedPatientId = candidates[0].id;
         }
       }
+    }
+
+    // 1.5. CREATE APPOINTMENT OPERATION
+    if (isCreate) {
+      // Resolve patient or create patient on the fly
+      if (!resolvedPatientId && rawPatient) {
+        const parts = String(rawPatient).trim().split(/\s+/);
+        const firstName = parts[0] || "Paciente";
+        const lastName = parts.slice(1).join(" ") || "General";
+        const generatedHistoriaId = `PAC-${Math.floor(1000 + Math.random() * 9000)}`;
+
+        const { data: createdP } = await dbClient
+          .from("patients")
+          .insert({
+            first_name: firstName,
+            last_name: lastName,
+            phone: "+34 600 000 000",
+            email: `${firstName.toLowerCase()}@melosmile.local`,
+            dob: "1990-01-01",
+            historia_id: generatedHistoriaId,
+          })
+          .select("id")
+          .maybeSingle();
+
+        if (createdP) resolvedPatientId = createdP.id;
+      }
+
+      if (!resolvedPatientId) {
+        const { data: fallbackP } = await dbClient.from("patients").select("id").limit(1).single();
+        resolvedPatientId = fallbackP?.id;
+      }
+
+      // Resolve clinic
+      let c_id = clinic_id;
+      if (clinic && (!c_id || !UUID_REGEX.test(c_id))) {
+        const { data: matchedClinic } = await dbClient
+          .from("clinics")
+          .select("id")
+          .or(`name.ilike.%${clinic}%,address.ilike.%${clinic}%`)
+          .limit(1)
+          .maybeSingle();
+        if (matchedClinic) c_id = matchedClinic.id;
+      }
+      if (!c_id || !UUID_REGEX.test(c_id)) {
+        const { data: clinics } = await dbClient.from("clinics").select("id").limit(1).single();
+        if (clinics) c_id = clinics.id;
+      }
+
+      // Resolve professional
+      let p_id = professional_id;
+      if (!p_id || !UUID_REGEX.test(p_id)) {
+        const { data: osly } = await dbClient
+          .from("professionals")
+          .select("id")
+          .or("first_name.ilike.%Osly%,last_name.ilike.%Melo%")
+          .limit(1)
+          .maybeSingle();
+        if (osly) p_id = osly.id;
+      }
+
+      // Match treatment & price
+      let t_id: string | null = null;
+      let finalReason = reason || "Consulta General";
+      let matchedPrice = 0;
+      let matchedLabCost = 0;
+
+      if (reason && typeof reason === "string") {
+        const rawClean = reason.trim();
+        const { data: exactMatch } = await dbClient
+          .from("treatments")
+          .select("id, service_name, default_price, lab_cost")
+          .ilike("service_name", rawClean)
+          .limit(1)
+          .maybeSingle();
+
+        if (exactMatch) {
+          t_id = exactMatch.id;
+          finalReason = exactMatch.service_name;
+          matchedPrice = Number(exactMatch.default_price) || 0;
+          matchedLabCost = Number(exactMatch.lab_cost) || 0;
+        } else {
+          const STOP_WORDS = new Set(["de", "del", "la", "el", "los", "las", "en", "para", "con", "sin", "por", "cita", "revision", "control", "consulta"]);
+          const filteredTerms = rawClean
+            .toLowerCase()
+            .replace(/[^a-záéíóúñ0-9\s]/gi, "")
+            .split(/\s+/)
+            .filter((term) => term.length > 2 && !STOP_WORDS.has(term));
+
+          if (filteredTerms.length > 0) {
+            const orConditions = filteredTerms
+              .flatMap((t) => [`service_name.ilike.%${t}%`, `abbreviation.ilike.%${t}%`])
+              .join(",");
+
+            const { data: fuzzyMatch } = await dbClient
+              .from("treatments")
+              .select("id, service_name, default_price, lab_cost")
+              .or(orConditions)
+              .limit(1)
+              .maybeSingle();
+
+            if (fuzzyMatch) {
+              t_id = fuzzyMatch.id;
+              finalReason = fuzzyMatch.service_name;
+              matchedPrice = Number(fuzzyMatch.default_price) || 0;
+              matchedLabCost = Number(fuzzyMatch.lab_cost) || 0;
+            }
+          }
+        }
+      }
+
+      const isoDate = parseAppointmentDate(rawDate);
+      const initialProcedures = [
+        {
+          id: Date.now().toString(),
+          treatmentId: t_id || "",
+          serviceName: finalReason,
+          toothRef: "",
+          dbPrice: matchedPrice,
+          dbCommission: 60,
+          dbLabCost: matchedLabCost,
+          overridePrice: null,
+          overrideCommission: null,
+          overrideLabCost: null,
+          showOverride: false,
+        },
+      ];
+
+      let initialNotes = clinic
+        ? `Agendada por Asistente IA (${clinic})`
+        : "Agendada por Asistente IA";
+      initialNotes += `\n[Procedimientos: ${JSON.stringify(initialProcedures)}]`;
+
+      const { data: newAppt, error: createErr } = await dbClient
+        .from("appointments")
+        .insert({
+          patient_id: resolvedPatientId,
+          clinic_id: c_id,
+          professional_id: p_id,
+          treatment_id: t_id,
+          appointment_date: isoDate,
+          reason: finalReason,
+          status: status || "Confirmada",
+          notes: initialNotes,
+        })
+        .select()
+        .single();
+
+      if (createErr) throw createErr;
+
+      if (newAppt?.id) {
+        try {
+          const netTotal = matchedPrice * 0.6 - matchedLabCost * 0.5;
+          await dbClient.from("billing_records").insert({
+            appointment_id: newAppt.id,
+            custom_price: matchedPrice,
+            applied_commission_rate: 60,
+            applied_lab_discount_rate: 50,
+            calculated_total: netTotal,
+            billing_month: isoDate.substring(0, 10),
+            status: "Pendiente",
+          });
+        } catch (bErr: any) {
+          console.warn("Billing record notice:", bErr);
+        }
+      }
+
+      return NextResponse.json({ success: true, action: "created", data: [newAppt] });
     }
 
     // 2. HARD DELETE OPERATION
