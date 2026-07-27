@@ -97,7 +97,7 @@ export async function POST(req: Request) {
         resolvedPatientId = found.id;
       } else {
         // Create patient on the fly if not found
-        const parts = resolvedPatientId.trim().split(/\s+/);
+        const parts = (rawPatient || "Paciente General").trim().split(/\s+/);
         const firstName = parts[0] || "Paciente";
         const lastName = parts.slice(1).join(" ") || "General";
         const generatedHistoriaId = `PAC-${Math.floor(1000 + Math.random() * 9000)}`;
