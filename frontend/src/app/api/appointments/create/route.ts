@@ -252,9 +252,18 @@ export async function POST(req: Request) {
       : "Agendada por Asistente IA";
     initialNotes += `\n[Procedimientos: ${JSON.stringify(initialProcedures)}]`;
 
-    const { data, error } = await supabaseAdmin
-      .from("appointments")
-      .insert({
+    const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFtaGZkemZjbXBhc3RtbHNvc291Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NDczNTM3NCwiZXhwIjoyMTAwMzExMzc0fQ.yPLQaV1xbfnuJJcNktxqbneP9Yb5UGlWfXA1tKYx6ZM";
+    const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://amhfdzfcmpastmlsosou.supabase.co";
+
+    const insertApptRes = await fetch(`${SUPABASE_URL}/rest/v1/appointments`, {
+      method: "POST",
+      headers: {
+        "apikey": SERVICE_ROLE_KEY,
+        "Authorization": `Bearer ${SERVICE_ROLE_KEY}`,
+        "Content-Type": "application/json",
+        "Prefer": "return=representation"
+      },
+      body: JSON.stringify({
         patient_id: resolvedPatientId,
         clinic_id: c_id,
         professional_id: p_id,
@@ -264,30 +273,43 @@ export async function POST(req: Request) {
         status: body.status || "Pendiente",
         notes: initialNotes,
       })
-      .select()
-      .single();
+    });
 
-    if (error) throw error;
+    const apptData = await insertApptRes.json();
+    if (!insertApptRes.ok) {
+      throw new Error(apptData.message || JSON.stringify(apptData));
+    }
+
+    const newAppt = Array.isArray(apptData) ? apptData[0] : apptData;
 
     // Create billing record so price & lab cost are immediately available
-    if (data?.id) {
+    if (newAppt?.id) {
       try {
         const netTotal = matchedPrice * 0.6 - matchedLabCost * 0.5;
-        await supabaseAdmin.from("billing_records").insert({
-          appointment_id: data.id,
-          custom_price: matchedPrice,
-          applied_commission_rate: 60,
-          applied_lab_discount_rate: 50,
-          calculated_total: netTotal,
-          billing_month: isoDate.substring(0, 10),
-          status: "Pendiente",
-        }).select();
+        await fetch(`${SUPABASE_URL}/rest/v1/billing_records`, {
+          method: "POST",
+          headers: {
+            "apikey": SERVICE_ROLE_KEY,
+            "Authorization": `Bearer ${SERVICE_ROLE_KEY}`,
+            "Content-Type": "application/json",
+            "Prefer": "return=minimal"
+          },
+          body: JSON.stringify({
+            appointment_id: newAppt.id,
+            custom_price: matchedPrice,
+            applied_commission_rate: 60,
+            applied_lab_discount_rate: 50,
+            calculated_total: netTotal,
+            billing_month: isoDate.substring(0, 10),
+            status: "Pendiente",
+          })
+        });
       } catch (bErr: any) {
         console.warn("Billing record insert notice:", bErr);
       }
     }
 
-    return NextResponse.json({ success: true, data, version: BUILD_VERSION });
+    return NextResponse.json({ success: true, data: newAppt, version: BUILD_VERSION });
   } catch (error: any) {
     console.error("Error creando cita:", error);
     return NextResponse.json({ error: error.message, version: BUILD_VERSION }, { status: 500 });
