@@ -64,7 +64,7 @@ Este documento es el **Walkthrough Maestro del Proyecto**, donde se acumula la t
   - *Turno 1*: `"¿Qué agenda tuviste la semana pasada?"` $\rightarrow$ Retorna citas de Munir (24/07) ✅ (**100% coincidencia Supabase DB**).
   - *Turno 2*: `"¿Qué agenda tienes esta semana?"` $\rightarrow$ Retorna cita de Test General para Martes 28/07 ✅ (**100% coincidencia Supabase DB**).
   - *Turno 3*: `"cambia esa cita para el miércoles a las 13:00"` $\rightarrow$ Reagenda en tiempo real la cita de Test General al **Miércoles 29 de Julio a las 13:00** en Supabase DB ✅ (**100% coincidencia Supabase DB**).
-  - *Prueba de Creación*: `"Hola, quiero agendar una cita para Manuel Cardama este viernes en la clínica RyA para un control de ortodoncia"` $\rightarrow$ Crea la cita en tiempo real para **Manuel Cardama** el **Viernes 31 de Julio de 2026** en **Clínica RyA**, asociando el tratamiento **Control de Ortodoncia** con su precio oficial de tarifa (**60 €**) en los procedimientos de la ficha ✅ (**100% coincidencia Supabase DB**).
+  - *Prueba de Creación*: `"Hola, quiero agendar una cita para Manuel Cardama este viernes en la clínica RyA para un control de ortodoncia"` $\rightarrow$ Crea la cita en tiempo real para **Manuel Cardama** el **Viernes 31 de Julio de 2026** en **Clínica RyA** con estatus por defecto **`Pendiente`**, asociando el tratamiento **Control de Ortodoncia** con su precio oficial de tarifa (**60 €**) en los procedimientos de la ficha ✅ (**100% coincidencia Supabase DB**).
 
 ---
 
