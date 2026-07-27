@@ -72,31 +72,12 @@
       "id": "5",
       "name": "Tool_Appointment_Manager",
       "parameters": {
-        "description": "Crea o agende una nueva cita para un paciente en la agenda de Melosmile",
+        "description": "Crea o agenda una nueva cita para un paciente en la agenda de Melosmile",
         "method": "POST",
-        "url": "https://frontend-eight-dusky-42.vercel.app/api/appointments/update?action=create",
+        "url": "https://frontend-eight-dusky-42.vercel.app/api/appointments/create",
         "sendBody": true,
-        "specifyBody": "keypair",
-        "bodyParameters": {
-          "parameters": [
-            {
-              "name": "patient_name",
-              "value": "={{ $fromAI('patient_name', 'Nombre completo del paciente') }}"
-            },
-            {
-              "name": "appointment_date",
-              "value": "={{ $fromAI('appointment_date', 'Fecha y hora de la cita, ej: este viernes') }}"
-            },
-            {
-              "name": "reason",
-              "value": "={{ $fromAI('reason', 'Motivo o tratamiento de la cita, ej: control de ortodoncia') }}"
-            },
-            {
-              "name": "clinic",
-              "value": "={{ $fromAI('clinic', 'Nombre de la clínica, ej: RyA') }}"
-            }
-          ]
-        }
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"patient_name\": \"{{ $fromAI('patient_name', 'Nombre completo del paciente') }}\",\n  \"appointment_date\": \"{{ $fromAI('appointment_date', 'Fecha y hora de la cita, ej: este viernes') }}\",\n  \"reason\": \"{{ $fromAI('reason', 'Motivo o tratamiento de la cita, ej: control de ortodoncia') }}\",\n  \"clinic\": \"{{ $fromAI('clinic', 'Nombre de la clínica, ej: RyA') }}\"\n}"
       },
       "position": [
         660,
@@ -175,23 +156,8 @@
         "method": "POST",
         "url": "https://frontend-eight-dusky-42.vercel.app/api/appointments/update",
         "sendBody": true,
-        "specifyBody": "keypair",
-        "bodyParameters": {
-          "parameters": [
-            {
-              "name": "patient_name",
-              "value": "={{ $fromAI('patient_name', 'Nombre del paciente de la cita a modificar, ej: Test General') }}"
-            },
-            {
-              "name": "appointment_date",
-              "value": "={{ $fromAI('appointment_date', 'Nueva fecha u hora para la cita, ej: miércoles 29 de julio a las 13:00') }}"
-            },
-            {
-              "name": "clinic",
-              "value": "={{ $fromAI('clinic', 'Nombre de la clínica') }}"
-            }
-          ]
-        }
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"patient_name\": \"{{ $fromAI('patient_name', 'Nombre del paciente de la cita a modificar') }}\",\n  \"appointment_date\": \"{{ $fromAI('appointment_date', 'Nueva fecha u hora para la cita') }}\",\n  \"clinic\": \"{{ $fromAI('clinic', 'Nombre de la clínica') }}\"\n}"
       },
       "position": [
         120,
