@@ -24,7 +24,7 @@
       "id": "2",
       "name": "OpenRouter_Chat_Model",
       "parameters": {
-        "model": "google/gemini-2.5-flash",
+        "model": "openai/gpt-4o-mini",
         "options": {
           "temperature": 0
         }
