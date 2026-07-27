@@ -256,7 +256,7 @@ export async function POST(req: Request) {
         treatment_id: t_id,
         appointment_date: isoDate,
         reason: finalReason,
-        status: body.status || "Confirmada",
+        status: body.status || "Pendiente",
         notes: initialNotes,
       })
       .select()
