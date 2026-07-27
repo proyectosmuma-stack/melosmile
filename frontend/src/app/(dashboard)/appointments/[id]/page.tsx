@@ -327,8 +327,21 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
               }
             }
           }
-          const endBlockIndex = contentAfter.lastIndexOf("]");
-          parsedNotes = (rawNotes.substring(0, procTagIndex) + (endBlockIndex !== -1 ? contentAfter.substring(endBlockIndex + 1) : "")).trim();
+          // Strip entire [Procedimientos: [...]] block from notes text
+          // We need to find the matching closing ] for the outer tag
+          let outerDepth = 0;
+          let outerEnd = -1;
+          for (let i = procTagIndex; i < rawNotes.length; i++) {
+            if (rawNotes[i] === "[") outerDepth++;
+            else if (rawNotes[i] === "]") {
+              outerDepth--;
+              if (outerDepth === 0) {
+                outerEnd = i;
+                break;
+              }
+            }
+          }
+          parsedNotes = (rawNotes.substring(0, procTagIndex) + (outerEnd !== -1 ? rawNotes.substring(outerEnd + 1) : "")).trim();
         } else {
           setProcedures([
             {
