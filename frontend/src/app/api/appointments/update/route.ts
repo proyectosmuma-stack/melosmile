@@ -256,7 +256,10 @@ export async function POST(req: Request) {
 
     if (Object.keys(updates).length === 0) {
       return NextResponse.json(
-        { error: "No se especificaron cambios válidos para actualizar la cita." },
+        {
+          error: "No se especificaron cambios válidos para actualizar la cita.",
+          debug: { body, rawDateStr, timeStr, rawDate, status: body.status }
+        },
         { status: 400 }
       );
     }
