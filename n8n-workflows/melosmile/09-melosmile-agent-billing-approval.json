@@ -1,0 +1,80 @@
+{
+  "name": "[MELOSMILE] Workflow: Aprobación de Contabilidad y Envío de Resumen PDF",
+  "nodes": [
+    {
+      "id": "1",
+      "name": "Webhook_Billing_Approve",
+      "onError": "continueRegularOutput",
+      "parameters": {
+        "httpMethod": "POST",
+        "options": {},
+        "path": "melosmile-billing-approve",
+        "responseMode": "responseNode"
+      },
+      "position": [
+        250,
+        300
+      ],
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1
+    },
+    {
+      "id": "2",
+      "name": "HTTP_Approve_Session",
+      "parameters": {
+        "jsonBody": "={{ JSON.stringify({ approved_by: $json.body.approved_by || 'Dra. Osly Melo' }) }}",
+        "method": "POST",
+        "sendBody": true,
+        "url": "=https://melosmile.app/api/billing/sessions/{{ $json.body.session_id }}/approve"
+      },
+      "position": [
+        450,
+        300
+      ],
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2
+    },
+    {
+      "id": "3",
+      "name": "Respond_To_Webhook",
+      "parameters": {
+        "options": {},
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ success: true, session: $json.session, pdf_url: 'https://melosmile.app/api/billing/report/' + $json.session.id }) }}"
+      },
+      "position": [
+        650,
+        300
+      ],
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1
+    }
+  ],
+  "connections": {
+    "HTTP_Approve_Session": {
+      "main": [
+        [
+          {
+            "node": "Respond_To_Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook_Billing_Approve": {
+      "main": [
+        [
+          {
+            "node": "HTTP_Approve_Session",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

@@ -39,6 +39,105 @@ export type Database = {
   }
   public: {
     Tables: {
+      agent_learnings: {
+        Row: {
+          category: string
+          created_at: string | null
+          expression: string
+          id: string
+          meaning: string
+          notes: string | null
+          updated_at: string | null
+          usage_count: number | null
+        }
+        Insert: {
+          category?: string
+          created_at?: string | null
+          expression: string
+          id?: string
+          meaning: string
+          notes?: string | null
+          updated_at?: string | null
+          usage_count?: number | null
+        }
+        Update: {
+          category?: string
+          created_at?: string | null
+          expression?: string
+          id?: string
+          meaning?: string
+          notes?: string | null
+          updated_at?: string | null
+          usage_count?: number | null
+        }
+        Relationships: []
+      }
+      ai_agent_reports: {
+        Row: {
+          conversation_history: Json | null
+          created_at: string | null
+          id: string
+          participating_agents: Json | null
+          resolution_notes: string | null
+          resolved: boolean | null
+          resolved_at: string | null
+          session_id: string | null
+          user_comment: string
+        }
+        Insert: {
+          conversation_history?: Json | null
+          created_at?: string | null
+          id?: string
+          participating_agents?: Json | null
+          resolution_notes?: string | null
+          resolved?: boolean | null
+          resolved_at?: string | null
+          session_id?: string | null
+          user_comment: string
+        }
+        Update: {
+          conversation_history?: Json | null
+          created_at?: string | null
+          id?: string
+          participating_agents?: Json | null
+          resolution_notes?: string | null
+          resolved?: boolean | null
+          resolved_at?: string | null
+          session_id?: string | null
+          user_comment?: string
+        }
+        Relationships: []
+      }
+      ai_conversation_history: {
+        Row: {
+          content: string
+          created_at: string | null
+          entities: Json | null
+          id: string
+          intent: string | null
+          role: string
+          session_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          entities?: Json | null
+          id?: string
+          intent?: string | null
+          role: string
+          session_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          entities?: Json | null
+          id?: string
+          intent?: string | null
+          role?: string
+          session_id?: string
+        }
+        Relationships: []
+      }
       appointments: {
         Row: {
           ai_raw_input: string | null
@@ -112,6 +211,7 @@ export type Database = {
       }
       billing_records: {
         Row: {
+          actual_lab_cost: number | null
           applied_commission_rate: number | null
           applied_lab_discount_rate: number | null
           appointment_id: string
@@ -126,9 +226,11 @@ export type Database = {
           odoo_invoice_state: string | null
           odoo_synced_at: string | null
           payment_method: string | null
+          profitability_status: string | null
           status: Database["public"]["Enums"]["billing_status"] | null
         }
         Insert: {
+          actual_lab_cost?: number | null
           applied_commission_rate?: number | null
           applied_lab_discount_rate?: number | null
           appointment_id: string
@@ -143,9 +245,11 @@ export type Database = {
           odoo_invoice_state?: string | null
           odoo_synced_at?: string | null
           payment_method?: string | null
+          profitability_status?: string | null
           status?: Database["public"]["Enums"]["billing_status"] | null
         }
         Update: {
+          actual_lab_cost?: number | null
           applied_commission_rate?: number | null
           applied_lab_discount_rate?: number | null
           appointment_id?: string
@@ -160,6 +264,7 @@ export type Database = {
           odoo_invoice_state?: string | null
           odoo_synced_at?: string | null
           payment_method?: string | null
+          profitability_status?: string | null
           status?: Database["public"]["Enums"]["billing_status"] | null
         }
         Relationships: [
@@ -168,6 +273,276 @@ export type Database = {
             columns: ["appointment_id"]
             isOneToOne: true
             referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      billing_session_lines: {
+        Row: {
+          alt_price: number | null
+          amount_dr_main: number | null
+          amount_dr_secondary: number | null
+          catalog_price: number | null
+          commission_amount: number | null
+          commission_pct: number | null
+          created_at: string | null
+          discount: number | null
+          effective_price: number | null
+          id: string
+          is_negative: boolean | null
+          lab_discount_pct: number | null
+          lab_name: string | null
+          lab_quantity: number | null
+          lab_subtotal: number | null
+          lab_total_discounted: number | null
+          lab_unit_cost: number | null
+          needs_review: boolean | null
+          net_amount: number | null
+          no_price: boolean | null
+          observation: string | null
+          patient_id: string | null
+          patient_name: string
+          payment_amount: number | null
+          payment_status: string | null
+          pct_dr_main: number | null
+          pct_dr_secondary: number | null
+          price_deviation_pct: number | null
+          quantity: number | null
+          session_date: string | null
+          session_id: string
+          sort_order: number | null
+          subtotal: number | null
+          treatment_id: string | null
+          treatment_name: string
+          unit_price: number | null
+          validation_flags: Json | null
+          zero_quantity: boolean | null
+        }
+        Insert: {
+          alt_price?: number | null
+          amount_dr_main?: number | null
+          amount_dr_secondary?: number | null
+          catalog_price?: number | null
+          commission_amount?: number | null
+          commission_pct?: number | null
+          created_at?: string | null
+          discount?: number | null
+          effective_price?: number | null
+          id?: string
+          is_negative?: boolean | null
+          lab_discount_pct?: number | null
+          lab_name?: string | null
+          lab_quantity?: number | null
+          lab_subtotal?: number | null
+          lab_total_discounted?: number | null
+          lab_unit_cost?: number | null
+          needs_review?: boolean | null
+          net_amount?: number | null
+          no_price?: boolean | null
+          observation?: string | null
+          patient_id?: string | null
+          patient_name: string
+          payment_amount?: number | null
+          payment_status?: string | null
+          pct_dr_main?: number | null
+          pct_dr_secondary?: number | null
+          price_deviation_pct?: number | null
+          quantity?: number | null
+          session_date?: string | null
+          session_id: string
+          sort_order?: number | null
+          subtotal?: number | null
+          treatment_id?: string | null
+          treatment_name: string
+          unit_price?: number | null
+          validation_flags?: Json | null
+          zero_quantity?: boolean | null
+        }
+        Update: {
+          alt_price?: number | null
+          amount_dr_main?: number | null
+          amount_dr_secondary?: number | null
+          catalog_price?: number | null
+          commission_amount?: number | null
+          commission_pct?: number | null
+          created_at?: string | null
+          discount?: number | null
+          effective_price?: number | null
+          id?: string
+          is_negative?: boolean | null
+          lab_discount_pct?: number | null
+          lab_name?: string | null
+          lab_quantity?: number | null
+          lab_subtotal?: number | null
+          lab_total_discounted?: number | null
+          lab_unit_cost?: number | null
+          needs_review?: boolean | null
+          net_amount?: number | null
+          no_price?: boolean | null
+          observation?: string | null
+          patient_id?: string | null
+          patient_name?: string
+          payment_amount?: number | null
+          payment_status?: string | null
+          pct_dr_main?: number | null
+          pct_dr_secondary?: number | null
+          price_deviation_pct?: number | null
+          quantity?: number | null
+          session_date?: string | null
+          session_id?: string
+          sort_order?: number | null
+          subtotal?: number | null
+          treatment_id?: string | null
+          treatment_name?: string
+          unit_price?: number | null
+          validation_flags?: Json | null
+          zero_quantity?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "billing_session_lines_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "billing_session_lines_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "billing_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "billing_session_lines_treatment_id_fkey"
+            columns: ["treatment_id"]
+            isOneToOne: false
+            referencedRelation: "treatments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      billing_sessions: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          clinic_id: string
+          clinic_name: string | null
+          commission_pct: number | null
+          created_at: string | null
+          created_by: string | null
+          id: string
+          lab_discount_pct: number | null
+          model_type: string | null
+          month: number
+          notes: string | null
+          raw_input: Json | null
+          source_type: string | null
+          status: string | null
+          total_commission: number | null
+          total_lab: number | null
+          total_neto: number | null
+          total_subtotal: number | null
+          year: number
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          clinic_id: string
+          clinic_name?: string | null
+          commission_pct?: number | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          lab_discount_pct?: number | null
+          model_type?: string | null
+          month: number
+          notes?: string | null
+          raw_input?: Json | null
+          source_type?: string | null
+          status?: string | null
+          total_commission?: number | null
+          total_lab?: number | null
+          total_neto?: number | null
+          total_subtotal?: number | null
+          year: number
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          clinic_id?: string
+          clinic_name?: string | null
+          commission_pct?: number | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          lab_discount_pct?: number | null
+          model_type?: string | null
+          month?: number
+          notes?: string | null
+          raw_input?: Json | null
+          source_type?: string | null
+          status?: string | null
+          total_commission?: number | null
+          total_lab?: number | null
+          total_neto?: number | null
+          total_subtotal?: number | null
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "billing_sessions_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      clinic_commission_rules: {
+        Row: {
+          clinic_id: string
+          commission_pct: number
+          created_at: string | null
+          family_id: string
+          id: string
+          lab_discount_pct: number
+          notes: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          clinic_id: string
+          commission_pct?: number
+          created_at?: string | null
+          family_id: string
+          id?: string
+          lab_discount_pct?: number
+          notes?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          clinic_id?: string
+          commission_pct?: number
+          created_at?: string | null
+          family_id?: string
+          id?: string
+          lab_discount_pct?: number
+          notes?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clinic_commission_rules_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clinic_commission_rules_family_id_fkey"
+            columns: ["family_id"]
+            isOneToOne: false
+            referencedRelation: "treatment_families"
             referencedColumns: ["id"]
           },
         ]
@@ -229,30 +604,48 @@ export type Database = {
       clinics: {
         Row: {
           address: string | null
+          base_commission_pct: number | null
+          color_hex: string | null
           created_at: string | null
           email: string | null
           id: string
+          lab_discount_pct: number | null
           lab_expense_discount_percentage: number | null
           name: string
+          odoo_pricelist_id: number | null
           phone: string | null
+          tracks_payments: boolean | null
+          updated_at: string | null
         }
         Insert: {
           address?: string | null
+          base_commission_pct?: number | null
+          color_hex?: string | null
           created_at?: string | null
           email?: string | null
           id?: string
+          lab_discount_pct?: number | null
           lab_expense_discount_percentage?: number | null
           name: string
+          odoo_pricelist_id?: number | null
           phone?: string | null
+          tracks_payments?: boolean | null
+          updated_at?: string | null
         }
         Update: {
           address?: string | null
+          base_commission_pct?: number | null
+          color_hex?: string | null
           created_at?: string | null
           email?: string | null
           id?: string
+          lab_discount_pct?: number | null
           lab_expense_discount_percentage?: number | null
           name?: string
+          odoo_pricelist_id?: number | null
           phone?: string | null
+          tracks_payments?: boolean | null
+          updated_at?: string | null
         }
         Relationships: []
       }
@@ -395,6 +788,36 @@ export type Database = {
             columns: ["patient_id"]
             isOneToOne: false
             referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      patient_tags: {
+        Row: {
+          patient_id: string
+          tag_id: string
+        }
+        Insert: {
+          patient_id: string
+          tag_id: string
+        }
+        Update: {
+          patient_id?: string
+          tag_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "patient_tags_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "patient_tags_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "tags"
             referencedColumns: ["id"]
           },
         ]
@@ -546,11 +969,52 @@ export type Database = {
           },
         ]
       }
+      professional_clinics: {
+        Row: {
+          clinic_id: string
+          created_at: string | null
+          id: string
+          is_primary: boolean | null
+          professional_id: string
+        }
+        Insert: {
+          clinic_id: string
+          created_at?: string | null
+          id?: string
+          is_primary?: boolean | null
+          professional_id: string
+        }
+        Update: {
+          clinic_id?: string
+          created_at?: string | null
+          id?: string
+          is_primary?: boolean | null
+          professional_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "professional_clinics_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "professional_clinics_professional_id_fkey"
+            columns: ["professional_id"]
+            isOneToOne: false
+            referencedRelation: "professionals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       professionals: {
         Row: {
+          address: string | null
           base_commission_percentage: number | null
           clinic_id: string | null
           created_at: string | null
+          dni_nie: string | null
           email: string | null
           first_name: string
           id: string
@@ -559,9 +1023,11 @@ export type Database = {
           specialty: string | null
         }
         Insert: {
+          address?: string | null
           base_commission_percentage?: number | null
           clinic_id?: string | null
           created_at?: string | null
+          dni_nie?: string | null
           email?: string | null
           first_name: string
           id?: string
@@ -570,9 +1036,11 @@ export type Database = {
           specialty?: string | null
         }
         Update: {
+          address?: string | null
           base_commission_percentage?: number | null
           clinic_id?: string | null
           created_at?: string | null
+          dni_nie?: string | null
           email?: string | null
           first_name?: string
           id?: string
@@ -691,32 +1159,160 @@ export type Database = {
           },
         ]
       }
-      treatments: {
+      tags: {
         Row: {
+          color: string | null
           created_at: string | null
-          default_price: number | null
           id: string
-          lab_cost: number | null
-          service_name: string
-          service_type: string | null
+          name: string
         }
         Insert: {
+          color?: string | null
           created_at?: string | null
-          default_price?: number | null
           id?: string
-          lab_cost?: number | null
-          service_name: string
-          service_type?: string | null
+          name: string
         }
         Update: {
+          color?: string | null
           created_at?: string | null
-          default_price?: number | null
           id?: string
-          lab_cost?: number | null
-          service_name?: string
-          service_type?: string | null
+          name?: string
         }
         Relationships: []
+      }
+      treatment_clinic_prices: {
+        Row: {
+          clinic_id: string
+          created_at: string | null
+          id: string
+          odoo_pricelist_item_id: number | null
+          price: number
+          treatment_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          clinic_id: string
+          created_at?: string | null
+          id?: string
+          odoo_pricelist_item_id?: number | null
+          price: number
+          treatment_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          clinic_id?: string
+          created_at?: string | null
+          id?: string
+          odoo_pricelist_item_id?: number | null
+          price?: number
+          treatment_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "treatment_clinic_prices_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "treatment_clinic_prices_treatment_id_fkey"
+            columns: ["treatment_id"]
+            isOneToOne: false
+            referencedRelation: "treatments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      treatment_families: {
+        Row: {
+          color_hex: string | null
+          created_at: string | null
+          description: string | null
+          icon: string | null
+          id: string
+          name: string
+          sort_order: number | null
+        }
+        Insert: {
+          color_hex?: string | null
+          created_at?: string | null
+          description?: string | null
+          icon?: string | null
+          id?: string
+          name: string
+          sort_order?: number | null
+        }
+        Update: {
+          color_hex?: string | null
+          created_at?: string | null
+          description?: string | null
+          icon?: string | null
+          id?: string
+          name?: string
+          sort_order?: number | null
+        }
+        Relationships: []
+      }
+      treatments: {
+        Row: {
+          abbreviation: string | null
+          created_at: string | null
+          default_price: number | null
+          family_id: string | null
+          id: string
+          is_active: boolean | null
+          lab_cost: number | null
+          odoo_product_id: number | null
+          odoo_product_ref: string | null
+          odoo_product_tmpl_id: number | null
+          service_name: string
+          service_type: string | null
+          typical_lab_cost: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          abbreviation?: string | null
+          created_at?: string | null
+          default_price?: number | null
+          family_id?: string | null
+          id?: string
+          is_active?: boolean | null
+          lab_cost?: number | null
+          odoo_product_id?: number | null
+          odoo_product_ref?: string | null
+          odoo_product_tmpl_id?: number | null
+          service_name: string
+          service_type?: string | null
+          typical_lab_cost?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          abbreviation?: string | null
+          created_at?: string | null
+          default_price?: number | null
+          family_id?: string | null
+          id?: string
+          is_active?: boolean | null
+          lab_cost?: number | null
+          odoo_product_id?: number | null
+          odoo_product_ref?: string | null
+          odoo_product_tmpl_id?: number | null
+          service_name?: string
+          service_type?: string | null
+          typical_lab_cost?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "treatments_family_id_fkey"
+            columns: ["family_id"]
+            isOneToOne: false
+            referencedRelation: "treatment_families"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {

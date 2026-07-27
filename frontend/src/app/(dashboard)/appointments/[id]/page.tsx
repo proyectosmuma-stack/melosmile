@@ -322,7 +322,30 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
                   const jsonStr = contentAfter.substring(jsonStart, innerEnd + 1);
                   const parsedProcs = JSON.parse(jsonStr);
                   if (Array.isArray(parsedProcs) && parsedProcs.length > 0) {
-                    setProcedures(parsedProcs);
+                    const mappedProcs: ProcedureItem[] = parsedProcs.map((procItem: any, procIdx: number) => {
+                      if (typeof procItem === "string") {
+                        const matched = (tData || []).find((t: any) => 
+                          t.service_name?.toLowerCase() === procItem.toLowerCase() ||
+                          procItem.toLowerCase().includes(t.service_name?.toLowerCase()) ||
+                          t.service_name?.toLowerCase().includes(procItem.toLowerCase())
+                        );
+                        return {
+                          id: `${Date.now()}-${procIdx}`,
+                          treatmentId: matched ? matched.id : matchedTreatmentId,
+                          serviceName: matched ? matched.service_name : procItem,
+                          toothRef: "",
+                          dbPrice: matched ? Number(matched.default_price) || 0 : defaultPrice,
+                          dbCommission: loadedAppt.customCommission || 60,
+                          dbLabCost: matched ? Number(matched.lab_cost) || 0 : defaultLabCost,
+                          overridePrice: null,
+                          overrideCommission: null,
+                          overrideLabCost: null,
+                          showOverride: false
+                        };
+                      }
+                      return procItem;
+                    });
+                    setProcedures(mappedProcs);
                     proceduresSet = true;
                   }
                 } catch (e) {

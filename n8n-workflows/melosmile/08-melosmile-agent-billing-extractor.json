@@ -1,0 +1,133 @@
+{
+  "name": "[MELOSMILE] Sub-Agent: Extracción Contable Multicanal (Audio/OCR/Excel)",
+  "nodes": [
+    {
+      "id": "1",
+      "name": "Webhook_Billing_Extract",
+      "onError": "continueRegularOutput",
+      "parameters": {
+        "httpMethod": "POST",
+        "options": {},
+        "path": "melosmile-billing-extract",
+        "responseMode": "responseNode"
+      },
+      "position": [
+        250,
+        300
+      ],
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1
+    },
+    {
+      "id": "2",
+      "name": "Gemini_Chat_Model",
+      "parameters": {
+        "modelName": "models/gemini-2.0-flash"
+      },
+      "position": [
+        450,
+        450
+      ],
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1
+    },
+    {
+      "id": "3",
+      "name": "Agent_Billing_Extractor",
+      "parameters": {
+        "options": {
+          "systemMessage": "Role: Eres el Agente Extractor de Contabilidad Clínica de Melosmile.\n\nObjective: Analizar y extraer de mensajes de texto, audios transcritos, OCR de fotos manuscritas o archivos Excel los datos de las sesiones clínicas:\n- Paciente (Nombre y Apellidos)\n- Día/Fecha (si no se especifica, preguntar al usuario)\n- Clínica (si no se especifica, PREGUNTAR AL USUARIO obligatoriamente, no adivinar)\n- Tratamiento/s (nombre del tratamiento, cantidad, precio pactado)\n- Gastos de laboratorio (si aplican: proveedor lab, cantidad piezas, coste lab)\n- Observaciones (notas como 'CONTROL', 'BCKTS 12/24', 'FINALIZA CUOTA')\n\nFÓRMULA ALBACETE DE REFERENCIA:\nSubtotal = Cantidad * Precio - Descuento\nComisión Clínica = Subtotal * (% comisión clínica)\nGasto Lab = Cantidad Lab * Coste Lab * (1 - % dto lab)\nNETO = Comisión Clínica - Gasto Lab\n\nIMPORTANTE:\n1. Si falta la CLÍNICA o la FECHA, debes PREGUNTAR directamente al usuario.\n2. Llama a 'Tool_API_Billing_Extract' para crear o actualizar la sesión borrador y generar la URL de revisión.\n\nREGLA ANTI-ALUCINACIÓN:\nSi faltan datos requeridos, pregunta directamente antes de asumir datos inventados."
+        },
+        "promptType": "define",
+        "text": "={{ $json.body.raw_text ? $json.body.raw_text : JSON.stringify($json.body) }}"
+      },
+      "position": [
+        450,
+        300
+      ],
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7
+    },
+    {
+      "id": "4",
+      "name": "Tool_API_Billing_Extract",
+      "parameters": {
+        "jsonBody": "={{ JSON.stringify({ clinic_id: $json.clinic_id, month: $json.month, year: $json.year, session_date: $json.session_date, source_type: $json.source_type || 'text', raw_text: $json.raw_text, lines: $json.lines }) }}",
+        "method": "POST",
+        "sendBody": true,
+        "toolDescription": "Llama al endpoint Next.js /api/billing/extract para procesar las líneas de contabilidad, ejecutar validaciones en 4 niveles y guardar la sesión borrador en Supabase.",
+        "url": "https://melosmile.app/api/billing/extract"
+      },
+      "position": [
+        700,
+        300
+      ],
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1
+    },
+    {
+      "id": "5",
+      "name": "Respond_To_Webhook",
+      "parameters": {
+        "options": {},
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}"
+      },
+      "position": [
+        900,
+        300
+      ],
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1
+    }
+  ],
+  "connections": {
+    "Agent_Billing_Extractor": {
+      "main": [
+        [
+          {
+            "node": "Respond_To_Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini_Chat_Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Agent_Billing_Extractor",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tool_API_Billing_Extract": {
+      "ai_tool": [
+        [
+          {
+            "node": "Agent_Billing_Extractor",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook_Billing_Extract": {
+      "main": [
+        [
+          {
+            "node": "Agent_Billing_Extractor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

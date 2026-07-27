@@ -2,7 +2,7 @@
 
 > ⚠️ **REGLA DE RAMAS**: Este archivo pertenece exclusivamente a la rama `develop` y NUNCA debe fusionarse a la rama `main`.
 
-Este documento establece el plan de desarrollo, hitos alcanzados y próximas fases para la plataforma **Melosmile**.
+Este documento establece el plan de desarrollo, hitos alcanzados y próximos fases para la plataforma **Melosmile**.
 
 ---
 
@@ -57,16 +57,6 @@ Este documento establece el plan de desarrollo, hitos alcanzados y próximas fas
 
 ---
 
-## 📌 Fase Futura — Historial de Precios por Proveedor de Laboratorio
-> **NO implementado en este sprint.** Anotar para futura priorización.
-- Tabla `lab_providers`: proveedores de laboratorio dental.
-- Tabla `lab_cost_history`: historial de costes reales por tratamiento + proveedor + clínica + fecha.
-- Estadísticas de rentabilidad por proveedor de laboratorio.
-- Sugerencias del agente IA basadas en historial real de costes.
-- Alertas automáticas cuando un proveedor supera el coste esperado del tratamiento.
-
----
-
 ## 💼 Fase 4: Integración con Odoo y Facturación (COMPLETADO)
 - [x] Creación del cliente JSON-RPC Odoo ([src/lib/odoo/client.ts](file:///Users/munircallaos/Antigravity%20Projects/melosmile/frontend/src/lib/odoo/client.ts)).
 - [x] API Route `GET /api/odoo/products` para consultar el catálogo de servicios de Odoo.
@@ -115,14 +105,35 @@ Este documento establece el plan de desarrollo, hitos alcanzados y próximas fas
 - [x] **Resolución de Memoria de Sesión y Contexto Anafórico (Multiturno)**: Transmisión del historial conversacional completo en n8n Dispatcher, reescritura automática de peticiones relativas ("cambia esa cita"), mapeo robusto de parámetros (`patient_name`, `patient`, `date`, `time`) en `Tool_Update_Appointment` y resolución en backend Next.js.
 - [x] **Auditoría & Resolución Continua de `agent_log`**: Proceso activo de lectura, corrección de causas raíz y resolución de reportes de error en Supabase (`ai_agent_reports`).
 
+---
+
+## 💰 Fase 8: Módulo de Cálculo y Facturación Contable — Modelo ALBACETE (COMPLETADO)
+- [x] **Modelo de Referencia ALBACETE DEFINITIVO**:
+  - Análisis del Excel `ALBACETE DEFINITIVO.xlsx` (55 hojas mensuales 2021–2026, hoja `Resumen` por servicio y hoja `Pivot` por paciente).
+  - Estructura estándar de 19 columnas de contabilidad clínica.
+- [x] **Migración PostgreSQL Supabase (`20260727000000_billing_calculation_schema.sql`)**:
+  - Tabla `billing_sessions` organizada por `(clinic_id, year, month)` único.
+  - Tabla `billing_session_lines` con 19 columnas y flags de control.
+  - Extensión a `clinics` con campos `tracks_payments` y `lab_discount_pct`.
+- [x] **Razonamiento de Tratamientos y Emparejamiento BD (`frontend/src/lib/billing/calculator.ts`)**:
+  - Refactorizado el motor de interpretación para sobreescribir entradas genéricas o vacías con la coincidencia exacta del catálogo.
+- [x] **Sugerencia Inteligente de Aparatología y Gastos de Lab (`TREATMENT_LAB_SUGGESTIONS`)**:
+  - Auto-sugerencia de trabajos de laboratorio y costes según el tratamiento (Ortodoncia Invisible 700€, Brackets Metálicos 350€, Coronas Zirconio 300€).
+  - Celdas sugeridas destacadas en amarillo (`bg-amber-50`) con la insignia `💡 Sugerido`.
+- [x] **Dropdowns Interactivos del Catálogo BD**:
+  - Dropdowns para Paciente, Tratamiento (catálogo completo) y Equipo de Laboratorio.
+- [x] **Cálculo de Porcentaje y Monto Médico (`% Dr.`, `€ Dr.`)**:
+  - Visualización y edición del porcentaje y honorarios del médico en cada línea y desglose global en el footer pegajoso.
+- [x] **Médico Tratante por Defecto — Dra. Osly Melo**:
+  - Asignación obligatoria de la **Dra. Osly Melo** (`d7e5e2bb-a7c4-44f6-9ef8-ba453e7dc477`) a todas las citas agendadas o vinculadas durante el procesamiento contable.
+- [x] **Auto-Creación Secuencial (`PAC-00X`) y Enlace a Ficha del Paciente**:
+  - `getNextHistoriaId`: Generación limpia e incremental de códigos de historia médica (`PAC-006` a `PAC-030`).
+  - Enlace directo con icono en la celda de cada paciente (`/patients/[id]`) para consultar su historial médico en pestaña nueva.
+- [x] **Fix de Ficha de Cita (`/appointments/[id]`)**:
+  - Mapeo robusto de cadenas de texto en `notes` a objetos `ProcedureItem` con `treatmentId` válido para pre-seleccionar correctamente el dropdown de tratamiento.
 
 ---
 
 ## 🔧 Pendiente — Agente: Añadir Procedimientos a Citas Existentes
 
 - [ ] **Intención `add_procedure_to_appointment`**: El agente n8n actualmente solo soporta la creación de nuevas citas (`schedule_appointment`). Se debe añadir soporte para que el agente pueda añadir procedimientos adicionales a una cita ya existente sin sobrescribir los procedimientos anteriores.
-  - Detectar si existe una cita activa para el paciente en la fecha solicitada.
-  - Llamar a `POST /api/appointments/update` en lugar de `create`, haciendo append al array `[Procedimientos:]` en el campo `notes`.
-  - Mantener el `treatment_id` original intacto (solo añadir al array, no reemplazar el campo principal).
-  - Verificar en Supabase que todos los procedimientos anteriores siguen presentes tras el append.
-  - Registrado: `2026-07-27` durante pruebas de simulación con agente.

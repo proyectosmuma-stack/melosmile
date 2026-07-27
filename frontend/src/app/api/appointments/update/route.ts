@@ -175,8 +175,7 @@ export async function POST(req: Request) {
       rawAction === "create" ||
       body.create === true ||
       rawAction.toLowerCase().includes("crea") ||
-      rawAction.toLowerCase().includes("agendar") ||
-      (!targetId && Boolean(rawPatient) && Boolean(rawDateStr));
+      rawAction.toLowerCase().includes("agendar");
 
     const isDelete =
       rawAction === "delete" ||
@@ -458,8 +457,100 @@ export async function POST(req: Request) {
       );
     }
 
+    // Helper to enrich procedures in notes if a new treatment/reason is requested on update
+    async function enrichNotesWithProcedure(existingNotes: string | null, newReason: string): Promise<string> {
+      let notesText = existingNotes || "Agendada por Asistente IA";
+      let existingProcs: any[] = [];
+      let procTagIdx = notesText.indexOf("[Procedimientos:");
+
+      if (procTagIdx !== -1) {
+        const contentAfter = notesText.substring(procTagIdx);
+        const jsonStart = contentAfter.indexOf("[", 15);
+        if (jsonStart !== -1) {
+          let innerDepth = 0, innerEnd = -1;
+          for (let i = jsonStart; i < contentAfter.length; i++) {
+            if (contentAfter[i] === "[") innerDepth++;
+            else if (contentAfter[i] === "]") {
+              innerDepth--;
+              if (innerDepth === 0) { innerEnd = i; break; }
+            }
+          }
+          if (innerEnd !== -1) {
+            try {
+              existingProcs = JSON.parse(contentAfter.substring(jsonStart, innerEnd + 1));
+            } catch (e) {}
+          }
+        }
+      }
+
+      // Match requested new treatment against catalog
+      let matchedT: any = null;
+      const { data: exactMatch } = await dbClient
+        .from("treatments")
+        .select("id, service_name, default_price, lab_cost")
+        .ilike("service_name", newReason.trim())
+        .limit(1)
+        .maybeSingle();
+
+      if (exactMatch) {
+        matchedT = exactMatch;
+      } else {
+        const { data: fuzzyMatch } = await dbClient
+          .from("treatments")
+          .select("id, service_name, default_price, lab_cost")
+          .or(`service_name.ilike.%${newReason.trim()}%,abbreviation.ilike.%${newReason.trim()}%`)
+          .limit(1)
+          .maybeSingle();
+        if (fuzzyMatch) matchedT = fuzzyMatch;
+      }
+
+      const newProcName = matchedT ? matchedT.service_name : newReason;
+      const alreadyExists = (existingProcs || []).some((p: any) => p.serviceName?.toLowerCase() === newProcName.toLowerCase());
+
+      if (!alreadyExists) {
+        existingProcs.push({
+          id: Date.now().toString(),
+          treatmentId: matchedT ? matchedT.id : "",
+          serviceName: newProcName,
+          toothRef: "",
+          dbPrice: matchedT ? Number(matchedT.default_price) || 0 : 0,
+          dbCommission: 60,
+          dbLabCost: matchedT ? Number(matchedT.lab_cost) || 0 : 0,
+          overridePrice: null,
+          overrideCommission: null,
+          overrideLabCost: null,
+          showOverride: false,
+        });
+
+        if (procTagIdx !== -1) {
+          let depth = 0, outerEnd = -1;
+          for (let i = procTagIdx; i < notesText.length; i++) {
+            if (notesText[i] === "[") depth++;
+            else if (notesText[i] === "]") { depth--; if (depth === 0) { outerEnd = i; break; } }
+          }
+          const baseNotes = (notesText.substring(0, procTagIdx) + (outerEnd !== -1 ? notesText.substring(outerEnd + 1) : "")).trim();
+          notesText = baseNotes + `\n[Procedimientos: ${JSON.stringify(existingProcs)}]`;
+        } else {
+          notesText = notesText.trim() + `\n[Procedimientos: ${JSON.stringify(existingProcs)}]`;
+        }
+      }
+
+      return notesText;
+    }
+
     // Perform update by targetId if present
     if (targetId) {
+      // Fetch current notes before updating to append procedure if needed
+      const { data: currentTarget } = await dbClient
+        .from("appointments")
+        .select("notes, reason")
+        .eq("id", targetId)
+        .maybeSingle();
+
+      if (rawReason && currentTarget) {
+        updates.notes = await enrichNotesWithProcedure(currentTarget.notes, rawReason);
+      }
+
       const { data, error } = await dbClient
         .from("appointments")
         .update(updates)
@@ -472,6 +563,17 @@ export async function POST(req: Request) {
 
     // Perform update by patient + optional date
     if (resolvedPatientId) {
+      const { data: currentPatientAppts } = await dbClient
+        .from("appointments")
+        .select("id, notes, reason")
+        .eq("patient_id", resolvedPatientId)
+        .order("created_at", { ascending: false })
+        .limit(1);
+
+      if (rawReason && currentPatientAppts && currentPatientAppts.length > 0) {
+        updates.notes = await enrichNotesWithProcedure(currentPatientAppts[0].notes, rawReason);
+      }
+
       let query = dbClient
         .from("appointments")
         .update(updates)
@@ -487,6 +589,7 @@ export async function POST(req: Request) {
 
       const { data, error } = await query.select();
       if (error) throw error;
+
 
       // If no rows were updated, update the most recent active appointment for that patient
       if (!data || data.length === 0) {
