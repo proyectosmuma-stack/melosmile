@@ -357,7 +357,10 @@ export async function POST(req: Request) {
         .select()
         .single();
 
-      if (createErr) throw createErr;
+      if (createErr) {
+        console.error("Create Appointment Error:", createErr);
+        return NextResponse.json({ error: createErr.message || JSON.stringify(createErr) }, { status: 500 });
+      }
 
       if (newAppt?.id) {
         try {
