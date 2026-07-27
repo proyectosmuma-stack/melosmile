@@ -44,11 +44,15 @@ export async function POST(req: NextRequest) {
 
     // Log user message asynchronously
     if (session_id && message) {
-      (supabase as any).from("ai_conversation_history").insert({
-        session_id,
-        role: "user",
-        content: message
-      }).select().then();
+      try {
+        await (supabase as any).from("ai_conversation_history").insert({
+          session_id,
+          role: "user",
+          content: message
+        }).select();
+      } catch (err: any) {
+        console.warn("User conversation history log warning:", err?.message);
+      }
     }
 
     const n8nRes = await fetch(`${N8N_BASE}${DISPATCHER_PATH}`, {
@@ -87,13 +91,17 @@ export async function POST(req: NextRequest) {
 
     // Log assistant message asynchronously
     if (session_id && cleaned.summary) {
-      (supabase as any).from("ai_conversation_history").insert({
-        session_id,
-        role: "assistant",
-        content: cleaned.summary,
-        intent: cleaned.intent,
-        entities: cleaned.entities
-      }).select().then();
+      try {
+        await (supabase as any).from("ai_conversation_history").insert({
+          session_id,
+          role: "assistant",
+          content: cleaned.summary,
+          intent: cleaned.intent,
+          entities: cleaned.entities
+        }).select();
+      } catch (err: any) {
+        console.warn("Assistant conversation history log warning:", err?.message);
+      }
     }
 
     return NextResponse.json({
