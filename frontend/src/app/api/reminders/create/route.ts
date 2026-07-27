@@ -50,7 +50,7 @@ export async function POST(req: Request) {
       reminder_id: newReminder.id,
       event_type: "created",
       description: `Recordatorio creado para canal ${channel}`,
-    });
+    }).select();
 
     // If sendImmediately, dispatch to n8n right now
     if (sendImmediately) {

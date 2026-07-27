@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
         session_id,
         role: "user",
         content: message
-      }).then();
+      }).select().then();
     }
 
     const n8nRes = await fetch(`${N8N_BASE}${DISPATCHER_PATH}`, {
@@ -93,7 +93,7 @@ export async function POST(req: NextRequest) {
         content: cleaned.summary,
         intent: cleaned.intent,
         entities: cleaned.entities
-      }).then();
+      }).select().then();
     }
 
     return NextResponse.json({
