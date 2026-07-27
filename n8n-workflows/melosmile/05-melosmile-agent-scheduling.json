@@ -180,35 +180,15 @@
           "parameters": [
             {
               "name": "patient_name",
-              "value": "={{ $fromAI('patient_name', 'Nombre del paciente') }}"
-            },
-            {
-              "name": "patient",
-              "value": "={{ $fromAI('patient', 'Nombre o ID del paciente') }}"
+              "value": "={{ $fromAI('patient_name', 'Nombre del paciente de la cita a modificar') }}"
             },
             {
               "name": "appointment_date",
-              "value": "={{ $fromAI('appointment_date', 'Nueva fecha y hora de la cita') }}"
-            },
-            {
-              "name": "date",
-              "value": "={{ $fromAI('date', 'Nueva fecha de la cita') }}"
-            },
-            {
-              "name": "new_date",
-              "value": "={{ $fromAI('new_date', 'Nueva fecha de la cita') }}"
-            },
-            {
-              "name": "time",
-              "value": "={{ $fromAI('time', 'Nueva hora de la cita') }}"
-            },
-            {
-              "name": "new_time",
-              "value": "={{ $fromAI('new_time', 'Nueva hora de la cita') }}"
+              "value": "={{ $fromAI('appointment_date', 'Nueva fecha y hora para la cita, ej: miércoles 29 de julio a las 13:00') }}"
             },
             {
               "name": "clinic",
-              "value": "={{ $fromAI('clinic', 'Nombre de la clínica') }}"
+              "value": "={{ $fromAI('clinic', 'Nombre de la clínica si fue mencionada') }}"
             }
           ]
         }
