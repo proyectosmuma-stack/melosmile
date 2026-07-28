@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { Bell, CheckCircle2, AlertCircle, Sparkles, X, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { supabase } from "@/lib/supabase/client";
 
 export type SystemNotification = {
   id: string;
@@ -41,17 +42,77 @@ export function NotificationBell() {
   const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
-    const syncNotifs = () => {
+    const fetchActivePlanAlerts = async (): Promise<SystemNotification[]> => {
+      try {
+        const { data: plans } = await (supabase as any)
+          .from("treatment_plans")
+          .select("id, patient_id, treatment_type, total_installments, paid_installments_count, status, patients(id, first_name, last_name, historia_id)")
+          .eq("status", "activo");
+
+        if (!plans || plans.length === 0) return [];
+
+        const alerts: SystemNotification[] = [];
+
+        for (const plan of plans) {
+          if (!plan.patients) continue;
+
+          const { data: appts } = await supabase
+            .from("appointments")
+            .select("id, status, reason")
+            .eq("patient_id", plan.patient_id);
+
+          const completedCount = (appts || []).filter((a: any) => {
+            const isNotCancelled = a.status !== "Cancelada" && a.status !== "cancelada";
+            const isControl = /control|mensualidad/i.test(a.reason || "");
+            return isNotCancelled && isControl;
+          }).length;
+
+          const totalCompleted = completedCount + (plan.paid_installments_count || 0);
+          const totalInst = plan.total_installments || 0;
+          const remaining = Math.max(0, totalInst - totalCompleted);
+
+          if (totalInst > 0 && remaining <= 1) {
+            const pName = `${plan.patients.first_name || ""} ${plan.patients.last_name || ""}`.trim();
+            const hId = plan.patients.historia_id || "";
+            const tType = plan.treatment_type || "Ortodoncia";
+
+            alerts.push({
+              id: `plan-alert-${plan.id}`,
+              title: `⚠️ Revisión de Plan: ${tType}`,
+              message: `El paciente ${pName} (${hId}) ha completado ${totalCompleted} de ${totalInst} mensualidades (${remaining === 0 ? "¡Plan alcanzado 100%!" : "Queda 1 cuota pendiente"}).`,
+              timestamp: "Plan Activo",
+              type: "warning",
+              read: false,
+            });
+          }
+        }
+
+        return alerts;
+      } catch (e) {
+        console.warn("Notice fetching plan alerts:", e);
+        return [];
+      }
+    };
+
+    const syncNotifs = async () => {
       const saved = localStorage.getItem("melosmile_notifications");
+      let local: SystemNotification[] = [];
       if (saved) {
         try {
-          setNotifications(JSON.parse(saved));
-        } catch (e) {
-          setNotifications(INITIAL_NOTIFICATIONS);
-        }
-      } else {
-        setNotifications(INITIAL_NOTIFICATIONS);
+          local = JSON.parse(saved);
+        } catch (e) {}
       }
+
+      const dynamicAlerts = await fetchActivePlanAlerts();
+
+      const combined = [...dynamicAlerts];
+      local.forEach((loc) => {
+        if (!combined.some((c) => c.title === loc.title && c.message === loc.message)) {
+          combined.push(loc);
+        }
+      });
+
+      setNotifications(combined);
     };
 
     syncNotifs();
