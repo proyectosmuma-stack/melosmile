@@ -44,10 +44,10 @@ export function NotificationBell() {
   useEffect(() => {
     const fetchActivePlanAlerts = async (): Promise<SystemNotification[]> => {
       try {
-        const { data: plans } = await (supabase as any)
-          .from("treatment_plans")
-          .select("id, patient_id, treatment_type, total_installments, paid_installments_count, status, patients(id, first_name, last_name, historia_id)")
-          .eq("status", "activo");
+        const res = await fetch("/api/treatment-plans?status=activo");
+        if (!res.ok) return [];
+        const json = await res.json();
+        const plans = json.data || [];
 
         if (!plans || plans.length === 0) return [];
 

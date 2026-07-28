@@ -509,13 +509,11 @@ function toTitleCase(text: string): string {
 
         // 2.5 Active Treatment Plans (Mensualidad Pautada)
         try {
-          const { data: planData } = await (supabase as any)
-            .from("treatment_plans")
-            .select("*")
-            .eq("patient_id", p.id)
-            .order("created_at", { ascending: false });
-
-          setTreatmentPlans(planData || []);
+          const planRes = await fetch(`/api/treatment-plans?patient_id=${p.id}`);
+          if (planRes.ok) {
+            const planJson = await planRes.json();
+            setTreatmentPlans(planJson.data || []);
+          }
         } catch (planErr) {
           console.warn("Notice fetching treatment plans:", planErr);
         }
@@ -1855,8 +1853,15 @@ function toTitleCase(text: string): string {
                     };
                     if (editingPlanId) payload.id = editingPlanId;
 
-                    const { error } = await (supabase as any).from("treatment_plans").upsert(payload);
-                    if (error) throw error;
+                    const res = await fetch("/api/treatment-plans", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify(payload)
+                    });
+                    if (!res.ok) {
+                      const errJson = await res.json();
+                      throw new Error(errJson.error || "Error guardando el plan");
+                    }
 
                     setEditingPlanModalOpen(false);
                     await fetchAll();
