@@ -178,11 +178,11 @@ function toTitleCase(text: string): string {
       }
     }
 
-    let activeTreatmentPlan: any = null;
+    let activeTreatmentPlans: any[] = [];
     if (resolvedPatientId && UUID_REGEX.test(resolvedPatientId)) {
-      const planRes = await dbFetch(`treatment_plans?select=id,monthly_fee&patient_id=eq.${resolvedPatientId}&status=eq.activo&limit=1`);
-      if (planRes.ok && planRes.data && planRes.data.length > 0) {
-        activeTreatmentPlan = planRes.data[0];
+      const planRes = await dbFetch(`treatment_plans?select=id,monthly_fee,treatment_type&patient_id=eq.${resolvedPatientId}&status=eq.activo`);
+      if (planRes.ok && planRes.data) {
+        activeTreatmentPlans = planRes.data;
       }
     }
 
@@ -279,8 +279,20 @@ function toTitleCase(text: string): string {
 
       // Check if it is a Control/Mensualidad treatment and apply treatment plan's monthly fee
       const isControlTreatment = /control|mensualidad/i.test(p_reason) || /control|mensualidad/i.test(rawClean);
-      if (isControlTreatment && activeTreatmentPlan && activeTreatmentPlan.monthly_fee !== undefined && activeTreatmentPlan.monthly_fee !== null) {
-        p_price = Number(activeTreatmentPlan.monthly_fee);
+      if (isControlTreatment && activeTreatmentPlans.length > 0) {
+        let matchedPlan = activeTreatmentPlans.find((plan) => {
+          const typeName = (plan.treatment_type || "").toLowerCase();
+          return typeName && (
+            p_reason.toLowerCase().includes(typeName) ||
+            rawClean.toLowerCase().includes(typeName)
+          );
+        });
+        if (!matchedPlan) {
+          matchedPlan = activeTreatmentPlans[0];
+        }
+        if (matchedPlan && matchedPlan.monthly_fee !== undefined && matchedPlan.monthly_fee !== null) {
+          p_price = Number(matchedPlan.monthly_fee);
+        }
       }
 
       if (!first_t_id) first_t_id = p_t_id;
