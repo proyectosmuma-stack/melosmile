@@ -162,11 +162,12 @@ export function AppointmentDetailDrawer({
             <CalendarIcon className="h-4 w-4 text-slate-500 shrink-0" />
             <div className="flex items-center gap-2">
               <span className="font-semibold text-slate-800">{event.patient}</span>
-              {event.patientId && (
+              {(event.patientHistoriaId || event.patientId) && (
                 <button
                   onClick={() => {
                     onClose();
-                    router.push(`/patients/${event.patientId}`);
+                    const ref = event.patientHistoriaId || event.patientId;
+                    router.push(`/patients/${ref}`);
                   }}
                   className="text-[11px] font-bold text-blue-600 hover:underline cursor-pointer"
                 >
@@ -203,7 +204,12 @@ export function AppointmentDetailDrawer({
             variant="outline"
             onClick={() => {
               onClose();
-              if (event.patientId) router.push(`/patients/${event.patientId}`);
+              const ref = event.patientHistoriaId || event.patientId;
+              if (ref) {
+                router.push(`/patients/${ref}`);
+              } else {
+                alert("No se encontró la ficha del paciente para esta cita.");
+              }
             }}
             className="text-xs rounded-xl border-slate-300 bg-white cursor-pointer"
           >

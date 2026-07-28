@@ -230,7 +230,7 @@ export function CalendarView({ selectedClinicId = "all" }: { selectedClinicId?: 
           id, appointment_date, reason, status, notes, clinic_id,
           clinics ( id, name ),
           professionals ( first_name, last_name ),
-          patients ( first_name, last_name, historia_id, phone, email )
+          patients ( id, first_name, last_name, historia_id, phone, email )
         `);
 
       if (!error && data) {

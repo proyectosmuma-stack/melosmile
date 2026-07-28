@@ -36,19 +36,26 @@ export default function DashboardPage() {
           .order("name");
         if (cData) setClinics(cData);
 
-        const today = new Date();
-        const todayStr = today.toISOString().split('T')[0];
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const todayStr = `${year}-${month}-${day}`;
         
         // Month start
-        const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+        const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
         const firstDayStr = firstDayOfMonth.toISOString();
         
         // Appointments today
-        const { count: appointmentsCount } = await (supabase as any)
+        const { data: apptData } = await (supabase as any)
           .from("appointments")
-          .select("id", { count: "exact" })
-          .gte("appointment_date", todayStr + "T00:00:00")
-          .lte("appointment_date", todayStr + "T23:59:59");
+          .select("id, status, appointment_date");
+
+        const appointmentsCount = (apptData || []).filter((a: any) => {
+          if (!a.appointment_date) return false;
+          const isNotCancelled = a.status !== "Cancelada" && a.status !== "cancelada";
+          return isNotCancelled && a.appointment_date.startsWith(todayStr);
+        }).length;
           
         // Billed this month (from billing_records)
         const { data: billingData } = await (supabase as any)

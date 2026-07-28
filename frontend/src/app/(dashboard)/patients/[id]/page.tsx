@@ -923,29 +923,49 @@ function toTitleCase(text: string): string {
                             Plan de {typeName} Pautado
                           </span>
                         </div>
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="outline"
-                          onClick={() => {
-                            setEditingPlanId(plan.id);
-                            setPlanForm({
-                              monthly_fee: String(plan.monthly_fee ?? 60),
-                              total_installments: String(plan.total_installments ?? 18),
-                              total_cost: String(plan.total_cost ?? 1080),
-                              initial_payment: String(plan.initial_payment ?? 0),
-                              final_payment: String(plan.final_payment ?? 0),
-                              treatment_type: plan.treatment_type || "Ortodoncia",
-                              paid_installments_count: String(plan.paid_installments_count ?? 0),
-                              already_paid_amount: String(plan.already_paid_amount ?? 0),
-                              status: plan.status || "activo"
-                            });
-                            setEditingPlanModalOpen(true);
-                          }}
-                          className="h-7 px-2.5 text-[11px] font-bold text-emerald-800 bg-emerald-100/80 hover:bg-emerald-200/80 border-emerald-300 rounded-lg gap-1 cursor-pointer"
-                        >
-                          <Edit3 className="h-3 w-3" /> Editar Plan
-                        </Button>
+                        <div className="flex items-center gap-1.5">
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setEditingPlanId(plan.id);
+                              setPlanForm({
+                                monthly_fee: String(plan.monthly_fee ?? 60),
+                                total_installments: String(plan.total_installments ?? 18),
+                                total_cost: String(plan.total_cost ?? 1080),
+                                initial_payment: String(plan.initial_payment ?? 0),
+                                final_payment: String(plan.final_payment ?? 0),
+                                treatment_type: plan.treatment_type || "Ortodoncia",
+                                paid_installments_count: String(plan.paid_installments_count ?? 0),
+                                already_paid_amount: String(plan.already_paid_amount ?? 0),
+                                status: plan.status || "activo"
+                              });
+                              setEditingPlanModalOpen(true);
+                            }}
+                            className="h-7 px-2.5 text-[11px] font-bold text-emerald-800 bg-emerald-100/80 hover:bg-emerald-200/80 border-emerald-300 rounded-lg gap-1 cursor-pointer"
+                          >
+                            <Edit3 className="h-3 w-3" /> Editar Plan
+                          </Button>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="ghost"
+                            onClick={async () => {
+                              if (!confirm(`¿Estás seguro de eliminar el plan de ${typeName}?`)) return;
+                              try {
+                                const res = await fetch(`/api/treatment-plans?id=${plan.id}`, { method: "DELETE" });
+                                if (!res.ok) throw new Error("No se pudo eliminar el plan");
+                                await fetchAll();
+                              } catch (err: any) {
+                                alert(`Error al eliminar plan: ${err.message}`);
+                              }
+                            }}
+                            className="h-7 px-2 text-[11px] font-bold text-rose-700 hover:bg-rose-100 hover:text-rose-900 rounded-lg gap-1 cursor-pointer"
+                          >
+                            <Trash2 className="h-3 w-3" /> Eliminar
+                          </Button>
+                        </div>
                       </div>
 
                       {/* Warning Alert Banner when remaining installments <= 1 */}
@@ -1830,10 +1850,32 @@ function toTitleCase(text: string): string {
               </div>
             </div>
 
-            <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
-              <Button variant="outline" size="sm" onClick={() => setEditingPlanModalOpen(false)} className="rounded-xl">
-                Cancelar
-              </Button>
+            <div className="flex items-center justify-between pt-3 border-t border-slate-100">
+              {editingPlanId ? (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={async () => {
+                    if (!confirm("¿Estás seguro de eliminar este plan de tratamiento?")) return;
+                    try {
+                      const res = await fetch(`/api/treatment-plans?id=${editingPlanId}`, { method: "DELETE" });
+                      if (!res.ok) throw new Error("No se pudo eliminar el plan");
+                      setEditingPlanModalOpen(false);
+                      await fetchAll();
+                    } catch (err: any) {
+                      alert(`Error: ${err.message}`);
+                    }
+                  }}
+                  className="text-rose-600 hover:bg-rose-50 hover:text-rose-700 text-xs font-bold rounded-xl gap-1 cursor-pointer"
+                >
+                  <Trash2 className="h-3.5 w-3.5" /> Eliminar Plan
+                </Button>
+              ) : <div />}
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" onClick={() => setEditingPlanModalOpen(false)} className="rounded-xl">
+                  Cancelar
+                </Button>
               <Button
                 size="sm"
                 onClick={async () => {
@@ -1874,6 +1916,7 @@ function toTitleCase(text: string): string {
                 <Save className="h-4 w-4 mr-1" /> Guardar Plan
               </Button>
             </div>
+          </div>
           </div>
         </div>
       )}
