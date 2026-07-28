@@ -28,18 +28,20 @@ const INITIAL_NOTIFICATIONS: SystemNotification[] = [
 let globalAddNotification: ((notif: Omit<SystemNotification, "id" | "timestamp" | "read">) => void) | null = null;
 
 export function addSystemNotification(notif: Omit<SystemNotification, "id" | "timestamp" | "read">) {
-  if (globalAddNotification) {
-    globalAddNotification(notif);
-  } else {
-    // Fallback if component not mounted yet
-    const stored = JSON.parse(localStorage.getItem("melosmile_notifications") || "[]");
-    stored.unshift({
+  const stored: SystemNotification[] = JSON.parse(localStorage.getItem("melosmile_notifications") || "[]");
+  const exists = stored.some((n) => n.title === notif.title && n.message === notif.message);
+  if (!exists) {
+    const item: SystemNotification = {
       ...notif,
       id: Date.now().toString(),
-      timestamp: "Hace un momento",
+      timestamp: "Ahora mismo",
       read: false,
-    });
+    };
+    stored.unshift(item);
     localStorage.setItem("melosmile_notifications", JSON.stringify(stored));
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("melosmile_notifications_updated", { detail: item }));
+    }
   }
 }
 
@@ -48,31 +50,28 @@ export function NotificationBell() {
   const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
-    const saved = localStorage.getItem("melosmile_notifications");
-    if (saved) {
-      try {
-        setNotifications(JSON.parse(saved));
-      } catch (e) {
+    const syncNotifs = () => {
+      const saved = localStorage.getItem("melosmile_notifications");
+      if (saved) {
+        try {
+          setNotifications(JSON.parse(saved));
+        } catch (e) {
+          setNotifications(INITIAL_NOTIFICATIONS);
+        }
+      } else {
         setNotifications(INITIAL_NOTIFICATIONS);
       }
-    } else {
-      setNotifications(INITIAL_NOTIFICATIONS);
-    }
-  }, []);
+    };
 
-  useEffect(() => {
-    globalAddNotification = (newNotif) => {
-      const item: SystemNotification = {
-        ...newNotif,
-        id: Date.now().toString(),
-        timestamp: "Ahora mismo",
-        read: false,
-      };
-      setNotifications((prev) => {
-        const updated = [item, ...prev];
-        localStorage.setItem("melosmile_notifications", JSON.stringify(updated));
-        return updated;
-      });
+    syncNotifs();
+
+    const handleUpdate = () => {
+      syncNotifs();
+    };
+
+    window.addEventListener("melosmile_notifications_updated", handleUpdate);
+    return () => {
+      window.removeEventListener("melosmile_notifications_updated", handleUpdate);
     };
   }, []);
 
