@@ -138,11 +138,24 @@ Este documento establece el plan de desarrollo, hitos alcanzados y próximos fas
 - [x] Endpoint `GET /api/billing/sessions/generate` para crear/refrescar la sesión en base a citas `Realizadas`.
 - [x] Integración en UI `/billing/[id]` de botón "Actualizar desde Citas" que preserva ajustes manuales.
 - [x] Portal de Importación Multimodal `Document Cleaner Portal` en `/billing/new` conectado a proxy `/api/billing/document-cleaner`.
-- [x] Flujo N8N `10-melosmile-agent-document-cleaner.json` (Gemini 2.5 Flash) implementado para estructurar Excel/Textos en formato JSON de citas.
-- [x] Limpieza de DB (Pacientes/Sesiones de prueba) y actualización de cita de prueba.
+- [x] Flujo N8N `[MELOSMILE] Agent Document Cleaner` (`OG4Yy4N7qALXojTa`) implementado con enrutador `If Node` para imágenes y textos.
+- [x] Agente de Visión en OpenRouter con `google/gemini-2.5-flash` para extracción precisa de agendas manuscritas.
+- [x] **Reglas de Negocio & Inteligencia de Ingesta**:
+  - [x] Diccionario de clínica: traducción automática de `RC` / `R.C.` a `Reconstrucción Compleja`.
+  - [x] Agrupamiento por paciente y hora en 1 sola cita con array de tratamientos y suma de importes.
+  - [x] Respeto estricto de precios en euros escritos en la agenda sobre precios por defecto del catálogo.
+  - [x] Búsqueda inteligente por nombre de pila (asociación a paciente si hay 1 coincidencia; marca `Pendiente de Revisión` si hay múltiples homónimos).
+  - [x] Exclusión automática de citas tachadas (`status: 'Cancelada'`) de la facturación contable.
+  - [x] **Selección Manual del Día en Importación de Billing**: Campo opcional de selección de Día del Mes (Día 1 a Día 31) en `/billing/new` como fallback o asignación explícita cuando el documento importado no contiene el número de día.
 
 ---
 
-## 🔧 Pendiente — Agente: Añadir Procedimientos a Citas Existentes
+## 🔧 Pendiente
 
-- [ ] **Intención `add_procedure_to_appointment`**: El agente n8n actualmente solo soporta la creación de nuevas citas (`schedule_appointment`). Se debe añadir soporte para que el agente pueda añadir procedimientos adicionales a una cita ya existente sin sobrescribir los procedimientos anteriores.
+- [x] **Intención `add_procedure_to_appointment`**: El agente n8n actualmente solo soporta la creación de nuevas citas (`schedule_appointment`). Se debe añadir soporte para que el agente pueda añadir procedimientos adicionales a una cita ya existente sin sobrescribir los procedimientos anteriores.
+
+### Fase 6: Planes de Tratamiento y Volcado Histórico 🟢
+- [x] Soporte para diferentes tipos de planes de tratamiento (`Ortodoncia`, `Miofuncional`, `Otro`).
+- [x] Registro manual de **Mensualidades Ya Pagadas** y **Monto Ya Pagado** para migración de datos (volcado histórico).
+- [x] Motor de alertas unificado (Histórico + Registrado) para avisos automáticos al completarse las cuotas.
+

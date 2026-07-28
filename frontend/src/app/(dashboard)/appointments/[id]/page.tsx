@@ -54,6 +54,7 @@ type TreatmentOption = {
   id: string;
   service_name: string;
   default_price: number;
+  lab_cost?: number;
 };
 
 type ApptDocument = {
@@ -202,7 +203,26 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
           .select("id, service_name, default_price, lab_cost")
           .eq("is_active", true)
           .order("service_name");
-        if (tData) setTreatmentsList(tData);
+
+        const clinicPricesMap = new Map<string, number>();
+        if (a.clinic_id) {
+          const { data: cpData } = await (supabase as any)
+            .from("treatment_clinic_prices")
+            .select("treatment_id, price")
+            .eq("clinic_id", a.clinic_id);
+          if (cpData) {
+            cpData.forEach((cp: any) => clinicPricesMap.set(cp.treatment_id, Number(cp.price || 0)));
+          }
+        }
+
+        let finalTreatmentsList: TreatmentOption[] = [];
+        if (tData) {
+          finalTreatmentsList = tData.map((t: any) => ({
+            ...t,
+            default_price: clinicPricesMap.has(t.id) ? clinicPricesMap.get(t.id)! : Number(t.default_price || 0)
+          }));
+          setTreatmentsList(finalTreatmentsList);
+        }
 
         const { data: dData } = await (supabase as any)
           .from("documents")
@@ -237,7 +257,7 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
           patientDiseases: p?.important_diseases ?? null,
           patientMedication: p?.current_medication ?? null,
           billingId: bData?.id ?? null,
-          customPrice: bData?.custom_price ?? trt?.default_price ?? 0,
+          customPrice: bData?.custom_price ?? (a.treatment_id && clinicPricesMap.has(a.treatment_id) ? clinicPricesMap.get(a.treatment_id)! : trt?.default_price) ?? 0,
           actualLabCost: bData?.actual_lab_cost ?? trt?.lab_cost ?? 0,
           customCommission: bData?.applied_commission_rate ?? 60,
           customLabDiscount: bData?.applied_lab_discount_rate ?? 50,
@@ -251,9 +271,9 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
         setStatus(loadedAppt.status);
 
         // Match treatment from catalog using treatment_id (primary source of truth from DB)
-        const matchedTreatment = (tData || []).find((t: any) =>
+        const matchedTreatment = (finalTreatmentsList || []).find((t: any) =>
           a.treatment_id ? t.id === a.treatment_id : t.service_name?.toLowerCase() === loadedAppt.reason?.toLowerCase()
-        ) || (tData || []).find((t: any) =>
+        ) || (finalTreatmentsList || []).find((t: any) =>
           loadedAppt.reason?.toLowerCase().includes(t.service_name?.toLowerCase()) ||
           t.service_name?.toLowerCase().includes(loadedAppt.reason?.toLowerCase())
         );
@@ -324,7 +344,7 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
                   if (Array.isArray(parsedProcs) && parsedProcs.length > 0) {
                     const mappedProcs: ProcedureItem[] = parsedProcs.map((procItem: any, procIdx: number) => {
                       if (typeof procItem === "string") {
-                        const matched = (tData || []).find((t: any) => 
+                        const matched = (finalTreatmentsList || []).find((t: any) => 
                           t.service_name?.toLowerCase() === procItem.toLowerCase() ||
                           procItem.toLowerCase().includes(t.service_name?.toLowerCase()) ||
                           t.service_name?.toLowerCase().includes(procItem.toLowerCase())
@@ -343,7 +363,14 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
                           showOverride: false
                         };
                       }
-                      return procItem;
+                      const tId = procItem.treatmentId || matchedTreatmentId;
+                      const clinicPrice = clinicPricesMap.get(tId) ?? (procItem.treatmentId ? (finalTreatmentsList.find(t => t.id === procItem.treatmentId)?.default_price) : undefined);
+                      const resolvedDbPrice = clinicPrice !== undefined ? clinicPrice : (procItem.dbPrice || defaultPrice);
+
+                      return {
+                        ...procItem,
+                        dbPrice: resolvedDbPrice
+                      };
                     });
                     setProcedures(mappedProcs);
                     proceduresSet = true;
@@ -1034,7 +1061,7 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
                             <option value="">{proc.serviceName || "-- Seleccionar del catálogo --"}</option>
                             {treatmentsList.map((t) => (
                               <option key={t.id} value={t.service_name}>
-                                {t.service_name} ({t.default_price} €)
+                                {t.service_name}
                               </option>
                             ))}
                           </select>
@@ -1073,7 +1100,7 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
                           />
                         </div>
                         <div className="space-y-1">
-                          <Label className="text-[10px] uppercase font-bold text-slate-500">% Comisión Sede</Label>
+                          <Label className="text-[10px] uppercase font-bold text-slate-500">% Comisión Dra.</Label>
                           <Input
                             type="number"
                             value={effectiveComm}
@@ -1427,30 +1454,30 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
 
               <div className="space-y-1">
                 <Label className="text-xs font-semibold text-slate-700">Clínica / Sede</Label>
-                <Select value={editClinicId} onValueChange={(val) => setEditClinicId(val || "")}>
-                  <SelectTrigger className="h-9 text-xs bg-white">
-                    <SelectValue placeholder="Seleccionar Clínica" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {clinicsCatalog.map((c) => (
-                      <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <select
+                  value={editClinicId}
+                  onChange={(e) => setEditClinicId(e.target.value)}
+                  className="w-full h-9 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">-- Seleccionar Clínica --</option>
+                  {clinicsCatalog.map((c) => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
+                </select>
               </div>
 
               <div className="space-y-1">
                 <Label className="text-xs font-semibold text-slate-700">Doctor / Profesional Principal</Label>
-                <Select value={editProfessionalId} onValueChange={(val) => setEditProfessionalId(val || "")}>
-                  <SelectTrigger className="h-9 text-xs bg-white">
-                    <SelectValue placeholder="Seleccionar Doctor" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {professionalsCatalog.map((p) => (
-                      <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <select
+                  value={editProfessionalId}
+                  onChange={(e) => setEditProfessionalId(e.target.value)}
+                  className="w-full h-9 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">-- Seleccionar Doctor --</option>
+                  {professionalsCatalog.map((p) => (
+                    <option key={p.id} value={p.id}>{p.name}</option>
+                  ))}
+                </select>
               </div>
 
               <div className="space-y-1">

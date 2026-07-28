@@ -65,27 +65,42 @@ async function getUID(): Promise<number> {
   return _uid!;
 }
 
-async function odooExecute(model: string, method: string, args: unknown[], kwargs: Record<string, unknown> = {}) {
-  const uid = await getUID();
-  const res = await fetch(`${ODOO_URL}/web/dataset/call_kw`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      jsonrpc: '2.0',
-      method: 'call',
-      id: Date.now(),
-      params: {
-        model,
-        method,
-        args,
-        kwargs: { context: { lang: 'es_ES', tz: 'Europe/Madrid' }, ...kwargs },
-      },
-    }),
-    cache: 'no-store',
-  });
-  const data = await res.json();
-  if (data.error) throw new Error(data.error.data?.message || data.error.message);
-  return data.result;
+async function odooExecute(model: string, method: string, args: unknown[], kwargs: Record<string, unknown> = {}, retry = true): Promise<any> {
+  try {
+    const uid = await getUID();
+    const res = await fetch(`${ODOO_URL}/web/dataset/call_kw`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        jsonrpc: '2.0',
+        method: 'call',
+        id: Date.now(),
+        params: {
+          model,
+          method,
+          args,
+          kwargs: { context: { lang: 'es_ES', tz: 'Europe/Madrid' }, ...kwargs },
+        },
+      }),
+      cache: 'no-store',
+    });
+    const data = await res.json();
+    if (data.error) {
+      const errMsg = data.error.data?.message || data.error.message || '';
+      if (retry && (errMsg.includes('Session expired') || errMsg.includes('Session Invalid') || errMsg.includes('Odoo Session'))) {
+        _uid = null; // reset cached session
+        return odooExecute(model, method, args, kwargs, false);
+      }
+      throw new Error(errMsg);
+    }
+    return data.result;
+  } catch (err: any) {
+    if (retry && (err.message.includes('Session expired') || err.message.includes('Session Invalid'))) {
+      _uid = null;
+      return odooExecute(model, method, args, kwargs, false);
+    }
+    throw err;
+  }
 }
 
 // ─── Public API ─────────────────────────────────────────────────────────────

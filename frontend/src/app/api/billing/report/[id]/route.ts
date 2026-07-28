@@ -167,7 +167,7 @@ export async function GET(
       </div>
       <div class="meta-box">
         <div>Estado: <span class="badge badge-${session.status || 'draft'}">${(session.status || 'draft').toUpperCase()}</span></div>
-        <div style="margin-top: 4px;">Comisión Clínica: <strong>${session.commission_pct}%</strong> | Dto. Lab: <strong>${session.lab_discount_pct}%</strong></div>
+        <div style="margin-top: 4px;">Comisión Profesional: <strong>${session.commission_pct}%</strong> | Dto. Lab: <strong>${session.lab_discount_pct}%</strong></div>
         <div style="color: #94a3b8; font-size: 9px; margin-top: 2px;">Generado el ${new Date().toLocaleDateString('es-ES')}</div>
       </div>
     </div>
@@ -184,7 +184,7 @@ export async function GET(
           <th class="num">Cant</th>
           <th class="num">Precio</th>
           <th class="num">Subtotal</th>
-          <th class="num">Comisión (${session.commission_pct}%)</th>
+          <th class="num">Comisión Dr. (${session.commission_pct}%)</th>
           <th>Equipo Lab</th>
           <th class="num">Lab Dto. (${session.lab_discount_pct}%)</th>
           <th class="num">NETO</th>
@@ -231,7 +231,7 @@ export async function GET(
         <div class="val">${totals.total_subtotal.toFixed(2)} €</div>
       </div>
       <div class="card-total">
-        <div class="lbl">Comisión Clínica (${session.commission_pct}%)</div>
+        <div class="lbl">Comisión Bruta Dr. (${session.commission_pct}%)</div>
         <div class="val">${totals.total_commission.toFixed(2)} €</div>
       </div>
       <div class="card-total">
@@ -239,7 +239,7 @@ export async function GET(
         <div class="val">${totals.total_lab.toFixed(2)} €</div>
       </div>
       <div class="card-total neto">
-        <div class="lbl">NETO FINAL CLÍNICA / DOCTORA</div>
+        <div class="lbl">NETO A LIQUIDAR (MÉDICO)</div>
         <div class="val">${totals.total_neto.toFixed(2)} €</div>
       </div>
     </div>

@@ -86,25 +86,73 @@ export async function POST(req: Request) {
 
     let resolvedPatientId = String(rawPatient);
 
+function toTitleCase(text: string): string {
+  if (!text) return "";
+  const lowercaseWords = new Set(["de", "del", "la", "las", "los", "y", "e", "o"]);
+  return text
+    .trim()
+    .toLowerCase()
+    .split(/\s+/)
+    .map((word, idx) => {
+      if (!word) return "";
+      if (word.startsWith("(") && word.length > 1) {
+        return "(" + word.charAt(1).toUpperCase() + word.slice(2);
+      }
+      if (idx > 0 && lowercaseWords.has(word)) {
+        return word;
+      }
+      return word.charAt(0).toUpperCase() + word.slice(1);
+    })
+    .join(" ");
+}
+
+    let patientAmbiguous = false;
+
     // Resolve patient name to UUID if not a valid UUID
     if (!UUID_REGEX.test(resolvedPatientId)) {
-      const terms = resolvedPatientId.split(/\s+/).filter(Boolean);
-      const orConditions = terms
-        .flatMap((term) => [
-          `first_name.ilike.%${term}%`,
-          `last_name.ilike.%${term}%`,
-          `phone.ilike.%${term}%`,
-        ])
-        .join(",");
+      const cleanName = resolvedPatientId.trim();
+      const parts = cleanName.split(/\s+/);
+      const firstName = toTitleCase(parts[0] || "Paciente");
+      const hasExplicitLastName = parts.length > 1;
+      const lastName = toTitleCase(parts.slice(1).join(" ") || "General");
 
-      const searchRes = await dbFetch(`patients?select=id&or=(${encodeURIComponent(orConditions)})&limit=1`);
-      if (searchRes.ok && searchRes.data && searchRes.data.length > 0) {
+      // 1. Search by exact first_name & last_name match if full name provided
+      let searchRes = await dbFetch(
+        `patients?select=id,first_name,last_name&first_name=ilike.${encodeURIComponent(firstName)}&last_name=ilike.${encodeURIComponent(lastName)}&limit=10`
+      );
+
+      // 2. If no full match (or only first_name was provided), search by first_name alone
+      if ((!searchRes.ok || !searchRes.data || searchRes.data.length === 0) && (!hasExplicitLastName || lastName === "General")) {
+        searchRes = await dbFetch(
+          `patients?select=id,first_name,last_name&first_name=ilike.${encodeURIComponent(firstName)}&limit=10`
+        );
+      }
+
+      if (searchRes.ok && searchRes.data && searchRes.data.length === 1) {
+        // EXACTLY 1 MATCH -> Bind directly to existing patient (context match)
         resolvedPatientId = searchRes.data[0].id;
+      } else if (searchRes.ok && searchRes.data && searchRes.data.length > 1) {
+        // MULTIPLE MATCHES -> Flag for review, associate with first patient so record is created
+        resolvedPatientId = searchRes.data[0].id;
+        patientAmbiguous = true;
       } else {
-        const parts = (rawPatient || "Paciente General").trim().split(/\s+/);
-        const firstName = parts[0] || "Paciente";
-        const lastName = parts.slice(1).join(" ") || "General";
-        const generatedHistoriaId = `PAC-${Math.floor(1000 + Math.random() * 9000)}`;
+        // NO MATCH -> Create new patient with exact extracted names
+        let nextNum = 2;
+        const maxPacRes = await dbFetch(`patients?select=historia_id&historia_id=like.PAC-*&order=historia_id.desc&limit=100`);
+        if (maxPacRes.ok && maxPacRes.data) {
+          let highest = 0;
+          for (const p of maxPacRes.data) {
+            const match = (p.historia_id || "").match(/PAC-(\d+)/);
+            if (match) {
+              const num = parseInt(match[1], 10);
+              if (num > highest) highest = num;
+            }
+          }
+          if (highest > 0) nextNum = highest + 1;
+        }
+        const generatedHistoriaId = `PAC-${String(nextNum).padStart(3, "0")}`;
+
+        const cleanEmail = `${firstName.toLowerCase().replace(/[^a-z0-9]/gi, '')}.${lastName.toLowerCase().replace(/[^a-z0-9]/gi, '')}.${Math.floor(Math.random() * 10000)}@melosmile.local`;
 
         const createRes = await dbFetch(`patients`, {
           method: "POST",
@@ -113,7 +161,7 @@ export async function POST(req: Request) {
             first_name: firstName,
             last_name: lastName,
             phone: "+34 600 000 000",
-            email: `${firstName.toLowerCase()}@melosmile.local`,
+            email: cleanEmail,
             dob: "1990-01-01",
             historia_id: generatedHistoriaId,
           })
@@ -122,9 +170,19 @@ export async function POST(req: Request) {
         if (createRes.ok && createRes.data && createRes.data.length > 0) {
           resolvedPatientId = createRes.data[0].id;
         } else {
-          const fallbackRes = await dbFetch(`patients?select=id&limit=1`);
-          resolvedPatientId = fallbackRes.data?.[0]?.id;
+          const fetchByHist = await dbFetch(`patients?select=id&historia_id=eq.${generatedHistoriaId}&limit=1`);
+          if (fetchByHist.ok && fetchByHist.data && fetchByHist.data.length > 0) {
+            resolvedPatientId = fetchByHist.data[0].id;
+          }
         }
+      }
+    }
+
+    let activeTreatmentPlan: any = null;
+    if (resolvedPatientId && UUID_REGEX.test(resolvedPatientId)) {
+      const planRes = await dbFetch(`treatment_plans?select=id,monthly_fee&patient_id=eq.${resolvedPatientId}&status=eq.activo&limit=1`);
+      if (planRes.ok && planRes.data && planRes.data.length > 0) {
+        activeTreatmentPlan = planRes.data[0];
       }
     }
 
@@ -132,8 +190,16 @@ export async function POST(req: Request) {
     let p_id = body.professional_id;
 
     if (rawClinic && (!c_id || !UUID_REGEX.test(c_id))) {
-      const clinicSearch = await dbFetch(`clinics?select=id&or=(name.ilike.%${encodeURIComponent(rawClinic)}%,address.ilike.%${encodeURIComponent(rawClinic)}%)&limit=1`);
-      if (clinicSearch.ok && clinicSearch.data?.[0]?.id) c_id = clinicSearch.data[0].id;
+      const cleanWords = String(rawClinic)
+        .replace(/[^a-záéíóúñ0-9\s]/gi, "")
+        .split(/\s+/)
+        .filter(w => w.length > 2 && w.toLowerCase() !== "clinica" && w.toLowerCase() !== "clínica");
+      
+      if (cleanWords.length > 0) {
+        const orClause = cleanWords.map(w => `name.ilike.%${encodeURIComponent(w)}%`).join(",");
+        const clinicSearch = await dbFetch(`clinics?select=id&or=(${orClause})&limit=1`);
+        if (clinicSearch.ok && clinicSearch.data?.[0]?.id) c_id = clinicSearch.data[0].id;
+      }
     }
 
     if (!c_id || !UUID_REGEX.test(c_id)) {
@@ -149,29 +215,39 @@ export async function POST(req: Request) {
     }
 
     if (!p_id || !UUID_REGEX.test(p_id)) {
-      const oslySearch = await dbFetch(`professionals?select=id&or=(first_name.ilike.%Osly%,last_name.ilike.%Melo%)&limit=1`);
+      const oslySearch = await dbFetch(`professionals?select=id&or=(first_name.ilike.%Osly%,last_name.ilike.%Melo%)&order=created_at.asc&limit=1`);
       if (oslySearch.ok && oslySearch.data?.[0]?.id) {
         p_id = oslySearch.data[0].id;
       } else {
-        const fallbackProf = await dbFetch(`professionals?select=id&limit=1`);
+        const fallbackProf = await dbFetch(`professionals?select=id&order=created_at.asc&limit=1`);
         if (fallbackProf.data?.[0]?.id) p_id = fallbackProf.data[0].id;
       }
     }
 
     // Treatment Matching
-    let t_id: string | null = null;
-    let finalReason = rawReason || "Consulta General";
-    let matchedPrice = 0;
-    let matchedLabCost = 0;
+    const rawTreatments = Array.isArray(body.treatments) ? body.treatments : (rawReason ? [rawReason] : ["Consulta General"]);
+    
+    const initialProcedures: any[] = [];
+    let first_t_id: string | null = null;
+    let combinedReason = "";
+    let totalDbPrice = 0;
+    let totalDbLabCost = 0;
 
-    if (rawReason && typeof rawReason === "string") {
-      const rawClean = rawReason.trim();
+    for (let i = 0; i < rawTreatments.length; i++) {
+      let rawClean = String(rawTreatments[i]).trim();
+      if (!rawClean) continue;
+      
+      let p_t_id = null;
+      let p_reason = rawClean;
+      let p_price = 0;
+      let p_lab = 0;
+
       const exactSearch = await dbFetch(`treatments?select=id,service_name,default_price,lab_cost&service_name=ilike.${encodeURIComponent(rawClean)}&limit=1`);
       if (exactSearch.ok && exactSearch.data?.[0]) {
-        t_id = exactSearch.data[0].id;
-        finalReason = exactSearch.data[0].service_name;
-        matchedPrice = Number(exactSearch.data[0].default_price) || 0;
-        matchedLabCost = Number(exactSearch.data[0].lab_cost) || 0;
+        p_t_id = exactSearch.data[0].id;
+        p_reason = exactSearch.data[0].service_name;
+        p_price = Number(exactSearch.data[0].default_price) || 0;
+        p_lab = Number(exactSearch.data[0].lab_cost) || 0;
       } else {
         const filteredTerms = rawClean
           .toLowerCase()
@@ -186,36 +262,123 @@ export async function POST(req: Request) {
 
           const fuzzySearch = await dbFetch(`treatments?select=id,service_name,default_price,lab_cost&or=(${encodeURIComponent(orConditions)})&limit=1`);
           if (fuzzySearch.ok && fuzzySearch.data?.[0]) {
-            t_id = fuzzySearch.data[0].id;
-            finalReason = fuzzySearch.data[0].service_name;
-            matchedPrice = Number(fuzzySearch.data[0].default_price) || 0;
-            matchedLabCost = Number(fuzzySearch.data[0].lab_cost) || 0;
+            p_t_id = fuzzySearch.data[0].id;
+            p_reason = fuzzySearch.data[0].service_name;
+            p_price = Number(fuzzySearch.data[0].default_price) || 0;
+            p_lab = Number(fuzzySearch.data[0].lab_cost) || 0;
           }
         }
       }
-    }
 
-    const isoDate = parseAppointmentDate(rawDate, rawTime);
-    const initialProcedures = [
-      {
-        id: Date.now().toString(),
-        treatmentId: t_id || "",
-        serviceName: finalReason,
+      if (p_t_id && c_id) {
+        const cpSearch = await dbFetch(`treatment_clinic_prices?select=price&treatment_id=eq.${p_t_id}&clinic_id=eq.${c_id}&limit=1`);
+        if (cpSearch.ok && cpSearch.data?.[0]?.price !== undefined && cpSearch.data?.[0]?.price !== null) {
+          p_price = Number(cpSearch.data[0].price);
+        }
+      }
+
+      // Check if it is a Control/Mensualidad treatment and apply treatment plan's monthly fee
+      const isControlTreatment = /control|mensualidad/i.test(p_reason) || /control|mensualidad/i.test(rawClean);
+      if (isControlTreatment && activeTreatmentPlan && activeTreatmentPlan.monthly_fee !== undefined && activeTreatmentPlan.monthly_fee !== null) {
+        p_price = Number(activeTreatmentPlan.monthly_fee);
+      }
+
+      if (!first_t_id) first_t_id = p_t_id;
+      combinedReason += (combinedReason ? " + " : "") + p_reason;
+      totalDbPrice += p_price;
+      totalDbLabCost += p_lab;
+
+      initialProcedures.push({
+        id: Date.now().toString() + i,
+        treatmentId: p_t_id || "",
+        serviceName: p_reason,
         toothRef: "",
-        dbPrice: matchedPrice,
+        dbPrice: p_price,
         dbCommission: 60,
-        dbLabCost: matchedLabCost,
+        dbLabCost: p_lab,
         overridePrice: null,
         overrideCommission: null,
         overrideLabCost: null,
         showOverride: false,
-      },
-    ];
+      });
+    }
+
+    if (initialProcedures.length === 0) {
+      combinedReason = "Consulta General";
+      initialProcedures.push({
+        id: Date.now().toString(),
+        treatmentId: "",
+        serviceName: "Consulta General",
+        toothRef: "",
+        dbPrice: 0,
+        dbCommission: 60,
+        dbLabCost: 0,
+        overridePrice: null,
+        overrideCommission: null,
+        overrideLabCost: null,
+        showOverride: false,
+      });
+    }
+
+    let t_id = first_t_id;
+    let finalReason = combinedReason;
+    let matchedPrice = totalDbPrice;
+    let matchedLabCost = totalDbLabCost;
+
+    // RULE 1: Explicit Custom Price Override from document/agent
+    const explicitPrice = body.price ?? body.price_eur;
+    if (explicitPrice !== undefined && explicitPrice !== null && !isNaN(Number(explicitPrice))) {
+      matchedPrice = Number(explicitPrice);
+      if (initialProcedures.length > 0) {
+         initialProcedures[0].overridePrice = matchedPrice;
+         initialProcedures[0].showOverride = true;
+         for (let i = 1; i < initialProcedures.length; i++) {
+             initialProcedures[i].overridePrice = 0;
+             initialProcedures[i].showOverride = true;
+         }
+      }
+    }
+
+    const isoDate = parseAppointmentDate(rawDate, rawTime);
 
     let initialNotes = rawClinic
       ? `Agendada por Asistente IA (${rawClinic})`
       : "Agendada por Asistente IA";
-    initialNotes += `\n[Procedimientos: ${JSON.stringify(initialProcedures)}]`;
+    if (patientAmbiguous) {
+      initialNotes += `\n[REVISIÓN REQUERIDA: Múltiples pacientes con el mismo nombre en la clínica]`;
+    }
+    
+    const incomingNotes = body.notes || body.observations || body.observation;
+    if (incomingNotes) {
+      initialNotes += `\n\n${incomingNotes}`;
+    }
+    
+    initialNotes += `\n\n[Procedimientos: ${JSON.stringify(initialProcedures)}]`;
+
+    const finalStatus = patientAmbiguous && body.status !== "Cancelada" ? "Pendiente de Revisión" : (body.status || "Pendiente");
+
+    // Anti-duplication check: verify if an identical appointment already exists for this patient, clinic, date & reason
+    const skipDupCheck = body.force_create === true || body.allow_duplicates === true;
+    if (!skipDupCheck) {
+      const datePart = isoDate.substring(0, 10);
+      const startOfDay = `${datePart}T00:00:00.000Z`;
+      const endOfDay = `${datePart}T23:59:59.999Z`;
+
+      const dupQuery = `appointments?select=id,patient_id,clinic_id,appointment_date,reason&patient_id=eq.${resolvedPatientId}&clinic_id=eq.${c_id}&appointment_date=gte.${startOfDay}&appointment_date=lte.${endOfDay}&reason=eq.${encodeURIComponent(finalReason)}&limit=1`;
+      const dupCheck = await dbFetch(dupQuery);
+
+      if (dupCheck.ok && dupCheck.data && dupCheck.data.length > 0) {
+        console.log(`[Anti-Dup] Skipping duplicate appointment creation for patient ${resolvedPatientId} on ${datePart} (${finalReason})`);
+        return NextResponse.json({
+          success: true,
+          duplicated: true,
+          skipped: true,
+          message: "Cita omitida por existir ya un registro idéntico para este paciente en la misma fecha.",
+          data: dupCheck.data[0],
+          version: BUILD_VERSION
+        });
+      }
+    }
 
     const insertApptRes = await dbFetch(`appointments`, {
       method: "POST",
@@ -227,7 +390,7 @@ export async function POST(req: Request) {
         treatment_id: t_id,
         appointment_date: isoDate,
         reason: finalReason,
-        status: body.status || "Pendiente",
+        status: finalStatus,
         notes: initialNotes,
       })
     });

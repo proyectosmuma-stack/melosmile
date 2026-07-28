@@ -32,11 +32,24 @@ function scorePatientMatch(patient: any, targetQuery: string): number {
 }
 
 async function handleSearch(rawQ: string | null | undefined) {
-  if (!rawQ?.trim()) {
-    return NextResponse.json({ error: "Missing query parameter 'q'" }, { status: 400 });
-  }
-
   try {
+    if (!rawQ?.trim()) {
+      // If query is empty, return the 10 most recent patients
+      const { data: recent, error: recentErr } = await (supabase as any)
+        .from("patients")
+        .select("id, first_name, last_name, historia_id, dob, phone, email, allergies, current_medication")
+        .order("created_at", { ascending: false })
+        .limit(10);
+
+      if (recentErr) throw recentErr;
+
+      return NextResponse.json({
+        success: true,
+        patients: recent || [],
+        summary: "Últimos pacientes registrados."
+      });
+    }
+
     const sanitized = cleanSearchTerm(rawQ);
     const terms = sanitized.split(/\s+/).filter(Boolean);
 
@@ -53,7 +66,7 @@ async function handleSearch(rawQ: string | null | undefined) {
       .from("patients")
       .select("id, first_name, last_name, historia_id, dob, phone, email, allergies, current_medication")
       .or(orConditions)
-      .limit(10);
+      .limit(15);
 
     if (error) throw error;
 
@@ -61,7 +74,7 @@ async function handleSearch(rawQ: string | null | undefined) {
 
     // Sort patients by exactness/relevance match to sanitized search term
     patients.sort((a: any, b: any) => scorePatientMatch(b, sanitized) - scorePatientMatch(a, sanitized));
-    patients = patients.slice(0, 5);
+    patients = patients.slice(0, 10);
 
     const summary = patients.length > 0
       ? patients.map((p: any) => `Paciente: ${p.first_name} ${p.last_name} | ID Historia: ${p.historia_id} | Tel: ${p.phone || 'N/A'} | Email: ${p.email || 'N/A'}`).join("\n")

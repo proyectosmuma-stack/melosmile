@@ -20,7 +20,9 @@ import {
   ShieldAlert,
   Pill,
   Stethoscope,
-  Tag as TagIcon
+  Tag as TagIcon,
+  Building2,
+  ArrowUpDown
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -53,16 +55,21 @@ export type PatientRecord = {
   treatmentPlan: string;
   createdAt?: string;
   tags?: TagItem[];
+  clinicIds?: string[];
+  clinicNames?: string[];
 };
 
 export default function PatientsPage() {
   const [patients, setPatients] = useState<PatientRecord[]>([]);
   const [allTags, setAllTags] = useState<TagItem[]>([]);
+  const [clinicsCatalog, setClinicsCatalog] = useState<{ id: string; name: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
+  const [clinicFilter, setClinicFilter] = useState<string>("all");
   const [selectedTagFilter, setSelectedTagFilter] = useState<string>("all");
+  const [sortBy, setSortBy] = useState<string>("historia-asc");
 
   // Modal para Crear Nuevo Paciente
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -83,7 +90,7 @@ export default function PatientsPage() {
     treatmentPlan: "",
   });
 
-  // Cargar pacientes y etiquetas únicamente desde Supabase
+  // Cargar pacientes, clínicas y etiquetas desde Supabase
   useEffect(() => {
     async function loadPatients() {
       setLoading(true);
@@ -92,32 +99,76 @@ export default function PatientsPage() {
         const { data: tagsData } = await (supabase as any).from("tags").select("*").order("name", { ascending: true });
         if (tagsData) setAllTags(tagsData as TagItem[]);
 
-        // 2. Fetch Patients with patient_tags
+        // 2. Fetch Clinics Catalog
+        const { data: clinicsData } = await (supabase as any).from("clinics").select("id, name").order("name", { ascending: true });
+        if (clinicsData) setClinicsCatalog(clinicsData);
+
+        // 3. Fetch Appointments to map patients to clinics
+        const { data: apptsData } = await (supabase as any).from("appointments").select("patient_id, clinic_id, clinics(id, name)");
+        const patientClinicsMap: Record<string, { ids: Set<string>; names: Set<string> }> = {};
+        if (apptsData) {
+          for (const appt of apptsData) {
+            if (!appt.patient_id) continue;
+            if (!patientClinicsMap[appt.patient_id]) {
+              patientClinicsMap[appt.patient_id] = { ids: new Set(), names: new Set() };
+            }
+            if (appt.clinic_id) patientClinicsMap[appt.patient_id].ids.add(appt.clinic_id);
+            if (appt.clinics?.name) patientClinicsMap[appt.patient_id].names.add(appt.clinics.name);
+          }
+        }
+
+        // 4. Fetch Patients with patient_tags
         const { data, error } = await (supabase as any)
           .from("patients")
           .select(`*, patient_tags ( tags ( id, name, color ) )`)
           .order("created_at", { ascending: false });
 
+function toTitleCase(text: string): string {
+  if (!text) return "";
+  const lowercaseWords = new Set(["de", "del", "la", "las", "los", "y", "e", "o"]);
+  return text
+    .trim()
+    .toLowerCase()
+    .split(/\s+/)
+    .map((word, idx) => {
+      if (!word) return "";
+      if (word.startsWith("(") && word.length > 1) {
+        return "(" + word.charAt(1).toUpperCase() + word.slice(2);
+      }
+      if (idx > 0 && lowercaseWords.has(word)) {
+        return word;
+      }
+      return word.charAt(0).toUpperCase() + word.slice(1);
+    })
+    .join(" ");
+}
+
         if (!error && data) {
-          const mapped: PatientRecord[] = data.map((p: any) => ({
-            id: p.id,
-            historiaId: p.historia_id || `PAC-${p.id.slice(0, 3)}`,
-            firstName: p.first_name,
-            lastName: p.last_name,
-            dniNie: p.dni_nie || "",
-            dob: p.dob || "",
-            gender: p.gender || "No especificado",
-            phone: p.phone || "",
-            email: p.email || "",
-            address: p.address || "",
-            inTreatment: p.in_treatment ?? true,
-            importantDiseases: p.important_diseases || "",
-            previousOperations: p.previous_operations || "",
-            allergies: p.allergies || "",
-            currentMedication: p.current_medication || "",
-            treatmentPlan: p.treatment_plan || "",
-            tags: p.patient_tags ? p.patient_tags.map((pt: any) => pt.tags).filter(Boolean) : [],
-          }));
+          const mapped: PatientRecord[] = data.map((p: any) => {
+            const cData = patientClinicsMap[p.id] || { ids: new Set(), names: new Set() };
+            return {
+              id: p.id,
+              historiaId: p.historia_id || `PAC-${p.id.slice(0, 3)}`,
+              firstName: toTitleCase(p.first_name),
+              lastName: toTitleCase(p.last_name),
+              dniNie: p.dni_nie || "",
+              dob: p.dob || "",
+              gender: p.gender || "No especificado",
+              phone: p.phone || "",
+              email: p.email || "",
+              address: p.address || "",
+              inTreatment: p.in_treatment ?? true,
+              importantDiseases: p.important_diseases || "",
+              previousOperations: p.previous_operations || "",
+              allergies: p.allergies || "",
+              currentMedication: p.current_medication || "",
+              treatmentPlan: p.treatment_plan || "",
+              createdAt: p.created_at || "",
+              tags: p.patient_tags ? p.patient_tags.map((pt: any) => pt.tags).filter(Boolean) : [],
+              clinicIds: Array.from(cData.ids),
+              clinicNames: Array.from(cData.names),
+            };
+          });
           setPatients(mapped);
         }
       } catch (err) {
@@ -129,27 +180,55 @@ export default function PatientsPage() {
     loadPatients();
   }, []);
 
-  // Filtrado de pacientes
-  const filteredPatients = patients.filter((p) => {
-    const search = searchQuery.toLowerCase();
-    const fullName = `${p.firstName} ${p.lastName}`.toLowerCase();
-    const matchesSearch =
-      fullName.includes(search) ||
-      p.dniNie.toLowerCase().includes(search) ||
-      p.historiaId.toLowerCase().includes(search) ||
-      p.phone.includes(search);
+  // Filtrado y Ordenación de pacientes
+  const filteredPatients = patients
+    .filter((p) => {
+      const search = searchQuery.toLowerCase();
+      const fullName = `${p.firstName} ${p.lastName}`.toLowerCase();
+      const matchesSearch =
+        fullName.includes(search) ||
+        p.dniNie.toLowerCase().includes(search) ||
+        p.historiaId.toLowerCase().includes(search) ||
+        p.phone.includes(search);
 
-    const matchesStatus =
-      statusFilter === "all" ||
-      (statusFilter === "active" && p.inTreatment) ||
-      (statusFilter === "inactive" && !p.inTreatment);
+      const matchesStatus =
+        statusFilter === "all" ||
+        (statusFilter === "active" && p.inTreatment) ||
+        (statusFilter === "inactive" && !p.inTreatment);
 
-    const matchesTag =
-      selectedTagFilter === "all" ||
-      p.tags?.some((t) => t.id === selectedTagFilter || t.name === selectedTagFilter);
+      const matchesTag =
+        selectedTagFilter === "all" ||
+        p.tags?.some((t) => t.id === selectedTagFilter || t.name === selectedTagFilter);
 
-    return matchesSearch && matchesStatus && matchesTag;
-  });
+      const matchesClinic =
+        clinicFilter === "all" ||
+        (p.clinicIds && p.clinicIds.includes(clinicFilter));
+
+      return matchesSearch && matchesStatus && matchesTag && matchesClinic;
+    })
+    .sort((a, b) => {
+      if (sortBy === "name-asc") {
+        return `${a.firstName} ${a.lastName}`.localeCompare(`${b.firstName} ${b.lastName}`);
+      }
+      if (sortBy === "name-desc") {
+        return `${b.firstName} ${b.lastName}`.localeCompare(`${a.firstName} ${a.lastName}`);
+      }
+      if (sortBy === "historia-asc") {
+        return a.historiaId.localeCompare(b.historiaId, undefined, { numeric: true });
+      }
+      if (sortBy === "historia-desc") {
+        return b.historiaId.localeCompare(a.historiaId, undefined, { numeric: true });
+      }
+      if (sortBy === "clinic-asc") {
+        const cA = a.clinicNames?.[0] || "ZZZ";
+        const cB = b.clinicNames?.[0] || "ZZZ";
+        return cA.localeCompare(cB);
+      }
+      if (sortBy === "newest") {
+        return (b.createdAt || "").localeCompare(a.createdAt || "");
+      }
+      return 0;
+    });
 
   const handleSavePatient = async () => {
     if (!formData.firstName.trim() || !formData.lastName.trim()) return;
@@ -233,9 +312,9 @@ export default function PatientsPage() {
         </Button>
       </div>
 
-      {/* Controls Bar: Search, Status Filter & View Toggle */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 rounded-2xl bg-white border border-slate-200/80 shadow-sm">
-        <div className="flex items-center gap-3 w-full sm:w-auto flex-1 max-w-lg">
+      {/* Controls Bar: Search, Clinic Filter, Status Filter, Sort & View Toggle */}
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-4 rounded-2xl bg-white border border-slate-200/80 shadow-sm flex-wrap">
+        <div className="flex items-center gap-3 w-full sm:w-auto flex-1 min-w-[240px]">
           <div className="relative w-full">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
             <Input
@@ -247,27 +326,67 @@ export default function PatientsPage() {
           </div>
         </div>
 
-        <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
+        <div className="flex items-center gap-2.5 w-full sm:w-auto justify-end flex-wrap">
+          {/* Clinic Filter */}
+          <Select
+            value={clinicFilter}
+            onValueChange={(val) => setClinicFilter(val || "all")}
+          >
+            <SelectTrigger className="h-10 w-[180px] bg-slate-50 border-slate-200 text-xs font-semibold rounded-xl">
+              <div className="flex items-center gap-2 truncate">
+                <Building2 className="h-3.5 w-3.5 text-slate-500 shrink-0" />
+                <SelectValue placeholder="Clínica / Sede" />
+              </div>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todas las Clínicas</SelectItem>
+              {clinicsCatalog.map((c) => (
+                <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
           {/* Status Filter */}
           <Select
             value={statusFilter}
             onValueChange={(val) => setStatusFilter((val as any) || "all")}
           >
-            <SelectTrigger className="h-10 w-[170px] bg-slate-50 border-slate-200 text-xs font-semibold rounded-xl">
+            <SelectTrigger className="h-10 w-[160px] bg-slate-50 border-slate-200 text-xs font-semibold rounded-xl">
               <div className="flex items-center gap-2">
-                <Filter className="h-3.5 w-3.5 text-slate-500" />
+                <Filter className="h-3.5 w-3.5 text-slate-500 shrink-0" />
                 <SelectValue placeholder="Estado Paciente" />
               </div>
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Todos los Pacientes</SelectItem>
+              <SelectItem value="all">Todos los Estados</SelectItem>
               <SelectItem value="active">En Tratamiento</SelectItem>
               <SelectItem value="inactive">Alta / Inactivos</SelectItem>
             </SelectContent>
           </Select>
 
+          {/* Sort By */}
+          <Select
+            value={sortBy}
+            onValueChange={(val) => setSortBy(val || "historia-asc")}
+          >
+            <SelectTrigger className="h-10 w-[165px] bg-slate-50 border-slate-200 text-xs font-semibold rounded-xl">
+              <div className="flex items-center gap-2 truncate">
+                <ArrowUpDown className="h-3.5 w-3.5 text-slate-500 shrink-0" />
+                <SelectValue placeholder="Ordenar Por" />
+              </div>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="historia-asc">Historia ID (Asc)</SelectItem>
+              <SelectItem value="historia-desc">Historia ID (Desc)</SelectItem>
+              <SelectItem value="name-asc">Nombre (A - Z)</SelectItem>
+              <SelectItem value="name-desc">Nombre (Z - A)</SelectItem>
+              <SelectItem value="clinic-asc">Clínica / Sede</SelectItem>
+              <SelectItem value="newest">Más Recientes</SelectItem>
+            </SelectContent>
+          </Select>
+
           {/* View Mode Toggle (Grid vs List) */}
-          <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-xl border border-slate-200">
+          <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-xl border border-slate-200 shrink-0">
             <button
               onClick={() => setViewMode("grid")}
               className={`p-2 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 ${
@@ -364,6 +483,16 @@ export default function PatientsPage() {
                         </span>
                         <span className="text-xs text-slate-500">DNI: {patient.dniNie}</span>
                       </div>
+                      {patient.clinicNames && patient.clinicNames.length > 0 && (
+                        <div className="flex flex-wrap items-center gap-1 mt-1.5">
+                          {patient.clinicNames.map((cName) => (
+                            <span key={cName} className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 border border-blue-100/80">
+                              <Building2 className="h-2.5 w-2.5 text-blue-500 shrink-0" />
+                              {cName}
+                            </span>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -468,6 +597,7 @@ export default function PatientsPage() {
                   <tr className="bg-slate-50 border-b border-slate-200/80 text-slate-500 font-bold uppercase tracking-wider">
                     <th className="py-3.5 px-4">Historia ID</th>
                     <th className="py-3.5 px-4">Paciente</th>
+                    <th className="py-3.5 px-4">Clínica / Sede</th>
                     <th className="py-3.5 px-4">DNI / NIE</th>
                     <th className="py-3.5 px-4">Teléfono & Email</th>
                     <th className="py-3.5 px-4">Estado</th>
@@ -491,6 +621,20 @@ export default function PatientsPage() {
                       </td>
                       <td className="py-3.5 px-4 font-mono font-semibold text-slate-800">
                         {patient.dniNie}
+                      </td>
+                      <td className="py-3.5 px-4 font-medium">
+                        {patient.clinicNames && patient.clinicNames.length > 0 ? (
+                          <div className="flex flex-wrap items-center gap-1">
+                            {patient.clinicNames.map((cName) => (
+                              <span key={cName} className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-100">
+                                <Building2 className="h-2.5 w-2.5 text-blue-500 shrink-0" />
+                                {cName}
+                              </span>
+                            ))}
+                          </div>
+                        ) : (
+                          <span className="text-slate-400 text-[11px] italic">Sin sede</span>
+                        )}
                       </td>
                       <td className="py-3.5 px-4 space-y-0.5">
                         <div className="flex items-center gap-1.5 text-slate-800">

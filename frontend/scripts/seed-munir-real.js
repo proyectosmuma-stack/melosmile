@@ -75,16 +75,16 @@ async function seed() {
   console.log('  ✓ Tratamientos listos:', treatments.length);
 
   // ─── 4. PACIENTE MUNIR — DATOS REALES DE NOTION ───
-  console.log('→ Actualizando/creando ficha de Munir (PAC-1)...');
+  console.log('→ Actualizando/creando ficha de Munir (PAC-001)...');
   const { data: existingMunir } = await supabase
     .from('patients')
     .select('*')
-    .eq('historia_id', 'PAC-1')
+    .or('historia_id.eq.PAC-1,historia_id.eq.PAC-001')
     .limit(1);
 
   let munir;
   const munirData = {
-    historia_id: 'PAC-1',
+    historia_id: 'PAC-001',
     first_name: 'Munir Mauel',
     last_name: 'Callaos Cardama',
     dni_nie: null,

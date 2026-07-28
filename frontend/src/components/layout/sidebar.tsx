@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { 
   Calendar, 
   Users, 
@@ -16,6 +16,7 @@ import {
   Activity,
   PanelLeftClose,
   PanelLeftOpen,
+  LogOut,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -48,10 +49,21 @@ const clinics = [
 
 export function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
   const [isCollapsed, setIsCollapsed] = useState(true); // Collapsed by default as requested
   const [selectedClinic, setSelectedClinic] = useState("all");
   const isSettingsActive = pathname.startsWith("/settings");
   const [settingsOpen, setSettingsOpen] = useState(isSettingsActive);
+
+  const handleLogout = async () => {
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+    } catch (e) {
+      console.error(e);
+    }
+    router.push("/login");
+    router.refresh();
+  };
 
   return (
     <aside
@@ -263,28 +275,50 @@ export function Sidebar() {
       <div className="p-3 border-t border-slate-800/80 bg-slate-950/80">
         <div
           className={cn(
-            "flex items-center rounded-xl bg-slate-900/60 border border-slate-800/50 group relative",
-            isCollapsed ? "justify-center p-2" : "gap-3 p-2"
+            "flex items-center justify-between rounded-xl bg-slate-900/60 border border-slate-800/50 group relative",
+            isCollapsed ? "p-2" : "p-2.5"
           )}
         >
-          <div className="relative shrink-0">
-            <div className="h-10 w-10 rounded-full bg-gradient-to-tr from-rose-500 to-pink-500 flex items-center justify-center text-white font-bold text-sm shadow-md">
-              OM
+          <div className="flex items-center gap-2.5 overflow-hidden">
+            <div className="relative shrink-0">
+              <div className="h-10 w-10 rounded-full bg-gradient-to-tr from-rose-500 to-pink-500 flex items-center justify-center text-white font-bold text-sm shadow-md">
+                OM
+              </div>
+              <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-emerald-500 ring-2 ring-slate-950" />
             </div>
-            <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-emerald-500 ring-2 ring-slate-950" />
+            {!isCollapsed && (
+              <div className="overflow-hidden">
+                <p className="text-sm font-semibold text-white truncate">Dra. Osly Melo</p>
+                <p className="text-xs text-slate-400 truncate">Oslysmile</p>
+              </div>
+            )}
           </div>
-          {!isCollapsed && (
-            <div className="overflow-hidden">
-              <p className="text-sm font-semibold text-white truncate">Dra. Osly Melo</p>
-              <p className="text-xs text-slate-400 truncate">gestion@melosmile.com</p>
-            </div>
-          )}
+
+          {/* Logout Button */}
+          {!isCollapsed ? (
+            <button
+              onClick={handleLogout}
+              className="h-8 w-8 rounded-lg bg-slate-800/80 hover:bg-rose-600/20 text-slate-400 hover:text-rose-400 border border-slate-700/50 flex items-center justify-center transition-colors cursor-pointer shrink-0 ml-1"
+              title="Cerrar sesión"
+            >
+              <LogOut className="h-4 w-4" />
+            </button>
+          ) : null}
 
           {/* Hover Tooltip when Collapsed — Escapes overflow clipping using fixed z-[9999] */}
           {isCollapsed && (
-            <div className="fixed left-24 ml-1 z-[9999] hidden group-hover:flex flex-col bg-slate-900 text-white text-xs px-3 py-2 rounded-xl shadow-2xl border border-slate-700 whitespace-nowrap pointer-events-none">
-              <span className="font-bold">Dra. Osly Melo</span>
-              <span className="text-[10px] text-slate-400">gestion@melosmile.com</span>
+            <div className="fixed left-24 ml-1 z-[9999] hidden group-hover:flex items-center gap-3 bg-slate-900 text-white text-xs px-3 py-2 rounded-xl shadow-2xl border border-slate-700 whitespace-nowrap">
+              <div className="flex flex-col">
+                <span className="font-bold">Dra. Osly Melo (Oslysmile)</span>
+                <span className="text-[10px] text-slate-400">Clic para cerrar sesión</span>
+              </div>
+              <button
+                onClick={handleLogout}
+                className="p-1 rounded bg-rose-600/30 hover:bg-rose-600 text-rose-300 hover:text-white transition-colors cursor-pointer"
+                title="Cerrar sesión"
+              >
+                <LogOut className="h-3.5 w-3.5" />
+              </button>
             </div>
           )}
         </div>

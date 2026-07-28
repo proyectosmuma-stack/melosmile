@@ -3,6 +3,7 @@
   "nodes": [
     {
       "parameters": {
+        "httpMethod": "POST",
         "path": "document-cleaner",
         "responseMode": "lastNode",
         "options": {}
@@ -18,15 +19,21 @@
     },
     {
       "parameters": {
-        "model": "gemini-2.5-flash",
+        "model": "google/gemini-2.5-flash",
         "options": {
           "temperature": 0
         }
       },
       "id": "6a386121-6a2e-4cb8-8c1d-dc26d36e2f1d",
-      "name": "Gemini Chat Model",
-      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "name": "OpenRouter Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
       "typeVersion": 1,
+      "credentials": {
+        "openRouterApi": {
+          "id": "4nco5fDnIohG6g9f",
+          "name": "OpenRouter account"
+        }
+      },
       "position": [
         520,
         480
@@ -39,7 +46,7 @@
         "messages": {
           "messageValues": [
             {
-              "message": "Eres un asistente médico experto en odontología. Tu tarea es extraer la información de este documento en bruto (texto, email o datos de excel parseados) e identificar las citas realizadas. Para cada cita, extrae el nombre del paciente, la fecha, los tratamientos realizados, precio si lo indica, y cualquier anotación. Estructura el resultado en formato JSON como un array de objetos con las siguientes claves: patient_name, date, treatments (array de strings), price, observations. Retorna SOLO el JSON."
+              "message": "Eres un asistente médico experto en odontología. Tu tarea es extraer la información de este documento en bruto (texto, email o datos de excel parseados) e identificar las citas realizadas. Para cada cita, extrae el nombre del paciente, la fecha, los tratamientos realizados, precio si lo indica, y cualquier anotación. Mapea términos de observaciones a tratamientos reconocidos en el campo treatments: 'CONTROL', 'MENSU', 'CUOTA', 'FINALIZA CUOTA' -> 'Control de Ortodoncia'; 'BCKTS' -> 'Ortodoncia Brackets Metálicos'; 'ANGEL ALIGNER' -> 'Ortodoncia Invisible'; 'PULPO' -> 'Pulpotomía'; 'OBT' -> 'Obturación Simple'; 'LIMPIEZA' -> 'Limpieza Dental Ultrasónica'. Estructura el resultado en formato JSON como un array de objetos con las siguientes claves: patient_name, date, treatments (array de strings), price, observations. Retorna SOLO el JSON."
             }
           ]
         }
@@ -80,7 +87,7 @@
         ]
       ]
     },
-    "Gemini Chat Model": {
+    "OpenRouter Chat Model": {
       "ai_languageModel": [
         [
           {

@@ -14,6 +14,9 @@ import {
   FileSpreadsheet,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
+  ChevronUp,
+  RefreshCw,
   TrendingUp,
   CreditCard,
   Search,
@@ -58,36 +61,48 @@ export default function BillingHubPage() {
   const [clinics, setClinics] = useState<Clinic[]>([]);
   const [sessions, setSessions] = useState<BillingSession[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [refreshing, setRefreshing] = useState<boolean>(false);
   const [isGenerating, setIsGenerating] = useState<string | null>(null); // track generating state by clinic-month
+  const [collapsedClinics, setCollapsedClinics] = useState<Record<string, boolean>>({});
   const router = useRouter();
+
+  const loadData = async (isManualRefresh = false) => {
+    if (isManualRefresh) setRefreshing(true);
+    else setLoading(true);
+
+    try {
+      // Fetch clinics
+      const resClinics = await fetch("/api/ai-context");
+      if (resClinics.ok) {
+        const data = await resClinics.json();
+        if (data.clinics) setClinics(data.clinics);
+      }
+
+      // Fetch sessions
+      const resSessions = await fetch(`/api/billing/sessions?year=${selectedYear}`);
+      if (resSessions.ok) {
+        const data = await resSessions.json();
+        if (data.sessions) setSessions(data.sessions);
+      }
+    } catch (err) {
+      console.error("Error loading billing hub data:", err);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
 
   // Fetch Clinics & Sessions
   useEffect(() => {
-    async function loadData() {
-      setLoading(true);
-      try {
-        // Fetch clinics
-        const resClinics = await fetch("/api/ai-context");
-        if (resClinics.ok) {
-          const data = await resClinics.json();
-          if (data.clinics) setClinics(data.clinics);
-        }
-
-        // Fetch sessions
-        const resSessions = await fetch(`/api/billing/sessions?year=${selectedYear}`);
-        if (resSessions.ok) {
-          const data = await resSessions.json();
-          if (data.sessions) setSessions(data.sessions);
-        }
-      } catch (err) {
-        console.error("Error loading billing hub data:", err);
-      } finally {
-        setLoading(false);
-      }
-    }
-
     loadData();
   }, [selectedYear]);
+
+  const toggleClinicCollapse = (clinicId: string) => {
+    setCollapsedClinics(prev => ({
+      ...prev,
+      [clinicId]: !prev[clinicId]
+    }));
+  };
 
   // Compute KPIs
   const approvedSessions = sessions.filter(s => s.status === "approved");
@@ -152,13 +167,24 @@ export default function BillingHubPage() {
             <div>
               <h1 className="text-2xl font-bold text-slate-900">Cálculo y Facturación Contable</h1>
               <p className="text-sm text-slate-500">
-                Organización multiclínica por meses según el modelo oficial ALBACETE
+                Organización multiclínica por meses
               </p>
             </div>
           </div>
         </div>
 
         <div className="flex items-center gap-3">
+          <Button
+            onClick={() => loadData(true)}
+            disabled={refreshing || loading}
+            variant="outline"
+            size="sm"
+            className="gap-2 border-slate-300 text-slate-700 hover:bg-slate-100"
+          >
+            <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+            {refreshing ? "Refrescando..." : "Refrescar Datos"}
+          </Button>
+
           <Link href="/billing/new">
             <Button className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium shadow-sm gap-2">
               <Plus className="w-4 h-4" />
@@ -283,39 +309,57 @@ export default function BillingHubPage() {
         </div>
       ) : (
         <div className="space-y-8">
-          {filteredClinics.map(clinic => (
-            <div key={clinic.id} className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-              {/* Clinic Header */}
-              <div 
-                className="px-6 py-4 border-b border-slate-200 flex items-center justify-between"
-                style={{ backgroundColor: `${clinic.color_hex || "#10b981"}10` }}
-              >
-                <div className="flex items-center gap-3">
-                  <div 
-                    className="w-4 h-4 rounded-full"
-                    style={{ backgroundColor: clinic.color_hex || "#10b981" }}
-                  />
-                  <h2 className="text-lg font-bold text-slate-900">{clinic.name}</h2>
-                  <span className="text-xs text-slate-500">
-                    Comisión base: <strong>{clinic.base_commission_pct || 60}%</strong> | Dto. Lab: <strong>{clinic.lab_discount_pct || 50}%</strong>
-                  </span>
-                  {clinic.tracks_payments && (
-                    <span className="inline-flex items-center gap-1 text-xs bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-full border border-indigo-200">
-                      <CreditCard className="w-3 h-3" /> Controla pagos
+          {filteredClinics.map(clinic => {
+            const isCollapsed = collapsedClinics[clinic.id] !== false; // collapsed by default
+
+            return (
+              <div key={clinic.id} className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden transition-all">
+                {/* Clinic Header */}
+                <div 
+                  className="px-6 py-4 border-b border-slate-200 flex items-center justify-between cursor-pointer hover:bg-slate-50/50 transition-colors"
+                  style={{ backgroundColor: `${clinic.color_hex || "#10b981"}10` }}
+                  onClick={() => toggleClinicCollapse(clinic.id)}
+                >
+                  <div className="flex items-center gap-3">
+                    <button 
+                      type="button" 
+                      className="p-1 rounded hover:bg-black/5 text-slate-600 transition-colors"
+                    >
+                      {isCollapsed ? (
+                        <ChevronDown className="w-5 h-5 text-slate-700" />
+                      ) : (
+                        <ChevronUp className="w-5 h-5 text-slate-700" />
+                      )}
+                    </button>
+
+                    <div 
+                      className="w-4 h-4 rounded-full"
+                      style={{ backgroundColor: clinic.color_hex || "#10b981" }}
+                    />
+                    <h2 className="text-lg font-bold text-slate-900">{clinic.name}</h2>
+                    <span className="text-xs text-slate-500 hidden sm:inline">
+                      Comisión base Dr.: <strong>{clinic.base_commission_pct || 60}%</strong> | Dto. Lab: <strong>{clinic.lab_discount_pct || 50}%</strong>
                     </span>
-                  )}
+                    {clinic.tracks_payments && (
+                      <span className="inline-flex items-center gap-1 text-xs bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-full border border-indigo-200">
+                        <CreditCard className="w-3 h-3" /> Controla pagos
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                    <Link href={`/billing/new?clinic_id=${clinic.id}&year=${selectedYear}`}>
+                      <Button variant="ghost" size="sm" className="text-emerald-700 hover:text-emerald-800 hover:bg-emerald-50 gap-1 text-xs font-semibold">
+                        <Plus className="w-3.5 h-3.5" /> Nueva sesión {clinic.name}
+                      </Button>
+                    </Link>
+                  </div>
                 </div>
 
-                <Link href={`/billing/new?clinic_id=${clinic.id}&year=${selectedYear}`}>
-                  <Button variant="ghost" size="sm" className="text-emerald-700 hover:text-emerald-800 hover:bg-emerald-50 gap-1 text-xs font-semibold">
-                    <Plus className="w-3.5 h-3.5" /> Nueva sesión {clinic.name}
-                  </Button>
-                </Link>
-              </div>
-
-              {/* 12 Months Grid */}
-              <div className="p-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                {MONTH_NAMES.map((monthName, idx) => {
+                {/* 12 Months Grid - Only render if expanded */}
+                {!isCollapsed && (
+                <div className="p-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                  {MONTH_NAMES.map((monthName, idx) => {
                   const monthNum = idx + 1;
                   const session = getSessionForMonth(clinic.id, monthNum);
 
@@ -368,8 +412,10 @@ export default function BillingHubPage() {
                   );
                 })}
               </div>
+              )}
             </div>
-          ))}
+          );
+        })}
         </div>
       )}
     </div>

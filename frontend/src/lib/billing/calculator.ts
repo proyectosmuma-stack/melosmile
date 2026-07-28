@@ -1,5 +1,5 @@
 /**
- * Motor de Cálculo Financiero y Validaciones Contables — Melosmile (Modelo ALBACETE DEFINITIVO)
+ * Motor de Cálculo Financiero y Validaciones Contables — Melosmile
  */
 
 export interface RawLineInput {
@@ -180,17 +180,30 @@ export function interpretTreatment(
     };
   }
 
-  // Fallback
+  // Fallback — always read price from catalogMap, never hardcode
+  const fallbackName = tText || 'Tratamiento';
+  const fallbackKey = fallbackName.toLowerCase();
+  const fallbackEntry = catalogMap?.get(fallbackKey);
+  
+  if (fallbackEntry) {
+    return {
+      name: fallbackName,
+      id: fallbackEntry.id,
+      catalogPrice: fallbackEntry.price,
+      catalogLabCost: fallbackEntry.lab_cost
+    };
+  }
+
   return {
-    name: tText || 'Control de Ortodoncia',
-    id: catalogMap?.get('control de ortodoncia')?.id || null,
-    catalogPrice: catalogMap?.get('control de ortodoncia')?.price || 60,
+    name: fallbackName,
+    id: null,
+    catalogPrice: 0,
     catalogLabCost: 0
   };
 }
 
 /**
- * Procesa una línea contable individual aplicando las reglas del modelo ALBACETE DEFINITIVO
+ * Procesa una línea contable individual aplicando las reglas del motor contable
  */
 export function processBillingLine(
   input: RawLineInput,

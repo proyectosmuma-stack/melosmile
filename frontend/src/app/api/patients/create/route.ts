@@ -17,7 +17,26 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Nombre del paciente es requerido" }, { status: 400 });
     }
 
-    const generatedHistoriaId = historia_id || `PAC-${Math.floor(1000 + Math.random() * 9000)}`;
+    let generatedHistoriaId = historia_id;
+    if (!generatedHistoriaId) {
+      const { data: maxPac } = await (supabase as any)
+        .from("patients")
+        .select("historia_id")
+        .like("historia_id", "PAC-%")
+        .order("historia_id", { ascending: false })
+        .limit(50);
+      let highest = 0;
+      if (maxPac) {
+        for (const p of maxPac) {
+          const match = (p.historia_id || "").match(/PAC-(\d+)/);
+          if (match) {
+            const num = parseInt(match[1], 10);
+            if (num > highest) highest = num;
+          }
+        }
+      }
+      generatedHistoriaId = `PAC-${String(highest + 1).padStart(3, "0")}`;
+    }
 
     const { data, error } = await (supabase as any).from("patients").insert({
       first_name,

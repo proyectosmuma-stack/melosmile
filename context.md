@@ -6,7 +6,7 @@
 
 ## 📌 Visión General del Proyecto
 
-**Melosmile** es una plataforma integral de gestión de clínicas dentales y contabilidad odontológica multiclínica. Su objetivo principal es facilitar el agendamiento inteligente, el seguimiento clínico estilo Notion, la automatización de cobranzas, la facturación contable por clínica/mes basada en el modelo de referencia **ALBACETE DEFINITIVO** y la facturación integrada con Odoo ERP, respaldado por agentes de Inteligencia Artificial que operan mediante **n8n** alojado en VPS IONOS.
+**Melosmile** es una plataforma integral de gestión de clínicas dentales y contabilidad odontológica multiclínica. Su objetivo principal es facilitar el agendamiento inteligente, el seguimiento clínico estilo Notion, la automatización de cobranzas, la facturación contable por clínica/mes y la facturación integrada con Odoo ERP, respaldado por agentes de Inteligencia Artificial que operan mediante **n8n** alojado en VPS IONOS.
 
 ---
 
@@ -16,7 +16,7 @@
 - **Hosting & CI/CD**: Vercel (`melosmile-staging`, configurado solo para compilar desde la rama `develop`).
 - **Estilos y UI**: TailwindCSS 4, Shadcn UI, Lucide Icons, `@dnd-kit/core` (Drag & Drop).
 - **Backend & Base de Datos**: Supabase Cloud (`amhfdzfcmpastmlsosou`, PostgreSQL relacional, CLI `supabase`, tabla `agent_learnings` para memoria dinámica).
-- **Módulo Contable & Calculadora**: Motor `calculator.ts` con sugerencia inteligente de aparatología/laboratorio (`TREATMENT_LAB_SUGGESTIONS`), validaciones en 4 niveles (ERROR, ALERTA, NEGATIVO, INFO), 19 columnas de registro contable ALBACETE, auto-creación secuencial de pacientes (`PAC-001`, `PAC-002`...), vinculación de citas con asignación obligatoria a la **Dra. Osly Melo**, emparejamiento con el catálogo de tratamientos de la BD (`Pulpotomía`, `Control de Ortodoncia`, `Obturación Simple`, `Ortodoncia Invisible`), dropdowns interactivos para Pacientes, Tratamientos y Equipos de Laboratorio, cálculo automático de costes de laboratorio, columnas de porcentaje/monto médico (`% Dr.`, `€ Dr.`), tabla a ancho completo de pantalla y accesos directos a las fichas clínicas del paciente.
+- **Módulo Contable & Calculadora**: Motor `calculator.ts` con sugerencia inteligente de aparatología/laboratorio (`TREATMENT_LAB_SUGGESTIONS`), validaciones en 4 niveles (ERROR, ALERTA, NEGATIVO, INFO), 19 columnas de registro contable, auto-creación secuencial de pacientes (`PAC-001`, `PAC-002`...), vinculación de citas con asignación obligatoria a la **Dra. Osly Melo**, emparejamiento con el catálogo de tratamientos de la BD (`Pulpotomía`, `Control de Ortodoncia`, `Obturación Simple`, `Ortodoncia Invisible`), dropdowns interactivos para Pacientes, Tratamientos y Equipos de Laboratorio, cálculo automático de costes de laboratorio, columnas de porcentaje/monto médico (`% Dr.`, `€ Dr.`), tabla a ancho completo de pantalla y accesos directos a las fichas clínicas del paciente.
 - **Automatización e IA**: Agente **Musly** (Dispatcher + 4 Sub-agentes especializados en n8n: Agendamiento, Clínico, Facturación y General/FAQs + Extractor Contable Multimodal 08 y Flujo de Aprobación 09), modelo `google/gemini-2.5-flash` vía OpenRouter con `temperature: 0` determinista, `retryOnFail` en herramientas HTTP, filtro de tokens estáticos en UI y n8n, memoria de sesión multiturno con reescritura contextual de peticiones anafóricas, desambiguación estricta de identidad de paciente y sistema de Aprendizaje Dinámico Autónomo (`/api/ai/memory/search` y `/api/ai/memory/learn`).
 - **Integraciones externas**: Odoo API (Facturación y Contabilidad), WhatsApp/Email/SMS vía n8n.
 
@@ -35,7 +35,7 @@
    $$\text{Neto} = \text{Comisión} - \text{Gasto Lab Dto}$$
    $$\text{Honorarios Médico} = \text{Neto} \times \% \text{Dr. Principal}$$
 
-3. **Módulo Billing y Contabilidad (Modelo ALBACETE)**
+3. **Módulo Billing y Contabilidad**
 
 El motor financiero ha pivotado a una arquitectura de **Single Source of Truth basada en Citas**.
 
@@ -45,8 +45,17 @@ El motor financiero ha pivotado a una arquitectura de **Single Source of Truth b
 3. El endpoint `/api/billing/sessions/generate` compila estas citas para el mes/año/clínica solicitados, calculando comisión (por defecto 60%), laboratorio (sugerido basado en catálogo, 50% de descuento estándar) y NETO.
 4. Las líneas se pueden ajustar manualmente en `/billing/[id]`. Si se traen nuevas citas haciendo click en "Actualizar desde Citas", **los ajustes manuales previos se preservan**.
 
-**Agente Limpiador de Documentos:**
-El ingreso manual/importación de Excel se ha delegado al **Document Cleaner Portal** (`/billing/new`). El usuario sube un archivo o texto bruto, que se envía al flujo N8N `10-melosmile-agent-document-cleaner`. El modelo (`gemini-2.5-flash`) extrae JSON estructurado de pacientes y procedimientos para transformarlo en citas, las cuales luego poblarán la tabla de contabilidad.
+**Agente Limpiador de Documentos y OCR Manuscrito (`/billing/new`):**
+El ingreso manual/importación de Excel o fotos manuscritas se realiza desde el **Document Cleaner Portal** (`/billing/new`). El usuario sube una foto manuscrita o documento Excel/CSV, el cual se envía al flujo N8N `[MELOSMILE] Agent Document Cleaner` (`OG4Yy4N7qALXojTa`).
+- **Enrutador N8N (`If Node`)**: Separa de forma estable imágenes manuscritas (`source_type: 'image'`) dirigidas a OpenRouter `google/gemini-2.5-flash` de Visión, y documentos Excel/CSV dirigidos al procesador de texto.
+- **Diccionario de Clínica (Albi / Albacete)**: Abreviatura `RC` o `R.C.` $\rightarrow$ `Reconstrucción Simple`, `Rev` o `Rev.` $\rightarrow$ `Control`.
+- **Separación de Notas y Observaciones Clínicas (`notes`)**: Toda indicación clínica no facturable (ej: *Ataches / Poner varios ataches*, *Quitar Brackets*, *Poner Brackets Superior*, *Hará un poco de IPR*, *Coloc Myobrace*, etc.) es extraída estrictamente hacia el campo `notes` de la cita (destinado al bloque de Evolución Clínica & Observaciones del Doctor) y NUNCA como un procedimiento facturable independiente.
+- **Sincronización en la N8N API**: Los Prompts del flujo `[MELOSMILE] Agent Document Cleaner` (`OG4Yy4N7qALXojTa`) fueron actualizados mediante la API REST de n8n (`n8n.mumaweb.com`) para garantizar determinismo en el motor de visión y texto.
+- **Inserción Automática en Supabase con Propagación de Cookie**: La ruta `/api/billing/document-cleaner/route.ts` reenvía el encabezado de autenticación (`Cookie`) hacia los endpoints internos de creación de citas (`/api/appointments/create`) y generación de sesiones (`/api/billing/sessions/generate`), garantizando que toda ingesta procedente de n8n quede inmediatamente insertada en Supabase y visible en el Hub de Facturación.
+- **Agrupamiento por Paciente + Hora**: Mismo paciente a la misma hora (ej: 09:30 Lucas cementar 60€ y 09:30 Lucas líneas 50€) se unifica en **una sola cita** con array de tratamientos `["cementar", "líneas"]` e importe sumado (110 €).
+- **Sobrescritura Estricta de Precios Escritos**: Si en la hoja/documento figura un importe numérico en euros, ese monto prevalece sobre los precios por defecto del catálogo.
+- **Resolución Inteligente de Pacientes**: Si solo figura el nombre de pila, busca en la clínica: si existe 1 solo paciente con ese nombre (ej: "Lucas Callaos"), se vincula directamente; si existen varios pacientes homónimos, crea la cita con estado `Pendiente de Revisión` para selección manual sin eliminar la entrada.
+- **Manejo de Cancelados**: Citas tachadas (`cancelled: true`) se crean con estado `Cancelada` en Supabase y son automáticamente excluidas de las sesiones contables de facturación.
 
    - **Dropdowns Interactivos con Catálogo de la BD**:
      - *Paciente*: Selección desde la base de datos o creación secuencial con enlace directo a la ficha del paciente.
@@ -97,4 +106,12 @@ melosmile/
         └── lib/
             └── billing/
                 └── calculator.ts                # Motor de cálculo financiero, TREATMENT_LAB_SUGGESTIONS y razonamiento del catálogo de tratamientos de la BD
+
+---
+
+## 📅 Novedades: Volcado Histórico de Tratamientos
+Se ha ampliado el componente de Planes de Tratamiento para soportar:
+- **Tipos de Tratamiento Flexibles:** Opción de seleccionar el tipo (`Ortodoncia`, `Miofuncional`, `Otro`), que se refleja instantáneamente en la interfaz.
+- **Campos de Migración (Volcado):** Registro de `Mensualidades Ya Pagadas` y `Monto Ya Pagado` en las fichas previas.
+- **Contabilización Híbrida:** Las alertas automáticas y contadores ahora combinan los históricos manuales más los controles realizados en la nueva agenda.
 ```

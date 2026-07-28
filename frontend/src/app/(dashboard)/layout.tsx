@@ -5,6 +5,7 @@ import { Sidebar } from "@/components/layout/sidebar";
 import { Search, Bell, Plus, RefreshCw, CalendarCheck2, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { NotificationBell } from "@/components/layout/notification-center";
 import { PatientSelect } from "@/components/patients/patient-select";
 import {
   NewAppointmentModalGlobal,
@@ -50,14 +51,7 @@ export default function DashboardLayout({
             </Button>
 
             {/* Notification Bell */}
-            <Button
-              variant="ghost"
-              size="icon"
-              className="rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100 h-10 w-10 relative"
-            >
-              <Bell className="h-5 w-5" />
-              <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-rose-500 ring-2 ring-white" />
-            </Button>
+            <NotificationBell />
 
             {/* AI Assistant Quick Action (Shortcut: Cmd+K / Ctrl+K) */}
             <Button

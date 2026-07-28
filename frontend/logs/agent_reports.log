@@ -1,3 +1,43 @@
 # ARCHIVO DE REGISTRO DE REPORTES DE ERROR IA (MELOSMILE)
 # Todos los reportes se procesan y almacenan de forma unificada en Supabase (tabla: ai_agent_reports).
 # Este archivo actúa como log secundario local.
+================================================================================
+[REPORTE DE ERROR / CONTEXTO IA - martes, 28 de julio de 2026, 11:41:41]
+ID Sesión          : 84515mu6ydjuy0mvkassws
+Fecha y Hora       : martes, 28 de julio de 2026, 11:41:41 (2026-07-28T09:41:41.759Z)
+Agentes Involucrados: Musly Router, Agente de Agendamiento (03-melosmile-agent-appointment)
+Comentario Usuario : "Revisar porque no pudo acceder a la informacion solicitada"
+Estado             : PENDIENTE DE REVISIÓN
+
+------------------- HISTORIAL DE LA CONVERSACIÓN -------------------
+[1] ASISTENTE (Musly) [Intención: general_query]:
+Hola 👋 Soy Musly, tu asistente IA. Puedo agendar citas, consultar la agenda del día, gestionar pacientes y facturación. ¿En qué te ayudo hoy?
+
+[2] USUARIO:
+cuales fueron mis citas de junio en la clinica de daniel?
+
+[3] ASISTENTE (Musly) [Intención: schedule_appointment]:
+Parece que hay un problema técnico al intentar acceder a la información de los pacientes. No puedo consultar las citas de Daniel en junio en este momento. Te recomiendo intentar más tarde o, si lo prefieres, puedo ayudarte con otra consulta o solicitud relacionada con citas. ¿Hay algo más en lo que pueda asistirte?
+
+================================================================================
+
+================================================================================
+[REPORTE DE ERROR / CONTEXTO IA - martes, 28 de julio de 2026, 11:42:52]
+ID Sesión          : 307wipg26gi0jgb80duh71a
+Fecha y Hora       : martes, 28 de julio de 2026, 11:42:52 (2026-07-28T09:42:52.343Z)
+Agentes Involucrados: Musly Router, Agente de Agendamiento (03-melosmile-agent-appointment)
+Comentario Usuario : "revisar porque no pudo encontrar las citas del mes solicitado"
+Estado             : PENDIENTE DE REVISIÓN
+
+------------------- HISTORIAL DE LA CONVERSACIÓN -------------------
+[1] ASISTENTE (Musly) [Intención: general_query]:
+Hola 👋 Soy Musly, tu asistente IA. Puedo agendar citas, consultar la agenda del día, gestionar pacientes y facturación. ¿En qué te ayudo hoy?
+
+[2] USUARIO:
+cuales han sido mis citas de junio?
+
+[3] ASISTENTE (Musly) [Intención: schedule_appointment]:
+No se encontraron citas para el mes de junio. ¿Hay algo más en lo que pueda ayudarte?
+
+================================================================================
+

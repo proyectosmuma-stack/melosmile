@@ -11,21 +11,25 @@ export async function POST(req: Request) {
 
     // 1. Map to Odoo (Find or Create)
     if (!odooProductTmplId) {
-      const existingOdoo = await searchProductByNameOrCode(payload.service_name, payload.odoo_product_ref || payload.abbreviation);
-      
-      if (existingOdoo) {
-        odooProductTmplId = existingOdoo.id;
-      } else {
-        // Create in Odoo
-        odooProductTmplId = await createProductTemplate({
-          name: payload.service_name,
-          list_price: payload.default_price || 0,
-          default_code: payload.odoo_product_ref || payload.abbreviation
-        });
+      try {
+        const existingOdoo = await searchProductByNameOrCode(payload.service_name, payload.odoo_product_ref || payload.abbreviation);
+        
+        if (existingOdoo) {
+          odooProductTmplId = existingOdoo.id;
+        } else {
+          // Create in Odoo
+          odooProductTmplId = await createProductTemplate({
+            name: payload.service_name,
+            list_price: payload.default_price || 0,
+            default_code: payload.odoo_product_ref || payload.abbreviation
+          });
+        }
+        
+        // Keep it in our payload so it gets saved to Supabase
+        payload.odoo_product_tmpl_id = odooProductTmplId;
+      } catch (odooErr: any) {
+        console.warn("Notice: Odoo product sync skipped/failed:", odooErr?.message);
       }
-      
-      // Keep it in our payload so it gets saved to Supabase
-      payload.odoo_product_tmpl_id = odooProductTmplId;
     }
 
     let finalTreatmentId = treatmentId;

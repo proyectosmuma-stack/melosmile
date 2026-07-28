@@ -433,7 +433,7 @@ export default function ClinicsSettingsPage() {
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
-                  <Percent className="h-3.5 w-3.5 text-slate-400" /> % Comisión Base
+                  <Percent className="h-3.5 w-3.5 text-slate-400" /> % Comisión Base Dr.
                 </Label>
                 <Input type="number" value={fBaseCommission} onChange={(e) => setFBaseCommission(e.target.value)} placeholder="40" className="rounded-lg" />
               </div>

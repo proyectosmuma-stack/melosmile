@@ -1,63 +1,66 @@
-# Walkthrough Maestro — Melosmile
+# Documentación Completa de Cambios y Optimizaciones — Melosmile
 
-Este documento es el **Walkthrough Maestro del Proyecto**, donde se acumula la trazabilidad histórica de todas las versiones, componentes desarrollados, refactorizaciones y avances del sistema Melosmile.
-
----
-
-## 🏛️ Estado Global de la Arquitectura
-
-- **Framework**: Next.js 16 (App Router) + React 19 + TypeScript.
-- **Estilos**: TailwindCSS v4 + Lucide Icons + Shadcn UI.
-- **Backend & Base de Datos**: Supabase PostgreSQL + RLS + Triggers PL/pgSQL.
-- **Integraciones Externas**:
-  - **Odoo ERP**: Conexión JSON-RPC nativa para sincronización de contactos y facturación agrupada (`account.move`).
-  - **VPS Storage**: Almacenamiento físico en servidor VPS (`/opt/melosmile/pacientes/{id}/...`) discriminando fotos clínicas (sin vectorizar) de documentos PDF.
-  - **n8n Automation Engine**: 11 flujos activos — 6 flujos operativos previos + 1 Dispatcher IA + 4 Sub-Agentes especializados + 2 Flujos Contables.
-  - **OpenRouter**: Modelo `google/gemini-2.5-flash` para todos los agentes IA conversacionales.
+## 📌 Resumen Ejecutivo
+Se ha completado una revisión exhaustiva, corrección y auditoría integral del flujo de **Ingesta de Citas, Tarifas Personalizadas por Clínica, Motor Financiero y UX de Fichas de Citas**.
 
 ---
 
-## 📅 Historial de Entregas & Sesiones
-
-### Sesión Actual: Módulo Contable — Dropdowns del Catálogo BD, Sugerencia Inteligente de Aparatología, Gastos de Lab y Ficha de Cita
-
-#### Fecha: 2026-07-27
-
-#### 1. Corrección en Ficha de Cita (`/appointments/[id]`)
-- **Visualización de Tratamiento**: Se corrigió el parser de notas en `appointments/[id]/page.tsx`. Anteriormente, cuando `[Procedimientos: ["Control de Ortodoncia"]]` contenía un array de cadenas de texto, `setProcedures` guardaba cadenas en lugar de objetos `ProcedureItem`, provocando que el dropdown apareciera vacío (`-- Seleccionar del catálogo --`).
-- **Persistencia de `treatment_id`**: Se actualizó `extract/route.ts` para guardar explícitamente el `treatment_id` en la tabla `appointments` al crear citas desde la contabilidad.
-
-#### 2. Mantenimiento y Dropdowns Interactivos en Tabla Contable (`/billing/[id]`)
-- **Dropdown de Tratamiento del Catálogo**: Reemplazado el input de texto por un `<select>` que carga todos los tratamientos de la base de datos Supabase, ordenados alfabéticamente y mostrando su precio oficial.
-- **Dropdown de Pacientes**: Selector interactivo vinculado a la tabla `patients` de Supabase, manteniendo el acceso directo a la ficha del paciente (`/patients/[id]`).
-- **Dropdown de Equipo / Trabajo de Laboratorio**: Selector de aparatología y trabajos de laboratorio cargado desde el catálogo de la BD.
-
-#### 3. Sugerencia Inteligente de Aparatología y Gastos de Laboratorio
-- **Sugerencia Automática (`TREATMENT_LAB_SUGGESTIONS`)**: Implementado un mapa de sugerencias en `calculator.ts` que relaciona tratamientos con sus trabajos de laboratorio típicos (ej: `Ortodoncia Invisible` → `Alineadores Transparentes (Set Completo)` [700€], `Ortodoncia Brackets` → `Set de Brackets y Arcos Metálicos` [350€]).
-- **Resaltado Visual (`is_lab_suggested`)**: Las celdas de laboratorio pre-rellenadas automáticamente por el sistema se muestran destacadas con fondo amarillo/ámbar y la insignia `💡 Sugerido`.
-- **Cálculo Automático de Gastos de Lab**: La sesión actual calculó automáticamente **1.225,00 €** de gastos de laboratorio para los tratamientos de Ortodoncia Invisible y Brackets Metálicos.
-
-#### 4. Columnas de Médico y Desglose Completo en el Pie de Página
-- **Columnas `% Dr` y `€ Dr`**: Añadidas a la tabla detallada para visualizar y ajustar el porcentaje y monto del profesional tratante en cada línea.
-- **Sticky Footer con Desglose en Porcentajes**: Muestra de forma transparente el desglose global:
-  - `TOTAL SUBTOTAL`: **8.281,20 €** (100%)
-  - `COMISIÓN CLÍNICA (60%)`: **4.968,72 €**
-  - `GASTOS LAB (50% Dto)`: **1.225,00 €**
-  - `HONORARIOS MÉDICO`: **3.743,72 €**
-  - `NETO TOTAL MES`: **3.743,72 €**
-
-#### 5. Resultados de Ejecución Ground Truth en Supabase (Sesión `9f651e80-cbd8-44e7-8849-cf05e6d337e6`)
-- **Sede**: `Clinica Daniel Bustamante` (Mayo 2026).
-- **Pacientes Creados en DB**: **25 pacientes** (`PAC-006` a `PAC-030`).
-- **Citas Vinculadas con `treatment_id`**: **29 citas**, 100% asignadas a **`Osly Melo`**.
-- **Gastos de Lab Auto-Calculados**: **1.225,00 €**
-- **Errores Bloqueantes**: **0 errores**
-- **Build Check**: `npm run build` → **0 errores de TypeScript**
+## 1. 🤖 Ingesta Masiva y Limpieza con Agente IA ("Musly")
+- **Fuente Única de Verdad (`appointments`)**: Las citas registradas en la agenda son la fuente primaria de datos para la generación contable.
+- **Asignación Prioritaria de Profesional**: Se configuró la API de creación (`/api/appointments/create/route.ts`) para que toda cita creada por el agente o sin médico especificado se asigne automáticamente a la **Dra. Osly Melo** (`d7e5e2bb-a7c4-44f6-9ef8-ba453e7dc477`), profesional principal de la clínica (`[0]`).
+- **Generación Secuencial de Historia Clínica (`historia_id`)**: Corregido el algoritmo para consultar el correlativo mayor en Supabase (`PAC-001`, `PAC-002`, `PAC-003`...) evitando números aleatorios.
+- **Pipeline Probado y Auditado**: Se verificó la eliminación completa de datos de prueba, la ingesta del Excel mediante el agente Document Cleaner en n8n (`/api/billing/document-cleaner`), y la creación limpia de 31 citas y 32 líneas contables.
 
 ---
 
-## ✅ Verificación de Entorno
+## 2. 💶 Tarifas Personalizadas por Sede (`treatment_clinic_prices`)
+- **Acceso Server-Side sin Bloqueo RLS**: Se implementó el cliente `supabaseAdmin` en `src/lib/supabase/server.ts` con `SUPABASE_SERVICE_ROLE_KEY` en `/api/billing/sessions/generate/route.ts` para garantizar la lectura de precios específicos por clínica sin restricciones de políticas RLS.
+- **Resolución Dinámica de Precios de Sede**:
+  - Al generar sesiones contables (`appointments-to-lines.ts`), el sistema consulta `catalogMap` y aplica la tarifa de la sede (ej. **120€** para *Control de Ortodoncia* en *Clinica Daniel Bustamante* en lugar del precio base de **60€**).
+  - Al crear citas (`/api/appointments/create/route.ts`), la API consulta `treatment_clinic_prices` e inserta la tarifa de la sede.
+  - Al visualizar la ficha de la cita (`appointments/[id]/page.tsx`), la interfaz resuelve el precio de la sede incluso en citas previamente creadas con snapshots antiguos.
+  - Se removieron los precios estáticos `(60 €)` del texto desplegable del catálogo de tratamientos para mantener una interfaz limpia y sin precios confusos.
 
-- **TypeScript**: `npm run build` → **0 errores** ✅
-- **Compilación de Producción Next.js**: Exit code 0 (Generadas 32 páginas estáticas/dinámicas) ✅
-- **Base de Datos Supabase**: Citas guardando `treatment_id` y líneas contables con sugerencia inteligente de laboratorio.
+---
+
+## 3. ⚖️ Alineación del Modelo Financiero y Terminología
+- **Aclaración de la Fórmula Contable (`calculator.ts`)**:
+  $$\text{Comisión Bruta (Médico)} = \text{Subtotal} \times \% \text{Comisión Profesional}$$
+  $$\text{Honorarios Netos (Médico)} = \text{Comisión Bruta} - \text{Laboratorio Ajustado}$$
+  El porcentaje de comisión (ej. 60%) calcula los honorarios brutos del profesional, de los cuales se descuenta la porción de laboratorio para obtener los **Honorarios Netos a liquidar al Médico**.
+
+- **Estandarización de Etiquetas y Enunciados**:
+  - **Detalle de Liquidación (`/billing/[id]`)**: `% Comisión Profesional`, `Comisión Bruta Dr.`, `Honorarios Netos Dr.` y `NETO A LIQUIDAR (MÉDICO)`.
+  - **Informe PDF (`/api/billing/report/[id]`)**: `Comisión Profesional: XX%`, `Comisión Dr. (XX%)` y `NETO A LIQUIDAR (MÉDICO)`.
+  - **Configuración de Sedes (`/settings/clinics`)**: `% Comisión Base Dr.`.
+  - **Hub de Contabilidad (`/billing`)**: `Comisión base Dr.: XX%`.
+  - **Ficha de Cita (`/appointments/[id]`)**: `% COMISIÓN DRA.`.
+
+---
+
+## 4. 🎨 Corrección de UX en Modales de la Cita
+- **Desplegables Nativa HTML en Edición de Cita**: Se reemplazaron los componentes Radix UI `<Select>` del modal *"Modificar Datos de la Cita"* por selectores `<select>` nativos de HTML estilizados.
+- Esto resolvió el problema visual donde se mostraban los identificadores UUID crudos (`59d7b4f4-ed8f...` / `d7e5e2bb-a7c4...`) dentro del campo cerrado, mostrando ahora de forma inmediata y 100% confiable:
+  - **Clínica / Sede**: `Clinica Daniel Bustamante`
+  - **Doctor / Profesional Principal**: `Dr. Osly Melo`
+
+---
+
+## 💻 Archivos Clave Modificados
+- [`appointments-to-lines.ts`](file:///Users/munircallaos/Antigravity%20Projects/melosmile/frontend/src/lib/billing/appointments-to-lines.ts)
+- [`calculator.ts`](file:///Users/munircallaos/Antigravity%20Projects/melosmile/frontend/src/lib/billing/calculator.ts)
+- [`generate/route.ts`](file:///Users/munircallaos/Antigravity%20Projects/melosmile/frontend/src/app/api/billing/sessions/generate/route.ts)
+- [`appointments/create/route.ts`](file:///Users/munircallaos/Antigravity%20Projects/melosmile/frontend/src/app/api/appointments/create/route.ts)
+- [`appointments/[id]/page.tsx`](file:///Users/munircallaos/Antigravity%20Projects/melosmile/frontend/src/app/(dashboard)/appointments/[id]/page.tsx)
+- [`billing/[id]/page.tsx`](file:///Users/munircallaos/Antigravity%20Projects/melosmile/frontend/src/app/(dashboard)/billing/[id]/page.tsx)
+- [`billing/page.tsx`](file:///Users/munircallaos/Antigravity%20Projects/melosmile/frontend/src/app/(dashboard)/billing/page.tsx)
+- [`settings/clinics/page.tsx`](file:///Users/munircallaos/Antigravity%20Projects/melosmile/frontend/src/app/(dashboard)/settings/clinics/page.tsx)
+- [`report/[id]/route.ts`](file:///Users/munircallaos/Antigravity%20Projects/melosmile/frontend/src/app/api/billing/report/[id]/route.ts)
+- [`server.ts`](file:///Users/munircallaos/Antigravity%20Projects/melosmile/frontend/src/lib/supabase/server.ts)
+
+---
+
+## 5. 🏥 Planes de Tratamiento y Volcado de Históricos
+- **Selección de Tipo de Tratamiento**: El modal de planes de tratamiento ahora permite seleccionar dinámicamente si el plan es de `Ortodoncia`, `Miofuncional` u `Otro`, y la cabecera verde de la ficha se actualiza automáticamente con esta información (ej. *Plan de Miofuncional Pautado*).
+- **Ingesta de Históricos (Volcado)**: Se implementó el soporte manual en el formulario para registrar el histórico de `Mensualidades Ya Pagadas` y el `Monto Ya Pagado` total previo al uso de Melosmile.
+- **Motor Inteligente de Cuotas**: El cálculo de cuotas completadas ahora suma transparentemente los controles registrados históricamente con los controles marcados como "Realizada" en el nuevo sistema, activando las alertas de "Revisión de Plan" al acercarse o completar el total de cuotas estipuladas.

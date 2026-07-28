@@ -117,7 +117,21 @@ export default function BillingDetailPage({ params }: { params: Promise<{ id: st
       setLabDiscountPct(data.session.lab_discount_pct ?? 50);
       setNotes(data.session.notes || "");
 
-      // 2. Load Treatments Catalog
+      // 2. Load Treatments Catalog (with Clinic Custom Prices)
+      const clinicId = data.session?.clinic_id;
+      const clinicPricesMap = new Map<string, number>();
+
+      if (clinicId) {
+        const { data: cpData } = await supabase
+          .from('treatment_clinic_prices')
+          .select('treatment_id, price')
+          .eq('clinic_id', clinicId);
+
+        if (cpData) {
+          cpData.forEach((cp: any) => clinicPricesMap.set(cp.treatment_id, Number(cp.price || 0)));
+        }
+      }
+
       const { data: tData } = await supabase
         .from('treatments')
         .select('id, service_name, default_price, typical_lab_cost, family_id, treatment_families(name)')
@@ -128,7 +142,7 @@ export default function BillingDetailPage({ params }: { params: Promise<{ id: st
         setTreatmentsCatalog(tData.map((t: any) => ({
           id: t.id,
           service_name: t.service_name,
-          default_price: Number(t.default_price || 0),
+          default_price: clinicPricesMap.has(t.id) ? clinicPricesMap.get(t.id)! : Number(t.default_price || 0),
           typical_lab_cost: Number(t.typical_lab_cost || 0),
           family_name: t.treatment_families?.name || 'General'
         })));
@@ -294,7 +308,9 @@ export default function BillingDetailPage({ params }: { params: Promise<{ id: st
       catalog_price: 60,
       price_deviation_pct: 0,
       payment_status: "not_tracked",
-      payment_amount: 0
+      payment_amount: 0,
+      procedure_index: 0,
+      source_type: 'manual'
     };
     setLines([...lines, newLine]);
   };
@@ -473,12 +489,12 @@ export default function BillingDetailPage({ params }: { params: Promise<{ id: st
             <Button
               onClick={handleRefreshFromAppointments}
               disabled={refreshing || saving}
-              variant="outline"
               size="sm"
-              className="gap-2 border-indigo-300 text-indigo-700 hover:bg-indigo-50"
+              className="gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold shadow-sm"
+              title="Cargar y sincronizar las citas realizadas del mes desde el calendario"
             >
-              <FileText className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
-              {refreshing ? "Actualizando..." : "Actualizar desde Citas"}
+              <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+              {refreshing ? "Sincronizando..." : "↻ Actualizar desde Citas"}
             </Button>
           )}
 
@@ -542,7 +558,7 @@ export default function BillingDetailPage({ params }: { params: Promise<{ id: st
           {/* Editable Commission % and Lab % */}
           <div className="flex items-center gap-6 bg-slate-50 p-3 rounded-xl border border-slate-200">
             <div>
-              <label className="text-xs font-bold text-slate-500 block">% Comisión Clínica</label>
+              <label className="text-xs font-bold text-slate-500 block">% Comisión Profesional</label>
               <input
                 type="number"
                 value={commissionPct}
@@ -706,14 +722,18 @@ export default function BillingDetailPage({ params }: { params: Promise<{ id: st
                         ))}
                       </select>
 
-                      {l.patient_id && (
+                      {(l.appointment_id || l.patient_id) && (
                         <Link
-                          href={`/patients/${l.patient_id}`}
+                          href={l.appointment_id ? `/appointments/${l.appointment_id}` : `/patients/${l.patient_id}`}
                           target="_blank"
-                          className="p-1 text-emerald-600 hover:text-emerald-800 hover:bg-emerald-100 rounded shrink-0"
-                          title="Abrir ficha del paciente e historial clínico"
+                          className="p-1 text-indigo-600 hover:text-indigo-800 hover:bg-indigo-100 rounded shrink-0"
+                          title={l.appointment_id ? "Abrir la cita de origen" : "Abrir ficha del paciente"}
                         >
-                          <UserCheck className="w-3.5 h-3.5" />
+                          {l.appointment_id ? (
+                            <Calendar className="w-3.5 h-3.5 text-indigo-600" />
+                          ) : (
+                            <UserCheck className="w-3.5 h-3.5 text-emerald-600" />
+                          )}
                         </Link>
                       )}
                     </div>
@@ -1023,7 +1043,7 @@ export default function BillingDetailPage({ params }: { params: Promise<{ id: st
             </div>
 
             <div>
-              <div className="text-xs text-slate-400 uppercase font-semibold">Comisión Clínica ({commissionPct}%)</div>
+              <div className="text-xs text-slate-400 uppercase font-semibold">Comisión Bruta Dr. ({commissionPct}%)</div>
               <div className="text-lg font-bold text-emerald-400">{totals.total_commission.toFixed(2)} €</div>
             </div>
 
@@ -1033,13 +1053,13 @@ export default function BillingDetailPage({ params }: { params: Promise<{ id: st
             </div>
 
             <div>
-              <div className="text-xs text-slate-400 uppercase font-semibold">Honorarios Médico</div>
+              <div className="text-xs text-slate-400 uppercase font-semibold">Honorarios Netos Dr.</div>
               <div className="text-lg font-bold text-sky-300">{(totals.total_dr_main ?? totals.total_neto).toFixed(2)} €</div>
             </div>
           </div>
 
           <div className="bg-emerald-500/20 border border-emerald-500/40 px-6 py-3 rounded-xl text-right">
-            <div className="text-xs text-emerald-300 uppercase font-bold">NETO TOTAL MES</div>
+            <div className="text-xs text-emerald-300 uppercase font-bold">NETO A LIQUIDAR (MÉDICO)</div>
             <div className="text-2xl font-extrabold text-emerald-400">{totals.total_neto.toFixed(2)} €</div>
           </div>
         </div>

@@ -20,6 +20,7 @@ import { triggerNewAppointmentModal } from "@/components/calendar/new-appointmen
 import { PaymentRegistrationModal } from "@/components/billing/payment-registration-modal";
 import { Odontogram, OdontogramData } from "@/components/appointments/odontogram";
 import { NewReminderModal } from "@/components/reminders/new-reminder-modal";
+import { addSystemNotification } from "@/components/layout/notification-center";
 import { Send as SendIcon } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -277,9 +278,16 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
 
   const handleBulkDeleteAppointments = async () => {
     if (selectedAppointmentIds.length === 0) return;
+    const selectedAppts = appointments.filter(a => selectedAppointmentIds.includes(a.id));
+    const hasRealizada = selectedAppts.some(a => a.status === "Realizada" || a.status === "realizada");
+    if (hasRealizada) {
+      alert("No se pueden eliminar citas con estado 'Realizada'. Por favor deselecciona las citas realizadas antes de borrar.");
+      return;
+    }
     if (!confirm(`¿Eliminar ${selectedAppointmentIds.length} cita(s) seleccionada(s)? Esta acción no se puede deshacer.`)) return;
     setBulkActionLoading(true);
     try {
+      await (supabase as any).from("billing_records").delete().in("appointment_id", selectedAppointmentIds);
       const { error } = await (supabase as any)
         .from("appointments")
         .delete()
@@ -321,6 +329,43 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
   const [isEditingOdontogram, setIsEditingOdontogram] = useState<boolean>(false);
   const [savingOdontogram, setSavingOdontogram] = useState<boolean>(false);
 
+  // Treatment Plan & Monthly Fee State
+  const [activePlan, setActivePlan] = useState<any>(null);
+  const [editingPlanModalOpen, setEditingPlanModalOpen] = useState(false);
+  const [planForm, setPlanForm] = useState({
+    monthly_fee: "60",
+    total_installments: "18",
+    total_cost: "1080",
+    initial_payment: "0",
+    final_payment: "0",
+    treatment_type: "Ortodoncia",
+    paid_installments_count: "0",
+    already_paid_amount: "0",
+    status: "activo"
+  });
+
+  // Calculate completed & remaining controls count
+  const completedControlsCount = appointments.filter(
+    (a) => (a.status === "Realizada" || a.status === "realizada") && /control|mensualidad/i.test(a.reason || "")
+  ).length;
+  const manuallyPaidInstallments = activePlan?.paid_installments_count || 0;
+  const totalCompletedControls = completedControlsCount + manuallyPaidInstallments;
+  const totalInstallments = activePlan?.total_installments || 0;
+  const remainingInstallments = Math.max(0, totalInstallments - totalCompletedControls);
+  const isPlanCompletedOrNear = Boolean(activePlan && totalInstallments > 0 && remainingInstallments <= 1);
+  const treatmentTypeName = activePlan?.treatment_type || "Ortodoncia";
+
+  // Trigger system notification bell when plan reaches total installments
+  useEffect(() => {
+    if (activePlan && patient && isPlanCompletedOrNear) {
+      addSystemNotification({
+        title: `⚠️ Revisión de Plan de ${treatmentTypeName}`,
+        message: `El paciente ${patient.firstName} ${patient.lastName} lleva ${totalCompletedControls} de ${totalInstallments} mensualidades (${remainingInstallments === 0 ? "Plan finalizado" : "Queda 1 mensualidad pendiente"}). Revisar plan.`,
+        type: "warning"
+      });
+    }
+  }, [activePlan?.id, isPlanCompletedOrNear, totalCompletedControls, totalInstallments, remainingInstallments, treatmentTypeName, patient?.firstName, patient?.lastName]);
+
   const fetchAll = useCallback(async () => {
     if (!targetId) return;
     setLoading(true);
@@ -338,9 +383,29 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
       let p = pData?.[0];
       if (!p) return;
 
+function toTitleCase(text: string): string {
+  if (!text) return "";
+  const lowercaseWords = new Set(["de", "del", "la", "las", "los", "y", "e", "o"]);
+  return text
+    .trim()
+    .toLowerCase()
+    .split(/\s+/)
+    .map((word, idx) => {
+      if (!word) return "";
+      if (word.startsWith("(") && word.length > 1) {
+        return "(" + word.charAt(1).toUpperCase() + word.slice(2);
+      }
+      if (idx > 0 && lowercaseWords.has(word)) {
+        return word;
+      }
+      return word.charAt(0).toUpperCase() + word.slice(1);
+    })
+    .join(" ");
+}
+
       setPatient({
         id: p.id as string, historiaId: p.historia_id as string,
-        firstName: p.first_name, lastName: p.last_name,
+        firstName: toTitleCase(p.first_name), lastName: toTitleCase(p.last_name),
         phone: p.phone ?? null, email: p.email ?? null,
         dni: p.dni_nie ?? null, dob: p.dob ?? null,
         gender: p.gender ?? null, address: p.address ?? null,
@@ -417,6 +482,37 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
         }
 
         setPatientOdontogram(mergedOdonto);
+
+        // 2.5 Active Treatment Plan (Mensualidad Pautada)
+        try {
+          const { data: planData } = await (supabase as any)
+            .from("treatment_plans")
+            .select("*")
+            .eq("patient_id", p.id)
+            .eq("status", "activo")
+            .order("created_at", { ascending: false })
+            .limit(1);
+
+          if (planData && planData.length > 0) {
+            const plan = planData[0];
+            setActivePlan(plan);
+            setPlanForm({
+              monthly_fee: String(plan.monthly_fee ?? 60),
+              total_installments: String(plan.total_installments ?? 18),
+              total_cost: String(plan.total_cost ?? 1080),
+              initial_payment: String(plan.initial_payment ?? 0),
+              final_payment: String(plan.final_payment ?? 0),
+              treatment_type: plan.treatment_type || "Ortodoncia",
+              paid_installments_count: String(plan.paid_installments_count ?? 0),
+              already_paid_amount: String(plan.already_paid_amount ?? 0),
+              status: plan.status || "activo"
+            });
+          } else {
+            setActivePlan(null);
+          }
+        } catch (planErr) {
+          console.warn("Notice fetching treatment plan:", planErr);
+        }
 
         // 3. Billing
         if (apptData.length > 0) {
@@ -753,6 +849,78 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
                 </p>
               </div>
             </div>
+
+            {/* Active Treatment Plan & Monthly Fee Badge */}
+            <div className="p-4 rounded-xl bg-emerald-50/70 border border-emerald-200 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <BadgeCheck className="h-4 w-4 text-emerald-600" />
+                  <span className="text-xs font-bold text-emerald-950 uppercase tracking-wider">Plan de {treatmentTypeName} Pautado</span>
+                </div>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setEditingPlanModalOpen(true)}
+                  className="h-7 px-2.5 text-[11px] font-bold text-emerald-800 bg-emerald-100/80 hover:bg-emerald-200/80 border-emerald-300 rounded-lg gap-1 cursor-pointer"
+                >
+                  <Edit3 className="h-3 w-3" /> {activePlan ? "Editar Plan" : "+ Configurar Plan"}
+                </Button>
+              </div>
+
+              {/* Warning Alert Banner when remaining installments <= 1 */}
+              {isPlanCompletedOrNear && (
+                <div className="flex items-start gap-2 p-3 rounded-xl bg-amber-100/90 border border-amber-300 text-amber-950 text-xs font-bold shadow-xs">
+                  <AlertCircle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+                  <div>
+                    <p>⚠️ Atención: El paciente ha completado {totalCompletedControls} de las {totalInstallments} mensualidades estipuladas.</p>
+                    <p className="text-[11px] text-amber-800 font-medium mt-0.5">
+                      {remainingInstallments === 0 ? "¡Plan alcanzado al 100%! Revisa el plan por si requiere prórroga o modificación." : "Queda solo 1 mensualidad pendiente antes de finalizar las cuotas pautadas."}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {activePlan ? (
+                <div className="space-y-2">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 pt-1">
+                    <div className="bg-white/80 p-2.5 rounded-lg border border-emerald-100 text-center">
+                      <span className="text-[10px] uppercase font-bold text-slate-400 block">Mensualidad Control</span>
+                      <span className="text-sm font-black text-emerald-700">{activePlan.monthly_fee} €</span>
+                    </div>
+                    <div className="bg-white/80 p-2.5 rounded-lg border border-emerald-100 text-center">
+                      <span className="text-[10px] uppercase font-bold text-slate-400 block">Controles Realizados</span>
+                      <span className="text-xs font-black text-slate-800">
+                        {totalCompletedControls} de {totalInstallments}
+                        <span className="block text-[10px] text-emerald-600 font-bold">({remainingInstallments} pendientes)</span>
+                      </span>
+                    </div>
+                    <div className="bg-white/80 p-2.5 rounded-lg border border-emerald-100 text-center">
+                      <span className="text-[10px] uppercase font-bold text-slate-400 block">Pago Inicial / Entrada</span>
+                      <span className="text-sm font-black text-slate-700">{activePlan.initial_payment ? `${activePlan.initial_payment} €` : '0 €'}</span>
+                    </div>
+                    <div className="bg-white/80 p-2.5 rounded-lg border border-emerald-100 text-center">
+                      <span className="text-[10px] uppercase font-bold text-slate-400 block">Pago / Cuota Final</span>
+                      <span className="text-sm font-black text-slate-700">{activePlan.final_payment ? `${activePlan.final_payment} €` : '0 €'}</span>
+                    </div>
+                    <div className="bg-white/80 p-2.5 rounded-lg border border-emerald-100 text-center">
+                      <span className="text-[10px] uppercase font-bold text-slate-400 block">Costo Total Plan</span>
+                      <span className="text-sm font-black text-slate-800">{activePlan.total_cost ? `${activePlan.total_cost} €` : '—'}</span>
+                    </div>
+                    <div className="bg-white/80 p-2.5 rounded-lg border border-emerald-100 text-center flex flex-col justify-center items-center">
+                      <span className="text-[10px] uppercase font-bold text-slate-400 block">Estado</span>
+                      <Badge className="mt-0.5 bg-emerald-100 text-emerald-800 font-extrabold border-emerald-200 capitalize">
+                        {activePlan.status}
+                      </Badge>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-xs text-emerald-800/80 font-medium italic">
+                  Sin cuota de mensualidad específica asignada. Las citas usarán el precio por defecto del catálogo.
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
@@ -1007,6 +1175,37 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
                           <ChevronRight className="h-4 w-4 text-slate-300 group-hover:text-rose-400 transition-colors" />
                         </div>
                       </Link>
+
+                      {/* Individual Delete Button */}
+                      <button
+                        type="button"
+                        title={app.status === "Realizada" || app.status === "realizada" ? "No se puede eliminar una cita Realizada" : "Eliminar cita accidental"}
+                        onClick={async (e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          if (app.status === "Realizada" || app.status === "realizada") {
+                            alert("No se puede eliminar una cita que ya ha sido 'Realizada'.");
+                            return;
+                          }
+                          if (!confirm(`¿Eliminar la cita "${app.reason}" del ${d.full}?`)) return;
+                          try {
+                            await (supabase as any).from("billing_records").delete().eq("appointment_id", app.id);
+                            const { error } = await (supabase as any).from("appointments").delete().eq("id", app.id);
+                            if (error) throw error;
+                            await fetchAll();
+                          } catch (err: any) {
+                            alert(`Error al eliminar cita: ${err.message}`);
+                          }
+                        }}
+                        disabled={app.status === "Realizada" || app.status === "realizada"}
+                        className={`p-1.5 rounded-lg border transition-all ${
+                          app.status === "Realizada" || app.status === "realizada"
+                            ? "opacity-30 cursor-not-allowed border-transparent text-slate-300"
+                            : "border-slate-200 text-slate-400 hover:text-red-600 hover:bg-red-50 hover:border-red-200 cursor-pointer"
+                        }`}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
                     </div>
                   );
                 })}
@@ -1421,6 +1620,173 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
           }))}
           onSuccess={fetchAll}
         />
+      )}
+
+      {/* Edit Treatment Plan Modal */}
+      {editingPlanModalOpen && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4 border border-slate-100">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                <BadgeCheck className="h-4 w-4 text-emerald-600" /> Plan de Tratamiento y Mensualidad
+              </h3>
+              <Button variant="ghost" size="sm" onClick={() => setEditingPlanModalOpen(false)} className="h-7 w-7 p-0 rounded-full">
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+
+            <div className="space-y-3 text-xs">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-semibold text-slate-700 block mb-1">Tipo de Tratamiento*</label>
+                  <select
+                    value={planForm.treatment_type}
+                    onChange={(e) => setPlanForm({ ...planForm, treatment_type: e.target.value })}
+                    className="w-full h-9 px-3 border border-slate-200 rounded-xl text-sm font-medium bg-white"
+                  >
+                    <option value="Ortodoncia">Ortodoncia</option>
+                    <option value="Miofuncional">Miofuncional</option>
+                    <option value="Otro">Otro</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="font-semibold text-slate-700 block mb-1">Precio Mensualidad Control (€)*</label>
+                  <input
+                    type="number"
+                    value={planForm.monthly_fee}
+                    onChange={(e) => setPlanForm({ ...planForm, monthly_fee: e.target.value })}
+                    className="w-full h-9 px-3 border border-slate-200 rounded-xl text-sm font-bold text-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    placeholder="Ej. 60"
+                  />
+                  <p className="text-[10px] text-slate-400 mt-0.5 leading-tight">Este precio se aplicará prioritariamente a todas sus citas de tipo &quot;Control&quot;.</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-semibold text-slate-700 block mb-1">Pago Inicial / Entrada (€)</label>
+                  <input
+                    type="number"
+                    value={planForm.initial_payment}
+                    onChange={(e) => setPlanForm({ ...planForm, initial_payment: e.target.value })}
+                    className="w-full h-9 px-3 border border-slate-200 rounded-xl text-sm font-medium"
+                    placeholder="Ej. 300"
+                  />
+                </div>
+                <div>
+                  <label className="font-semibold text-slate-700 block mb-1">Pago / Cuota Final (€)</label>
+                  <input
+                    type="number"
+                    value={planForm.final_payment}
+                    onChange={(e) => setPlanForm({ ...planForm, final_payment: e.target.value })}
+                    className="w-full h-9 px-3 border border-slate-200 rounded-xl text-sm font-medium"
+                    placeholder="Ej. 150"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-semibold text-slate-700 block mb-1">Número de Mensualidades</label>
+                  <input
+                    type="number"
+                    value={planForm.total_installments}
+                    onChange={(e) => setPlanForm({ ...planForm, total_installments: e.target.value })}
+                    className="w-full h-9 px-3 border border-slate-200 rounded-xl text-sm font-medium"
+                    placeholder="Ej. 18"
+                  />
+                </div>
+                <div>
+                  <label className="font-semibold text-slate-700 block mb-1">Costo Total Plan (€)</label>
+                  <input
+                    type="number"
+                    value={planForm.total_cost}
+                    onChange={(e) => setPlanForm({ ...planForm, total_cost: e.target.value })}
+                    className="w-full h-9 px-3 border border-slate-200 rounded-xl text-sm font-medium"
+                    placeholder="Ej. 1080"
+                  />
+                </div>
+              </div>
+
+              <div className="border-t border-slate-100 pt-3">
+                <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Datos Históricos (Volcado)</h4>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="font-semibold text-slate-700 block mb-1">Mensualidades Ya Pagadas</label>
+                    <input
+                      type="number"
+                      value={planForm.paid_installments_count}
+                      onChange={(e) => setPlanForm({ ...planForm, paid_installments_count: e.target.value })}
+                      className="w-full h-9 px-3 border border-slate-200 rounded-xl text-sm font-medium"
+                      placeholder="Ej. 5"
+                    />
+                  </div>
+                  <div>
+                    <label className="font-semibold text-slate-700 block mb-1">Monto Ya Pagado (€)</label>
+                    <input
+                      type="number"
+                      value={planForm.already_paid_amount}
+                      onChange={(e) => setPlanForm({ ...planForm, already_paid_amount: e.target.value })}
+                      className="w-full h-9 px-3 border border-slate-200 rounded-xl text-sm font-medium"
+                      placeholder="Ej. 300"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label className="font-semibold text-slate-700 block mb-1">Estado del Plan</label>
+                <select
+                  value={planForm.status}
+                  onChange={(e) => setPlanForm({ ...planForm, status: e.target.value })}
+                  className="w-full h-9 px-3 border border-slate-200 rounded-xl text-sm font-medium bg-white"
+                >
+                  <option value="activo">Activo</option>
+                  <option value="completado">Completado</option>
+                  <option value="cancelado">Cancelado</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+              <Button variant="outline" size="sm" onClick={() => setEditingPlanModalOpen(false)} className="rounded-xl">
+                Cancelar
+              </Button>
+              <Button
+                size="sm"
+                onClick={async () => {
+                  if (!patient?.id) return;
+                  try {
+                    const payload: any = {
+                      patient_id: patient.id,
+                      monthly_fee: parseFloat(planForm.monthly_fee) || 0,
+                      total_installments: parseInt(planForm.total_installments, 10) || 0,
+                      total_cost: parseFloat(planForm.total_cost) || 0,
+                      initial_payment: parseFloat(planForm.initial_payment) || 0,
+                      final_payment: parseFloat(planForm.final_payment) || 0,
+                      treatment_type: planForm.treatment_type,
+                      paid_installments_count: parseInt(planForm.paid_installments_count, 10) || 0,
+                      already_paid_amount: parseFloat(planForm.already_paid_amount) || 0,
+                      status: planForm.status,
+                    };
+                    if (activePlan?.id) payload.id = activePlan.id;
+
+                    const { error } = await (supabase as any).from("treatment_plans").upsert(payload);
+                    if (error) throw error;
+
+                    setEditingPlanModalOpen(false);
+                    await fetchAll();
+                  } catch (err: any) {
+                    alert(`Error guardando el plan: ${err.message}`);
+                  }
+                }}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl"
+              >
+                <Save className="h-4 w-4 mr-1" /> Guardar Plan
+              </Button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

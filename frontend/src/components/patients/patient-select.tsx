@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
-import { User, Plus, Search, Check, Phone, Mail, FileText } from "lucide-react";
+import React, { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
+import { User, Plus, Search, Check, X, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -17,109 +18,211 @@ export type Patient = {
   dni: string;
 };
 
-export const MOCK_PATIENTS: Patient[] = [
-  { id: "p1", historiaId: "PAC-001", firstName: "Juan", lastName: "Pérez", phone: "+34 612 345 678", email: "juan.perez@email.com", dni: "12345678A" },
-  { id: "p2", historiaId: "PAC-002", firstName: "María", lastName: "Gómez", phone: "+34 622 987 654", email: "maria.gomez@email.com", dni: "87654321B" },
-  { id: "p3", historiaId: "PAC-003", firstName: "Carlos", lastName: "Rodríguez", phone: "+34 633 456 789", email: "carlos.rodriguez@email.com", dni: "45678912C" },
-  { id: "p4", historiaId: "PAC-004", firstName: "Laura", lastName: "Sánchez", phone: "+34 644 112 233", email: "laura.sanchez@email.com", dni: "33221144D" },
-  { id: "p5", historiaId: "PAC-005", firstName: "Munir", lastName: "Callaos", phone: "+34 655 889 900", email: "munir@melosmile.com", dni: "77889900X" },
-];
-
 type PatientSelectProps = {
   value?: string;
   onSelectPatient?: (patient: Patient) => void;
   placeholder?: string;
 };
 
-export function PatientSelect({ value = "", onSelectPatient, placeholder = "Buscar o seleccionar paciente..." }: PatientSelectProps) {
+export function PatientSelect({ value = "", onSelectPatient, placeholder = "Buscar o escribir nombre paciente..." }: PatientSelectProps) {
+  const router = useRouter();
+  const containerRef = useRef<HTMLDivElement>(null);
+
   const [query, setQuery] = useState(value || "");
   const [isOpen, setIsOpen] = useState(false);
-  const [patients, setPatients] = useState<Patient[]>(MOCK_PATIENTS);
+  const [loading, setLoading] = useState(false);
+  const [patients, setPatients] = useState<Patient[]>([]);
 
   // New patient modal
   const [isNewModalOpen, setIsNewModalOpen] = useState(false);
+  const [creating, setCreating] = useState(false);
   const [newFirstName, setNewFirstName] = useState("");
   const [newLastName, setNewLastName] = useState("");
   const [newPhone, setNewPhone] = useState("");
   const [newEmail, setNewEmail] = useState("");
   const [newDni, setNewDni] = useState("");
 
-  const filtered = patients.filter((p) => {
-    const fullName = `${p.firstName} ${p.lastName}`.toLowerCase();
-    const search = query.toLowerCase();
-    return (
-      fullName.includes(search) ||
-      p.dni.toLowerCase().includes(search) ||
-      p.historiaId.toLowerCase().includes(search)
-    );
-  });
+  // 1. Click outside handler to close dropdown
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // 2. Escape key handler to close dropdown
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") {
+        setIsOpen(false);
+      }
+    }
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
+  // 3. Ajax search from Supabase API with 200ms debounce
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const timer = setTimeout(async () => {
+      setLoading(true);
+      try {
+        const res = await fetch(`/api/patients/search?q=${encodeURIComponent(query)}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.patients && Array.isArray(data.patients)) {
+            const mapped: Patient[] = data.patients.map((p: any) => ({
+              id: p.id,
+              historiaId: p.historia_id || "PAC-000",
+              firstName: p.first_name || "",
+              lastName: p.last_name || "",
+              phone: p.phone || "",
+              email: p.email || "",
+              dni: p.dni || "",
+            }));
+            setPatients(mapped);
+          }
+        }
+      } catch (err) {
+        console.error("Error searching patients:", err);
+      } finally {
+        setLoading(false);
+      }
+    }, 200);
+
+    return () => clearTimeout(timer);
+  }, [query, isOpen]);
 
   const handleSelect = (patient: Patient) => {
     setQuery(`${patient.firstName} ${patient.lastName}`);
-    onSelectPatient?.(patient);
+    setIsOpen(false);
+
+    if (onSelectPatient) {
+      onSelectPatient(patient);
+    } else {
+      // If used as top navigation search bar, navigate to patient profile
+      router.push(`/patients/${patient.id}`);
+    }
+  };
+
+  const handleClear = () => {
+    setQuery("");
     setIsOpen(false);
   };
 
-  const handleCreateNew = () => {
+  const handleCreateNew = async () => {
     if (!newFirstName.trim()) return;
-    const newP: Patient = {
-      id: `p${Date.now()}`,
-      historiaId: `PAC-${String(patients.length + 1).padStart(3, "0")}`,
-      firstName: newFirstName,
-      lastName: newLastName,
-      phone: newPhone || "+34 600 000 000",
-      email: newEmail || "paciente@email.com",
-      dni: newDni || "00000000X",
-    };
-    setPatients([newP, ...patients]);
-    handleSelect(newP);
-    setIsNewModalOpen(false);
+    setCreating(true);
+    try {
+      const res = await fetch("/api/patients/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          first_name: newFirstName.trim(),
+          last_name: newLastName.trim() || "Sin Apellido",
+          phone: newPhone.trim() || "+34 600 000 000",
+          email: newEmail.trim() || `${newFirstName.toLowerCase()}@melosmile.local`,
+          dni: newDni.trim() || undefined,
+        }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data.data) {
+          const createdP = data.data;
+          const newP: Patient = {
+            id: createdP.id,
+            historiaId: createdP.historia_id || "PAC-NEW",
+            firstName: createdP.first_name,
+            lastName: createdP.last_name,
+            phone: createdP.phone,
+            email: createdP.email,
+            dni: createdP.dni || "",
+          };
+          setPatients((prev) => [newP, ...prev]);
+          handleSelect(newP);
+          setIsNewModalOpen(false);
+          setNewFirstName("");
+          setNewLastName("");
+          setNewPhone("");
+          setNewEmail("");
+          setNewDni("");
+        }
+      }
+    } catch (err) {
+      console.error("Error creating patient:", err);
+    } finally {
+      setCreating(false);
+    }
   };
 
   return (
-    <div className="relative">
-      <div className="relative">
-        <User className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+    <div ref={containerRef} className="relative w-full">
+      <div className="relative flex items-center">
+        <User className="absolute left-3 h-4 w-4 text-slate-400 pointer-events-none" />
         <Input
           value={query}
           onChange={(e) => {
             setQuery(e.target.value);
-            setIsOpen(true);
+            if (!isOpen) setIsOpen(true);
           }}
           onFocus={() => setIsOpen(true)}
-          placeholder="Buscar o escribir nombre paciente..."
-          className="pl-9 text-sm rounded-lg"
+          placeholder={placeholder}
+          className="pl-9 pr-8 text-sm rounded-xl border-slate-200 focus:border-indigo-500 focus:ring-indigo-500 bg-white"
         />
+        {query ? (
+          <button
+            type="button"
+            onClick={handleClear}
+            className="absolute right-2.5 p-1 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100 transition-colors"
+            title="Limpiar búsqueda"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
+        ) : (
+          loading && (
+            <Loader2 className="absolute right-2.5 h-3.5 w-3.5 text-indigo-500 animate-spin pointer-events-none" />
+          )
+        )}
       </div>
 
       {/* Autocomplete Dropdown List */}
       {isOpen && (
-        <div className="absolute top-full left-0 right-0 mt-1 z-50 max-h-60 overflow-y-auto bg-white rounded-xl border border-slate-200 shadow-2xl p-1 opacity-100">
-          {filtered.length > 0 ? (
-            filtered.map((p) => (
+        <div className="absolute top-full left-0 right-0 mt-1.5 z-50 max-h-72 overflow-y-auto bg-white rounded-2xl border border-slate-200 shadow-2xl p-1.5 opacity-100 animate-in fade-in-50 slide-in-from-top-1">
+          {loading && patients.length === 0 ? (
+            <div className="p-4 text-center text-xs text-slate-400 flex items-center justify-center gap-2">
+              <Loader2 className="h-4 w-4 animate-spin text-indigo-500" />
+              <span>Buscando pacientes en Supabase...</span>
+            </div>
+          ) : patients.length > 0 ? (
+            patients.map((p) => (
               <div
                 key={p.id}
                 onClick={() => handleSelect(p)}
-                className="flex items-center justify-between p-2.5 rounded-lg hover:bg-slate-100 cursor-pointer transition-colors"
+                className="flex items-center justify-between p-2.5 rounded-xl hover:bg-indigo-50/80 cursor-pointer transition-colors group"
               >
                 <div>
-                  <p className="text-sm font-semibold text-slate-900">
+                  <p className="text-sm font-semibold text-slate-900 group-hover:text-indigo-900">
                     {p.firstName} {p.lastName}{" "}
-                    <span className="text-xs text-slate-400 font-normal">({p.historiaId})</span>
+                    <span className="text-xs text-slate-400 font-normal ml-1">({p.historiaId})</span>
                   </p>
-                  <p className="text-xs text-slate-500 flex items-center gap-3">
-                    <span>DNI: {p.dni}</span>
-                    <span>{p.phone}</span>
+                  <p className="text-xs text-slate-500 flex items-center gap-3 mt-0.5">
+                    {p.dni && <span>DNI: {p.dni}</span>}
+                    {p.phone && <span>{p.phone}</span>}
                   </p>
                 </div>
                 {query.toLowerCase() === `${p.firstName} ${p.lastName}`.toLowerCase() && (
-                  <Check className="h-4 w-4 text-rose-500 shrink-0" />
+                  <Check className="h-4 w-4 text-indigo-600 shrink-0" />
                 )}
               </div>
             ))
           ) : (
             <div className="p-3 text-center text-xs text-slate-500">
-              No se encontró ningún paciente con ese nombre.
+              No se encontró ningún paciente que coincida.
             </div>
           )}
 
@@ -130,20 +233,20 @@ export function PatientSelect({ value = "", onSelectPatient, placeholder = "Busc
               setIsOpen(false);
               setIsNewModalOpen(true);
             }}
-            className="w-full flex items-center justify-center gap-2 p-2.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 font-semibold text-xs border border-rose-200 mt-1 transition-colors"
+            className="w-full flex items-center justify-center gap-2 p-2.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold text-xs border border-indigo-200/80 mt-1 transition-colors"
           >
-            <Plus className="h-3.5 w-3.5" />
+            <Plus className="h-3.5 w-3.5 text-indigo-600" />
             <span>Crear nuevo paciente en Base de Datos</span>
           </button>
         </div>
       )}
 
-      {/* New Patient Registration Modal (Opaque) */}
+      {/* New Patient Registration Modal */}
       <Dialog open={isNewModalOpen} onOpenChange={setIsNewModalOpen}>
         <DialogContent className="sm:max-w-md rounded-2xl p-6 bg-white border border-slate-200 shadow-2xl opacity-100">
           <DialogHeader>
             <DialogTitle className="text-xl font-bold text-slate-900 flex items-center gap-2">
-              <User className="h-5 w-5 text-rose-500" />
+              <User className="h-5 w-5 text-indigo-600" />
               Crear Ficha de Nuevo Paciente
             </DialogTitle>
           </DialogHeader>
@@ -151,12 +254,12 @@ export function PatientSelect({ value = "", onSelectPatient, placeholder = "Busc
           <div className="space-y-3 py-2">
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
-                <Label className="text-xs font-semibold text-slate-700">Nombre</Label>
-                <Input value={newFirstName} onChange={(e) => setNewFirstName(e.target.value)} placeholder="Juan" className="text-sm rounded-lg" />
+                <Label className="text-xs font-semibold text-slate-700">Nombre *</Label>
+                <Input value={newFirstName} onChange={(e) => setNewFirstName(e.target.value)} placeholder="Ej: Juan" className="text-sm rounded-lg" />
               </div>
               <div className="space-y-1">
                 <Label className="text-xs font-semibold text-slate-700">Apellidos</Label>
-                <Input value={newLastName} onChange={(e) => setNewLastName(e.target.value)} placeholder="Pérez" className="text-sm rounded-lg" />
+                <Input value={newLastName} onChange={(e) => setNewLastName(e.target.value)} placeholder="Ej: Pérez" className="text-sm rounded-lg" />
               </div>
             </div>
 
@@ -181,8 +284,12 @@ export function PatientSelect({ value = "", onSelectPatient, placeholder = "Busc
             <Button variant="outline" onClick={() => setIsNewModalOpen(false)} className="rounded-xl">
               Cancelar
             </Button>
-            <Button onClick={handleCreateNew} className="bg-rose-500 hover:bg-rose-600 text-white rounded-xl shadow-md shadow-rose-500/20">
-              Guardar y Seleccionar
+            <Button
+              onClick={handleCreateNew}
+              disabled={creating || !newFirstName.trim()}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-md shadow-indigo-500/20"
+            >
+              {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : "Guardar y Seleccionar"}
             </Button>
           </DialogFooter>
         </DialogContent>

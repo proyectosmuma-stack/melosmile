@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase/client';
+import { supabaseAdmin as supabase } from '@/lib/supabase/server';
 import { generateBillingLinesFromAppointments } from '@/lib/billing/appointments-to-lines';
 import { calculateSessionTotals } from '@/lib/billing/calculator';
 
@@ -31,18 +31,34 @@ export async function GET(request: Request) {
     const commissionPct = clinic.base_commission_pct ?? 60;
     const labDiscountPct = clinic.lab_discount_pct ?? 50;
 
-    // 2. Fetch catalog for price mapping
+    // 2. Fetch catalog for price mapping (with custom clinic prices override)
     const { data: treatments } = await supabase
       .from('treatments')
       .select('id, service_name, default_price, typical_lab_cost');
+
+    const { data: clinicPrices } = await supabase
+      .from('treatment_clinic_prices')
+      .select('treatment_id, price')
+      .eq('clinic_id', clinicId);
+
+    const clinicPriceMap = new Map<string, number>();
+    if (clinicPrices) {
+      for (const cp of clinicPrices) {
+        clinicPriceMap.set(cp.treatment_id, Number(cp.price || 0));
+      }
+    }
 
     const catalogMap = new Map<string, { price: number; id: string; lab_cost: number }>();
     if (treatments) {
       for (const t of treatments) {
         if (t.service_name) {
+          const effectivePrice = clinicPriceMap.has(t.id)
+            ? clinicPriceMap.get(t.id)!
+            : Number(t.default_price || 0);
+
           catalogMap.set(t.service_name.trim().toLowerCase(), {
             id: t.id,
-            price: Number(t.default_price || 0),
+            price: effectivePrice,
             lab_cost: Number(t.typical_lab_cost || 0)
           });
         }
@@ -58,7 +74,7 @@ export async function GET(request: Request) {
       .from('appointments')
       .select(`
         id, appointment_date, status, reason, notes, treatment_id, patient_id,
-        patient:patients(id, name, first_name, last_name),
+        patient:patients(id, first_name, last_name),
         treatment:treatments(id, service_name, default_price, typical_lab_cost)
       `)
       .eq('clinic_id', clinicId)
@@ -106,7 +122,7 @@ export async function GET(request: Request) {
           total_commission: totals.total_commission,
           total_lab: totals.total_lab,
           total_neto: totals.total_neto,
-          source_type: 'appointment',
+          source_type: 'manual',
           created_by: 'Auto-Generator'
         }])
         .select()
@@ -124,7 +140,7 @@ export async function GET(request: Request) {
 
     const existingLinesMap = new Map();
     if (existingLines) {
-      existingLines.forEach(l => {
+      existingLines.forEach((l: any) => {
         if (l.appointment_id) {
           existingLinesMap.set(`${l.appointment_id}_${l.procedure_index}`, l);
         } else {
@@ -222,10 +238,9 @@ export async function GET(request: Request) {
       .eq('id', sessionId);
 
     // 10. Mark appointments as billed
-    const appointmentIds = newLines.map(l => l.appointment_id).filter(id => id);
+    const appointmentIds = newLines.map(l => l.appointment_id).filter((id): id is string => Boolean(id));
     if (appointmentIds.length > 0) {
-      await supabase
-        .from('appointments')
+      await (supabase.from('appointments') as any)
         .update({ billed_at: new Date().toISOString() })
         .in('id', appointmentIds)
         .is('billed_at', null); // Only update those not already billed
