@@ -14,16 +14,7 @@ export type SystemNotification = {
   read: boolean;
 };
 
-const INITIAL_NOTIFICATIONS: SystemNotification[] = [
-  {
-    id: "1",
-    title: "Ingesta Completada",
-    message: "Se han extraído e ingresado las citas contables de la foto (Junio 2026 - Daniel Bustamante).",
-    timestamp: "Hace un momento",
-    type: "success",
-    read: false,
-  },
-];
+const INITIAL_NOTIFICATIONS: SystemNotification[] = [];
 
 let globalAddNotification: ((notif: Omit<SystemNotification, "id" | "timestamp" | "read">) => void) | null = null;
 
