@@ -65,14 +65,17 @@ async function deploy() {
 
     const wfData = JSON.parse(fs.readFileSync(fullPath, 'utf8'));
 
-    // Strip previous IDs/version metadata to create fresh on target server
+    // Clean payload according to n8n API v1 strict schema
+    const settings = {};
+    if (wfData.settings && wfData.settings.executionOrder) {
+      settings.executionOrder = wfData.settings.executionOrder;
+    }
+
     const payload = {
       name: wfData.name,
       nodes: wfData.nodes,
       connections: wfData.connections,
-      settings: wfData.settings || {},
-      staticData: wfData.staticData || null,
-      tags: wfData.tags || [{ name: 'melosmile' }]
+      settings: settings
     };
 
     try {
