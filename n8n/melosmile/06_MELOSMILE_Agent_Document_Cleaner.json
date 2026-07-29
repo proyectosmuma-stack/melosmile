@@ -1,0 +1,490 @@
+{
+  "updatedAt": "2026-07-28T21:37:34.891Z",
+  "createdAt": "2026-07-27T18:54:38.608Z",
+  "id": "OG4Yy4N7qALXojTa",
+  "name": "[MELOSMILE] Agent Document Cleaner",
+  "description": null,
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "document-cleaner",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "e331c261-26ab-4a57-b088-3c66f7d6a45b",
+      "name": "Webhook",
+      "position": [
+        224,
+        288
+      ],
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1.1,
+      "webhookId": "f5d5ca4d-5ded-47ee-bc3a-1ce2e676fb5b"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "cond-1",
+              "leftValue": "={{ $json.body ? $json.body.source_type : $json.source_type }}",
+              "operator": {
+                "name": "filter.operator.equals",
+                "operation": "equals",
+                "type": "string"
+              },
+              "rightValue": "image"
+            }
+          ],
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          }
+        },
+        "options": {}
+      },
+      "id": "3a9b1c2d-1234-4f56-8e9a-bc1234567890",
+      "name": "Is Image?",
+      "position": [
+        448,
+        288
+      ],
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.1
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://openrouter.ai/api/v1/chat/completions",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "openRouterApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"google/gemini-2.5-flash\",\n  \"messages\": [\n    {\n      \"role\": \"user\",\n      \"content\": [\n        {\n          \"type\": \"text\",\n          \"text\": \"Eres un transcriptor experto de agendas manuscritas de clinicas dentales espanolas. Analiza con maxima precision la fotografia adjunta y extrae EXACTAMENTE lo que esta escrito a mano.\\n\\nREGLAS OBLIGATORIAS:\\n1. LEE el nombre del dia y numero en la cabecera (ej: MARTES 21) ese es el dia del mes.\\n2. Cada linea tiene formato: HORA - NOMBRE - TRATAMIENTO - PRECIO(euros)\\n3. Las horas estan escritas como H.MM o HH.MM. Convierte SIEMPRE a formato HH:MM (ej: 09:30, 16:00)\\n4. Copia el nombre del paciente EXACTAMENTE como esta escrito.\\n5. DICCIONARIO DE TRATAMIENTOS: Si esta escrito \\\"RC\\\" o \\\"R.C.\\\", expandelo a \\\"Reconstrucción Simple\\\". Si esta escrito \\\"Rev\\\" o \\\"Rev.\\\", expandelo a \\\"Control\\\".\\n6. NOTAS Y OBSERVACIONES: Toda indicacion clinica que NO sea un tratamiento facturable (ej: Ataches, Quitar Brackets, poner Brackets, IPR, Coloc Myobrace, etc) DEBE colocarse en el campo \\\"notes\\\" y NO en el array de treatments.\\n7. REGLA DE AGRUPAMIENTO: Si un mismo paciente tiene varios tratamientos anotados a la misma hora, UNIFÍCALOS en UNA SOLA CITA a esa hora, incluyendo todos sus tratamientos en el array treatments, y suma sus precios en price_eur.\\n8. Si hay precio en euros, incluyelo en el campo price_eur como numero entero.\\n9. Las entradas tachadas con X o raya horizontal = cita CANCELADA, incluyelas con cancelled: true.\\n10. Las entradas con texto borrado o cubierto (pegatinas) = incluyelas con obscured: true.\\n\\nDevuelve UNICAMENTE un JSON valido con este formato exacto, sin texto adicional antes ni despues:\\n{\\\"date_header\\\": \\\"MARTES 21\\\", \\\"appointments\\\": [{\\\"time\\\": \\\"09:30\\\", \\\"patient_name\\\": \\\"Lucas\\\", \\\"treatments\\\": [\\\"Control\\\"], \\\"notes\\\": \\\"poner varios ataches\\\", \\\"price_eur\\\": 110, \\\"cancelled\\\": false, \\\"obscured\\\": false}]}\"\n        },\n        {\n          \"type\": \"image_url\",\n          \"image_url\": {\n            \"url\": \"{{ $json.body ? $json.body.content : $json.content }}\"\n          }\n        }\n      ]\n    }\n  ]\n}",
+        "options": {}
+      },
+      "id": "c1611d2e-4b4e-4f7f-bf7e-b7d1ed8a7e0e",
+      "name": "Vision OCR (Imágenes Manuscritas)",
+      "position": [
+        720,
+        96
+      ],
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "credentials": {
+        "openRouterApi": {
+          "id": "4nco5fDnIohG6g9f",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.body ? $json.body.content : $json.content }}",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "Eres un procesador experto de tablas contables de Excel / CSV de clínicas odontológicas. Transcribe la lista completa de citas del documento.\n\nREGLAS DE EXTRACCIÓN Y TRATAMIENTOS PARA EXCEL:\n1. COLUMNA TRATAMIENTO Y OBSERVACIÓN:\n   - Si la columna 'Tratmiento' contiene una abreviatura o nombre (ej: OBT, PULPO, RC), ponlo en 'treatments'. Traduce \"RC\" o \"R.C.\" a \"Reconstrucción Simple\", \"OBT\" a \"Obturación Simple\", \"PULPO\" a \"Pulpotomía\".\n   - Si la columna 'Tratmiento' está vacía pero la columna 'Observación' menciona \"CONTROL\" (ej: \"CONTROL\", \"CONTROL 12/20\", \"CONTROL 5/20\", \"MENSU 8/20\"), DEBES incluir \"Control\" en el array 'treatments', y dejar la indicación o cuota (ej: \"CONTROL 12/20\") en el campo 'notes'.\n   - Si la columna 'Observación' contiene notas informativas o de cuota (ej: \"100 A SU FAVOR\", \"FINALIZA CUOTA\", \"termina MENSU\", \"?????\"), ponlas en el campo 'notes'.\n2. Jamás devuelvas un array 'treatments' vacío si el renglón corresponde a una cita con Control, Tratamiento u Observación.\n3. Si en el renglón figura un precio o importe (columnas Precio u Otro Precio), inclúyelo en price_eur como número entero.\n\nDevuelve un JSON estricto:\n{\n  \"appointments\": [\n    {\n      \"patient_name\": \"CARMINA LOPEZ GALLEGO\",\n      \"time\": \"12:00\",\n      \"treatments\": [\"Control\"],\n      \"notes\": \"CONTROL 12/20\",\n      \"price_eur\": 125\n    }\n  ]\n}"
+            }
+          ]
+        }
+      },
+      "id": "a897b210-449e-4c55-8910-b998774211aa",
+      "name": "Process Document Text (Excel/CSV)",
+      "position": [
+        656,
+        400
+      ],
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.4
+    },
+    {
+      "parameters": {
+        "model": "google/gemini-2.5-flash",
+        "options": {
+          "maxTokens": 4096,
+          "temperature": 0
+        }
+      },
+      "id": "6a386121-6a2e-4cb8-8c1d-dc26d36e2f1d",
+      "name": "OpenRouter Chat Model",
+      "position": [
+        656,
+        640
+      ],
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "credentials": {
+        "openRouterApi": {
+          "id": "4nco5fDnIohG6g9f",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "let rawText = \"\";\nif (items[0]?.json?.choices?.[0]?.message?.content) {\n  rawText = items[0].json.choices[0].message.content;\n} else if (items[0]?.json?.text) {\n  rawText = items[0].json.text;\n} else if (typeof items[0]?.json === 'string') {\n  rawText = items[0].json;\n}\n\nlet cleanText = rawText.replace(/```json/g, \"\").replace(/```/g, \"\").trim();\nlet parsed = null;\ntry {\n  parsed = JSON.parse(cleanText);\n} catch(e) {\n  const startIdx = cleanText.indexOf(\"{\");\n  const endIdx = cleanText.lastIndexOf(\"}\");\n  if (startIdx !== -1 && endIdx !== -1 && endIdx > startIdx) {\n    try { parsed = JSON.parse(cleanText.substring(startIdx, endIdx + 1)); } catch(e2) {}\n  }\n}\n\nif (parsed) {\n  const appts = Array.isArray(parsed) ? parsed : (parsed.appointments || parsed.data || []);\n  return [{ json: { success: true, appointments: appts, date_header: parsed.date_header || null, rawText } }];\n} else {\n  return [{ json: { success: false, error: \"JSON Parse error\", rawText } }];\n}"
+      },
+      "id": "18f50c76-2e99-4c8d-b040-02df595b1613",
+      "name": "Parse JSON Output",
+      "position": [
+        1152,
+        272
+      ],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
+    }
+  ],
+  "connections": {
+    "Is Image?": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Vision OCR (Imágenes Manuscritas)",
+            "type": "main"
+          }
+        ],
+        [
+          {
+            "index": 0,
+            "node": "Process Document Text (Excel/CSV)",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "index": 0,
+            "node": "Process Document Text (Excel/CSV)",
+            "type": "ai_languageModel"
+          }
+        ]
+      ]
+    },
+    "Process Document Text (Excel/CSV)": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Parse JSON Output",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Vision OCR (Imágenes Manuscritas)": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Parse JSON Output",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Is Image?",
+            "type": "main"
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "staticData": null,
+  "meta": null,
+  "nodeGroups": [],
+  "pinData": {},
+  "versionId": "025991e0-cb27-4301-89ba-3fcdcf2d6c39",
+  "activeVersionId": "025991e0-cb27-4301-89ba-3fcdcf2d6c39",
+  "versionCounter": 38,
+  "triggerCount": 1,
+  "sourceWorkflowId": null,
+  "shared": [
+    {
+      "updatedAt": "2026-07-27T18:54:38.608Z",
+      "createdAt": "2026-07-27T18:54:38.608Z",
+      "role": "workflow:owner",
+      "workflowId": "OG4Yy4N7qALXojTa",
+      "projectId": "1NgBcdgDf0dyQ1bS",
+      "project": {
+        "updatedAt": "2025-06-05T22:42:55.767Z",
+        "createdAt": "2025-06-05T21:29:23.602Z",
+        "id": "1NgBcdgDf0dyQ1bS",
+        "name": "Munir Callaos <proyectos.muma@gmail.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "customTelemetryTags": [],
+        "creatorId": "a8372723-088d-441d-a749-360f0eab4295"
+      }
+    }
+  ],
+  "tags": [],
+  "activeVersion": {
+    "updatedAt": "2026-07-28T21:37:34.894Z",
+    "createdAt": "2026-07-28T21:37:34.894Z",
+    "versionId": "025991e0-cb27-4301-89ba-3fcdcf2d6c39",
+    "workflowId": "OG4Yy4N7qALXojTa",
+    "nodes": [
+      {
+        "parameters": {
+          "httpMethod": "POST",
+          "path": "document-cleaner",
+          "responseMode": "lastNode",
+          "options": {}
+        },
+        "id": "e331c261-26ab-4a57-b088-3c66f7d6a45b",
+        "name": "Webhook",
+        "position": [
+          224,
+          288
+        ],
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 1.1,
+        "webhookId": "f5d5ca4d-5ded-47ee-bc3a-1ce2e676fb5b"
+      },
+      {
+        "parameters": {
+          "conditions": {
+            "combinator": "and",
+            "conditions": [
+              {
+                "id": "cond-1",
+                "leftValue": "={{ $json.body ? $json.body.source_type : $json.source_type }}",
+                "operator": {
+                  "name": "filter.operator.equals",
+                  "operation": "equals",
+                  "type": "string"
+                },
+                "rightValue": "image"
+              }
+            ],
+            "options": {
+              "caseSensitive": false,
+              "leftValue": "",
+              "typeValidation": "strict",
+              "version": 1
+            }
+          },
+          "options": {}
+        },
+        "id": "3a9b1c2d-1234-4f56-8e9a-bc1234567890",
+        "name": "Is Image?",
+        "position": [
+          448,
+          288
+        ],
+        "type": "n8n-nodes-base.if",
+        "typeVersion": 2.1
+      },
+      {
+        "parameters": {
+          "method": "POST",
+          "url": "https://openrouter.ai/api/v1/chat/completions",
+          "authentication": "predefinedCredentialType",
+          "nodeCredentialType": "openRouterApi",
+          "sendHeaders": true,
+          "headerParameters": {
+            "parameters": [
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          },
+          "sendBody": true,
+          "specifyBody": "json",
+          "jsonBody": "={\n  \"model\": \"google/gemini-2.5-flash\",\n  \"messages\": [\n    {\n      \"role\": \"user\",\n      \"content\": [\n        {\n          \"type\": \"text\",\n          \"text\": \"Eres un transcriptor experto de agendas manuscritas de clinicas dentales espanolas. Analiza con maxima precision la fotografia adjunta y extrae EXACTAMENTE lo que esta escrito a mano.\\n\\nREGLAS OBLIGATORIAS:\\n1. LEE el nombre del dia y numero en la cabecera (ej: MARTES 21) ese es el dia del mes.\\n2. Cada linea tiene formato: HORA - NOMBRE - TRATAMIENTO - PRECIO(euros)\\n3. Las horas estan escritas como H.MM o HH.MM. Convierte SIEMPRE a formato HH:MM (ej: 09:30, 16:00)\\n4. Copia el nombre del paciente EXACTAMENTE como esta escrito.\\n5. DICCIONARIO DE TRATAMIENTOS: Si esta escrito \\\"RC\\\" o \\\"R.C.\\\", expandelo a \\\"Reconstrucción Simple\\\". Si esta escrito \\\"Rev\\\" o \\\"Rev.\\\", expandelo a \\\"Control\\\".\\n6. NOTAS Y OBSERVACIONES: Toda indicacion clinica que NO sea un tratamiento facturable (ej: Ataches, Quitar Brackets, poner Brackets, IPR, Coloc Myobrace, etc) DEBE colocarse en el campo \\\"notes\\\" y NO en el array de treatments.\\n7. REGLA DE AGRUPAMIENTO: Si un mismo paciente tiene varios tratamientos anotados a la misma hora, UNIFÍCALOS en UNA SOLA CITA a esa hora, incluyendo todos sus tratamientos en el array treatments, y suma sus precios en price_eur.\\n8. Si hay precio en euros, incluyelo en el campo price_eur como numero entero.\\n9. Las entradas tachadas con X o raya horizontal = cita CANCELADA, incluyelas con cancelled: true.\\n10. Las entradas con texto borrado o cubierto (pegatinas) = incluyelas con obscured: true.\\n\\nDevuelve UNICAMENTE un JSON valido con este formato exacto, sin texto adicional antes ni despues:\\n{\\\"date_header\\\": \\\"MARTES 21\\\", \\\"appointments\\\": [{\\\"time\\\": \\\"09:30\\\", \\\"patient_name\\\": \\\"Lucas\\\", \\\"treatments\\\": [\\\"Control\\\"], \\\"notes\\\": \\\"poner varios ataches\\\", \\\"price_eur\\\": 110, \\\"cancelled\\\": false, \\\"obscured\\\": false}]}\"\n        },\n        {\n          \"type\": \"image_url\",\n          \"image_url\": {\n            \"url\": \"{{ $json.body ? $json.body.content : $json.content }}\"\n          }\n        }\n      ]\n    }\n  ]\n}",
+          "options": {}
+        },
+        "id": "c1611d2e-4b4e-4f7f-bf7e-b7d1ed8a7e0e",
+        "name": "Vision OCR (Imágenes Manuscritas)",
+        "position": [
+          720,
+          96
+        ],
+        "type": "n8n-nodes-base.httpRequest",
+        "typeVersion": 4.2,
+        "credentials": {
+          "openRouterApi": {
+            "id": "4nco5fDnIohG6g9f",
+            "name": "OpenRouter account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "promptType": "define",
+          "text": "={{ $json.body ? $json.body.content : $json.content }}",
+          "messages": {
+            "messageValues": [
+              {
+                "message": "Eres un procesador experto de tablas contables de Excel / CSV de clínicas odontológicas. Transcribe la lista completa de citas del documento.\n\nREGLAS DE EXTRACCIÓN Y TRATAMIENTOS PARA EXCEL:\n1. COLUMNA TRATAMIENTO Y OBSERVACIÓN:\n   - Si la columna 'Tratmiento' contiene una abreviatura o nombre (ej: OBT, PULPO, RC), ponlo en 'treatments'. Traduce \"RC\" o \"R.C.\" a \"Reconstrucción Simple\", \"OBT\" a \"Obturación Simple\", \"PULPO\" a \"Pulpotomía\".\n   - Si la columna 'Tratmiento' está vacía pero la columna 'Observación' menciona \"CONTROL\" (ej: \"CONTROL\", \"CONTROL 12/20\", \"CONTROL 5/20\", \"MENSU 8/20\"), DEBES incluir \"Control\" en el array 'treatments', y dejar la indicación o cuota (ej: \"CONTROL 12/20\") en el campo 'notes'.\n   - Si la columna 'Observación' contiene notas informativas o de cuota (ej: \"100 A SU FAVOR\", \"FINALIZA CUOTA\", \"termina MENSU\", \"?????\"), ponlas en el campo 'notes'.\n2. Jamás devuelvas un array 'treatments' vacío si el renglón corresponde a una cita con Control, Tratamiento u Observación.\n3. Si en el renglón figura un precio o importe (columnas Precio u Otro Precio), inclúyelo en price_eur como número entero.\n\nDevuelve un JSON estricto:\n{\n  \"appointments\": [\n    {\n      \"patient_name\": \"CARMINA LOPEZ GALLEGO\",\n      \"time\": \"12:00\",\n      \"treatments\": [\"Control\"],\n      \"notes\": \"CONTROL 12/20\",\n      \"price_eur\": 125\n    }\n  ]\n}"
+              }
+            ]
+          }
+        },
+        "id": "a897b210-449e-4c55-8910-b998774211aa",
+        "name": "Process Document Text (Excel/CSV)",
+        "position": [
+          656,
+          400
+        ],
+        "type": "@n8n/n8n-nodes-langchain.chainLlm",
+        "typeVersion": 1.4
+      },
+      {
+        "parameters": {
+          "model": "google/gemini-2.5-flash",
+          "options": {
+            "maxTokens": 4096,
+            "temperature": 0
+          }
+        },
+        "id": "6a386121-6a2e-4cb8-8c1d-dc26d36e2f1d",
+        "name": "OpenRouter Chat Model",
+        "position": [
+          656,
+          640
+        ],
+        "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+        "typeVersion": 1,
+        "credentials": {
+          "openRouterApi": {
+            "id": "4nco5fDnIohG6g9f",
+            "name": "OpenRouter account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "jsCode": "let rawText = \"\";\nif (items[0]?.json?.choices?.[0]?.message?.content) {\n  rawText = items[0].json.choices[0].message.content;\n} else if (items[0]?.json?.text) {\n  rawText = items[0].json.text;\n} else if (typeof items[0]?.json === 'string') {\n  rawText = items[0].json;\n}\n\nlet cleanText = rawText.replace(/```json/g, \"\").replace(/```/g, \"\").trim();\nlet parsed = null;\ntry {\n  parsed = JSON.parse(cleanText);\n} catch(e) {\n  const startIdx = cleanText.indexOf(\"{\");\n  const endIdx = cleanText.lastIndexOf(\"}\");\n  if (startIdx !== -1 && endIdx !== -1 && endIdx > startIdx) {\n    try { parsed = JSON.parse(cleanText.substring(startIdx, endIdx + 1)); } catch(e2) {}\n  }\n}\n\nif (parsed) {\n  const appts = Array.isArray(parsed) ? parsed : (parsed.appointments || parsed.data || []);\n  return [{ json: { success: true, appointments: appts, date_header: parsed.date_header || null, rawText } }];\n} else {\n  return [{ json: { success: false, error: \"JSON Parse error\", rawText } }];\n}"
+        },
+        "id": "18f50c76-2e99-4c8d-b040-02df595b1613",
+        "name": "Parse JSON Output",
+        "position": [
+          1152,
+          272
+        ],
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2
+      }
+    ],
+    "connections": {
+      "Is Image?": {
+        "main": [
+          [
+            {
+              "index": 0,
+              "node": "Vision OCR (Imágenes Manuscritas)",
+              "type": "main"
+            }
+          ],
+          [
+            {
+              "index": 0,
+              "node": "Process Document Text (Excel/CSV)",
+              "type": "main"
+            }
+          ]
+        ]
+      },
+      "OpenRouter Chat Model": {
+        "ai_languageModel": [
+          [
+            {
+              "index": 0,
+              "node": "Process Document Text (Excel/CSV)",
+              "type": "ai_languageModel"
+            }
+          ]
+        ]
+      },
+      "Process Document Text (Excel/CSV)": {
+        "main": [
+          [
+            {
+              "index": 0,
+              "node": "Parse JSON Output",
+              "type": "main"
+            }
+          ]
+        ]
+      },
+      "Vision OCR (Imágenes Manuscritas)": {
+        "main": [
+          [
+            {
+              "index": 0,
+              "node": "Parse JSON Output",
+              "type": "main"
+            }
+          ]
+        ]
+      },
+      "Webhook": {
+        "main": [
+          [
+            {
+              "index": 0,
+              "node": "Is Image?",
+              "type": "main"
+            }
+          ]
+        ]
+      }
+    },
+    "nodeGroups": [],
+    "authors": "Munir Callaos",
+    "name": null,
+    "description": null,
+    "autosaved": false,
+    "workflowPublishHistory": [
+      {
+        "createdAt": "2026-07-28T21:37:34.952Z",
+        "id": 1570,
+        "workflowId": "OG4Yy4N7qALXojTa",
+        "versionId": "025991e0-cb27-4301-89ba-3fcdcf2d6c39",
+        "event": "deactivated",
+        "userId": "a8372723-088d-441d-a749-360f0eab4295"
+      },
+      {
+        "createdAt": "2026-07-28T21:37:34.978Z",
+        "id": 1571,
+        "workflowId": "OG4Yy4N7qALXojTa",
+        "versionId": "025991e0-cb27-4301-89ba-3fcdcf2d6c39",
+        "event": "activated",
+        "userId": "a8372723-088d-441d-a749-360f0eab4295"
+      }
+    ]
+  }
+}

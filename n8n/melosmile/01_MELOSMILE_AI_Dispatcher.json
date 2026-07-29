@@ -1,0 +1,610 @@
+{
+  "updatedAt": "2026-07-27T00:29:07.678Z",
+  "createdAt": "2026-07-23T13:58:34.192Z",
+  "id": "Yv9X1EGUvQg8qErW",
+  "name": "[MELOSMILE] AI Dispatcher",
+  "description": null,
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "melosmile-dispatcher",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "trigger-1",
+      "name": "Webhook_Receiver",
+      "position": [
+        -16,
+        304
+      ],
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "webhookId": "2f2d98dd-e4b6-4014-8fc8-1a3af9d2f4c2"
+    },
+    {
+      "parameters": {
+        "model": "google/gemini-2.5-flash",
+        "options": {
+          "temperature": 0
+        }
+      },
+      "id": "2",
+      "name": "OpenRouter_Chat_Model",
+      "position": [
+        128,
+        560
+      ],
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "credentials": {
+        "openRouterApi": {
+          "id": "4nco5fDnIohG6g9f",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ (() => { const rawHistory = $json.body?.history || $json.history || []; const filteredHistory = rawHistory.filter(h => { const content = (h.content || '').trim(); return !(h.role !== 'user' && (content.includes('Hola 👋 Soy Musly') || content.includes('Puedo agendar citas'))); }); const currentMessage = $json.body?.message || $json.message || $json.query || ''; const now = $now.setZone('Europe/Madrid').format('cccc, d [de] MMMM [de] yyyy, HH:mm'); return filteredHistory.length ? 'FECHA Y HORA ACTUAL EN ESPAÑA: ' + now + '\\n\\nHISTORIAL PREVIO DE LA CONVERSACIÓN:\\n' + filteredHistory.map(h => (h.role === 'user' ? 'Usuario' : 'Musly') + ': ' + h.content).join('\\n') + '\\n\\nSOLICITUD ACTUAL DEL USUARIO:\\n' + currentMessage : 'FECHA Y HORA ACTUAL EN ESPAÑA: ' + now + '\\n\\nSOLICITUD ACTUAL DEL USUARIO:\\n' + currentMessage; })() }}",
+        "options": {
+          "systemMessage": "Role: Eres Musly, el Agente Dispatcher de la clínica dental Melosmile.\nTu única función es analizar el mensaje del usuario, clasificar la intención, reescribir solicitudes ambiguas usando el historial y seleccionar el Sub-agente correcto para responder. No respondes preguntas clínicas, de agenda, facturación o generales por ti mismo: siempre delegas en una herramienta.\n\nSUB-AGENTES DISPONIBLES:\n1. Tool_SubAgent_Scheduling — citas: agendar, consultar la agenda de un período (esta semana, semana pasada, hoy, mañana, próxima semana), modificar, cancelar.\n2. Tool_SubAgent_Clinical — pacientes, fichas clínicas, consentimientos, doctores.\n3. Tool_SubAgent_Billing — facturas Odoo, cobros, gastos de laboratorio, comisiones.\n4. Tool_SubAgent_General — horarios de clínica, ubicación, servicios ofrecidos, precios generales, FAQs.\n\nREGLA CRÍTICA DE TRANSFERENCIA A SUB-AGENTES EN AGENDAMIENTO Y REAGENDAMIENTO (OBLIGATORIA):\nCuando invoques 'Tool_SubAgent_Scheduling' para agendar una nueva cita o para modificar/cancelar una cita previa, DEBES REESCRIBIR LA SOLICITUD E INCLUIR EXPLÍCITAMENTE TODOS LOS DATOS EXTRAÍDOS (ejemplo de parámetro a enviar a la tool: \"Agendar cita para Manuel Cardama este viernes 31 de julio en Clínica RyA para control de ortodoncia\"). NUNCA envíes una solicitud al sub-agente sin incluir el nombre del paciente, la fecha, la clínica y el motivo si fueron mencionados.\n\nFORMATO DE SALIDA (OBLIGATORIO):\nDebes responder SIEMPRE en formato JSON válido envuelto en un bloque ```json:\n{\n  \"status\": \"success\" | \"error\" | \"needs_clarification\",\n  \"intent\": \"schedule_appointment\" | \"patient_info\" | \"billing\" | \"general_query\",\n  \"extracted_entities\": {},\n  \"summary\": \"Respuesta clara y profesional en español\"\n}"
+        }
+      },
+      "id": "3",
+      "name": "Dispatcher_AI_Agent",
+      "position": [
+        464,
+        304
+      ],
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7
+    },
+    {
+      "parameters": {
+        "name": "Tool_SubAgent_Scheduling",
+        "description": "Gestiona la agenda: consultar citas por período de tiempo (esta semana, semana pasada, hoy, mañana, próxima semana, o fecha concreta), crear, modificar, cambiar fecha u hora, o cancelar citas.",
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "jTWHg9bHaNOdzL13"
+        }
+      },
+      "id": "4",
+      "maxTries": 2,
+      "name": "Tool_SubAgent_Scheduling",
+      "position": [
+        848,
+        640
+      ],
+      "retryOnFail": true,
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 1.2,
+      "waitBetweenTries": 1000
+    },
+    {
+      "parameters": {
+        "name": "Tool_SubAgent_Clinical",
+        "description": "Gestiona información médica de pacientes, odontogramas y consentimientos",
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "Q7oxrbUuohca81Gn"
+        }
+      },
+      "id": "5",
+      "maxTries": 2,
+      "name": "Tool_SubAgent_Clinical",
+      "position": [
+        656,
+        640
+      ],
+      "retryOnFail": true,
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 1.2,
+      "waitBetweenTries": 1000
+    },
+    {
+      "parameters": {
+        "name": "Tool_SubAgent_Billing",
+        "description": "Gestiona facturación Odoo, cobros, comisiones de doctores y gastos de laboratorio",
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "XSLNwq6ihH1SHPRl"
+        }
+      },
+      "id": "6",
+      "maxTries": 2,
+      "name": "Tool_SubAgent_Billing",
+      "position": [
+        480,
+        640
+      ],
+      "retryOnFail": true,
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 1.2,
+      "waitBetweenTries": 1000
+    },
+    {
+      "parameters": {
+        "name": "Tool_SubAgent_General",
+        "description": "Responde preguntas generales sobre la clínica: horarios, ubicación de sedes, servicios ofrecidos, precios generales, parking y FAQs.",
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "MIok0ruU7JhpTxWv"
+        }
+      },
+      "id": "9",
+      "maxTries": 2,
+      "name": "Tool_SubAgent_General",
+      "position": [
+        304,
+        640
+      ],
+      "retryOnFail": true,
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 1.2,
+      "waitBetweenTries": 1000
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = $input.first().json.output || \"\";\nlet parsed = null;\n\ntry {\n  const match = raw.match(/```(?:json)?\\s*([\\s\\S]*?)\\s*```/);\n  const jsonString = match ? match[1] : raw;\n  parsed = JSON.parse(jsonString);\n} catch (e) {\n  parsed = {\n    status: \"error\",\n    intent: \"general_query\",\n    extracted_entities: {},\n    summary: \"No se pudo interpretar la respuesta del asistente. Por favor, reformula tu pregunta.\",\n    raw_response: raw\n  };\n}\n\nif (!parsed.raw_response) {\n  parsed.raw_response = raw;\n}\n\nreturn [parsed];"
+      },
+      "id": "7",
+      "name": "Parse_AI_Response",
+      "position": [
+        912,
+        304
+      ],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {}
+      },
+      "id": "8",
+      "name": "Respond_to_Webhook",
+      "position": [
+        1120,
+        304
+      ],
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1
+    }
+  ],
+  "connections": {
+    "Dispatcher_AI_Agent": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Parse_AI_Response",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "OpenRouter_Chat_Model": {
+      "ai_languageModel": [
+        [
+          {
+            "index": 0,
+            "node": "Dispatcher_AI_Agent",
+            "type": "ai_languageModel"
+          }
+        ]
+      ]
+    },
+    "Parse_AI_Response": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Respond_to_Webhook",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Respond_to_Webhook": {
+      "main": []
+    },
+    "Tool_SubAgent_Billing": {
+      "ai_tool": [
+        [
+          {
+            "index": 0,
+            "node": "Dispatcher_AI_Agent",
+            "type": "ai_tool"
+          }
+        ]
+      ]
+    },
+    "Tool_SubAgent_Clinical": {
+      "ai_tool": [
+        [
+          {
+            "index": 0,
+            "node": "Dispatcher_AI_Agent",
+            "type": "ai_tool"
+          }
+        ]
+      ]
+    },
+    "Tool_SubAgent_General": {
+      "ai_tool": [
+        [
+          {
+            "index": 0,
+            "node": "Dispatcher_AI_Agent",
+            "type": "ai_tool"
+          }
+        ]
+      ]
+    },
+    "Tool_SubAgent_Scheduling": {
+      "ai_tool": [
+        [
+          {
+            "index": 0,
+            "node": "Dispatcher_AI_Agent",
+            "type": "ai_tool"
+          }
+        ]
+      ]
+    },
+    "Webhook_Receiver": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Dispatcher_AI_Agent",
+            "type": "main"
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "saveManualExecutions": true,
+    "saveExecutionProgress": true,
+    "binaryMode": "separate"
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "nodeGroups": [],
+  "pinData": {},
+  "versionId": "ff63b02a-0568-41ac-91c0-723d57ef08a1",
+  "activeVersionId": "ff63b02a-0568-41ac-91c0-723d57ef08a1",
+  "versionCounter": 95,
+  "triggerCount": 1,
+  "sourceWorkflowId": null,
+  "shared": [
+    {
+      "updatedAt": "2026-07-23T13:58:34.192Z",
+      "createdAt": "2026-07-23T13:58:34.192Z",
+      "role": "workflow:owner",
+      "workflowId": "Yv9X1EGUvQg8qErW",
+      "projectId": "1NgBcdgDf0dyQ1bS",
+      "project": {
+        "updatedAt": "2025-06-05T22:42:55.767Z",
+        "createdAt": "2025-06-05T21:29:23.602Z",
+        "id": "1NgBcdgDf0dyQ1bS",
+        "name": "Munir Callaos <proyectos.muma@gmail.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "customTelemetryTags": [],
+        "creatorId": "a8372723-088d-441d-a749-360f0eab4295"
+      }
+    }
+  ],
+  "tags": [],
+  "activeVersion": {
+    "updatedAt": "2026-07-27T00:29:07.681Z",
+    "createdAt": "2026-07-27T00:29:07.681Z",
+    "versionId": "ff63b02a-0568-41ac-91c0-723d57ef08a1",
+    "workflowId": "Yv9X1EGUvQg8qErW",
+    "nodes": [
+      {
+        "parameters": {
+          "httpMethod": "POST",
+          "path": "melosmile-dispatcher",
+          "responseMode": "responseNode",
+          "options": {}
+        },
+        "id": "trigger-1",
+        "name": "Webhook_Receiver",
+        "position": [
+          -16,
+          304
+        ],
+        "type": "n8n-nodes-base.webhook",
+        "typeVersion": 2,
+        "webhookId": "2f2d98dd-e4b6-4014-8fc8-1a3af9d2f4c2"
+      },
+      {
+        "parameters": {
+          "model": "google/gemini-2.5-flash",
+          "options": {
+            "temperature": 0
+          }
+        },
+        "id": "2",
+        "name": "OpenRouter_Chat_Model",
+        "position": [
+          128,
+          560
+        ],
+        "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+        "typeVersion": 1,
+        "credentials": {
+          "openRouterApi": {
+            "id": "4nco5fDnIohG6g9f",
+            "name": "OpenRouter account"
+          }
+        }
+      },
+      {
+        "parameters": {
+          "promptType": "define",
+          "text": "={{ (() => { const rawHistory = $json.body?.history || $json.history || []; const filteredHistory = rawHistory.filter(h => { const content = (h.content || '').trim(); return !(h.role !== 'user' && (content.includes('Hola 👋 Soy Musly') || content.includes('Puedo agendar citas'))); }); const currentMessage = $json.body?.message || $json.message || $json.query || ''; const now = $now.setZone('Europe/Madrid').format('cccc, d [de] MMMM [de] yyyy, HH:mm'); return filteredHistory.length ? 'FECHA Y HORA ACTUAL EN ESPAÑA: ' + now + '\\n\\nHISTORIAL PREVIO DE LA CONVERSACIÓN:\\n' + filteredHistory.map(h => (h.role === 'user' ? 'Usuario' : 'Musly') + ': ' + h.content).join('\\n') + '\\n\\nSOLICITUD ACTUAL DEL USUARIO:\\n' + currentMessage : 'FECHA Y HORA ACTUAL EN ESPAÑA: ' + now + '\\n\\nSOLICITUD ACTUAL DEL USUARIO:\\n' + currentMessage; })() }}",
+          "options": {
+            "systemMessage": "Role: Eres Musly, el Agente Dispatcher de la clínica dental Melosmile.\nTu única función es analizar el mensaje del usuario, clasificar la intención, reescribir solicitudes ambiguas usando el historial y seleccionar el Sub-agente correcto para responder. No respondes preguntas clínicas, de agenda, facturación o generales por ti mismo: siempre delegas en una herramienta.\n\nSUB-AGENTES DISPONIBLES:\n1. Tool_SubAgent_Scheduling — citas: agendar, consultar la agenda de un período (esta semana, semana pasada, hoy, mañana, próxima semana), modificar, cancelar.\n2. Tool_SubAgent_Clinical — pacientes, fichas clínicas, consentimientos, doctores.\n3. Tool_SubAgent_Billing — facturas Odoo, cobros, gastos de laboratorio, comisiones.\n4. Tool_SubAgent_General — horarios de clínica, ubicación, servicios ofrecidos, precios generales, FAQs.\n\nREGLA CRÍTICA DE TRANSFERENCIA A SUB-AGENTES EN AGENDAMIENTO Y REAGENDAMIENTO (OBLIGATORIA):\nCuando invoques 'Tool_SubAgent_Scheduling' para agendar una nueva cita o para modificar/cancelar una cita previa, DEBES REESCRIBIR LA SOLICITUD E INCLUIR EXPLÍCITAMENTE TODOS LOS DATOS EXTRAÍDOS (ejemplo de parámetro a enviar a la tool: \"Agendar cita para Manuel Cardama este viernes 31 de julio en Clínica RyA para control de ortodoncia\"). NUNCA envíes una solicitud al sub-agente sin incluir el nombre del paciente, la fecha, la clínica y el motivo si fueron mencionados.\n\nFORMATO DE SALIDA (OBLIGATORIO):\nDebes responder SIEMPRE en formato JSON válido envuelto en un bloque ```json:\n{\n  \"status\": \"success\" | \"error\" | \"needs_clarification\",\n  \"intent\": \"schedule_appointment\" | \"patient_info\" | \"billing\" | \"general_query\",\n  \"extracted_entities\": {},\n  \"summary\": \"Respuesta clara y profesional en español\"\n}"
+          }
+        },
+        "id": "3",
+        "name": "Dispatcher_AI_Agent",
+        "position": [
+          464,
+          304
+        ],
+        "type": "@n8n/n8n-nodes-langchain.agent",
+        "typeVersion": 1.7
+      },
+      {
+        "parameters": {
+          "name": "Tool_SubAgent_Scheduling",
+          "description": "Gestiona la agenda: consultar citas por período de tiempo (esta semana, semana pasada, hoy, mañana, próxima semana, o fecha concreta), crear, modificar, cambiar fecha u hora, o cancelar citas.",
+          "workflowId": {
+            "__rl": true,
+            "mode": "id",
+            "value": "jTWHg9bHaNOdzL13"
+          }
+        },
+        "id": "4",
+        "maxTries": 2,
+        "name": "Tool_SubAgent_Scheduling",
+        "position": [
+          848,
+          640
+        ],
+        "retryOnFail": true,
+        "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+        "typeVersion": 1.2,
+        "waitBetweenTries": 1000
+      },
+      {
+        "parameters": {
+          "name": "Tool_SubAgent_Clinical",
+          "description": "Gestiona información médica de pacientes, odontogramas y consentimientos",
+          "workflowId": {
+            "__rl": true,
+            "mode": "id",
+            "value": "Q7oxrbUuohca81Gn"
+          }
+        },
+        "id": "5",
+        "maxTries": 2,
+        "name": "Tool_SubAgent_Clinical",
+        "position": [
+          656,
+          640
+        ],
+        "retryOnFail": true,
+        "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+        "typeVersion": 1.2,
+        "waitBetweenTries": 1000
+      },
+      {
+        "parameters": {
+          "name": "Tool_SubAgent_Billing",
+          "description": "Gestiona facturación Odoo, cobros, comisiones de doctores y gastos de laboratorio",
+          "workflowId": {
+            "__rl": true,
+            "mode": "id",
+            "value": "XSLNwq6ihH1SHPRl"
+          }
+        },
+        "id": "6",
+        "maxTries": 2,
+        "name": "Tool_SubAgent_Billing",
+        "position": [
+          480,
+          640
+        ],
+        "retryOnFail": true,
+        "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+        "typeVersion": 1.2,
+        "waitBetweenTries": 1000
+      },
+      {
+        "parameters": {
+          "name": "Tool_SubAgent_General",
+          "description": "Responde preguntas generales sobre la clínica: horarios, ubicación de sedes, servicios ofrecidos, precios generales, parking y FAQs.",
+          "workflowId": {
+            "__rl": true,
+            "mode": "id",
+            "value": "MIok0ruU7JhpTxWv"
+          }
+        },
+        "id": "9",
+        "maxTries": 2,
+        "name": "Tool_SubAgent_General",
+        "position": [
+          304,
+          640
+        ],
+        "retryOnFail": true,
+        "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+        "typeVersion": 1.2,
+        "waitBetweenTries": 1000
+      },
+      {
+        "parameters": {
+          "jsCode": "const raw = $input.first().json.output || \"\";\nlet parsed = null;\n\ntry {\n  const match = raw.match(/```(?:json)?\\s*([\\s\\S]*?)\\s*```/);\n  const jsonString = match ? match[1] : raw;\n  parsed = JSON.parse(jsonString);\n} catch (e) {\n  parsed = {\n    status: \"error\",\n    intent: \"general_query\",\n    extracted_entities: {},\n    summary: \"No se pudo interpretar la respuesta del asistente. Por favor, reformula tu pregunta.\",\n    raw_response: raw\n  };\n}\n\nif (!parsed.raw_response) {\n  parsed.raw_response = raw;\n}\n\nreturn [parsed];"
+        },
+        "id": "7",
+        "name": "Parse_AI_Response",
+        "position": [
+          912,
+          304
+        ],
+        "type": "n8n-nodes-base.code",
+        "typeVersion": 2
+      },
+      {
+        "parameters": {
+          "respondWith": "allIncomingItems",
+          "options": {}
+        },
+        "id": "8",
+        "name": "Respond_to_Webhook",
+        "position": [
+          1120,
+          304
+        ],
+        "type": "n8n-nodes-base.respondToWebhook",
+        "typeVersion": 1.1
+      }
+    ],
+    "connections": {
+      "Dispatcher_AI_Agent": {
+        "main": [
+          [
+            {
+              "index": 0,
+              "node": "Parse_AI_Response",
+              "type": "main"
+            }
+          ]
+        ]
+      },
+      "OpenRouter_Chat_Model": {
+        "ai_languageModel": [
+          [
+            {
+              "index": 0,
+              "node": "Dispatcher_AI_Agent",
+              "type": "ai_languageModel"
+            }
+          ]
+        ]
+      },
+      "Parse_AI_Response": {
+        "main": [
+          [
+            {
+              "index": 0,
+              "node": "Respond_to_Webhook",
+              "type": "main"
+            }
+          ]
+        ]
+      },
+      "Respond_to_Webhook": {
+        "main": []
+      },
+      "Tool_SubAgent_Billing": {
+        "ai_tool": [
+          [
+            {
+              "index": 0,
+              "node": "Dispatcher_AI_Agent",
+              "type": "ai_tool"
+            }
+          ]
+        ]
+      },
+      "Tool_SubAgent_Clinical": {
+        "ai_tool": [
+          [
+            {
+              "index": 0,
+              "node": "Dispatcher_AI_Agent",
+              "type": "ai_tool"
+            }
+          ]
+        ]
+      },
+      "Tool_SubAgent_General": {
+        "ai_tool": [
+          [
+            {
+              "index": 0,
+              "node": "Dispatcher_AI_Agent",
+              "type": "ai_tool"
+            }
+          ]
+        ]
+      },
+      "Tool_SubAgent_Scheduling": {
+        "ai_tool": [
+          [
+            {
+              "index": 0,
+              "node": "Dispatcher_AI_Agent",
+              "type": "ai_tool"
+            }
+          ]
+        ]
+      },
+      "Webhook_Receiver": {
+        "main": [
+          [
+            {
+              "index": 0,
+              "node": "Dispatcher_AI_Agent",
+              "type": "main"
+            }
+          ]
+        ]
+      }
+    },
+    "nodeGroups": [],
+    "authors": "Munir Callaos",
+    "name": null,
+    "description": null,
+    "autosaved": false,
+    "workflowPublishHistory": [
+      {
+        "createdAt": "2026-07-27T00:29:07.775Z",
+        "id": 1461,
+        "workflowId": "Yv9X1EGUvQg8qErW",
+        "versionId": "ff63b02a-0568-41ac-91c0-723d57ef08a1",
+        "event": "deactivated",
+        "userId": "a8372723-088d-441d-a749-360f0eab4295"
+      },
+      {
+        "createdAt": "2026-07-27T00:29:07.854Z",
+        "id": 1462,
+        "workflowId": "Yv9X1EGUvQg8qErW",
+        "versionId": "ff63b02a-0568-41ac-91c0-723d57ef08a1",
+        "event": "activated",
+        "userId": "a8372723-088d-441d-a749-360f0eab4295"
+      }
+    ]
+  }
+}

@@ -1,0 +1,368 @@
+{
+  "updatedAt": "2026-07-24T00:13:38.889Z",
+  "createdAt": "2026-07-23T13:58:51.743Z",
+  "id": "XSLNwq6ihH1SHPRl",
+  "name": "[MELOSMILE] Sub-Agent: Contabilidad",
+  "description": null,
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "id": "trigger-1",
+      "name": "Execute_Workflow_Trigger",
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "position": [
+        250,
+        300
+      ],
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1
+    },
+    {
+      "credentials": {
+        "openRouterApi": {
+          "id": "4nco5fDnIohG6g9f",
+          "name": "OpenRouter account"
+        }
+      },
+      "id": "2",
+      "name": "OpenRouter_Chat_Model",
+      "parameters": {
+        "model": "google/gemini-2.5-flash",
+        "options": {}
+      },
+      "position": [
+        450,
+        450
+      ],
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1
+    },
+    {
+      "id": "3",
+      "name": "Agent_Billing",
+      "parameters": {
+        "options": {
+          "systemMessage": "Role: Eres el Sub-agente Especialista en Contabilidad y Facturación Odoo de Melosmile.\n\nObjective: Consultar cobros pendientes por facturar, desglose financiero de sesiones clínicas y procesar la emisión de facturas borrador en Odoo ERP (`res.partner` y `account.move`), además de enviar avisos de cobro.\n\nApproach Step-by-Step:\n1. Recibir la solicitud financiera (paciente, cobros seleccionados, monto).\n2. Usar 'Tool_Odoo_Invoice' para registrar el cliente y emitir la factura en Odoo ERP.\n3. Si se solicita aviso de cobro, utilizar 'Tool_Reminders_Dispatcher'.\n4. Retornar el resumen contable con el número de factura generado (INV/2026/XXXX) e importe total.\n\nREGLA ANTI-ALUCINACIÓN — OBLIGATORIA:\nCuando NO entiendas claramente la intención del usuario o faltan datos necesarios:\n1. NUNCA ejecutes una herramienta con datos inventados o incorrectos.\n2. NUNCA generes una respuesta de contenido que no haya sido devuelta por una herramienta.\n3. EN SU LUGAR, pregunta al usuario para confirmar usando opciones concretas.\n   Ejemplos de cómo pedir aclaración:\n   - \"¿Me puedes aclarar si quieres [opción A] o [opción B]?\"\n   - \"Entiendo que quieres [X], ¿es correcto? Necesito también [dato que falta].\"\n   - \"No he reconocido bien la petición. ¿Te refieres a [X] o a [Y]?\"\n4. Cada aclaración del profesional es aprendizaje: úsala para interpretar mejor sus próximas expresiones similares."
+        },
+        "promptType": "define",
+        "text": "={{ ($json.body?.history || $json.history) ? \"HISTORIAL DE CONVERSACIÓN PREVIA:\\n\" + ($json.body?.history || $json.history).map(h => (h.role == \"user\" ? \"Usuario\" : \"Musly\") + \": \" + h.content).join(\"\\n\") + \"\\n\\nSOLICITUD ACTUAL DEL USUARIO:\\n\" + ($json.body?.message || $json.message || $json.query || \"\") : ($json.body?.message || $json.message || $json.query || JSON.stringify($json)) }}"
+      },
+      "position": [
+        450,
+        300
+      ],
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7
+    },
+    {
+      "id": "4",
+      "name": "Tool_Odoo_Invoice",
+      "parameters": {
+        "method": "GET",
+        "placeholderDefinitions": {
+          "values": [
+            {
+              "description": "Nombre o ID del paciente o período a consultar",
+              "name": "query"
+            }
+          ]
+        },
+        "toolDescription": "Consulta facturas pendientes o emite nuevas facturas en Odoo ERP para un paciente o período específico.",
+        "url": "https://melosmile.odoo.com/api/invoices?query={query}"
+      },
+      "position": [
+        700,
+        200
+      ],
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1
+    },
+    {
+      "id": "5",
+      "name": "Tool_Reminders_Dispatcher",
+      "parameters": {
+        "method": "POST",
+        "placeholderDefinitions": {
+          "values": [
+            {
+              "description": "ID de la factura vencida",
+              "name": "invoice_id"
+            }
+          ]
+        },
+        "sendBody": true,
+        "toolDescription": "Envía recordatorio de pago a pacientes con facturas vencidas de más de 30 días.",
+        "url": "https://frontend-eight-dusky-42.vercel.app/api/billing/reminders"
+      },
+      "position": [
+        700,
+        400
+      ],
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1
+    }
+  ],
+  "connections": {
+    "Execute_Workflow_Trigger": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Agent_Billing",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "OpenRouter_Chat_Model": {
+      "ai_languageModel": [
+        [
+          {
+            "index": 0,
+            "node": "Agent_Billing",
+            "type": "ai_languageModel"
+          }
+        ]
+      ]
+    },
+    "Tool_Odoo_Invoice": {
+      "ai_tool": [
+        [
+          {
+            "index": 0,
+            "node": "Agent_Billing",
+            "type": "ai_tool"
+          }
+        ]
+      ]
+    },
+    "Tool_Reminders_Dispatcher": {
+      "ai_tool": [
+        [
+          {
+            "index": 0,
+            "node": "Agent_Billing",
+            "type": "ai_tool"
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "saveManualExecutions": true,
+    "saveExecutionProgress": true,
+    "binaryMode": "separate"
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "nodeGroups": [],
+  "pinData": {},
+  "versionId": "b85de3c7-b895-41a8-8f7b-89a72181a1ce",
+  "activeVersionId": "b85de3c7-b895-41a8-8f7b-89a72181a1ce",
+  "versionCounter": 13,
+  "triggerCount": 0,
+  "sourceWorkflowId": null,
+  "shared": [
+    {
+      "updatedAt": "2026-07-23T13:58:51.743Z",
+      "createdAt": "2026-07-23T13:58:51.743Z",
+      "role": "workflow:owner",
+      "workflowId": "XSLNwq6ihH1SHPRl",
+      "projectId": "1NgBcdgDf0dyQ1bS",
+      "project": {
+        "updatedAt": "2025-06-05T22:42:55.767Z",
+        "createdAt": "2025-06-05T21:29:23.602Z",
+        "id": "1NgBcdgDf0dyQ1bS",
+        "name": "Munir Callaos <proyectos.muma@gmail.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "customTelemetryTags": [],
+        "creatorId": "a8372723-088d-441d-a749-360f0eab4295"
+      }
+    }
+  ],
+  "tags": [],
+  "activeVersion": {
+    "updatedAt": "2026-07-24T00:13:38.892Z",
+    "createdAt": "2026-07-24T00:13:38.892Z",
+    "versionId": "b85de3c7-b895-41a8-8f7b-89a72181a1ce",
+    "workflowId": "XSLNwq6ihH1SHPRl",
+    "nodes": [
+      {
+        "id": "trigger-1",
+        "name": "Execute_Workflow_Trigger",
+        "parameters": {
+          "inputSource": "passthrough"
+        },
+        "position": [
+          250,
+          300
+        ],
+        "type": "n8n-nodes-base.executeWorkflowTrigger",
+        "typeVersion": 1.1
+      },
+      {
+        "credentials": {
+          "openRouterApi": {
+            "id": "4nco5fDnIohG6g9f",
+            "name": "OpenRouter account"
+          }
+        },
+        "id": "2",
+        "name": "OpenRouter_Chat_Model",
+        "parameters": {
+          "model": "google/gemini-2.5-flash",
+          "options": {}
+        },
+        "position": [
+          450,
+          450
+        ],
+        "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+        "typeVersion": 1
+      },
+      {
+        "id": "3",
+        "name": "Agent_Billing",
+        "parameters": {
+          "options": {
+            "systemMessage": "Role: Eres el Sub-agente Especialista en Contabilidad y Facturación Odoo de Melosmile.\n\nObjective: Consultar cobros pendientes por facturar, desglose financiero de sesiones clínicas y procesar la emisión de facturas borrador en Odoo ERP (`res.partner` y `account.move`), además de enviar avisos de cobro.\n\nApproach Step-by-Step:\n1. Recibir la solicitud financiera (paciente, cobros seleccionados, monto).\n2. Usar 'Tool_Odoo_Invoice' para registrar el cliente y emitir la factura en Odoo ERP.\n3. Si se solicita aviso de cobro, utilizar 'Tool_Reminders_Dispatcher'.\n4. Retornar el resumen contable con el número de factura generado (INV/2026/XXXX) e importe total.\n\nREGLA ANTI-ALUCINACIÓN — OBLIGATORIA:\nCuando NO entiendas claramente la intención del usuario o faltan datos necesarios:\n1. NUNCA ejecutes una herramienta con datos inventados o incorrectos.\n2. NUNCA generes una respuesta de contenido que no haya sido devuelta por una herramienta.\n3. EN SU LUGAR, pregunta al usuario para confirmar usando opciones concretas.\n   Ejemplos de cómo pedir aclaración:\n   - \"¿Me puedes aclarar si quieres [opción A] o [opción B]?\"\n   - \"Entiendo que quieres [X], ¿es correcto? Necesito también [dato que falta].\"\n   - \"No he reconocido bien la petición. ¿Te refieres a [X] o a [Y]?\"\n4. Cada aclaración del profesional es aprendizaje: úsala para interpretar mejor sus próximas expresiones similares."
+          },
+          "promptType": "define",
+          "text": "={{ ($json.body?.history || $json.history) ? \"HISTORIAL DE CONVERSACIÓN PREVIA:\\n\" + ($json.body?.history || $json.history).map(h => (h.role == \"user\" ? \"Usuario\" : \"Musly\") + \": \" + h.content).join(\"\\n\") + \"\\n\\nSOLICITUD ACTUAL DEL USUARIO:\\n\" + ($json.body?.message || $json.message || $json.query || \"\") : ($json.body?.message || $json.message || $json.query || JSON.stringify($json)) }}"
+        },
+        "position": [
+          450,
+          300
+        ],
+        "type": "@n8n/n8n-nodes-langchain.agent",
+        "typeVersion": 1.7
+      },
+      {
+        "id": "4",
+        "name": "Tool_Odoo_Invoice",
+        "parameters": {
+          "method": "GET",
+          "placeholderDefinitions": {
+            "values": [
+              {
+                "description": "Nombre o ID del paciente o período a consultar",
+                "name": "query"
+              }
+            ]
+          },
+          "toolDescription": "Consulta facturas pendientes o emite nuevas facturas en Odoo ERP para un paciente o período específico.",
+          "url": "https://melosmile.odoo.com/api/invoices?query={query}"
+        },
+        "position": [
+          700,
+          200
+        ],
+        "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+        "typeVersion": 1.1
+      },
+      {
+        "id": "5",
+        "name": "Tool_Reminders_Dispatcher",
+        "parameters": {
+          "method": "POST",
+          "placeholderDefinitions": {
+            "values": [
+              {
+                "description": "ID de la factura vencida",
+                "name": "invoice_id"
+              }
+            ]
+          },
+          "sendBody": true,
+          "toolDescription": "Envía recordatorio de pago a pacientes con facturas vencidas de más de 30 días.",
+          "url": "https://frontend-eight-dusky-42.vercel.app/api/billing/reminders"
+        },
+        "position": [
+          700,
+          400
+        ],
+        "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+        "typeVersion": 1.1
+      }
+    ],
+    "connections": {
+      "Execute_Workflow_Trigger": {
+        "main": [
+          [
+            {
+              "index": 0,
+              "node": "Agent_Billing",
+              "type": "main"
+            }
+          ]
+        ]
+      },
+      "OpenRouter_Chat_Model": {
+        "ai_languageModel": [
+          [
+            {
+              "index": 0,
+              "node": "Agent_Billing",
+              "type": "ai_languageModel"
+            }
+          ]
+        ]
+      },
+      "Tool_Odoo_Invoice": {
+        "ai_tool": [
+          [
+            {
+              "index": 0,
+              "node": "Agent_Billing",
+              "type": "ai_tool"
+            }
+          ]
+        ]
+      },
+      "Tool_Reminders_Dispatcher": {
+        "ai_tool": [
+          [
+            {
+              "index": 0,
+              "node": "Agent_Billing",
+              "type": "ai_tool"
+            }
+          ]
+        ]
+      }
+    },
+    "nodeGroups": [],
+    "authors": "Munir Callaos",
+    "name": null,
+    "description": null,
+    "autosaved": false,
+    "workflowPublishHistory": [
+      {
+        "createdAt": "2026-07-24T00:13:39.000Z",
+        "id": 1310,
+        "workflowId": "XSLNwq6ihH1SHPRl",
+        "versionId": "b85de3c7-b895-41a8-8f7b-89a72181a1ce",
+        "event": "deactivated",
+        "userId": "a8372723-088d-441d-a749-360f0eab4295"
+      },
+      {
+        "createdAt": "2026-07-24T00:13:39.031Z",
+        "id": 1311,
+        "workflowId": "XSLNwq6ihH1SHPRl",
+        "versionId": "b85de3c7-b895-41a8-8f7b-89a72181a1ce",
+        "event": "activated",
+        "userId": "a8372723-088d-441d-a749-360f0eab4295"
+      }
+    ]
+  }
+}

@@ -1,0 +1,366 @@
+{
+  "updatedAt": "2026-07-24T00:13:38.380Z",
+  "createdAt": "2026-07-23T13:58:48.803Z",
+  "id": "Q7oxrbUuohca81Gn",
+  "name": "[MELOSMILE] Sub-Agent: Clinico",
+  "description": null,
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "id": "trigger-1",
+      "name": "Execute_Workflow_Trigger",
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "position": [
+        250,
+        300
+      ],
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1
+    },
+    {
+      "credentials": {
+        "openRouterApi": {
+          "id": "4nco5fDnIohG6g9f",
+          "name": "OpenRouter account"
+        }
+      },
+      "id": "2",
+      "name": "OpenRouter_Chat_Model",
+      "parameters": {
+        "model": "google/gemini-2.5-flash",
+        "options": {}
+      },
+      "position": [
+        450,
+        450
+      ],
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1
+    },
+    {
+      "id": "3",
+      "name": "Agent_Clinical",
+      "parameters": {
+        "options": {
+          "systemMessage": "Role: Eres el Sub-agente Especialista Clínico de Melosmile.\n\nObjective: Responder consultas sobre el historial médico del paciente, notas de evolución por cita, anamnesis, alergias y generar síntesis técnicas verificadas.\n\nApproach Step-by-Step:\n1. Analizar el paciente o sesión solicitada.\n2. Invocación de 'Tool_Clinical_Context' para recuperar el historial médico real y tratamientos realizados.\n3. Si el usuario requiere sintetizar la ficha médica, invocar 'Tool_Patient_Summary'.\n4. Formatear la respuesta clínica en markdown profesional con alertas médicas (alergias a antibióticos, antecedentes) claramente destacadas.\n\nConstraints:\n- Prohibido alucinar diagnósticos o tratamientos no registrados en la ficha.\n\nREGLA ANTI-ALUCINACIÓN — OBLIGATORIA:\nCuando NO entiendas claramente la intención del usuario o faltan datos necesarios:\n1. NUNCA ejecutes una herramienta con datos inventados o incorrectos.\n2. NUNCA generes una respuesta de contenido que no haya sido devuelta por una herramienta.\n3. EN SU LUGAR, pregunta al usuario para confirmar usando opciones concretas.\n   Ejemplos de cómo pedir aclaración:\n   - \"¿Me puedes aclarar si quieres [opción A] o [opción B]?\"\n   - \"Entiendo que quieres [X], ¿es correcto? Necesito también [dato que falta].\"\n   - \"No he reconocido bien la petición. ¿Te refieres a [X] o a [Y]?\"\n4. Cada aclaración del profesional es aprendizaje: úsala para interpretar mejor sus próximas expresiones similares."
+        },
+        "promptType": "define",
+        "text": "={{ ($json.body?.history || $json.history) ? \"HISTORIAL DE CONVERSACIÓN PREVIA:\\n\" + ($json.body?.history || $json.history).map(h => (h.role == \"user\" ? \"Usuario\" : \"Musly\") + \": \" + h.content).join(\"\\n\") + \"\\n\\nSOLICITUD ACTUAL DEL USUARIO:\\n\" + ($json.body?.message || $json.message || $json.query || \"\") : ($json.body?.message || $json.message || $json.query || JSON.stringify($json)) }}"
+      },
+      "position": [
+        450,
+        300
+      ],
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7
+    },
+    {
+      "id": "4",
+      "name": "Tool_Clinical_Context",
+      "parameters": {
+        "method": "GET",
+        "placeholderDefinitions": {
+          "values": [
+            {
+              "description": "ID o nombre del paciente",
+              "name": "patient_id"
+            }
+          ]
+        },
+        "toolDescription": "Recupera el historial clínico completo de un paciente por su ID o nombre.",
+        "url": "https://frontend-eight-dusky-42.vercel.app/api/patients/{patient_id}/clinical"
+      },
+      "position": [
+        700,
+        200
+      ],
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1
+    },
+    {
+      "id": "5",
+      "name": "Tool_Patient_Summary",
+      "parameters": {
+        "method": "GET",
+        "placeholderDefinitions": {
+          "values": [
+            {
+              "description": "ID o nombre del paciente",
+              "name": "patient_id"
+            }
+          ]
+        },
+        "toolDescription": "Obtiene un resumen ejecutivo del paciente: última visita, tratamientos activos y alertas.",
+        "url": "https://frontend-eight-dusky-42.vercel.app/api/patients/{patient_id}/summary"
+      },
+      "position": [
+        700,
+        400
+      ],
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1
+    }
+  ],
+  "connections": {
+    "Execute_Workflow_Trigger": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Agent_Clinical",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "OpenRouter_Chat_Model": {
+      "ai_languageModel": [
+        [
+          {
+            "index": 0,
+            "node": "Agent_Clinical",
+            "type": "ai_languageModel"
+          }
+        ]
+      ]
+    },
+    "Tool_Clinical_Context": {
+      "ai_tool": [
+        [
+          {
+            "index": 0,
+            "node": "Agent_Clinical",
+            "type": "ai_tool"
+          }
+        ]
+      ]
+    },
+    "Tool_Patient_Summary": {
+      "ai_tool": [
+        [
+          {
+            "index": 0,
+            "node": "Agent_Clinical",
+            "type": "ai_tool"
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "saveManualExecutions": true,
+    "saveExecutionProgress": true,
+    "binaryMode": "separate"
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "nodeGroups": [],
+  "pinData": {},
+  "versionId": "78414a41-b8df-4799-8f3d-37680ca7e89e",
+  "activeVersionId": "78414a41-b8df-4799-8f3d-37680ca7e89e",
+  "versionCounter": 12,
+  "triggerCount": 0,
+  "sourceWorkflowId": null,
+  "shared": [
+    {
+      "updatedAt": "2026-07-23T13:58:48.803Z",
+      "createdAt": "2026-07-23T13:58:48.803Z",
+      "role": "workflow:owner",
+      "workflowId": "Q7oxrbUuohca81Gn",
+      "projectId": "1NgBcdgDf0dyQ1bS",
+      "project": {
+        "updatedAt": "2025-06-05T22:42:55.767Z",
+        "createdAt": "2025-06-05T21:29:23.602Z",
+        "id": "1NgBcdgDf0dyQ1bS",
+        "name": "Munir Callaos <proyectos.muma@gmail.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "customTelemetryTags": [],
+        "creatorId": "a8372723-088d-441d-a749-360f0eab4295"
+      }
+    }
+  ],
+  "tags": [],
+  "activeVersion": {
+    "updatedAt": "2026-07-24T00:13:38.383Z",
+    "createdAt": "2026-07-24T00:13:38.383Z",
+    "versionId": "78414a41-b8df-4799-8f3d-37680ca7e89e",
+    "workflowId": "Q7oxrbUuohca81Gn",
+    "nodes": [
+      {
+        "id": "trigger-1",
+        "name": "Execute_Workflow_Trigger",
+        "parameters": {
+          "inputSource": "passthrough"
+        },
+        "position": [
+          250,
+          300
+        ],
+        "type": "n8n-nodes-base.executeWorkflowTrigger",
+        "typeVersion": 1.1
+      },
+      {
+        "credentials": {
+          "openRouterApi": {
+            "id": "4nco5fDnIohG6g9f",
+            "name": "OpenRouter account"
+          }
+        },
+        "id": "2",
+        "name": "OpenRouter_Chat_Model",
+        "parameters": {
+          "model": "google/gemini-2.5-flash",
+          "options": {}
+        },
+        "position": [
+          450,
+          450
+        ],
+        "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+        "typeVersion": 1
+      },
+      {
+        "id": "3",
+        "name": "Agent_Clinical",
+        "parameters": {
+          "options": {
+            "systemMessage": "Role: Eres el Sub-agente Especialista Clínico de Melosmile.\n\nObjective: Responder consultas sobre el historial médico del paciente, notas de evolución por cita, anamnesis, alergias y generar síntesis técnicas verificadas.\n\nApproach Step-by-Step:\n1. Analizar el paciente o sesión solicitada.\n2. Invocación de 'Tool_Clinical_Context' para recuperar el historial médico real y tratamientos realizados.\n3. Si el usuario requiere sintetizar la ficha médica, invocar 'Tool_Patient_Summary'.\n4. Formatear la respuesta clínica en markdown profesional con alertas médicas (alergias a antibióticos, antecedentes) claramente destacadas.\n\nConstraints:\n- Prohibido alucinar diagnósticos o tratamientos no registrados en la ficha.\n\nREGLA ANTI-ALUCINACIÓN — OBLIGATORIA:\nCuando NO entiendas claramente la intención del usuario o faltan datos necesarios:\n1. NUNCA ejecutes una herramienta con datos inventados o incorrectos.\n2. NUNCA generes una respuesta de contenido que no haya sido devuelta por una herramienta.\n3. EN SU LUGAR, pregunta al usuario para confirmar usando opciones concretas.\n   Ejemplos de cómo pedir aclaración:\n   - \"¿Me puedes aclarar si quieres [opción A] o [opción B]?\"\n   - \"Entiendo que quieres [X], ¿es correcto? Necesito también [dato que falta].\"\n   - \"No he reconocido bien la petición. ¿Te refieres a [X] o a [Y]?\"\n4. Cada aclaración del profesional es aprendizaje: úsala para interpretar mejor sus próximas expresiones similares."
+          },
+          "promptType": "define",
+          "text": "={{ ($json.body?.history || $json.history) ? \"HISTORIAL DE CONVERSACIÓN PREVIA:\\n\" + ($json.body?.history || $json.history).map(h => (h.role == \"user\" ? \"Usuario\" : \"Musly\") + \": \" + h.content).join(\"\\n\") + \"\\n\\nSOLICITUD ACTUAL DEL USUARIO:\\n\" + ($json.body?.message || $json.message || $json.query || \"\") : ($json.body?.message || $json.message || $json.query || JSON.stringify($json)) }}"
+        },
+        "position": [
+          450,
+          300
+        ],
+        "type": "@n8n/n8n-nodes-langchain.agent",
+        "typeVersion": 1.7
+      },
+      {
+        "id": "4",
+        "name": "Tool_Clinical_Context",
+        "parameters": {
+          "method": "GET",
+          "placeholderDefinitions": {
+            "values": [
+              {
+                "description": "ID o nombre del paciente",
+                "name": "patient_id"
+              }
+            ]
+          },
+          "toolDescription": "Recupera el historial clínico completo de un paciente por su ID o nombre.",
+          "url": "https://frontend-eight-dusky-42.vercel.app/api/patients/{patient_id}/clinical"
+        },
+        "position": [
+          700,
+          200
+        ],
+        "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+        "typeVersion": 1.1
+      },
+      {
+        "id": "5",
+        "name": "Tool_Patient_Summary",
+        "parameters": {
+          "method": "GET",
+          "placeholderDefinitions": {
+            "values": [
+              {
+                "description": "ID o nombre del paciente",
+                "name": "patient_id"
+              }
+            ]
+          },
+          "toolDescription": "Obtiene un resumen ejecutivo del paciente: última visita, tratamientos activos y alertas.",
+          "url": "https://frontend-eight-dusky-42.vercel.app/api/patients/{patient_id}/summary"
+        },
+        "position": [
+          700,
+          400
+        ],
+        "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+        "typeVersion": 1.1
+      }
+    ],
+    "connections": {
+      "Execute_Workflow_Trigger": {
+        "main": [
+          [
+            {
+              "index": 0,
+              "node": "Agent_Clinical",
+              "type": "main"
+            }
+          ]
+        ]
+      },
+      "OpenRouter_Chat_Model": {
+        "ai_languageModel": [
+          [
+            {
+              "index": 0,
+              "node": "Agent_Clinical",
+              "type": "ai_languageModel"
+            }
+          ]
+        ]
+      },
+      "Tool_Clinical_Context": {
+        "ai_tool": [
+          [
+            {
+              "index": 0,
+              "node": "Agent_Clinical",
+              "type": "ai_tool"
+            }
+          ]
+        ]
+      },
+      "Tool_Patient_Summary": {
+        "ai_tool": [
+          [
+            {
+              "index": 0,
+              "node": "Agent_Clinical",
+              "type": "ai_tool"
+            }
+          ]
+        ]
+      }
+    },
+    "nodeGroups": [],
+    "authors": "Munir Callaos",
+    "name": null,
+    "description": null,
+    "autosaved": false,
+    "workflowPublishHistory": [
+      {
+        "createdAt": "2026-07-24T00:13:38.473Z",
+        "id": 1308,
+        "workflowId": "Q7oxrbUuohca81Gn",
+        "versionId": "78414a41-b8df-4799-8f3d-37680ca7e89e",
+        "event": "deactivated",
+        "userId": "a8372723-088d-441d-a749-360f0eab4295"
+      },
+      {
+        "createdAt": "2026-07-24T00:13:38.518Z",
+        "id": 1309,
+        "workflowId": "Q7oxrbUuohca81Gn",
+        "versionId": "78414a41-b8df-4799-8f3d-37680ca7e89e",
+        "event": "activated",
+        "userId": "a8372723-088d-441d-a749-360f0eab4295"
+      }
+    ]
+  }
+}

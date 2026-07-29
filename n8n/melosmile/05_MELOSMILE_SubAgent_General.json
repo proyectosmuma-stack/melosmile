@@ -1,0 +1,333 @@
+{
+  "updatedAt": "2026-07-26T23:03:53.316Z",
+  "createdAt": "2026-07-26T23:02:57.398Z",
+  "id": "MIok0ruU7JhpTxWv",
+  "name": "[MELOSMILE] Sub-Agent: General",
+  "description": null,
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "id": "trigger-1",
+      "name": "Execute_Workflow_Trigger",
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "position": [
+        250,
+        300
+      ],
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1
+    },
+    {
+      "credentials": {
+        "openRouterApi": {
+          "id": "4nco5fDnIohG6g9f",
+          "name": "OpenRouter account"
+        }
+      },
+      "id": "2",
+      "name": "OpenRouter_Chat_Model",
+      "parameters": {
+        "model": "google/gemini-2.5-flash",
+        "options": {
+          "temperature": 0
+        }
+      },
+      "position": [
+        450,
+        450
+      ],
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1
+    },
+    {
+      "id": "3",
+      "name": "Agent_General",
+      "parameters": {
+        "options": {
+          "systemMessage": "Role: Eres Musly, el Sub-agente Especialista en Información General de la clínica dental Melosmile.\nObjetivo: Responder preguntas frecuentes sobre la clínica: horarios de atención, ubicación de las sedes (Goya, Albacete, Las Rozas), servicios y especialidades ofrecidas, precios generales orientativos, aparcamiento y contacto.\n\nREGLAS DE RESPUESTA:\n- Responde siempre de forma amable, clara y profesional en español.\n- Sedes y Horarios:\n  * Clínica Goya (Madrid): Calle de Goya 45. Lunes a Viernes de 09:00 a 20:00, Sábados de 09:00 a 14:00.\n  * Clínica Albacete: Calle Mayor 12. Lunes a Viernes de 09:00 a 20:00.\n  * Clínica Las Rozas: Av. de la Constitución 8. Lunes a Viernes de 09:00 a 20:00.\n- Si no conoces un dato específico, indícalo educadamente e invita al usuario a consultar con recepción."
+        },
+        "promptType": "define",
+        "text": "={{ ($json.body?.history || $json.history) ? \"FECHA Y HORA ACTUAL EN ESPAÑA: \" + $now.setZone('Europe/Madrid').format('cccc, d [de] MMMM [de] yyyy, HH:mm') + \"\\n\\nHISTORIAL DE CONVERSACIÓN PREVIA:\\n\" + ($json.body?.history || $json.history).map(h => (h.role == \"user\" ? \"Usuario\" : \"Musly\") + \": \" + h.content).join(\"\\n\") + \"\\n\\nSOLICITUD ACTUAL DEL USUARIO:\\n\" + ($json.body?.message || $json.message || $json.query || \"\") : \"FECHA Y HORA ACTUAL EN ESPAÑA: \" + $now.setZone('Europe/Madrid').format('cccc, d [de] MMMM [de] yyyy, HH:mm') + \"\\n\\nSOLICITUD:\\n\" + ($json.body?.message || $json.message || $json.query || JSON.stringify($json)) }}"
+      },
+      "position": [
+        450,
+        300
+      ],
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7
+    },
+    {
+      "id": "4",
+      "name": "Tool_Search_Memory",
+      "parameters": {
+        "description": "Consulta el diccionario de aprendizaje dinámico y modismos guardados del profesional.",
+        "method": "GET",
+        "url": "https://frontend-eight-dusky-42.vercel.app/api/ai/memory/search?query={{ $fromAI('query', 'Palabra o frase a consultar') }}"
+      },
+      "position": [
+        700,
+        300
+      ],
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1
+    },
+    {
+      "id": "5",
+      "name": "Tool_Save_Learning",
+      "parameters": {
+        "description": "Guarda o aprende una nueva regla de vocabulario o preferencia enseñada por el usuario.",
+        "jsonBody": "={\\n  \"expression\": \"{{ $fromAI('expression', 'La expresión o modismo del usuario') }}\",\\n  \"meaning\": \"{{ $fromAI('meaning', 'El significado técnico o acción asociada') }}\",\\n  \"category\": \"vocabulary\"\\n}",
+        "method": "POST",
+        "sendBody": true,
+        "specifyBody": "json",
+        "url": "https://frontend-eight-dusky-42.vercel.app/api/ai/memory/learn"
+      },
+      "position": [
+        700,
+        500
+      ],
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1
+    }
+  ],
+  "connections": {
+    "Execute_Workflow_Trigger": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Agent_General",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "OpenRouter_Chat_Model": {
+      "ai_languageModel": [
+        [
+          {
+            "index": 0,
+            "node": "Agent_General",
+            "type": "ai_languageModel"
+          }
+        ]
+      ]
+    },
+    "Tool_Save_Learning": {
+      "ai_tool": [
+        [
+          {
+            "index": 0,
+            "node": "Agent_General",
+            "type": "ai_tool"
+          }
+        ]
+      ]
+    },
+    "Tool_Search_Memory": {
+      "ai_tool": [
+        [
+          {
+            "index": 0,
+            "node": "Agent_General",
+            "type": "ai_tool"
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "saveManualExecutions": true,
+    "saveExecutionProgress": true
+  },
+  "staticData": null,
+  "meta": null,
+  "nodeGroups": [],
+  "pinData": null,
+  "versionId": "7eccf186-fa71-4c17-84fd-efe7ceed70d2",
+  "activeVersionId": "7eccf186-fa71-4c17-84fd-efe7ceed70d2",
+  "versionCounter": 1,
+  "triggerCount": 0,
+  "sourceWorkflowId": null,
+  "shared": [
+    {
+      "updatedAt": "2026-07-26T23:02:57.398Z",
+      "createdAt": "2026-07-26T23:02:57.398Z",
+      "role": "workflow:owner",
+      "workflowId": "MIok0ruU7JhpTxWv",
+      "projectId": "1NgBcdgDf0dyQ1bS",
+      "project": {
+        "updatedAt": "2025-06-05T22:42:55.767Z",
+        "createdAt": "2025-06-05T21:29:23.602Z",
+        "id": "1NgBcdgDf0dyQ1bS",
+        "name": "Munir Callaos <proyectos.muma@gmail.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "customTelemetryTags": [],
+        "creatorId": "a8372723-088d-441d-a749-360f0eab4295"
+      }
+    }
+  ],
+  "tags": [],
+  "activeVersion": {
+    "updatedAt": "2026-07-26T23:02:57.398Z",
+    "createdAt": "2026-07-26T23:02:57.398Z",
+    "versionId": "7eccf186-fa71-4c17-84fd-efe7ceed70d2",
+    "workflowId": "MIok0ruU7JhpTxWv",
+    "nodes": [
+      {
+        "id": "trigger-1",
+        "name": "Execute_Workflow_Trigger",
+        "parameters": {
+          "inputSource": "passthrough"
+        },
+        "position": [
+          250,
+          300
+        ],
+        "type": "n8n-nodes-base.executeWorkflowTrigger",
+        "typeVersion": 1.1
+      },
+      {
+        "credentials": {
+          "openRouterApi": {
+            "id": "4nco5fDnIohG6g9f",
+            "name": "OpenRouter account"
+          }
+        },
+        "id": "2",
+        "name": "OpenRouter_Chat_Model",
+        "parameters": {
+          "model": "google/gemini-2.5-flash",
+          "options": {
+            "temperature": 0
+          }
+        },
+        "position": [
+          450,
+          450
+        ],
+        "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+        "typeVersion": 1
+      },
+      {
+        "id": "3",
+        "name": "Agent_General",
+        "parameters": {
+          "options": {
+            "systemMessage": "Role: Eres Musly, el Sub-agente Especialista en Información General de la clínica dental Melosmile.\nObjetivo: Responder preguntas frecuentes sobre la clínica: horarios de atención, ubicación de las sedes (Goya, Albacete, Las Rozas), servicios y especialidades ofrecidas, precios generales orientativos, aparcamiento y contacto.\n\nREGLAS DE RESPUESTA:\n- Responde siempre de forma amable, clara y profesional en español.\n- Sedes y Horarios:\n  * Clínica Goya (Madrid): Calle de Goya 45. Lunes a Viernes de 09:00 a 20:00, Sábados de 09:00 a 14:00.\n  * Clínica Albacete: Calle Mayor 12. Lunes a Viernes de 09:00 a 20:00.\n  * Clínica Las Rozas: Av. de la Constitución 8. Lunes a Viernes de 09:00 a 20:00.\n- Si no conoces un dato específico, indícalo educadamente e invita al usuario a consultar con recepción."
+          },
+          "promptType": "define",
+          "text": "={{ ($json.body?.history || $json.history) ? \"FECHA Y HORA ACTUAL EN ESPAÑA: \" + $now.setZone('Europe/Madrid').format('cccc, d [de] MMMM [de] yyyy, HH:mm') + \"\\n\\nHISTORIAL DE CONVERSACIÓN PREVIA:\\n\" + ($json.body?.history || $json.history).map(h => (h.role == \"user\" ? \"Usuario\" : \"Musly\") + \": \" + h.content).join(\"\\n\") + \"\\n\\nSOLICITUD ACTUAL DEL USUARIO:\\n\" + ($json.body?.message || $json.message || $json.query || \"\") : \"FECHA Y HORA ACTUAL EN ESPAÑA: \" + $now.setZone('Europe/Madrid').format('cccc, d [de] MMMM [de] yyyy, HH:mm') + \"\\n\\nSOLICITUD:\\n\" + ($json.body?.message || $json.message || $json.query || JSON.stringify($json)) }}"
+        },
+        "position": [
+          450,
+          300
+        ],
+        "type": "@n8n/n8n-nodes-langchain.agent",
+        "typeVersion": 1.7
+      },
+      {
+        "id": "4",
+        "name": "Tool_Search_Memory",
+        "parameters": {
+          "description": "Consulta el diccionario de aprendizaje dinámico y modismos guardados del profesional.",
+          "method": "GET",
+          "url": "https://frontend-eight-dusky-42.vercel.app/api/ai/memory/search?query={{ $fromAI('query', 'Palabra o frase a consultar') }}"
+        },
+        "position": [
+          700,
+          300
+        ],
+        "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+        "typeVersion": 1.1
+      },
+      {
+        "id": "5",
+        "name": "Tool_Save_Learning",
+        "parameters": {
+          "description": "Guarda o aprende una nueva regla de vocabulario o preferencia enseñada por el usuario.",
+          "jsonBody": "={\\n  \"expression\": \"{{ $fromAI('expression', 'La expresión o modismo del usuario') }}\",\\n  \"meaning\": \"{{ $fromAI('meaning', 'El significado técnico o acción asociada') }}\",\\n  \"category\": \"vocabulary\"\\n}",
+          "method": "POST",
+          "sendBody": true,
+          "specifyBody": "json",
+          "url": "https://frontend-eight-dusky-42.vercel.app/api/ai/memory/learn"
+        },
+        "position": [
+          700,
+          500
+        ],
+        "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+        "typeVersion": 1.1
+      }
+    ],
+    "connections": {
+      "Execute_Workflow_Trigger": {
+        "main": [
+          [
+            {
+              "index": 0,
+              "node": "Agent_General",
+              "type": "main"
+            }
+          ]
+        ]
+      },
+      "OpenRouter_Chat_Model": {
+        "ai_languageModel": [
+          [
+            {
+              "index": 0,
+              "node": "Agent_General",
+              "type": "ai_languageModel"
+            }
+          ]
+        ]
+      },
+      "Tool_Save_Learning": {
+        "ai_tool": [
+          [
+            {
+              "index": 0,
+              "node": "Agent_General",
+              "type": "ai_tool"
+            }
+          ]
+        ]
+      },
+      "Tool_Search_Memory": {
+        "ai_tool": [
+          [
+            {
+              "index": 0,
+              "node": "Agent_General",
+              "type": "ai_tool"
+            }
+          ]
+        ]
+      }
+    },
+    "nodeGroups": [],
+    "authors": "Munir Callaos",
+    "name": null,
+    "description": null,
+    "autosaved": false,
+    "workflowPublishHistory": [
+      {
+        "createdAt": "2026-07-26T23:03:57.345Z",
+        "id": 1398,
+        "workflowId": "MIok0ruU7JhpTxWv",
+        "versionId": "7eccf186-fa71-4c17-84fd-efe7ceed70d2",
+        "event": "activated",
+        "userId": "a8372723-088d-441d-a749-360f0eab4295"
+      }
+    ]
+  }
+}
