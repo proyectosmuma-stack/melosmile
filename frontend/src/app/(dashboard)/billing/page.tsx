@@ -48,14 +48,16 @@ interface BillingSession {
   lines?: { count: number }[];
 }
 
+import { useClinic } from "@/context/clinic-context";
+
 const MONTH_NAMES = [
   "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
   "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
 ];
 
 export default function BillingHubPage() {
+  const { clinics: contextClinics, selectedClinicId, setSelectedClinicId } = useClinic();
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
-  const [selectedClinicId, setSelectedClinicId] = useState<string>("all");
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
 
   const [clinics, setClinics] = useState<Clinic[]>([]);

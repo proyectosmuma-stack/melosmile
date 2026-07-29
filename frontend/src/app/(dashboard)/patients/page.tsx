@@ -59,7 +59,10 @@ export type PatientRecord = {
   clinicNames?: string[];
 };
 
+import { useClinic } from "@/context/clinic-context";
+
 export default function PatientsPage() {
+  const { selectedClinicId, setSelectedClinicId } = useClinic();
   const [patients, setPatients] = useState<PatientRecord[]>([]);
   const [allTags, setAllTags] = useState<TagItem[]>([]);
   const [clinicsCatalog, setClinicsCatalog] = useState<{ id: string; name: string }[]>([]);
@@ -67,7 +70,8 @@ export default function PatientsPage() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
-  const [clinicFilter, setClinicFilter] = useState<string>("all");
+  const clinicFilter = selectedClinicId;
+  const setClinicFilter = setSelectedClinicId;
   const [selectedTagFilter, setSelectedTagFilter] = useState<string>("all");
   const [sortBy, setSortBy] = useState<string>("historia-asc");
 

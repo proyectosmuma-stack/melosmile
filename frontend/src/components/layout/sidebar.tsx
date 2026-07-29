@@ -28,6 +28,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+import { useClinic } from "@/context/clinic-context";
+
 const mainNavigation = [
   { name: "Agenda & Citas", href: "/", icon: Calendar },
   { name: "Fichas Pacientes", href: "/patients", icon: Users },
@@ -40,20 +42,36 @@ const settingsSubMenu = [
   { name: "Tratamientos", href: "/settings/treatments", icon: FlaskConical },
 ];
 
-const clinics = [
-  { id: "all", name: "Todas las Clínicas", color: "bg-rose-500" },
-  { id: "goya", name: "Clínica Goya", color: "bg-blue-500" },
-  { id: "rozas", name: "Clínica Las Rozas", color: "bg-purple-500" },
-  { id: "rya", name: "Clínica RyA", color: "bg-emerald-500" },
+const COLOR_PALETTE = [
+  "bg-rose-500",
+  "bg-blue-500",
+  "bg-purple-500",
+  "bg-emerald-500",
+  "bg-amber-500",
+  "bg-cyan-500",
 ];
 
 export function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
+  const { clinics: dbClinics, selectedClinicId, setSelectedClinicId } = useClinic();
   const [isCollapsed, setIsCollapsed] = useState(true); // Collapsed by default as requested
-  const [selectedClinic, setSelectedClinic] = useState("all");
   const isSettingsActive = pathname.startsWith("/settings");
   const [settingsOpen, setSettingsOpen] = useState(isSettingsActive);
+
+  // Combine "all" option with real database clinics
+  const clinicOptions = [
+    { id: "all", name: "Todas las Clínicas", color: "bg-rose-500", colorHex: undefined },
+    ...dbClinics.map((c, idx) => ({
+      id: c.id,
+      name: c.name,
+      color: c.color_hex ? `bg-[${c.color_hex}]` : COLOR_PALETTE[idx % COLOR_PALETTE.length],
+      colorHex: c.color_hex,
+    })),
+  ];
+
+  const currentClinicName =
+    clinicOptions.find((c) => c.id === selectedClinicId)?.name || "Todas las Clínicas";
 
   const handleLogout = async () => {
     try {
@@ -122,7 +140,7 @@ export function Sidebar() {
             <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider px-2 mb-2 block">
               Sede Activa
             </label>
-            <Select value={selectedClinic} onValueChange={(val) => val && setSelectedClinic(val)}>
+            <Select value={selectedClinicId} onValueChange={(val) => val && setSelectedClinicId(val)}>
               <SelectTrigger className="w-full bg-slate-900/90 border-slate-800 text-slate-200 hover:bg-slate-900 transition-colors focus:ring-rose-500 h-11 rounded-xl">
                 <div className="flex items-center gap-2.5 overflow-hidden text-ellipsis">
                   <Building2 className="h-4 w-4 text-rose-400 shrink-0" />
@@ -130,11 +148,14 @@ export function Sidebar() {
                 </div>
               </SelectTrigger>
               <SelectContent className="bg-slate-900 border-slate-800 text-slate-200 z-50">
-                {clinics.map((c) => (
+                {clinicOptions.map((c) => (
                   <SelectItem key={c.id} value={c.id} className="focus:bg-slate-800 focus:text-white cursor-pointer py-2.5">
                     <div className="flex items-center gap-2">
-                      <span className={cn("h-2.5 w-2.5 rounded-full", c.color)} />
-                      <span className="font-medium">{c.name}</span>
+                      <span
+                        className={cn("h-2.5 w-2.5 rounded-full shrink-0", c.color)}
+                        style={c.colorHex ? { backgroundColor: c.colorHex } : undefined}
+                      />
+                      <span className="font-medium truncate">{c.name}</span>
                     </div>
                   </SelectItem>
                 ))}
@@ -149,7 +170,7 @@ export function Sidebar() {
             </div>
             {/* Escapes overflow clipping using fixed z-[9999] */}
             <div className="fixed left-24 ml-1 z-[9999] hidden group-hover:flex items-center bg-slate-900 text-white text-xs font-semibold px-3 py-2 rounded-xl shadow-2xl border border-slate-700 whitespace-nowrap pointer-events-none">
-              Sede: {clinics.find((c) => c.id === selectedClinic)?.name || "Todas las Clínicas"}
+              Sede: {currentClinicName}
             </div>
           </div>
         )}

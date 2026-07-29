@@ -8,14 +8,15 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/lib/supabase/client";
 
+import { useClinic } from "@/context/clinic-context";
+
 const CalendarView = dynamic(
   () => import("@/components/calendar/calendar-view").then((mod) => mod.CalendarView),
   { ssr: false }
 );
 
 export default function DashboardPage() {
-  const [selectedFilter, setSelectedFilter] = useState("all");
-  const [clinics, setClinics] = useState<{ id: string; name: string }[]>([]);
+  const { clinics, selectedClinicId, setSelectedClinicId } = useClinic();
   
   // Real KPIs state
   const [loading, setLoading] = useState(true);
@@ -29,13 +30,6 @@ export default function DashboardPage() {
     async function fetchKPIs() {
       setLoading(true);
       try {
-        // Fetch real clinics from database for quick filters
-        const { data: cData } = await (supabase as any)
-          .from("clinics")
-          .select("id, name")
-          .order("name");
-        if (cData) setClinics(cData);
-
         const now = new Date();
         const year = now.getFullYear();
         const month = String(now.getMonth() + 1).padStart(2, '0');
@@ -46,10 +40,16 @@ export default function DashboardPage() {
         const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
         const firstDayStr = firstDayOfMonth.toISOString();
         
-        // Appointments today
-        const { data: apptData } = await (supabase as any)
+        // Appointments today (filtered by clinic if selected)
+        let apptQuery = (supabase as any)
           .from("appointments")
-          .select("id, status, appointment_date");
+          .select("id, status, appointment_date, clinic_id");
+
+        if (selectedClinicId && selectedClinicId !== "all") {
+          apptQuery = apptQuery.eq("clinic_id", selectedClinicId);
+        }
+
+        const { data: apptData } = await apptQuery;
 
         const appointmentsCount = (apptData || []).filter((a: any) => {
           if (!a.appointment_date) return false;
@@ -58,20 +58,30 @@ export default function DashboardPage() {
         }).length;
           
         // Billed this month (from billing_records)
-        const { data: billingData } = await (supabase as any)
+        let billingQuery = (supabase as any)
           .from("billing_records")
-          .select("total_amount")
+          .select("total_amount, clinic_id")
           .gte("date", firstDayStr);
+
+        if (selectedClinicId && selectedClinicId !== "all") {
+          billingQuery = billingQuery.eq("clinic_id", selectedClinicId);
+        }
           
+        const { data: billingData } = await billingQuery;
         const totalBilled = billingData?.reduce((acc: number, record: any) => acc + Number(record.total_amount || 0), 0) || 0;
         
-        // Patients seen this month (from completed appointments)
-        const { data: patientsData } = await (supabase as any)
+        // Patients seen this month
+        let patientsQuery = (supabase as any)
           .from("appointments")
-          .select("patient_id")
+          .select("patient_id, clinic_id")
           .gte("appointment_date", firstDayStr)
-          .in("status", ["completed", "in_progress"]);
+          .in("status", ["completed", "in_progress", "Realizada", "realizada"]);
+
+        if (selectedClinicId && selectedClinicId !== "all") {
+          patientsQuery = patientsQuery.eq("clinic_id", selectedClinicId);
+        }
           
+        const { data: patientsData } = await patientsQuery;
         const uniquePatients = new Set(patientsData?.map((p: any) => p.patient_id)).size;
         
         setStats({
@@ -87,7 +97,7 @@ export default function DashboardPage() {
     }
     
     fetchKPIs();
-  }, []);
+  }, [selectedClinicId]);
 
   return (
     <div className="flex flex-col gap-8 max-w-[1600px] mx-auto relative min-h-[calc(100vh-100px)]">
@@ -106,9 +116,9 @@ export default function DashboardPage() {
         {/* Quick Clinic Filter Pills */}
         <div className="flex items-center gap-1.5 p-1 bg-slate-200/60 rounded-xl w-fit flex-wrap">
           <button
-            onClick={() => setSelectedFilter("all")}
+            onClick={() => setSelectedClinicId("all")}
             className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all ${
-              selectedFilter === "all"
+              selectedClinicId === "all"
                 ? "bg-white text-slate-900 shadow-sm"
                 : "text-slate-600 hover:text-slate-900"
             }`}
@@ -118,9 +128,9 @@ export default function DashboardPage() {
           {clinics.map((clinic) => (
             <button
               key={clinic.id}
-              onClick={() => setSelectedFilter(clinic.id)}
+              onClick={() => setSelectedClinicId(clinic.id)}
               className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all ${
-                selectedFilter === clinic.id
+                selectedClinicId === clinic.id
                   ? "bg-white text-slate-900 shadow-sm"
                   : "text-slate-600 hover:text-slate-900"
               }`}
@@ -190,7 +200,7 @@ export default function DashboardPage() {
 
       {/* Calendar Section */}
       <div className="w-full">
-        <CalendarView selectedClinicId={selectedFilter} />
+        <CalendarView selectedClinicId={selectedClinicId} />
       </div>
     </div>
   );
