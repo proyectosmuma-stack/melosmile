@@ -7,10 +7,13 @@ const AUTH_TOKEN_VALUE = "valid_melosmile_session_token_oslysmile";
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Allow static assets, Next.js internal paths, and public auth endpoints
+  // Allow static assets, Next.js internal paths, public auth & AI context/webhook endpoints
   if (
     pathname.startsWith("/_next") ||
     pathname.startsWith("/api/auth/login") ||
+    pathname.startsWith("/api/ai-context") ||
+    pathname.startsWith("/api/dispatcher") ||
+    pathname.startsWith("/api/billing/document-cleaner") ||
     pathname.includes(".") || // static files like favicon.ico, images, etc.
     pathname === "/favicon.ico"
   ) {
