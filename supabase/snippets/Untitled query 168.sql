@@ -1,0 +1,1 @@
+SELECT 'sessions' as type, COUNT(*) FROM billing_sessions UNION ALL SELECT 'lines' as type, COUNT(*) FROM billing_session_lines;

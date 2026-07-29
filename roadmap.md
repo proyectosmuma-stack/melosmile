@@ -164,3 +164,22 @@ Este documento establece el plan de desarrollo, hitos alcanzados y próximos fas
 - [x] Fix del contador KPI "Citas para Hoy" en la Agenda Principal con fecha local `YYYY-MM-DD` y filtro estricto de citas no canceladas.
 - [x] Fix de la propiedad `id`/`historia_id` en las consultas de `calendar-view.tsx` y redirección inmediata al pulsar "Ver Paciente" en el drawer de la cita.
 
+### Fase 7: Sincronización Local, Dual MCP, Unificación de Citas & Protocolo de Borrado 🟢
+- [x] Configuración de Supabase Local con Colima (`127.0.0.1:54321`) y exportación automática de seed data.
+- [x] Configuración Dual MCP (`supabase` Cloud + `supabase-local`) en `mcp_config.json`.
+- [x] Guard de Conexión IA Offline en desarrollo local (`ai-offline-guard.ts`).
+- [x] Protocolos de sesión formalizados en `AGENTS.md` (`Inicia Sesión`, `Actualiza datos`, `Borra datos`, `Cierra sesión`).
+- [x] Configuración Centralizada de Entorno (`src/config/env.ts`, estilo `wp-config.php`).
+- [x] Unificación Automática de Citas a la misma hora para el mismo paciente en la API (`/api/appointments/create/route.ts`).
+- [x] Protocolo y script de limpieza de base de datos (`clean_remote_db.js` y `unify_duplicate_appointments.js`).
+
+### Fase 8: Auditoría Completa de Producción & Hardening de Seguridad 🟢
+- [x] Eliminación de credenciales hardcodeadas (JWTs fallback de Supabase) en todos los endpoints API.
+- [x] Migración de credenciales de login a `AUTH_USERNAME` y `AUTH_PASSWORD`.
+- [x] Sustitución de URLs `localhost:3028` por `INTERNAL_BASE_URL` dinámico para Vercel serverless.
+- [x] Corrección de scoping/hoisting de funciones en TypeScript (`toTitleCase`).
+- [x] Cambio de cliente Supabase cliente → `supabaseAdmin` en endpoints server-side para evitar bloqueos RLS.
+- [x] Compilación y build verificado al 100% con `npm run build` (38 rutas compiladas sin errores).
+
+
+

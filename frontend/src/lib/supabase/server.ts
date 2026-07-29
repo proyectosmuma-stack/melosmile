@@ -5,9 +5,17 @@
  */
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
+import { env } from '@/config/env';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://amhfdzfcmpastmlsosou.supabase.co';
-const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+const supabaseUrl = env.supabase.url;
+const serviceRoleKey = env.supabase.serviceRoleKey;
+
+if (!supabaseUrl) {
+  throw new Error("Missing env.NEXT_PUBLIC_SUPABASE_URL");
+}
+if (!serviceRoleKey) {
+  throw new Error("Missing env.SUPABASE_SERVICE_ROLE_KEY");
+}
 
 export const supabaseAdmin = createClient<Database>(supabaseUrl, serviceRoleKey, {
   auth: {

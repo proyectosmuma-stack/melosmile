@@ -4,6 +4,10 @@ import { supabaseAdmin } from '@/lib/supabase/server';
 
 const N8N_WEBHOOK_URL = process.env.N8N_WEBHOOK_URL || 'https://n8n.mumaweb.com/webhook/document-cleaner';
 
+const INTERNAL_BASE_URL = process.env.NEXT_PUBLIC_APP_URL
+  ? (process.env.NEXT_PUBLIC_APP_URL.startsWith('http') ? process.env.NEXT_PUBLIC_APP_URL : `https://${process.env.NEXT_PUBLIC_APP_URL}`)
+  : (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3028');
+
 function parseApptDate(rawDate: string | undefined, defaultMonth: number, defaultYear: number, defaultDay?: number): string {
   const targetYear = defaultYear || new Date().getFullYear();
   const targetMonth = String(defaultMonth || 1).padStart(2, '0');
@@ -142,7 +146,7 @@ export async function POST(request: Request) {
         if (!patientName || patientName === 'No especificado') continue;
 
         const resolvedDate = parseApptDate(appt.date, month, year, day ? parseInt(day, 10) : undefined);
-        const createRes = await fetch('http://localhost:3028/api/appointments/create', {
+        const createRes = await fetch(`${INTERNAL_BASE_URL}/api/appointments/create`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -176,7 +180,7 @@ export async function POST(request: Request) {
     let billingSession: any = null;
     if (createdAppointments.length > 0 && clinic_id && month && year) {
       try {
-        const generateUrl = `http://localhost:3028/api/billing/sessions/generate?clinic_id=${clinic_id}&month=${month}&year=${year}`;
+        const generateUrl = `${INTERNAL_BASE_URL}/api/billing/sessions/generate?clinic_id=${clinic_id}&month=${month}&year=${year}`;
         const genRes = await fetch(generateUrl, {
           headers: { 'Cookie': incomingCookie }
         });

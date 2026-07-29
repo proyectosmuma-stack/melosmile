@@ -100,7 +100,7 @@ INSERT INTO clinics (name, address, phone, email, color_hex, base_commission_pct
   ('Clínica Goya',      'Calle de Goya, Madrid',          '+34 91 000 0001', 'goya@melosmile.com',    '#3b82f6', 40.00),
   ('Clínica Las Rozas', 'Av. de las Rozas, Las Rozas',    '+34 91 000 0002', 'rozas@melosmile.com',   '#8b5cf6', 40.00),
   ('Clínica RyA',       'Calle Real y Azul, Madrid',      '+34 91 000 0003', 'rya@melosmile.com',     '#10b981', 40.00)
-ON CONFLICT DO NOTHING;
+ON CONFLICT (name) DO NOTHING;
 
 -- ───────────────────────────────────────────────
 -- 9. Seed: Professionals
@@ -111,7 +111,7 @@ INSERT INTO professionals (first_name, last_name, specialty, base_commission_per
   ('Norelys', 'Bermúdez',  'Odontología General',  21.00),
   ('Shirley', 'García',    'Odontología General',  36.00),
   ('Asencio', 'López',     'Endodoncia',           40.00)
-ON CONFLICT DO NOTHING;
+ON CONFLICT (first_name, last_name) DO NOTHING;
 
 -- ───────────────────────────────────────────────
 -- 10. Seed: Treatments (from Excel data + Odoo catalog)

@@ -5,6 +5,9 @@ CREATE TABLE IF NOT EXISTS public.ai_agent_reports (
     user_comment TEXT NOT NULL,
     participating_agents JSONB,
     conversation_history JSONB,
+    resolved BOOLEAN DEFAULT FALSE,
+    resolved_at TIMESTAMPTZ,
+    resolution_notes TEXT,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 

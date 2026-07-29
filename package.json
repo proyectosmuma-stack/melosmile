@@ -1,0 +1,12 @@
+{
+  "name": "melosmile-root",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Melosmile Root Project Proxy Scripts for OpenCode & Antigravity",
+  "scripts": {
+    "dev": "npm --prefix frontend run dev",
+    "db:sync": "npm --prefix frontend run db:sync",
+    "clean:cloud": "node frontend/scripts/clean_remote_db.js",
+    "unify:appointments": "node frontend/scripts/unify_duplicate_appointments.js"
+  }
+}

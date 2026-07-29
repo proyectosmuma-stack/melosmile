@@ -3,7 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev -p 3028",
+    "dev": "node scripts/export_remote_data.js && supabase start --workdir ../ && next dev -p 3028",
+    "typegen": "cd .. && mkdir -p frontend/src/types && supabase gen types typescript --local > frontend/src/types/supabase.ts",
+    "db:sync": "node scripts/sync_db.js",
     "build": "next build",
     "start": "next start",
     "lint": "eslint"

@@ -14,6 +14,7 @@ export async function GET() {
   const cookieStore = await cookies();
   cookieStore.delete(AUTH_COOKIE_NAME);
 
-  const response = NextResponse.redirect(new URL("/login", process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3028"));
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3028");
+  const response = NextResponse.redirect(new URL("/login", appUrl));
   return response;
 }

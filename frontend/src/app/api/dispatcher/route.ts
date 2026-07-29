@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabase } from "@/lib/supabase/client";
+import { supabaseAdmin as supabase } from "@/lib/supabase/server";
 
 const N8N_BASE = process.env.N8N_WEBHOOK_BASE_URL ?? "https://n8n.mumaweb.com";
 const DISPATCHER_PATH = "/webhook/melosmile-dispatcher";

@@ -1,0 +1,1472 @@
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[]
+
+export type Database = {
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
+  public: {
+    Tables: {
+      ai_agent_reports: {
+        Row: {
+          conversation_history: Json | null
+          created_at: string | null
+          id: string
+          participating_agents: Json | null
+          session_id: string | null
+          user_comment: string
+        }
+        Insert: {
+          conversation_history?: Json | null
+          created_at?: string | null
+          id?: string
+          participating_agents?: Json | null
+          session_id?: string | null
+          user_comment: string
+        }
+        Update: {
+          conversation_history?: Json | null
+          created_at?: string | null
+          id?: string
+          participating_agents?: Json | null
+          session_id?: string | null
+          user_comment?: string
+        }
+        Relationships: []
+      }
+      ai_conversation_history: {
+        Row: {
+          content: string
+          created_at: string | null
+          entities: Json | null
+          id: string
+          intent: string | null
+          role: string
+          session_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          entities?: Json | null
+          id?: string
+          intent?: string | null
+          role: string
+          session_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          entities?: Json | null
+          id?: string
+          intent?: string | null
+          role?: string
+          session_id?: string
+        }
+        Relationships: []
+      }
+      appointments: {
+        Row: {
+          ai_raw_input: string | null
+          appointment_date: string
+          billed_at: string | null
+          clinic_id: string
+          created_at: string | null
+          id: string
+          notes: string | null
+          patient_id: string
+          professional_id: string
+          reason: string | null
+          status: Database["public"]["Enums"]["appointment_status"] | null
+          treatment_id: string | null
+        }
+        Insert: {
+          ai_raw_input?: string | null
+          appointment_date: string
+          billed_at?: string | null
+          clinic_id: string
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          patient_id: string
+          professional_id: string
+          reason?: string | null
+          status?: Database["public"]["Enums"]["appointment_status"] | null
+          treatment_id?: string | null
+        }
+        Update: {
+          ai_raw_input?: string | null
+          appointment_date?: string
+          billed_at?: string | null
+          clinic_id?: string
+          created_at?: string | null
+          id?: string
+          notes?: string | null
+          patient_id?: string
+          professional_id?: string
+          reason?: string | null
+          status?: Database["public"]["Enums"]["appointment_status"] | null
+          treatment_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "appointments_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointments_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointments_professional_id_fkey"
+            columns: ["professional_id"]
+            isOneToOne: false
+            referencedRelation: "professionals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointments_treatment_id_fkey"
+            columns: ["treatment_id"]
+            isOneToOne: false
+            referencedRelation: "treatments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      billing_records: {
+        Row: {
+          actual_lab_cost: number | null
+          applied_commission_rate: number | null
+          applied_lab_discount_rate: number | null
+          appointment_id: string
+          billing_month: string
+          calculated_total: number | null
+          created_at: string | null
+          custom_price: number | null
+          id: string
+          notes: string | null
+          odoo_invoice_id: number | null
+          odoo_invoice_number: string | null
+          odoo_invoice_state: string | null
+          odoo_synced_at: string | null
+          payment_method: string | null
+          profitability_status: string | null
+          status: Database["public"]["Enums"]["billing_status"] | null
+        }
+        Insert: {
+          actual_lab_cost?: number | null
+          applied_commission_rate?: number | null
+          applied_lab_discount_rate?: number | null
+          appointment_id: string
+          billing_month: string
+          calculated_total?: number | null
+          created_at?: string | null
+          custom_price?: number | null
+          id?: string
+          notes?: string | null
+          odoo_invoice_id?: number | null
+          odoo_invoice_number?: string | null
+          odoo_invoice_state?: string | null
+          odoo_synced_at?: string | null
+          payment_method?: string | null
+          profitability_status?: string | null
+          status?: Database["public"]["Enums"]["billing_status"] | null
+        }
+        Update: {
+          actual_lab_cost?: number | null
+          applied_commission_rate?: number | null
+          applied_lab_discount_rate?: number | null
+          appointment_id?: string
+          billing_month?: string
+          calculated_total?: number | null
+          created_at?: string | null
+          custom_price?: number | null
+          id?: string
+          notes?: string | null
+          odoo_invoice_id?: number | null
+          odoo_invoice_number?: string | null
+          odoo_invoice_state?: string | null
+          odoo_synced_at?: string | null
+          payment_method?: string | null
+          profitability_status?: string | null
+          status?: Database["public"]["Enums"]["billing_status"] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "billing_records_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: true
+            referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      billing_session_lines: {
+        Row: {
+          alt_price: number | null
+          amount_dr_main: number | null
+          amount_dr_secondary: number | null
+          appointment_id: string | null
+          catalog_price: number | null
+          commission_amount: number | null
+          commission_pct: number | null
+          created_at: string | null
+          discount: number | null
+          effective_price: number | null
+          id: string
+          is_negative: boolean | null
+          lab_discount_pct: number | null
+          lab_name: string | null
+          lab_quantity: number | null
+          lab_subtotal: number | null
+          lab_total_discounted: number | null
+          lab_unit_cost: number | null
+          needs_review: boolean | null
+          net_amount: number | null
+          no_price: boolean | null
+          observation: string | null
+          patient_id: string | null
+          patient_name: string
+          payment_amount: number | null
+          payment_status: string | null
+          pct_dr_main: number | null
+          pct_dr_secondary: number | null
+          price_deviation_pct: number | null
+          procedure_index: number | null
+          quantity: number | null
+          session_date: string | null
+          session_id: string
+          sort_order: number | null
+          source_type: string | null
+          subtotal: number | null
+          treatment_id: string | null
+          treatment_name: string
+          unit_price: number | null
+          validation_flags: Json | null
+          zero_quantity: boolean | null
+        }
+        Insert: {
+          alt_price?: number | null
+          amount_dr_main?: number | null
+          amount_dr_secondary?: number | null
+          appointment_id?: string | null
+          catalog_price?: number | null
+          commission_amount?: number | null
+          commission_pct?: number | null
+          created_at?: string | null
+          discount?: number | null
+          effective_price?: number | null
+          id?: string
+          is_negative?: boolean | null
+          lab_discount_pct?: number | null
+          lab_name?: string | null
+          lab_quantity?: number | null
+          lab_subtotal?: number | null
+          lab_total_discounted?: number | null
+          lab_unit_cost?: number | null
+          needs_review?: boolean | null
+          net_amount?: number | null
+          no_price?: boolean | null
+          observation?: string | null
+          patient_id?: string | null
+          patient_name: string
+          payment_amount?: number | null
+          payment_status?: string | null
+          pct_dr_main?: number | null
+          pct_dr_secondary?: number | null
+          price_deviation_pct?: number | null
+          procedure_index?: number | null
+          quantity?: number | null
+          session_date?: string | null
+          session_id: string
+          sort_order?: number | null
+          source_type?: string | null
+          subtotal?: number | null
+          treatment_id?: string | null
+          treatment_name: string
+          unit_price?: number | null
+          validation_flags?: Json | null
+          zero_quantity?: boolean | null
+        }
+        Update: {
+          alt_price?: number | null
+          amount_dr_main?: number | null
+          amount_dr_secondary?: number | null
+          appointment_id?: string | null
+          catalog_price?: number | null
+          commission_amount?: number | null
+          commission_pct?: number | null
+          created_at?: string | null
+          discount?: number | null
+          effective_price?: number | null
+          id?: string
+          is_negative?: boolean | null
+          lab_discount_pct?: number | null
+          lab_name?: string | null
+          lab_quantity?: number | null
+          lab_subtotal?: number | null
+          lab_total_discounted?: number | null
+          lab_unit_cost?: number | null
+          needs_review?: boolean | null
+          net_amount?: number | null
+          no_price?: boolean | null
+          observation?: string | null
+          patient_id?: string | null
+          patient_name?: string
+          payment_amount?: number | null
+          payment_status?: string | null
+          pct_dr_main?: number | null
+          pct_dr_secondary?: number | null
+          price_deviation_pct?: number | null
+          procedure_index?: number | null
+          quantity?: number | null
+          session_date?: string | null
+          session_id?: string
+          sort_order?: number | null
+          source_type?: string | null
+          subtotal?: number | null
+          treatment_id?: string | null
+          treatment_name?: string
+          unit_price?: number | null
+          validation_flags?: Json | null
+          zero_quantity?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "billing_session_lines_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "billing_session_lines_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "billing_session_lines_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "billing_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "billing_session_lines_treatment_id_fkey"
+            columns: ["treatment_id"]
+            isOneToOne: false
+            referencedRelation: "treatments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      billing_sessions: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          clinic_id: string
+          clinic_name: string | null
+          commission_pct: number | null
+          created_at: string | null
+          created_by: string | null
+          id: string
+          lab_discount_pct: number | null
+          model_type: string | null
+          month: number
+          notes: string | null
+          raw_input: Json | null
+          source_type: string | null
+          status: string | null
+          total_commission: number | null
+          total_lab: number | null
+          total_neto: number | null
+          total_subtotal: number | null
+          year: number
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          clinic_id: string
+          clinic_name?: string | null
+          commission_pct?: number | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          lab_discount_pct?: number | null
+          model_type?: string | null
+          month: number
+          notes?: string | null
+          raw_input?: Json | null
+          source_type?: string | null
+          status?: string | null
+          total_commission?: number | null
+          total_lab?: number | null
+          total_neto?: number | null
+          total_subtotal?: number | null
+          year: number
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          clinic_id?: string
+          clinic_name?: string | null
+          commission_pct?: number | null
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          lab_discount_pct?: number | null
+          model_type?: string | null
+          month?: number
+          notes?: string | null
+          raw_input?: Json | null
+          source_type?: string | null
+          status?: string | null
+          total_commission?: number | null
+          total_lab?: number | null
+          total_neto?: number | null
+          total_subtotal?: number | null
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "billing_sessions_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      clinic_commission_rules: {
+        Row: {
+          clinic_id: string
+          commission_pct: number
+          created_at: string | null
+          family_id: string
+          id: string
+          lab_discount_pct: number
+          notes: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          clinic_id: string
+          commission_pct?: number
+          created_at?: string | null
+          family_id: string
+          id?: string
+          lab_discount_pct?: number
+          notes?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          clinic_id?: string
+          commission_pct?: number
+          created_at?: string | null
+          family_id?: string
+          id?: string
+          lab_discount_pct?: number
+          notes?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clinic_commission_rules_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clinic_commission_rules_family_id_fkey"
+            columns: ["family_id"]
+            isOneToOne: false
+            referencedRelation: "treatment_families"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      clinic_treatments: {
+        Row: {
+          clinic_id: string
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          odoo_last_sync_at: string | null
+          odoo_product_id: number | null
+          odoo_product_tmpl_id: number | null
+          price: number
+          treatment_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          clinic_id: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          odoo_last_sync_at?: string | null
+          odoo_product_id?: number | null
+          odoo_product_tmpl_id?: number | null
+          price?: number
+          treatment_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          clinic_id?: string
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          odoo_last_sync_at?: string | null
+          odoo_product_id?: number | null
+          odoo_product_tmpl_id?: number | null
+          price?: number
+          treatment_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clinic_treatments_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "clinic_treatments_treatment_id_fkey"
+            columns: ["treatment_id"]
+            isOneToOne: false
+            referencedRelation: "treatments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      clinics: {
+        Row: {
+          address: string | null
+          base_commission_pct: number | null
+          color_hex: string | null
+          created_at: string | null
+          email: string | null
+          id: string
+          lab_discount_pct: number | null
+          lab_expense_discount_percentage: number | null
+          name: string
+          odoo_pricelist_id: number | null
+          phone: string | null
+          tracks_payments: boolean | null
+          updated_at: string | null
+        }
+        Insert: {
+          address?: string | null
+          base_commission_pct?: number | null
+          color_hex?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          lab_discount_pct?: number | null
+          lab_expense_discount_percentage?: number | null
+          name: string
+          odoo_pricelist_id?: number | null
+          phone?: string | null
+          tracks_payments?: boolean | null
+          updated_at?: string | null
+        }
+        Update: {
+          address?: string | null
+          base_commission_pct?: number | null
+          color_hex?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          lab_discount_pct?: number | null
+          lab_expense_discount_percentage?: number | null
+          name?: string
+          odoo_pricelist_id?: number | null
+          phone?: string | null
+          tracks_payments?: boolean | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      documents: {
+        Row: {
+          appointment_id: string | null
+          created_at: string | null
+          description: string | null
+          document_type: Database["public"]["Enums"]["document_type"] | null
+          file_name: string
+          file_path: string
+          file_size_bytes: number | null
+          file_url: string | null
+          id: string
+          mime_type: string | null
+          patient_id: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          appointment_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          document_type?: Database["public"]["Enums"]["document_type"] | null
+          file_name: string
+          file_path: string
+          file_size_bytes?: number | null
+          file_url?: string | null
+          id?: string
+          mime_type?: string | null
+          patient_id: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          appointment_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          document_type?: Database["public"]["Enums"]["document_type"] | null
+          file_name?: string
+          file_path?: string
+          file_size_bytes?: number | null
+          file_url?: string | null
+          id?: string
+          mime_type?: string | null
+          patient_id?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "documents_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documents_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      patient_clinics: {
+        Row: {
+          assigned_at: string | null
+          clinic_id: string
+          id: string
+          is_primary: boolean | null
+          patient_id: string
+        }
+        Insert: {
+          assigned_at?: string | null
+          clinic_id: string
+          id?: string
+          is_primary?: boolean | null
+          patient_id: string
+        }
+        Update: {
+          assigned_at?: string | null
+          clinic_id?: string
+          id?: string
+          is_primary?: boolean | null
+          patient_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "patient_clinics_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "patient_clinics_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      patient_representatives: {
+        Row: {
+          created_at: string | null
+          dni_nie: string | null
+          email: string | null
+          full_name: string
+          id: string
+          is_primary_contact: boolean | null
+          patient_id: string
+          phone: string | null
+          relationship: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          dni_nie?: string | null
+          email?: string | null
+          full_name: string
+          id?: string
+          is_primary_contact?: boolean | null
+          patient_id: string
+          phone?: string | null
+          relationship?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          dni_nie?: string | null
+          email?: string | null
+          full_name?: string
+          id?: string
+          is_primary_contact?: boolean | null
+          patient_id?: string
+          phone?: string | null
+          relationship?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "patient_representatives_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      patient_tags: {
+        Row: {
+          patient_id: string
+          tag_id: string
+        }
+        Insert: {
+          patient_id: string
+          tag_id: string
+        }
+        Update: {
+          patient_id?: string
+          tag_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "patient_tags_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "patient_tags_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "tags"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      patients: {
+        Row: {
+          address: string | null
+          ai_summary: string | null
+          ai_summary_updated_at: string | null
+          allergies: string | null
+          billing_address: string | null
+          billing_city: string | null
+          billing_country: string | null
+          billing_name: string | null
+          billing_postal_code: string | null
+          created_at: string | null
+          current_medication: string | null
+          dni_nie: string | null
+          dob: string | null
+          email: string | null
+          first_name: string
+          gender: string | null
+          historia_id: string | null
+          id: string
+          important_diseases: string | null
+          in_treatment: boolean | null
+          last_name: string
+          nif_cif: string | null
+          odoo_partner_id: number | null
+          phone: string | null
+          previous_operations: string | null
+          treatment_plan: string | null
+        }
+        Insert: {
+          address?: string | null
+          ai_summary?: string | null
+          ai_summary_updated_at?: string | null
+          allergies?: string | null
+          billing_address?: string | null
+          billing_city?: string | null
+          billing_country?: string | null
+          billing_name?: string | null
+          billing_postal_code?: string | null
+          created_at?: string | null
+          current_medication?: string | null
+          dni_nie?: string | null
+          dob?: string | null
+          email?: string | null
+          first_name: string
+          gender?: string | null
+          historia_id?: string | null
+          id?: string
+          important_diseases?: string | null
+          in_treatment?: boolean | null
+          last_name: string
+          nif_cif?: string | null
+          odoo_partner_id?: number | null
+          phone?: string | null
+          previous_operations?: string | null
+          treatment_plan?: string | null
+        }
+        Update: {
+          address?: string | null
+          ai_summary?: string | null
+          ai_summary_updated_at?: string | null
+          allergies?: string | null
+          billing_address?: string | null
+          billing_city?: string | null
+          billing_country?: string | null
+          billing_name?: string | null
+          billing_postal_code?: string | null
+          created_at?: string | null
+          current_medication?: string | null
+          dni_nie?: string | null
+          dob?: string | null
+          email?: string | null
+          first_name?: string
+          gender?: string | null
+          historia_id?: string | null
+          id?: string
+          important_diseases?: string | null
+          in_treatment?: boolean | null
+          last_name?: string
+          nif_cif?: string | null
+          odoo_partner_id?: number | null
+          phone?: string | null
+          previous_operations?: string | null
+          treatment_plan?: string | null
+        }
+        Relationships: []
+      }
+      payment_installments: {
+        Row: {
+          amount: number
+          billing_record_id: string | null
+          created_at: string | null
+          description: string | null
+          due_date: string
+          id: string
+          notes: string | null
+          odoo_invoice_id: number | null
+          paid_at: string | null
+          patient_id: string
+          payment_method: string | null
+          status: Database["public"]["Enums"]["installment_status"] | null
+        }
+        Insert: {
+          amount: number
+          billing_record_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          due_date: string
+          id?: string
+          notes?: string | null
+          odoo_invoice_id?: number | null
+          paid_at?: string | null
+          patient_id: string
+          payment_method?: string | null
+          status?: Database["public"]["Enums"]["installment_status"] | null
+        }
+        Update: {
+          amount?: number
+          billing_record_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          due_date?: string
+          id?: string
+          notes?: string | null
+          odoo_invoice_id?: number | null
+          paid_at?: string | null
+          patient_id?: string
+          payment_method?: string | null
+          status?: Database["public"]["Enums"]["installment_status"] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_installments_billing_record_id_fkey"
+            columns: ["billing_record_id"]
+            isOneToOne: false
+            referencedRelation: "billing_records"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payment_installments_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      professional_clinics: {
+        Row: {
+          clinic_id: string
+          created_at: string | null
+          id: string
+          is_primary: boolean | null
+          professional_id: string
+        }
+        Insert: {
+          clinic_id: string
+          created_at?: string | null
+          id?: string
+          is_primary?: boolean | null
+          professional_id: string
+        }
+        Update: {
+          clinic_id?: string
+          created_at?: string | null
+          id?: string
+          is_primary?: boolean | null
+          professional_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "professional_clinics_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "professional_clinics_professional_id_fkey"
+            columns: ["professional_id"]
+            isOneToOne: false
+            referencedRelation: "professionals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      professionals: {
+        Row: {
+          address: string | null
+          base_commission_percentage: number | null
+          clinic_id: string | null
+          created_at: string | null
+          dni_nie: string | null
+          email: string | null
+          first_name: string
+          id: string
+          last_name: string
+          phone: string | null
+          specialty: string | null
+        }
+        Insert: {
+          address?: string | null
+          base_commission_percentage?: number | null
+          clinic_id?: string | null
+          created_at?: string | null
+          dni_nie?: string | null
+          email?: string | null
+          first_name: string
+          id?: string
+          last_name: string
+          phone?: string | null
+          specialty?: string | null
+        }
+        Update: {
+          address?: string | null
+          base_commission_percentage?: number | null
+          clinic_id?: string | null
+          created_at?: string | null
+          dni_nie?: string | null
+          email?: string | null
+          first_name?: string
+          id?: string
+          last_name?: string
+          phone?: string | null
+          specialty?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "professionals_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reminder_events: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          event_type: string
+          id: string
+          metadata: Json | null
+          reminder_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          event_type: string
+          id?: string
+          metadata?: Json | null
+          reminder_id: string
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          event_type?: string
+          id?: string
+          metadata?: Json | null
+          reminder_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reminder_events_reminder_id_fkey"
+            columns: ["reminder_id"]
+            isOneToOne: false
+            referencedRelation: "reminders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reminders: {
+        Row: {
+          appointment_id: string | null
+          channel: Database["public"]["Enums"]["reminder_channel"] | null
+          created_at: string | null
+          created_by: string | null
+          error_message: string | null
+          id: string
+          message: string
+          n8n_execution_id: string | null
+          patient_id: string
+          reminder_type: Database["public"]["Enums"]["reminder_type"] | null
+          scheduled_at: string
+          sent_at: string | null
+          status: Database["public"]["Enums"]["reminder_status"] | null
+          subject: string | null
+        }
+        Insert: {
+          appointment_id?: string | null
+          channel?: Database["public"]["Enums"]["reminder_channel"] | null
+          created_at?: string | null
+          created_by?: string | null
+          error_message?: string | null
+          id?: string
+          message: string
+          n8n_execution_id?: string | null
+          patient_id: string
+          reminder_type?: Database["public"]["Enums"]["reminder_type"] | null
+          scheduled_at: string
+          sent_at?: string | null
+          status?: Database["public"]["Enums"]["reminder_status"] | null
+          subject?: string | null
+        }
+        Update: {
+          appointment_id?: string | null
+          channel?: Database["public"]["Enums"]["reminder_channel"] | null
+          created_at?: string | null
+          created_by?: string | null
+          error_message?: string | null
+          id?: string
+          message?: string
+          n8n_execution_id?: string | null
+          patient_id?: string
+          reminder_type?: Database["public"]["Enums"]["reminder_type"] | null
+          scheduled_at?: string
+          sent_at?: string | null
+          status?: Database["public"]["Enums"]["reminder_status"] | null
+          subject?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reminders_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reminders_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tags: {
+        Row: {
+          color: string | null
+          created_at: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      treatment_clinic_prices: {
+        Row: {
+          clinic_id: string
+          created_at: string | null
+          id: string
+          odoo_pricelist_item_id: number | null
+          price: number
+          treatment_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          clinic_id: string
+          created_at?: string | null
+          id?: string
+          odoo_pricelist_item_id?: number | null
+          price: number
+          treatment_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          clinic_id?: string
+          created_at?: string | null
+          id?: string
+          odoo_pricelist_item_id?: number | null
+          price?: number
+          treatment_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "treatment_clinic_prices_clinic_id_fkey"
+            columns: ["clinic_id"]
+            isOneToOne: false
+            referencedRelation: "clinics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "treatment_clinic_prices_treatment_id_fkey"
+            columns: ["treatment_id"]
+            isOneToOne: false
+            referencedRelation: "treatments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      treatment_families: {
+        Row: {
+          color_hex: string | null
+          created_at: string | null
+          description: string | null
+          icon: string | null
+          id: string
+          name: string
+          sort_order: number | null
+        }
+        Insert: {
+          color_hex?: string | null
+          created_at?: string | null
+          description?: string | null
+          icon?: string | null
+          id?: string
+          name: string
+          sort_order?: number | null
+        }
+        Update: {
+          color_hex?: string | null
+          created_at?: string | null
+          description?: string | null
+          icon?: string | null
+          id?: string
+          name?: string
+          sort_order?: number | null
+        }
+        Relationships: []
+      }
+      treatments: {
+        Row: {
+          abbreviation: string | null
+          created_at: string | null
+          default_price: number | null
+          family_id: string | null
+          id: string
+          is_active: boolean | null
+          lab_cost: number | null
+          odoo_product_id: number | null
+          odoo_product_ref: string | null
+          odoo_product_tmpl_id: number | null
+          service_name: string
+          service_type: string | null
+          typical_lab_cost: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          abbreviation?: string | null
+          created_at?: string | null
+          default_price?: number | null
+          family_id?: string | null
+          id?: string
+          is_active?: boolean | null
+          lab_cost?: number | null
+          odoo_product_id?: number | null
+          odoo_product_ref?: string | null
+          odoo_product_tmpl_id?: number | null
+          service_name: string
+          service_type?: string | null
+          typical_lab_cost?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          abbreviation?: string | null
+          created_at?: string | null
+          default_price?: number | null
+          family_id?: string | null
+          id?: string
+          is_active?: boolean | null
+          lab_cost?: number | null
+          odoo_product_id?: number | null
+          odoo_product_ref?: string | null
+          odoo_product_tmpl_id?: number | null
+          service_name?: string
+          service_type?: string | null
+          typical_lab_cost?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "treatments_family_id_fkey"
+            columns: ["family_id"]
+            isOneToOne: false
+            referencedRelation: "treatment_families"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      [_ in never]: never
+    }
+    Enums: {
+      appointment_status: "Pendiente" | "Confirmada" | "Realizada" | "Cancelada"
+      billing_status: "Pendiente" | "Aprobado" | "Facturado Odoo"
+      document_type:
+        | "consentimiento"
+        | "radiografia"
+        | "foto_clinica"
+        | "presupuesto"
+        | "plan_tratamiento"
+        | "informe"
+        | "otro"
+      installment_status: "pendiente" | "pagado" | "vencido" | "cancelado"
+      reminder_channel: "email" | "telegram" | "web" | "sms"
+      reminder_status: "pendiente" | "enviado" | "error" | "leido" | "cancelado"
+      reminder_type:
+        | "cambio_alineador"
+        | "confirmar_cita"
+        | "recordatorio_cita"
+        | "pago_pendiente"
+        | "seguimiento"
+        | "personalizado"
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
+}
+
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
+
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
+
+export type Tables<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+      Row: infer R
+    }
+    ? R
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])
+    ? (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+        Row: infer R
+      }
+      ? R
+      : never
+    : never
+
+export type TablesInsert<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Insert: infer I
+    }
+    ? I
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Insert: infer I
+      }
+      ? I
+      : never
+    : never
+
+export type TablesUpdate<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Update: infer U
+    }
+    ? U
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Update: infer U
+      }
+      ? U
+      : never
+    : never
+
+export type Enums<
+  DefaultSchemaEnumNameOrOptions extends
+    | keyof DefaultSchema["Enums"]
+    | { schema: keyof DatabaseWithoutInternals },
+  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    : never = never,
+> = DefaultSchemaEnumNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
+    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+    : never
+
+export type CompositeTypes<
+  PublicCompositeTypeNameOrOptions extends
+    | keyof DefaultSchema["CompositeTypes"]
+    | { schema: keyof DatabaseWithoutInternals },
+  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    : never = never,
+> = PublicCompositeTypeNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
+    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+    : never
+
+export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
+  public: {
+    Enums: {
+      appointment_status: ["Pendiente", "Confirmada", "Realizada", "Cancelada"],
+      billing_status: ["Pendiente", "Aprobado", "Facturado Odoo"],
+      document_type: [
+        "consentimiento",
+        "radiografia",
+        "foto_clinica",
+        "presupuesto",
+        "plan_tratamiento",
+        "informe",
+        "otro",
+      ],
+      installment_status: ["pendiente", "pagado", "vencido", "cancelado"],
+      reminder_channel: ["email", "telegram", "web", "sms"],
+      reminder_status: ["pendiente", "enviado", "error", "leido", "cancelado"],
+      reminder_type: [
+        "cambio_alineador",
+        "confirmar_cita",
+        "recordatorio_cita",
+        "pago_pendiente",
+        "seguimiento",
+        "personalizado",
+      ],
+    },
+  },
+} as const
+

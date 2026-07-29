@@ -1,9 +1,10 @@
 -- Migration file created from supabase_schema.sql
+SET search_path = public;
 
 -- 1. Clínicas
 CREATE TABLE IF NOT EXISTS clinics (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    name VARCHAR(255) NOT NULL,
+    name VARCHAR(255) NOT NULL UNIQUE,
     address TEXT,
     phone VARCHAR(50),
     email VARCHAR(255),
@@ -21,13 +22,14 @@ CREATE TABLE IF NOT EXISTS professionals (
     email VARCHAR(255),
     base_commission_percentage NUMERIC(5, 2) DEFAULT 0.00,
     clinic_id UUID REFERENCES clinics(id),
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    CONSTRAINT professionals_name_key UNIQUE (first_name, last_name)
 );
 
 -- 3. Tratamientos y Precios
 CREATE TABLE IF NOT EXISTS treatments (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    service_name VARCHAR(255) NOT NULL,
+    service_name VARCHAR(255) NOT NULL UNIQUE,
     service_type VARCHAR(100),
     default_price NUMERIC(10, 2) DEFAULT 0.00,
     lab_cost NUMERIC(10, 2) DEFAULT 0.00,

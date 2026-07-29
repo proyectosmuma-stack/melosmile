@@ -6,8 +6,29 @@ export const runtime = "nodejs";
 import { NextResponse } from "next/server";
 
 const BUILD_VERSION = "2026-07-27T05:59:00-pure-rest-v2-force-redeploy";
-const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFtaGZkemZjbXBhc3RtbHNvc291Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NDczNTM3NCwiZXhwIjoyMTAwMzExMzc0fQ.yPLQaV1xbfnuJJcNktxqbneP9Yb5UGlWfXA1tKYx6ZM";
+const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+if (!SERVICE_ROLE_KEY) throw new Error("Missing SUPABASE_SERVICE_ROLE_KEY env var");
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://amhfdzfcmpastmlsosou.supabase.co";
+
+function toTitleCase(text: string): string {
+  if (!text) return "";
+  const lowercaseWords = new Set(["de", "del", "la", "las", "los", "y", "e", "o"]);
+  return text
+    .trim()
+    .toLowerCase()
+    .split(/\s+/)
+    .map((word, idx) => {
+      if (!word) return "";
+      if (word.startsWith("(") && word.length > 1) {
+        return "(" + word.charAt(1).toUpperCase() + word.slice(2);
+      }
+      if (idx > 0 && lowercaseWords.has(word)) {
+        return word;
+      }
+      return word.charAt(0).toUpperCase() + word.slice(1);
+    })
+    .join(" ");
+}
 
 function parseAppointmentDate(inputDate?: string, inputTime?: string): string {
   let combined = inputDate || "";
@@ -63,7 +84,7 @@ async function dbFetch(path: string, options: RequestInit = {}) {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
     ...options,
     headers: {
-      "apikey": SERVICE_ROLE_KEY,
+      "apikey": SERVICE_ROLE_KEY || "",
       "Authorization": `Bearer ${SERVICE_ROLE_KEY}`,
       "Content-Type": "application/json",
       ...(options.headers || {})
@@ -85,27 +106,6 @@ export async function POST(req: Request) {
     const rawDoctor = body.professional || body.doctor || body.professional_id;
 
     let resolvedPatientId = String(rawPatient);
-
-function toTitleCase(text: string): string {
-  if (!text) return "";
-  const lowercaseWords = new Set(["de", "del", "la", "las", "los", "y", "e", "o"]);
-  return text
-    .trim()
-    .toLowerCase()
-    .split(/\s+/)
-    .map((word, idx) => {
-      if (!word) return "";
-      if (word.startsWith("(") && word.length > 1) {
-        return "(" + word.charAt(1).toUpperCase() + word.slice(2);
-      }
-      if (idx > 0 && lowercaseWords.has(word)) {
-        return word;
-      }
-      return word.charAt(0).toUpperCase() + word.slice(1);
-    })
-    .join(" ");
-}
-
     let patientAmbiguous = false;
 
     // Resolve patient name to UUID if not a valid UUID
@@ -369,24 +369,66 @@ function toTitleCase(text: string): string {
 
     const finalStatus = patientAmbiguous && body.status !== "Cancelada" ? "Pendiente de Revisión" : (body.status || "Pendiente");
 
-    // Anti-duplication check: verify if an identical appointment already exists for this patient, clinic, date & reason
+    // AGENTS.md Rule: Unify appointments for the same patient at the exact same time
     const skipDupCheck = body.force_create === true || body.allow_duplicates === true;
     if (!skipDupCheck) {
-      const datePart = isoDate.substring(0, 10);
-      const startOfDay = `${datePart}T00:00:00.000Z`;
-      const endOfDay = `${datePart}T23:59:59.999Z`;
+      const sameSlotQuery = `appointments?select=id,reason,notes,patient_id,clinic_id,appointment_date&patient_id=eq.${resolvedPatientId}&appointment_date=eq.${encodeURIComponent(isoDate)}&limit=1`;
+      const sameSlotCheck = await dbFetch(sameSlotQuery);
 
-      const dupQuery = `appointments?select=id,patient_id,clinic_id,appointment_date,reason&patient_id=eq.${resolvedPatientId}&clinic_id=eq.${c_id}&appointment_date=gte.${startOfDay}&appointment_date=lte.${endOfDay}&reason=eq.${encodeURIComponent(finalReason)}&limit=1`;
-      const dupCheck = await dbFetch(dupQuery);
+      if (sameSlotCheck.ok && sameSlotCheck.data && sameSlotCheck.data.length > 0) {
+        const existingAppt = sameSlotCheck.data[0];
+        console.log(`[Unificación] Unificando tratamientos para el paciente ${resolvedPatientId} en ${isoDate}`);
 
-      if (dupCheck.ok && dupCheck.data && dupCheck.data.length > 0) {
-        console.log(`[Anti-Dup] Skipping duplicate appointment creation for patient ${resolvedPatientId} on ${datePart} (${finalReason})`);
+        const combinedReason = existingAppt.reason && !existingAppt.reason.includes(finalReason)
+          ? `${existingAppt.reason} + ${finalReason}`
+          : existingAppt.reason || finalReason;
+
+        // Extract existing procedures from notes if available
+        let existingProcedures: any[] = [];
+        const existingNotes = existingAppt.notes || "";
+        const procMatch = existingNotes.match(/\[Procedimientos: (\[.*\])\]/);
+        if (procMatch) {
+          try {
+            existingProcedures = JSON.parse(procMatch[1]);
+          } catch (e) {}
+        }
+
+        const mergedProcedures = [...existingProcedures, ...initialProcedures];
+        const updatedNotes = `Agendada por Asistente IA (Unificada)\n\n[Procedimientos: ${JSON.stringify(mergedProcedures)}]`;
+
+        // Update existing appointment
+        const updateRes = await dbFetch(`appointments?id=eq.${existingAppt.id}`, {
+          method: "PATCH",
+          headers: { "Prefer": "return=representation" },
+          body: JSON.stringify({
+            reason: combinedReason,
+            notes: updatedNotes,
+          })
+        });
+
+        // Update associated billing record with summed price
+        const billingRes = await dbFetch(`billing_records?select=id,custom_price&appointment_id=eq.${existingAppt.id}&limit=1`);
+        if (billingRes.ok && billingRes.data?.[0]) {
+          const currentPrice = Number(billingRes.data[0].custom_price) || 0;
+          const newTotalPrice = currentPrice + matchedPrice;
+          const netTotal = newTotalPrice * 0.6 - (matchedLabCost * 0.5);
+
+          await dbFetch(`billing_records?id=eq.${billingRes.data[0].id}`, {
+            method: "PATCH",
+            headers: { "Prefer": "return=minimal" },
+            body: JSON.stringify({
+              custom_price: newTotalPrice,
+              calculated_total: netTotal,
+            })
+          });
+        }
+
+        const updatedRecord = Array.isArray(updateRes.data) ? updateRes.data[0] : (updateRes.data || existingAppt);
         return NextResponse.json({
           success: true,
-          duplicated: true,
-          skipped: true,
-          message: "Cita omitida por existir ya un registro idéntico para este paciente en la misma fecha.",
-          data: dupCheck.data[0],
+          unified: true,
+          message: `Cita unificada exitosamente a las ${isoDate}: ${combinedReason}`,
+          data: updatedRecord,
           version: BUILD_VERSION
         });
       }

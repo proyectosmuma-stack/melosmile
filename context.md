@@ -51,7 +51,10 @@ El ingreso manual/importación de Excel o fotos manuscritas se realiza desde el 
 - **Diccionario de Clínica (Albi / Albacete)**: Abreviatura `RC` o `R.C.` $\rightarrow$ `Reconstrucción Simple`, `Rev` o `Rev.` $\rightarrow$ `Control`.
 - **Separación de Notas y Observaciones Clínicas (`notes`)**: Toda indicación clínica no facturable (ej: *Ataches / Poner varios ataches*, *Quitar Brackets*, *Poner Brackets Superior*, *Hará un poco de IPR*, *Coloc Myobrace*, etc.) es extraída estrictamente hacia el campo `notes` de la cita (destinado al bloque de Evolución Clínica & Observaciones del Doctor) y NUNCA como un procedimiento facturable independiente.
 - **Sincronización en la N8N API**: Los Prompts del flujo `[MELOSMILE] Agent Document Cleaner` (`OG4Yy4N7qALXojTa`) fueron actualizados mediante la API REST de n8n (`n8n.mumaweb.com`) para garantizar determinismo en el motor de visión y texto.
-- **Inserción Automática en Supabase con Propagación de Cookie**: La ruta `/api/billing/document-cleaner/route.ts` reenvía el encabezado de autenticación (`Cookie`) hacia los endpoints internos de creación de citas (`/api/appointments/create`) y generación de sesiones (`/api/billing/sessions/generate`), garantizando que toda ingesta procedente de n8n quede inmediatamente insertada en Supabase y visible en el Hub de Facturación.
+- **Inserción Automática en Supabase con Propagación de Cookie**: La ruta `/api/billing/document-cleaner/route.ts`
+- **Entornos & Redundancia**: Dual MCP (Supabase Cloud + Supabase Local en `127.0.0.1:54321`), Sincronización bidireccional automática `npm run db:sync`, Guard de Conexión IA en local (`ai-offline-guard.ts`), y Configuración Centralizada de Entorno (`src/config/env.ts`, estilo `wp-config.php`).
+- **Unificación de Citas & Protocolo de Limpieza**: La API de citas (`/api/appointments/create`) unifica automáticamente tratamientos y precios para un mismo paciente a la misma hora según `AGENTS.md`. Protocolo de borrado de base de datos (`Borra datos`) en orden estricto de FK dejando la ficha limpia de Munir Mauel Callaos Cardama (`PAC-001`).
+, garantizando que toda ingesta procedente de n8n quede inmediatamente insertada en Supabase y visible en el Hub de Facturación.
 - **Agrupamiento por Paciente + Hora**: Mismo paciente a la misma hora (ej: 09:30 Lucas cementar 60€ y 09:30 Lucas líneas 50€) se unifica en **una sola cita** con array de tratamientos `["cementar", "líneas"]` e importe sumado (110 €).
 - **Sobrescritura Estricta de Precios Escritos**: Si en la hoja/documento figura un importe numérico en euros, ese monto prevalece sobre los precios por defecto del catálogo.
 - **Resolución Inteligente de Pacientes**: Si solo figura el nombre de pila, busca en la clínica: si existe 1 solo paciente con ese nombre (ej: "Lucas Callaos"), se vincula directamente; si existen varios pacientes homónimos, crea la cita con estado `Pendiente de Revisión` para selección manual sin eliminar la entrada.
@@ -118,5 +121,13 @@ Se ha ampliado la plataforma con las siguientes capacidades y mejoras:
 - **Seguimiento Híbrido y Multi-Plan Activo**: Soporte para planes independientes de Ortodoncia y Miofuncional en un mismo paciente, contabilizando citas no canceladas + cuotas pagadas manualmente.
 - **Fix KPI "Citas para Hoy" en Agenda**: Corrección del cálculo de la fecha local (`YYYY-MM-DD`) y exclusión de citas canceladas en la pantalla principal (`/`), mostrando la cifra real (2 citas) en lugar de recuentos erróneos de 31.
 - **Fix Enlace "Ver Paciente" en Drawer del Calendario**: Inclusión explícita de `id` y `historia_id` en las consultas de `calendar-view.tsx` y resolución de rutas en `appointment-detail-drawer.tsx`, habilitando la navegación directa a la ficha clínica del paciente.
+- **Auditoría Completa de Producción & Seguridad**:
+  - Eliminadas todas las credenciales hardcodeadas (JWTs fallback de Supabase) en las API routes.
+  - Credenciales de inicio de sesión migradas a `process.env.AUTH_USERNAME` y `process.env.AUTH_PASSWORD`.
+  - Reemplazadas llamadas internas estáticas `http://localhost:3028` en `document-cleaner` y `logout` por `INTERNAL_BASE_URL` dinámico compatible con Vercel serverless.
+  - Corregido bug de hoisting de `toTitleCase` en `create/route.ts`.
+  - Servidores server-side actualizados a `supabaseAdmin` para evitar bloqueos RLS.
+  - Build de Next.js verificado y compilado al 100% sin errores de TypeScript.
+
 
 ```

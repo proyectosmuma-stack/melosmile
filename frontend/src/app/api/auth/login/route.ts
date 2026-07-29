@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 
-const VALID_USER = "Oslysmile";
-const VALID_PASS = "@Konnan1983";
+const VALID_USER = process.env.AUTH_USERNAME || "Oslysmile";
+const VALID_PASS = process.env.AUTH_PASSWORD || "@Konnan1983";
 export const AUTH_COOKIE_NAME = "melosmile_session";
 export const AUTH_TOKEN_VALUE = "valid_melosmile_session_token_oslysmile";
 

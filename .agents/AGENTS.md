@@ -15,3 +15,51 @@
   1. **Si existe 1 solo paciente** con ese nombre de pila (ej: "Lucas Callaos"), la cita se asocia directamente a ese paciente.
   2. **Si existen varios pacientes** con el mismo nombre de pila (ej: "Lucas Pérez" y "Lucas Callaos"), la cita SE CREA igualmente, pero se marca con estado/nota de **Pendiente de Revisión** para que el usuario pueda seleccionar manualmente el paciente correcto.
   3. **Si no existe ningún paciente** con ese nombre de pila, se crea la ficha inicial del paciente.
+
+## Flujo de Trabajo de Sesión del Agente (Comandos de Chat)
+
+### Comando: "Inicia Sesión"
+Cuando el usuario diga **"Inicia Sesión"** o ejecute `/inicia-sesion`:
+*(Nota: Este comando es para preparar el entorno local de desarrollo. NUNCA pedir usuario ni contraseña).*
+1. **Comprobación Previa de Estado (Health Check)**:
+   - Ejecutar la comprobación HTTP: `curl -s -o /dev/null -w "%{http_code}" -L http://localhost:3028 && curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:54321/rest/v1/`.
+   - **Si ambos responden HTTP 200 (salida 200200)**: Omitir el reinicio de servidores, cargar el contexto (`context.md`, `roadmap.md`, `Walkthrough.md`) y responder inmediatamente: `"✅ Entorno local y Supabase activos y listos para trabajar."`
+2. **Contexto**: Leer exhaustivamente los documentos `context.md`, `roadmap.md` y `Walkthrough.md` para ponerse en contexto completo con el estado actual del proyecto y las tareas planificadas.
+3. **Supabase & Redundancia**: Si Supabase Local no está activo, ejecutar `npm --prefix frontend run db:sync` para sincronizar datos e iniciar Supabase.
+4. **Servidor Web**: Si el servidor en `http://localhost:3028` no está activo, iniciarlo ejecutando `npm --prefix frontend run dev`.
+
+### Comando: "Actualiza datos"
+Cuando el usuario diga **"Actualiza datos"** o similar:
+1. **Sincronización**: Ejecutar exclusivamente `npm run db:sync` desde la carpeta `frontend` para descargar y aplicar todos los datos recientes de Supabase Cloud a la base de datos local.
+2. **Notificación**: Confirmar al usuario el número de registros y tablas actualizadas en local.
+
+### Comando: "Borra datos" / Protocolo de Borrado de Base de Datos
+Cuando el usuario pida **"Borra datos"**, **"Limpia la base de datos"** o similar:
+1. **Orden Estricto de Eliminación (FK Constraints)**:
+   - `DELETE FROM billing_session_lines;`
+   - `DELETE FROM billing_sessions;`
+   - `DELETE FROM billing_records;`
+   - `DELETE FROM appointments;`
+   - `DELETE FROM patient_tags WHERE patient_id NOT IN (SELECT id FROM patients WHERE first_name ILIKE '%Munir%' OR last_name ILIKE '%Callaos%');`
+   - `DELETE FROM patient_clinics WHERE patient_id NOT IN (SELECT id FROM patients WHERE first_name ILIKE '%Munir%' OR last_name ILIKE '%Callaos%');`
+   - `DELETE FROM patient_representatives WHERE patient_id NOT IN (SELECT id FROM patients WHERE first_name ILIKE '%Munir%' OR last_name ILIKE '%Callaos%');`
+   - `DELETE FROM documents WHERE patient_id NOT IN (SELECT id FROM patients WHERE first_name ILIKE '%Munir%' OR last_name ILIKE '%Callaos%');`
+   - `DELETE FROM reminders WHERE patient_id NOT IN (SELECT id FROM patients WHERE first_name ILIKE '%Munir%' OR last_name ILIKE '%Callaos%');`
+   - `DELETE FROM patients WHERE first_name NOT ILIKE '%Munir%' AND last_name NOT ILIKE '%Callaos%';`
+2. **Ejecución Dual (Local & Cloud)**:
+   - Ejecutar la limpieza en **Supabase Local** (vía PostgreSQL / CLI).
+   - Ejecutar la limpieza en **Supabase Cloud** (vía `node scripts/clean_remote_db.js`).
+3. **Confirmación**: Reportar los contadores de registros restantes (dejando únicamente la ficha de Munir y la base limpia).
+
+### Comando: "Cierra sesión"
+Cuando el usuario diga **"Cierra sesión"** o similar:
+1. **Documentación**: Actualizar y documentar exhaustivamente todos los cambios realizados en:
+   - `context.md`
+   - `roadmap.md`
+   - `Walkthrough.md`
+2. **Redundancia & Limpieza**: Ejecutar respaldo automático de datos (`npm run db:sync`), y limpiar y eliminar archivos temporales o basura generados durante la sesión.
+3. **Git y Vercel**: Preguntar al usuario si desea hacer `git commit` a la rama `develop` y verificar el estado del despliegue en Vercel.
+4. **Apagado**: Preguntar al usuario si desea apagar el servidor local (`localhost:3028`) y detener la base de datos de Supabase.
+
+
+

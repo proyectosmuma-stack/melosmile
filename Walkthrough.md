@@ -74,3 +74,23 @@ Se ha completado una revisión exhaustiva, corrección y auditoría integral del
 - **Fix KPI "Citas para Hoy"**: Recuento preciso utilizando la fecha local (`YYYY-MM-DD`) y descartando citas canceladas, reflejando el número exacto de citas diarias.
 - **Fix Navegación "Ver Paciente"**: Selección explícita de `id` y `historia_id` en la consulta del calendario (`calendar-view.tsx`), habilitando la redirección inmediata a `/patients/[id]` al pulsar en el modal de la cita.
 
+---
+
+## 7. 🔄 Redundancia, Dual MCP, Unificación de Citas & Protocolo de Borrado
+- **Configuración de Supabase Local**: Entorno PostgreSQL local con Colima en `127.0.0.1:54321`. Exportación automática de la nube a `seed.sql`.
+- **Dual MCP Configured**: Servidor `supabase-local` integrado en `mcp_config.json` conviviendo de forma transparente con `supabase` Cloud.
+- **Guard IA Offline**: `ai-offline-guard.ts` detecta falta de internet en entorno local enviando alertas amigables al usuario.
+- **Configuración Centralizada de Entorno (`src/config/env.ts`)**: Archivo estilo `wp-config.php` que abstrae y valida las variables de entorno, eliminando URLs hardcodeadas de producción de los clientes de Supabase.
+- **Unificación Automática de Citas (`/api/appointments/create/route.ts`)**: Las citas de un mismo paciente agendadas a la misma hora se unifican automáticamente fusionando motivos, sumando precios e integrando observaciones clínicas en `notes`.
+- **Protocolo de Borrado de Base de Datos ("Borra datos")**: Protocolo formalizado en `AGENTS.md` para vaciado secuencial de datos respetando Foreign Keys (local y cloud vía `clean_remote_db.js`), manteniendo la ficha limpia de Munir Mauel Callaos Cardama (`PAC-001`).
+- **Comandos de Sesión Registrados**: `Inicia Sesión`, `Actualiza datos`, `Borra datos`, `Cierra sesión`.
+
+---
+
+## 8. 🛡️ Auditoría de Código y Preparación para Producción (COMPLETADO)
+- **Eliminación de Credenciales Hardcodeadas**: Eliminados los JWTs fallback de `SUPABASE_SERVICE_ROLE_KEY` en `create/route.ts`, `update/route.ts`, `treatment-plans/route.ts` y `ai/report/route.ts`.
+- **Credenciales de Login a Env Vars**: Modificado `auth/login/route.ts` para consumir `process.env.AUTH_USERNAME` y `process.env.AUTH_PASSWORD` con fallbacks para desarrollo local.
+- **Móvil y Serverless URLs**: Eliminadas las llamadas internas estáticas `http://localhost:3028` en `document-cleaner/route.ts` y `auth/logout/route.ts`, sustituyéndolas por `INTERNAL_BASE_URL` dinámico (`NEXT_PUBLIC_APP_URL` / `VERCEL_URL` / `localhost`).
+- **Fix de Hoisting en TypeScript**: Extraída la función `toTitleCase` fuera de `POST()` a nivel de módulo en `appointments/create/route.ts`.
+- **Servicio Server-Side de Supabase (`supabaseAdmin`)**: Actualizados los endpoints `billing/sessions/route.ts`, `dispatcher/route.ts`, `billing/report/[id]/route.ts` y `ai/memory/search/route.ts` para usar `supabaseAdmin` y evitar bloqueos RLS.
+- **Compilación Exitosa (Build Verificado)**: `npm run build` ejecutado y finalizado al 100% sin errores de compilación ni errores TypeScript (38 páginas dinámicas y estáticas generadas correctamente).

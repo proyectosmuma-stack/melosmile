@@ -10,10 +10,11 @@ import { createClient } from "@supabase/supabase-js";
 // Force Vercel deployment refresh: 2026-07-27T01:01:30
 const BUILD_VERSION = "2026.07.27.FORCE_PURGE_UPDATE_ROUTE_1";
 
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || "https://amhfdzfcmpastmlsosou.supabase.co",
-  process.env.SUPABASE_SERVICE_ROLE_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFtaGZkemZjbXBhc3RtbHNvc291Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NDczNTM3NCwiZXhwIjoyMTAwMzExMzc0fQ.yPLQaV1xbfnuJJcNktxqbneP9Yb5UGlWfXA1tKYx6ZM"
-);
+const _supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://amhfdzfcmpastmlsosou.supabase.co";
+const _serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+if (!_serviceKey) throw new Error("Missing SUPABASE_SERVICE_ROLE_KEY env var");
+
+const supabaseAdmin = createClient(_supabaseUrl, _serviceKey);
 
 function parseAppointmentDate(inputDate?: string): string {
   if (!inputDate) return new Date().toISOString();

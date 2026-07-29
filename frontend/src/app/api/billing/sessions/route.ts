@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase/client';
+import { supabaseAdmin as supabase } from '@/lib/supabase/server';
 import { processBillingLine, calculateSessionTotals, RawLineInput } from '@/lib/billing/calculator';
 
 export async function GET(request: Request) {

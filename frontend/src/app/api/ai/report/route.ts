@@ -4,11 +4,10 @@ import path from "path";
 import { supabase } from "@/lib/supabase/client";
 import { createClient } from "@supabase/supabase-js";
 
-// Admin client with service role key — bypasses RLS for server-side write operations
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || "https://amhfdzfcmpastmlsosou.supabase.co",
-  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "sb_publishable_kN-3hlqUxOni9onF1CDmhg_03EOCXG6"
-);
+const _reportUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://amhfdzfcmpastmlsosou.supabase.co";
+const _reportKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+if (!_reportKey) throw new Error("Missing Supabase key env var");
+const supabaseAdmin = createClient(_reportUrl, _reportKey);
 
 /**
  * GET /api/ai/report
