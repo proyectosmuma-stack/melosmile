@@ -13,12 +13,159 @@
 ## 🛠️ Stack Tecnológico
 
 - **Frontend**: Next.js 16 (App Router), React 19, TypeScript, `xlsx` (parsing nativo de archivos Excel).
-- **Hosting & CI/CD**: Vercel (`melosmile-staging`, configurado solo para compilar desde la rama `develop`).
+- **Hosting & CI/CD**: Vercel (`melosmile-production`), rama `main` → Producción, rama `develop` → Preview/Staging.
 - **Estilos y UI**: TailwindCSS 4, Shadcn UI, Lucide Icons, `@dnd-kit/core` (Drag & Drop).
-- **Backend & Base de Datos**: Supabase Cloud (`amhfdzfcmpastmlsosou`, PostgreSQL relacional, CLI `supabase`, tabla `agent_learnings` para memoria dinámica).
+- **Backend & Base de Datos**: Supabase Cloud (múltiples proyectos por entorno — ver sección Infraestructura).
 - **Módulo Contable & Calculadora**: Motor `calculator.ts` con sugerencia inteligente de aparatología/laboratorio (`TREATMENT_LAB_SUGGESTIONS`), validaciones en 4 niveles (ERROR, ALERTA, NEGATIVO, INFO), 19 columnas de registro contable, auto-creación secuencial de pacientes (`PAC-001`, `PAC-002`...), vinculación de citas con asignación obligatoria a la **Dra. Osly Melo**, emparejamiento con el catálogo de tratamientos de la BD (`Pulpotomía`, `Control de Ortodoncia`, `Obturación Simple`, `Ortodoncia Invisible`), dropdowns interactivos para Pacientes, Tratamientos y Equipos de Laboratorio, cálculo automático de costes de laboratorio, columnas de porcentaje/monto médico (`% Dr.`, `€ Dr.`), tabla a ancho completo de pantalla y accesos directos a las fichas clínicas del paciente.
 - **Automatización e IA**: Agente **Musly** (Dispatcher + 4 Sub-agentes especializados en n8n: Agendamiento, Clínico, Facturación y General/FAQs + Extractor Contable Multimodal 08 y Flujo de Aprobación 09), modelo `google/gemini-2.5-flash` vía OpenRouter con `temperature: 0` determinista, `retryOnFail` en herramientas HTTP, filtro de tokens estáticos en UI y n8n, memoria de sesión multiturno con reescritura contextual de peticiones anafóricas, desambiguación estricta de identidad de paciente y sistema de Aprendizaje Dinámico Autónomo (`/api/ai/memory/search` y `/api/ai/memory/learn`).
 - **Integraciones externas**: Odoo API (Facturación y Contabilidad), WhatsApp/Email/SMS vía n8n.
+- **VPS IONOS**: Servidor `94.143.139.120` (usuario: `u60945363`) para almacenamiento físico de documentos y fotos clínicas en `/opt/melosmile/`.
+
+---
+
+## 🌐 Infraestructura de Entornos
+
+> **Arquitectura de 3 capas**: `localhost` (desarrollo) → `develop` (staging) → `main` (producción)
+
+### 🟣 ENTORNO LOCAL — Desarrollo (`localhost:3028`)
+
+| Servicio | URL / Valor |
+|---|---|
+| **App Web** | `http://localhost:3028` |
+| **Supabase Local** | `http://127.0.0.1:54321` |
+| **Supabase Studio** | `http://127.0.0.1:54323` |
+| **Supabase Anon Key** | JWT demo estándar de Supabase CLI |
+| **Supabase Service Role** | JWT demo estándar de Supabase CLI |
+| **n8n (dev)** | `https://n8n.mumaweb.com` |
+| **Fichero env** | `frontend/.env.local` |
+| **Iniciar** | `npm --prefix frontend run dev` |
+| **Sincronizar datos** | `npm --prefix frontend run db:sync` |
+
+**Variables `.env.local`:**
+```env
+NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...demo-anon
+SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...demo-service
+N8N_WEBHOOK_BASE_URL=https://n8n.mumaweb.com
+N8N_WEBHOOK_URL=https://n8n.mumaweb.com/webhook/document-cleaner
+NEXT_PUBLIC_APP_URL=http://localhost:3028
+ODOO_URL=https://melosmile.odoo.com
+ODOO_DB=melosmile
+ODOO_USER=gestion@melosmile.com
+```
+
+---
+
+### 🟡 ENTORNO STAGING — Rama `develop` (Preview Vercel)
+
+| Servicio | URL / Valor |
+|---|---|
+| **Rama Git** | `develop` |
+| **Vercel Entorno** | `Preview` |
+| **App Web** | Deploy automático Vercel (URL dinámica por commit) |
+| **Supabase Staging** | `https://amhfdzfcmpastmlsosou.supabase.co` |
+| **n8n (dev)** | `https://n8n.mumaweb.com` |
+| **Fichero env** | `frontend/.env.remote` |
+| **Sincronizar datos** | `npm --prefix frontend run db:sync` |
+
+**Variables Vercel Preview (`develop`):**
+```env
+NEXT_PUBLIC_SUPABASE_URL=https://amhfdzfcmpastmlsosou.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_kN-3hlqUxOni9onF1CDmhg_03EOCXG6
+SUPABASE_SERVICE_ROLE_KEY=eyJ...ref:amhfdzfcmpastmlsosou...service_role
+N8N_WEBHOOK_BASE_URL=https://n8n.mumaweb.com
+N8N_WEBHOOK_URL=https://n8n.mumaweb.com/webhook/document-cleaner
+NEXT_PUBLIC_APP_URL=https://melosmile-develop.vercel.app
+ODOO_URL=https://melosmile.odoo.com / ODOO_DB=melosmile / ODOO_USER=gestion@melosmile.com
+```
+
+---
+
+### 🟢 ENTORNO PRODUCCIÓN — Rama `main` → `agenda.melosmile.com`
+
+| Servicio | URL / Valor |
+|---|---|
+| **Rama Git** | `main` |
+| **Vercel Entorno** | `Production` |
+| **App Web** | `https://agenda.melosmile.com` |
+| **Supabase Producción** | `https://xylqytpudbdcsbuuwqpi.supabase.co` |
+| **Org Supabase** | `melosmile` → Proyecto `melosmile-production` |
+| **n8n (prod)** | `https://n8nv2.mumaweb.com` |
+| **API Key n8n prod** | `Antigravity-melosmile` (JWT en `mcp_config.json`) |
+| **Fichero env** | Variables en Vercel `Production` (encriptadas) |
+
+**Variables Vercel Production (`main`):**
+```env
+NEXT_PUBLIC_SUPABASE_URL=https://xylqytpudbdcsbuuwqpi.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=<key producción melosmile org>
+SUPABASE_SERVICE_ROLE_KEY=<service role producción>
+N8N_WEBHOOK_BASE_URL=https://n8nv2.mumaweb.com
+N8N_WEBHOOK_URL=https://n8nv2.mumaweb.com/webhook/document-cleaner
+NEXT_PUBLIC_APP_URL=https://agenda.melosmile.com
+ODOO_URL=https://melosmile.odoo.com / ODOO_DB=melosmile / ODOO_USER=gestion@melosmile.com
+AUTH_USERNAME=clinica / AUTH_PASSWORD=melosmile2024
+```
+
+---
+
+### 🤖 n8n — Flujos por Entorno
+
+| Flujo | ID Dev (`n8n.mumaweb.com`) | ID Prod (`n8nv2.mumaweb.com`) |
+|---|---|---|
+| `[MELOSMILE] AI Dispatcher` | `OG4Yy4N7qALXojTa` (aprox) | `QgNoVFr9TBXGbdOl` |
+| `[MELOSMILE] Sub-Agent: Agendamiento` | dev | `E59OoSRNJ4skt43W` |
+| `[MELOSMILE] Sub-Agent: Clinico` | dev | `cQQGecziVfareNtI` |
+| `[MELOSMILE] Sub-Agent: Contabilidad` | dev | `4Z7PdsGK2wAIi2iE` |
+| `[MELOSMILE] Sub-Agent: General` | dev | `9scMTKJwP7TKFSJV` |
+| `[MELOSMILE] Agent Document Cleaner` | dev | `IrLOC3fSQZCxvvBz` |
+
+> Todos los flujos de producción tienen tag `Melosmile` y apuntan a `https://agenda.melosmile.com`.
+
+---
+
+### 🖥️ VPS IONOS — Almacenamiento de Documentos y Fotos por FTP
+
+| Parámetro | Valor |
+|---|---|
+| **Host FTP/SSH** | `94.143.139.120` (`melosmile.com`) |
+| **Usuario FTP** | `u60945363` |
+| **Puerto FTP** | `21` (FTP pasivo con librería `basic-ftp`) |
+| **Contraseña** | `Mum@sly1983` (usar `VPS_SSH_PASSWORD` en env) |
+| **Directorio Raíz Domain** | `melosmile.com/` |
+
+**Estructura de directorios en VPS:**
+```
+melosmile.com/
+└── pacientes/
+    └── {patient_uuid}/
+        ├── registros/
+        │   └── {YYYY-MM-DD}/     ← Fotos clínicas (imágenes)
+        │       └── {timestamp}_{filename}.jpg
+        └── docs/                  ← Documentos PDF/informes
+            └── {timestamp}_{filename}.pdf
+```
+
+**Lógica de subida por FTP** (`/api/documents/upload/route.ts`):
+- **Transferencia por FTP**: Los archivos (fotos clínicas, documentos, PDFs, etc.) se transmiten mediante conexión FTP directa a `94.143.139.120` usando `basic-ftp`. No se utiliza `fs` local ni Supabase Storage.
+- **Creación de Directorios**: `client.ensureDir` crea automáticamente las carpetas remotas necesarias si no existen.
+- **Imágenes** (`jpg`, `jpeg`, `png`, `webp`, `gif`, `bmp`) → `melosmile.com/pacientes/{id}/registros/{fecha}/`
+- **Documentos** (`pdf`, otros) → `melosmile.com/pacientes/{id}/docs/`
+- Tras completar la subida FTP, registra la metadata en la tabla `documents` de Supabase.
+- Para PDFs/documentos: dispara el webhook de vectorización en n8n (`N8N_VECTORIZER_WEBHOOK_URL`).
+
+**Variables de Entorno VPS:**
+```env
+VPS_SSH_HOST=94.143.139.120
+VPS_FTP_PORT=21
+VPS_SSH_USER=u60945363
+VPS_SSH_PASSWORD=Mum@sly1983
+VPS_DOMAIN_FOLDER=melosmile.com
+```
+
+✅ **Compatibilidad**: Funciona tanto en desarrollo local (`localhost:3028`) como en `develop` (staging) y `main` (producción Vercel Serverless), ya que la conexión FTP se establece de forma remota por red.
+
+
+---
 
 ---
 

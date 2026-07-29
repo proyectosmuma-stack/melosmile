@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase/client";
-import fs from "fs";
-import path from "path";
+import * as ftp from "basic-ftp";
+import { Readable } from "stream";
 
 export async function POST(req: Request) {
+  const client = new ftp.Client(15000);
   try {
     const formData = await req.formData();
     const file = formData.get("file") as File | null;
@@ -28,25 +29,34 @@ export async function POST(req: Request) {
       documentType = "informe";
     }
 
-    // Determine target VPS directory
+    // Determine target VPS directory structure: melosmile.com/pacientes/...
     const dateFolder = appointmentDateStr.substring(0, 10);
-    const baseDir = isImage
-      ? `/opt/melosmile/pacientes/${patientId}/registros/${dateFolder}`
-      : `/opt/melosmile/pacientes/${patientId}/docs`;
+    const subFolder = isImage
+      ? `pacientes/${patientId}/registros/${dateFolder}`
+      : `pacientes/${patientId}/docs`;
 
-    try {
-      fs.mkdirSync(baseDir, { recursive: true });
-    } catch (mkdirErr: any) {
-      console.warn("Notice: VPS dir creation warning:", mkdirErr.message);
-    }
-
+    const rootDomain = process.env.VPS_DOMAIN_FOLDER || "melosmile.com";
+    const fullRemoteDir = `${rootDomain}/${subFolder}`;
     const safeFileName = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9_.-]/g, "_")}`;
-    const fullPath = path.join(baseDir, safeFileName);
+    const fullPath = `/${fullRemoteDir}/${safeFileName}`;
 
-    // Read ArrayBuffer and write to VPS filesystem
+    // Connect to IONOS VPS via FTP
+    await client.access({
+      host: process.env.VPS_SSH_HOST || "94.143.139.120",
+      port: parseInt(process.env.VPS_FTP_PORT || "21", 10),
+      user: process.env.VPS_SSH_USER || "u60945363",
+      password: process.env.VPS_SSH_PASSWORD || "Mum@sly1983",
+      secure: false,
+    });
+
+    await client.ensureDir(fullRemoteDir);
+
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
-    fs.writeFileSync(fullPath, buffer);
+    const stream = Readable.from(buffer);
+
+    await client.uploadFrom(stream, safeFileName);
+    client.close();
 
     // Save metadata in Supabase `documents` table
     const descriptionText = isImage
@@ -98,12 +108,13 @@ export async function POST(req: Request) {
       documentId: docId,
       filePath: fullPath,
       isImage,
-      message: isImage ? "Imagen guardada en VPS" : "Documento guardado y enviado a vectorizar",
+      message: isImage ? "Imagen guardada en VPS (FTP)" : "Documento guardado en VPS (FTP) y enviado a vectorizar",
     });
   } catch (error: any) {
-    console.error("Error en upload route:", error);
+    client.close();
+    console.error("Error en upload route (FTP):", error);
     return NextResponse.json(
-      { success: false, error: error.message || "Error al subir archivo" },
+      { success: false, error: error.message || "Error al subir archivo a VPS" },
       { status: 500 }
     );
   }
