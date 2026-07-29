@@ -154,8 +154,13 @@ Este documento establece el plan de desarrollo, hitos alcanzados y próximos fas
 
 - [x] **Intención `add_procedure_to_appointment`**: El agente n8n actualmente solo soporta la creación de nuevas citas (`schedule_appointment`). Se debe añadir soporte para que el agente pueda añadir procedimientos adicionales a una cita ya existente sin sobrescribir los procedimientos anteriores.
 
-### Fase 6: Planes de Tratamiento y Volcado Histórico 🟢
-- [x] Soporte para diferentes tipos de planes de tratamiento (`Ortodoncia`, `Miofuncional`, `Otro`).
+### Fase 6: Planes de Tratamiento, Notificaciones y Fixes de Agenda 🟢
+- [x] Soporte para diferentes tipos de planes de tratamiento (`Ortodoncia`, `Miofuncional`, `Otro`) y planes simultáneos en la ficha.
 - [x] Registro manual de **Mensualidades Ya Pagadas** y **Monto Ya Pagado** para migración de datos (volcado histórico).
 - [x] Motor de alertas unificado (Histórico + Registrado) para avisos automáticos al completarse las cuotas.
+- [x] API Server-Side `/api/treatment-plans` (`GET`, `POST`, `DELETE`) para bypass seguro del bloqueo RLS en Supabase.
+- [x] Opción de eliminación de plan desde la tarjeta y dentro del modal de edición.
+- [x] Sincronización en tiempo real y permanencia de alertas dinámicas en la campana de notificaciones del encabezado (`melosmile_notifications_updated`).
+- [x] Fix del contador KPI "Citas para Hoy" en la Agenda Principal con fecha local `YYYY-MM-DD` y filtro estricto de citas no canceladas.
+- [x] Fix de la propiedad `id`/`historia_id` en las consultas de `calendar-view.tsx` y redirección inmediata al pulsar "Ver Paciente" en el drawer de la cita.
 

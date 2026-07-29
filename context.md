@@ -109,9 +109,14 @@ melosmile/
 
 ---
 
-## 📅 Novedades: Volcado Histórico de Tratamientos
-Se ha ampliado el componente de Planes de Tratamiento para soportar:
-- **Tipos de Tratamiento Flexibles:** Opción de seleccionar el tipo (`Ortodoncia`, `Miofuncional`, `Otro`), que se refleja instantáneamente en la interfaz.
-- **Campos de Migración (Volcado):** Registro de `Mensualidades Ya Pagadas` y `Monto Ya Pagado` en las fichas previas.
-- **Contabilización Híbrida:** Las alertas automáticas y contadores ahora combinan los históricos manuales más los controles realizados en la nueva agenda.
+## 📅 Novedades: Planes de Tratamiento, Notificaciones Permanentes y Correcciones de Agenda
+Se ha ampliado la plataforma con las siguientes capacidades y mejoras:
+- **API Backend de Planes de Tratamiento (`/api/treatment-plans`)**: Solucionado el bloqueo de Row Level Security (RLS) en la tabla `treatment_plans` sustituyendo las consultas directas del navegador por un endpoint server-side con `SERVICE_ROLE_KEY` para lectura (`GET`), guardado/edición (`POST`) y eliminación (`DELETE`).
+- **Eliminar Planes de Tratamiento**: Opción de borrado disponible tanto desde la tarjeta del plan como dentro del modal de edición de la ficha del paciente.
+- **Sincronización en Tiempo Real de la Campana de Notificaciones**: Las alertas de revisión de cuotas ($\le 1$ cuota pendiente) se emiten dinámicamente mediante el evento `melosmile_notifications_updated`, reflejándose de forma permanente en la campana de la cabecera y en el banner de la ficha mientras el plan se mantenga `activo`.
+- **Limpieza de Notificaciones de Demostración**: Eliminación del dato ficticio pre-configurado en el centro de notificaciones (`Ingesta Completada...`).
+- **Seguimiento Híbrido y Multi-Plan Activo**: Soporte para planes independientes de Ortodoncia y Miofuncional en un mismo paciente, contabilizando citas no canceladas + cuotas pagadas manualmente.
+- **Fix KPI "Citas para Hoy" en Agenda**: Corrección del cálculo de la fecha local (`YYYY-MM-DD`) y exclusión de citas canceladas en la pantalla principal (`/`), mostrando la cifra real (2 citas) en lugar de recuentos erróneos de 31.
+- **Fix Enlace "Ver Paciente" en Drawer del Calendario**: Inclusión explícita de `id` y `historia_id` en las consultas de `calendar-view.tsx` y resolución de rutas en `appointment-detail-drawer.tsx`, habilitando la navegación directa a la ficha clínica del paciente.
+
 ```

@@ -64,3 +64,13 @@ Se ha completado una revisión exhaustiva, corrección y auditoría integral del
 - **Selección de Tipo de Tratamiento**: El modal de planes de tratamiento ahora permite seleccionar dinámicamente si el plan es de `Ortodoncia`, `Miofuncional` u `Otro`, y la cabecera verde de la ficha se actualiza automáticamente con esta información (ej. *Plan de Miofuncional Pautado*).
 - **Ingesta de Históricos (Volcado)**: Se implementó el soporte manual en el formulario para registrar el histórico de `Mensualidades Ya Pagadas` y el `Monto Ya Pagado` total previo al uso de Melosmile.
 - **Motor Inteligente de Cuotas**: El cálculo de cuotas completadas ahora suma transparentemente los controles registrados históricamente con los controles marcados como "Realizada" en el nuevo sistema, activando las alertas de "Revisión de Plan" al acercarse o completar el total de cuotas estipuladas.
+
+---
+
+## 6. 🚀 Notificaciones Permanentes, Bypass RLS y Correcciones de la Agenda
+- **API Server-Side `/api/treatment-plans`**: Creado el endpoint backend con `SERVICE_ROLE_KEY` para lectura (`GET`), escritura (`POST`) y borrado (`DELETE`), resolviendo el bloqueo silencioso de Row Level Security (RLS) en Supabase para usuarios no autenticados en el navegador.
+- **Eliminación de Planes de Tratamiento**: Opción de borrado añadida a la tarjeta del plan y al modal de edición.
+- **Notificaciones Dinámicas Permanentes**: Sincronización en tiempo real con la campana de la cabecera mediante el evento `melosmile_notifications_updated`. Las alertas de revisión de cuotas ($\le 1$ cuota restante) permanecen visibles de forma dinámica en la campana (`Plan Activo`) y en la tarjeta del paciente.
+- **Fix KPI "Citas para Hoy"**: Recuento preciso utilizando la fecha local (`YYYY-MM-DD`) y descartando citas canceladas, reflejando el número exacto de citas diarias.
+- **Fix Navegación "Ver Paciente"**: Selección explícita de `id` y `historia_id` en la consulta del calendario (`calendar-view.tsx`), habilitando la redirección inmediata a `/patients/[id]` al pulsar en el modal de la cita.
+
