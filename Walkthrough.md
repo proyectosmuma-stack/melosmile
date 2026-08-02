@@ -47,16 +47,48 @@ Se ha completado una revisión exhaustiva, corrección y auditoría integral del
 ---
 
 ## 💻 Archivos Clave Modificados
-- [`appointments-to-lines.ts`](file:///Users/munircallaos/Antigravity%20Projects/melosmile/frontend/src/lib/billing/appointments-to-lines.ts)
-- [`calculator.ts`](file:///Users/munircallaos/Antigravity%20Projects/melosmile/frontend/src/lib/billing/calculator.ts)
-- [`generate/route.ts`](file:///Users/munircallaos/Antigravity%20Projects/melosmile/frontend/src/app/api/billing/sessions/generate/route.ts)
-- [`appointments/create/route.ts`](file:///Users/munircallaos/Antigravity%20Projects/melosmile/frontend/src/app/api/appointments/create/route.ts)
-- [`appointments/[id]/page.tsx`](file:///Users/munircallaos/Antigravity%20Projects/melosmile/frontend/src/app/(dashboard)/appointments/[id]/page.tsx)
-- [`billing/[id]/page.tsx`](file:///Users/munircallaos/Antigravity%20Projects/melosmile/frontend/src/app/(dashboard)/billing/[id]/page.tsx)
-- [`billing/page.tsx`](file:///Users/munircallaos/Antigravity%20Projects/melosmile/frontend/src/app/(dashboard)/billing/page.tsx)
-- [`settings/clinics/page.tsx`](file:///Users/munircallaos/Antigravity%20Projects/melosmile/frontend/src/app/(dashboard)/settings/clinics/page.tsx)
-- [`report/[id]/route.ts`](file:///Users/munircallaos/Antigravity%20Projects/melosmile/frontend/src/app/api/billing/report/[id]/route.ts)
-- [`server.ts`](file:///Users/munircallaos/Antigravity%20Projects/melosmile/frontend/src/lib/supabase/server.ts)
+---
+
+## 5. 🖥️ Almacenamiento Remoto por FTP en IONOS VPS (`melosmile.com`)
+- **Conexión Directa por Red (`basic-ftp`)**:
+  - Se reestructuró la API `/api/documents/upload/route.ts` para transmitir archivos (fotos clínicas, informes PDF, etc.) por **FTP pasivo en el puerto 21** hacia la IP `94.143.139.120`.
+  - Se eliminó el uso de `fs.mkdirSync` y `fs.writeFileSync` local, haciendo el sistema 100% compatible con **Vercel Serverless**.
+- **Estructura Remota Organizativa**:
+  - `melosmile.com/pacientes/{patient_id}/registros/{YYYY-MM-DD}/{timestamp}_{filename}` (Fotos clínicas).
+  - `melosmile.com/pacientes/{patient_id}/docs/{timestamp}_{filename}` (PDFs e informes).
+- **Procesamiento de Conocimiento**:
+  - Al completar la subida FTP, guarda la metadata en Supabase y dispara la vectorización en n8n para documentos PDF.
+
+---
+
+## 6. 🏛️ Filtro Global de Sede Activa (`ClinicContext`)
+- **React Context Unificado (`src/context/clinic-context.tsx`)**:
+  - Hook `useClinic()` que consulta la lista de **4 sedes reales** desde Supabase (`Clinica Daniel Bustamante`, `Clínica Goya`, `Clínica Las Rozas`, `Clínica RyA`).
+  - Mantiene la sede activa (`selectedClinicId`) sincronizada globalmente y guardada en `localStorage` (`melosmile_selected_clinic`).
+- **Sidebar Dinámico**:
+  - Desplegable **"SEDE ACTIVA"** con indicador visual por clínica y opción *"Todas las Clínicas"*.
+- **Filtrado Reactivo en la Plataforma**:
+  - **Agenda (`/`) y `CalendarView`**: Filtra citas e indicadores (citas del día, facturado en el mes, pacientes) según la sede activa.
+  - **Facturación (`/billing`)**: Muestra únicamente las sesiones contables de la sede elegida.
+  - **Fichas Pacientes (`/patients`)**: Filtra el listado de pacientes asociados a esa sede.
+- **Middleware Exento**:
+  - Exención de rutas de contexto e IA `/api/ai-context`, `/api/dispatcher` y `/api/billing/document-cleaner` en `middleware.ts`, garantizando la carga continua de sedes sin bloqueos 401.
+
+---
+
+## 💻 Archivos Clave Modificados en la Sesión
+- [`src/context/clinic-context.tsx`](file:///Users/munircallaos/Antigravity%20Projects/melosmile/frontend/src/context/clinic-context.tsx)
+- [`src/app/(dashboard)/layout.tsx`](file:///Users/munircallaos/Antigravity%20Projects/melosmile/frontend/src/app/(dashboard)/layout.tsx)
+- [`src/components/layout/sidebar.tsx`](file:///Users/munircallaos/Antigravity%20Projects/melosmile/frontend/src/components/layout/sidebar.tsx)
+- [`src/app/(dashboard)/page.tsx`](file:///Users/munircallaos/Antigravity%20Projects/melosmile/frontend/src/app/(dashboard)/page.tsx)
+- [`src/app/(dashboard)/billing/page.tsx`](file:///Users/munircallaos/Antigravity%20Projects/melosmile/frontend/src/app/(dashboard)/billing/page.tsx)
+- [`src/app/(dashboard)/patients/page.tsx`](file:///Users/munircallaos/Antigravity%20Projects/melosmile/frontend/src/app/(dashboard)/patients/page.tsx)
+- [`src/app/api/documents/upload/route.ts`](file:///Users/munircallaos/Antigravity%20Projects/melosmile/frontend/src/app/api/documents/upload/route.ts)
+- [`src/app/api/ai-context/route.ts`](file:///Users/munircallaos/Antigravity%20Projects/melosmile/frontend/src/app/api/ai-context/route.ts)
+- [`src/middleware.ts`](file:///Users/munircallaos/Antigravity%20Projects/melosmile/frontend/src/middleware.ts)
+- [`context.md`](file:///Users/munircallaos/Antigravity%20Projects/melosmile/context.md)
+- [`roadmap.md`](file:///Users/munircallaos/Antigravity%20Projects/melosmile/roadmap.md)
+
 
 ---
 
@@ -94,3 +126,12 @@ Se ha completado una revisión exhaustiva, corrección y auditoría integral del
 - **Fix de Hoisting en TypeScript**: Extraída la función `toTitleCase` fuera de `POST()` a nivel de módulo en `appointments/create/route.ts`.
 - **Servicio Server-Side de Supabase (`supabaseAdmin`)**: Actualizados los endpoints `billing/sessions/route.ts`, `dispatcher/route.ts`, `billing/report/[id]/route.ts` y `ai/memory/search/route.ts` para usar `supabaseAdmin` y evitar bloqueos RLS.
 - **Compilación Exitosa (Build Verificado)**: `npm run build` ejecutado y finalizado al 100% sin errores de compilación ni errores TypeScript (38 páginas dinámicas y estáticas generadas correctamente).
+
+---
+
+## 9. 🤖 Optimización de OpenCode a 22K, Conexión de MCPs y Manual `MANUAL_EQUIPOS_OPENCODE.md`
+
+- **Presupuesto de Contexto Estable a 22K (22.528 Tokens):** Configurado en Ollama y `~/.config/opencode/opencode.jsonc` para eliminar el congelamiento y degradación del modelo a 32K.
+- **Tool Calling Activo:** Habilitada la propiedad `"tools": true` en OpenCode para todos los modelos locales (`qwen2.5-coder:14b`, `gemma4:latest`, `gemma2:27b`, `deepseek-coder-v2:lite`).
+- **MCP Servers Conectados:** Registrados los 4 servidores (`supabase`, `n8n`, `notion`, `github`) y verificados con `opencode mcp list`.
+- **Manual Oficial de Equipos `MANUAL_EQUIPOS_OPENCODE.md`**: Creado el manual global en `~/.config/opencode/MANUAL_EQUIPOS_OPENCODE.md` detallando la arquitectura de **MumaBot** (Desarrollo) y **SecBot** (Ciberseguridad).

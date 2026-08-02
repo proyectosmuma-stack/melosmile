@@ -61,5 +61,19 @@ Cuando el usuario diga **"Cierra sesión"** o similar:
 3. **Git y Vercel**: Preguntar al usuario si desea hacer `git commit` a la rama `develop` y verificar el estado del despliegue en Vercel.
 4. **Apagado**: Preguntar al usuario si desea apagar el servidor local (`localhost:3028`) y detener la base de datos de Supabase.
 
+---
 
+## ⚡ Reglas de Eficiencia de Contexto para OpenCode (Ventana 22k / qwen2.5-coder:14b)
 
+Para optimizar el uso de contexto y evitar la degradación en modelos locales con ventanas de 22k tokens:
+
+1. **Lectura por Secciones (Index Pattern)**:
+   - Usa siempre el comando o herramienta `view_file` con rangos específicos (ej. `StartLine`, `EndLine`) o `grep_search` en lugar de leer archivos completos de más de 100 líneas.
+   - **Nunca** leas `context.md`, `roadmap.md` y `Walkthrough.md` completos en una sola respuesta. Lee solo los resúmenes iniciales o la sección pertinente.
+
+2. **Sin Volcado de Resúmenes (Zero Dump)**:
+   - Tras realizar un cambio o ejecutar un comando, responde con un resumen conciso de 2 a 4 líneas.
+   - **NO** repitas el contenido de los archivos creados o modificados en tus respuestas.
+
+3. **Búsqueda Quirúrgica**:
+   - Utiliza herramientas de búsqueda (ej. `grep_search`) para ubicar funciones o componentes específicos en lugar de cargar archivos `.tsx`/`.ts` enormes.

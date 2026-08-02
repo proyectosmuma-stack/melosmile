@@ -275,6 +275,9 @@ Se ha ampliado la plataforma con las siguientes capacidades y mejoras:
   - Corregido bug de hoisting de `toTitleCase` en `create/route.ts`.
   - Servidores server-side actualizados a `supabaseAdmin` para evitar bloqueos RLS.
   - Build de Next.js verificado y compilado al 100% sin errores de TypeScript.
+- **Configuración de OpenCode a 22K Tokens & Habilitación de MCPs**:
+  - Fijado el presupuesto de contexto a **22.528 Tokens (22K)** en Ollama y `~/.config/opencode/opencode.jsonc` para eliminar cuellos de botella y congelamientos.
+  - Corregida la activación de herramientas (`"tools": true`) y la clave de límite de salida (`"output": 4096`) para `deepseek-coder-v2:lite`, `qwen2.5-coder:14b`, `gemma4:latest` y `gemma2:27b`.
+  - Enlazados los 4 servidores MCP en OpenCode (`supabase`, `n8n`, `notion`, `github`).
+  - Creada suite de benchmarking y el manual oficial global de equipos `MANUAL_EQUIPOS_OPENCODE.md` para probar los agentes Mumabot y SecBot en OpenCode IDE.
 
-
-```

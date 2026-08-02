@@ -72,13 +72,33 @@ Este documento establece el plan de desarrollo, hitos alcanzados y próximos fas
 - [x] Sub-agentes especializados en n8n conectados por `toolWorkflow` (Agendamiento, Clínico, Contabilidad).
 - [x] Conexión de herramientas a Supabase real con emparejamiento automático de tratamientos (`treatment_id`) y facturación Odoo.
 - [x] Implementación de Memoria Conversacional (historial de sesión) e Historial de Auditoría en Supabase (`ai_conversation_history`).
-- [x] **Sistema de Reporte de Errores y Contexto IA (`logs/agent_reports.log`)**: Botón en respuestas del asistente para reportar fallos de lógica con formulario modal, fecha/hora, comentario del usuario, agentes involucrados e historial completo.
+## 🤖 Fase 5: Agentes de Automatización n8n y Memoria Dinámica (COMPLETADO)
 - [x] **Regla Global de Profesional Tratante por Defecto**: Asignación automática de la **Dra. Osly Melo** en la creación y visualización de citas por el agente o API.
 - [x] **Fix de Edición y Carga de Citas (`/appointments/[id]`)**: Auto-emparejamiento con el catálogo `treatments`, carga automática de precios por defecto y gastos de laboratorio sin pérdida de datos al guardar o recargar.
+- [x] **Agente Musly (Dispatcher + 4 Sub-agentes)**:
+  - [x] Flujos en `n8nv2.mumaweb.com` creados, validados y etiquetados con la etiqueta oficial `Melosmile`.
+  - [x] Agendamiento, Clínico, Facturación y General/FAQs operativos con `google/gemini-2.5-flash` determinista.
+  - [x] Document Cleaner (`IrLOC3fSQZCxvvBz`) procesando OCR manuscrito e ingesta de hojas contables.
+- [x] **URLs y Webhooks de Producción**:
+  - [x] Actualización de todas las llamadas HTTP internas a `https://agenda.melosmile.com` y `https://n8nv2.mumaweb.com`.
+  - [x] Sincronización de webhooks en Vercel (`N8N_WEBHOOK_BASE_URL` y `N8N_WEBHOOK_URL`).
 
 ---
 
-## 🧠 Fase 6: Aprendizaje Dinámico Autónomo & Memoria Semántica (COMPLETADO)
+## 🌐 Fase 6: Infraestructura de Entornos, Almacenamiento VPS y Filtro de Sedes (COMPLETADO)
+- [x] **Arquitectura de 3 Capas de Entornos**:
+  - [x] Configuración en Vercel de 11 variables de entorno para `Production` (`main`), `Preview` (`develop`) y `Development` (`localhost:3028`).
+  - [x] Sincronización directa con los proyectos Supabase Cloud correspondientes.
+- [x] **Almacenamiento Físico por FTP en IONOS VPS**:
+  - [x] Subida directa de fotos clínicas e informes PDF mediante FTP pasivo (`basic-ftp`) a `94.143.139.120`.
+  - [x] Estructura remota `melosmile.com/pacientes/{patient_id}/registros|docs/`.
+  - [x] Eliminación de dependencias de `fs` local en Vercel Serverless.
+- [x] **Filtro Global de Sede Activa (`ClinicContext`)**:
+  - [x] Creación del contexto global `ClinicContext` y hook `useClinic()`.
+  - [x] Carga dinámica de las 4 clínicas reales desde Supabase (`Clinica Daniel Bustamante`, `Clínica Goya`, `Clínica Las Rozas`, `Clínica RyA`).
+  - [x] Persistencia de la sede seleccionada en `localStorage`.
+  - [x] Filtrado reactivo unificado en Agenda (`/` y `CalendarView`), Facturación (`/billing`) y Pacientes (`/patients`).
+  - [x] Exención de rutas públicas `/api/ai-context`, `/api/dispatcher` y `/api/billing/document-cleaner` en `middleware.ts`.
 - [x] **Tabla `agent_learnings` en Supabase**: PostgreSQL con índices y políticas RLS para lectura y escritura de modismos y preferencias.
 - [x] **Endpoints Backend Next.js**:
   - `GET /api/ai/memory/search`: Búsqueda difusa/semántica de reglas activas.
@@ -180,6 +200,11 @@ Este documento establece el plan de desarrollo, hitos alcanzados y próximos fas
 - [x] Corrección de scoping/hoisting de funciones en TypeScript (`toTitleCase`).
 - [x] Cambio de cliente Supabase cliente → `supabaseAdmin` en endpoints server-side para evitar bloqueos RLS.
 - [x] Compilación y build verificado al 100% con `npm run build` (38 rutas compiladas sin errores).
+- [x] Configuración de ventana de contexto a **22.528 Tokens (22K)** en Ollama y `opencode.jsonc`.
+- [x] Habilitación de Tool Calling (`"tools": true`) y solución de esquemas para `deepseek-coder-v2:lite`, `qwen2.5-coder:14b`, `gemma4:latest` y `gemma2:27b`.
+- [x] Registro y conexión de 4 servidores MCP en OpenCode (`supabase`, `n8n`, `notion`, `github`).
+- [x] Creación de `MANUAL_EQUIPOS_OPENCODE.md` con el manual oficial global de equipos para OpenCode IDE.
+
 
 
 
