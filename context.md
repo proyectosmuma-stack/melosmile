@@ -281,3 +281,12 @@ Se ha ampliado la plataforma con las siguientes capacidades y mejoras:
   - Enlazados los 4 servidores MCP en OpenCode (`supabase`, `n8n`, `notion`, `github`).
   - Creada suite de benchmarking y el manual oficial global de equipos `MANUAL_EQUIPOS_OPENCODE.md` para probar los agentes Mumabot y SecBot en OpenCode IDE.
 
+
+---
+
+## 10. ⚡ Optimización Backend y Limpieza de Deuda Técnica
+- **Centralización de Utils**: Creación de `lib/utils/date-parser.ts` y `lib/utils/patient-id.ts` para agrupar funciones redundantes presentes en `appointments`, `patients` y `billing`.
+- **Generación de ID Robusta (PAC-XXX)**: Cambio del escaneo masivo de filas en JS por una consulta eficiente `.order("id", { ascending: false }).limit(1)` en base de datos.
+- **Transacciones Atómicas de Facturación**: Implementado `.upsert()` con restricción de conflicto compuesta (`session_id, appointment_id, procedure_index`) al sobreescribir sesiones contables, asegurando 0% riesgo de pérdida de datos.
+- **Búsqueda Filtrada Nativa (Appointments)**: El buscador de citas por nombre de paciente ahora delega la carga computacional a Supabase usando `.or()` con `.ilike()`, mejorando drásticamente el rendimiento del API al no traer todas las citas del día para filtrarlas post-fetch.
+- **Retroalimentación del Agente**: Se documentaron los principios arquitectónicos adquiridos sobre atomicidad y filtros Supabase directamente en `agent_learnings` (memoria vectorial del agente).

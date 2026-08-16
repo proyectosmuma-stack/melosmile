@@ -3,12 +3,7 @@ export const fetchCache = "force-no-store";
 export const revalidate = 0;
 
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
-
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://amhfdzfcmpastmlsosou.supabase.co";
-const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "sb_publishable_kN-3hlqUxOni9onF1CDmhg_03EOCXG6";
-
-const supabase = createClient(SUPABASE_URL, SERVICE_KEY);
+import { supabaseAdmin as supabase } from "@/lib/supabase/server";
 
 /**
  * GET /api/ai-context

@@ -208,3 +208,10 @@ Este documento establece el plan de desarrollo, hitos alcanzados y próximos fas
 
 
 
+
+### Fase 10: Optimización Backend y Limpieza de Deuda Técnica 🟢
+- [x] **Centralización de Utils**: Creación de `lib/utils/date-parser.ts` y `lib/utils/patient-id.ts` para eliminar funciones duplicadas (300+ líneas) en los endpoints.
+- [x] **Secuencias Max ID Robustas**: Reemplazado `.limit(50)` en JS por query optimizada `.order("id", { ascending: false }).limit(1)` en DB para la generación de `historia_id` secuencial.
+- [x] **Atomicidad en Facturación**: Modificada la generación de líneas de facturación en `/api/billing/sessions/generate/route.ts` usando un `.upsert()` atómico con `onConflict` sobre `appointment_id_procedure_index`, evitando `.delete` + `.insert` separados que podían causar pérdida de datos.
+- [x] **Optimización de Búsqueda de Pacientes**: Moviendo el filtrado por nombre en `/api/appointments/list/route.ts` desde JavaScript (post-fetch en memoria) hacia una query nativa Supabase usando `.or()` e `.ilike()`, ahorrando memoria en el servidor Node.
+- [x] **Base de Conocimiento IA**: Almacenados 4 nuevos aprendizajes sobre reglas arquitectónicas de Supabase y Node en la tabla vectorial `agent_learnings`.

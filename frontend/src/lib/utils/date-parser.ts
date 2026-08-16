@@ -1,0 +1,287 @@
+/**
+ * lib/utils/date-parser.ts
+ *
+ * Función centralizada de parsing de fechas en lenguaje natural (español + ISO).
+ * Utilizada por appointments/create, appointments/update y cualquier ruta que
+ * necesite interpretar fechas. Timezone base: Europe/Madrid.
+ */
+
+export interface DateRange {
+  startISO: string;
+  endISO: string;
+  dateLabel: string;
+}
+
+const SPANISH_MONTHS: Record<string, number> = {
+  enero: 0, febrero: 1, marzo: 2, abril: 3, mayo: 4, junio: 5,
+  julio: 6, agosto: 7, septiembre: 8, octubre: 9, noviembre: 10, diciembre: 11,
+};
+
+const SPANISH_WEEKDAYS: Record<string, number> = {
+  domingo: 0, lunes: 1, martes: 2,
+  miércoles: 3, miercoles: 3,
+  jueves: 4, viernes: 5,
+  sábado: 6, sabado: 6,
+};
+
+const DAYS_OF_WEEK_EN: Record<string, number> = {
+  monday: 1, tuesday: 2, wednesday: 3,
+  thursday: 4, friday: 5, saturday: 6, sunday: 0,
+};
+
+/** Returns current date components anchored to Europe/Madrid timezone */
+export function getMadridDate(): { yyyy: number; mm: number; dd: number; isoToday: string } {
+  const now = new Date();
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Europe/Madrid",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(now); // Format: "YYYY-MM-DD"
+
+  const [yyyy, mm, dd] = parts.split("-").map(Number);
+  return { yyyy, mm, dd, isoToday: parts };
+}
+
+/**
+ * Converts a date + optional time input string into a UTC ISO-8601 string.
+ * Supports: ISO dates, relative keywords (mañana, ayer, pasado mañana),
+ * Spanish weekday names, and HH:MM time extraction.
+ *
+ * Used by: appointments/create, appointments/update
+ */
+export function parseAppointmentDate(inputDate?: string, inputTime?: string): string {
+  let combined = inputDate || "";
+  if (inputTime && !combined.includes(inputTime)) {
+    combined += ` ${inputTime}`;
+  }
+
+  const str = combined.toLowerCase().trim();
+
+  if (!str) {
+    const d = new Date();
+    d.setHours(10, 0, 0, 0);
+    return d.toISOString();
+  }
+
+  // 1. Standard ISO / parseable date
+  const direct = new Date(combined);
+  if (!isNaN(direct.getTime()) && (str.includes("-") || str.includes("/"))) {
+    return direct.toISOString();
+  }
+
+  // 2. Use Madrid as base date
+  const madrid = getMadridDate();
+  let targetYear = madrid.yyyy;
+  let targetMonth = madrid.mm - 1; // 0-indexed for Date constructor
+  let targetDay = madrid.dd;
+  let hours = 10;
+  let minutes = 0;
+
+  // Extract time (HH:MM or HHhMM)
+  const timeMatch = str.match(/(\d{1,2})[:h](\d{2})?/i);
+  if (timeMatch) {
+    hours = parseInt(timeMatch[1], 10);
+    minutes = timeMatch[2] ? parseInt(timeMatch[2], 10) : 0;
+  }
+
+  const dateOnlyStr = str.replace(/(\d{1,2})[:h](\d{2})?/gi, "").trim();
+
+  // 3. Relative keywords
+  if (dateOnlyStr.includes("pasado mañana") || dateOnlyStr.includes("pasado manana")) {
+    const d = new Date(madrid.yyyy, madrid.mm - 1, madrid.dd);
+    d.setDate(d.getDate() + 2);
+    targetYear = d.getFullYear(); targetMonth = d.getMonth(); targetDay = d.getDate();
+  } else if (dateOnlyStr.includes("mañana") || dateOnlyStr.includes("manana")) {
+    const d = new Date(madrid.yyyy, madrid.mm - 1, madrid.dd);
+    d.setDate(d.getDate() + 1);
+    targetYear = d.getFullYear(); targetMonth = d.getMonth(); targetDay = d.getDate();
+  } else if (dateOnlyStr.includes("ayer")) {
+    const d = new Date(madrid.yyyy, madrid.mm - 1, madrid.dd);
+    d.setDate(d.getDate() - 1);
+    targetYear = d.getFullYear(); targetMonth = d.getMonth(); targetDay = d.getDate();
+  } else {
+    // 4. Weekday names (Spanish + English)
+    const allWeekdays = { ...SPANISH_WEEKDAYS, ...DAYS_OF_WEEK_EN };
+    let matchedWeekday: number | null = null;
+    for (const [wName, wNum] of Object.entries(allWeekdays)) {
+      if (dateOnlyStr.includes(wName)) { matchedWeekday = wNum; break; }
+    }
+
+    if (matchedWeekday !== null) {
+      const d = new Date(madrid.yyyy, madrid.mm - 1, madrid.dd);
+      let diff = matchedWeekday - d.getDay();
+      if (diff <= 0) diff += 7;
+      d.setDate(d.getDate() + diff);
+      targetYear = d.getFullYear(); targetMonth = d.getMonth(); targetDay = d.getDate();
+    } else {
+      // 5. "DD de mes" or numeric day
+      const dayMatch = dateOnlyStr.match(/(\d{1,2})\s*(?:de|\/|-)?\s*([a-záéíóú]+)?/i);
+      if (dayMatch) {
+        const parsedDay = parseInt(dayMatch[1], 10);
+        if (parsedDay >= 1 && parsedDay <= 31) {
+          targetDay = parsedDay;
+          if (dayMatch[2] && SPANISH_MONTHS[dayMatch[2].toLowerCase()] !== undefined) {
+            targetMonth = SPANISH_MONTHS[dayMatch[2].toLowerCase()];
+          }
+        }
+      }
+    }
+  }
+
+  // Round minutes to nearest 15
+  const roundedMins = Math.round(minutes / 15) * 15;
+  if (roundedMins === 60) {
+    hours = hours + 1;
+    minutes = 0;
+  } else {
+    minutes = roundedMins;
+  }
+
+  return new Date(Date.UTC(targetYear, targetMonth, targetDay, hours, minutes, 0, 0)).toISOString();
+}
+
+/**
+ * Parses natural language date strings into an ISO UTC range.
+ * Supports: hoy, mañana, semana, mes, weekday names, Spanish month names, ISO dates.
+ *
+ * Used by: appointments/list
+ */
+export function getDateRange(dateStr: string): DateRange {
+  let clean = dateStr.replace(/^["']|["']$/g, "").toLowerCase().trim();
+  try { clean = decodeURIComponent(clean); } catch (_) {}
+
+  const madrid = getMadridDate();
+
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const isoDay = (y: number, m: number, d: number) =>
+    `${y}-${pad(m)}-${pad(d)}`;
+
+  const weekRange = (startDate: Date): DateRange => {
+    const monday = new Date(startDate);
+    const dow = monday.getDay();
+    monday.setDate(monday.getDate() + (dow === 0 ? -6 : 1 - dow));
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+    const s = isoDay(monday.getFullYear(), monday.getMonth() + 1, monday.getDate());
+    const e = isoDay(sunday.getFullYear(), sunday.getMonth() + 1, sunday.getDate());
+    return { startISO: `${s}T00:00:00.000Z`, endISO: `${e}T23:59:59.999Z`, dateLabel: `${s} al ${e}` };
+  };
+
+  if (clean.includes("semana pasada") || clean.includes("last week")) {
+    const d = new Date(madrid.yyyy, madrid.mm - 1, madrid.dd - 7);
+    const r = weekRange(d);
+    return { ...r, dateLabel: `la semana pasada (${r.dateLabel})` };
+  }
+  if (clean.includes("proxima semana") || clean.includes("próxima semana") || clean.includes("semana que viene") || clean.includes("next week")) {
+    const d = new Date(madrid.yyyy, madrid.mm - 1, madrid.dd + 7);
+    const r = weekRange(d);
+    return { ...r, dateLabel: `la próxima semana (${r.dateLabel})` };
+  }
+  if (clean.includes("esta semana") || clean.includes("semana") || clean.includes("this week")) {
+    const d = new Date(madrid.yyyy, madrid.mm - 1, madrid.dd);
+    const r = weekRange(d);
+    return { ...r, dateLabel: `esta semana (${r.dateLabel})` };
+  }
+
+  if (clean.includes("mes pasado") || clean.includes("last month")) {
+    const first = new Date(madrid.yyyy, madrid.mm - 2, 1);
+    const last = new Date(madrid.yyyy, madrid.mm - 1, 0);
+    const s = isoDay(first.getFullYear(), first.getMonth() + 1, first.getDate());
+    const e = isoDay(last.getFullYear(), last.getMonth() + 1, last.getDate());
+    return { startISO: `${s}T00:00:00.000Z`, endISO: `${e}T23:59:59.999Z`, dateLabel: `el mes pasado (${s} al ${e})` };
+  }
+  if (clean.includes("proximo mes") || clean.includes("próximo mes") || clean.includes("mes que viene") || clean.includes("next month")) {
+    const first = new Date(madrid.yyyy, madrid.mm, 1);
+    const last = new Date(madrid.yyyy, madrid.mm + 1, 0);
+    const s = isoDay(first.getFullYear(), first.getMonth() + 1, first.getDate());
+    const e = isoDay(last.getFullYear(), last.getMonth() + 1, last.getDate());
+    return { startISO: `${s}T00:00:00.000Z`, endISO: `${e}T23:59:59.999Z`, dateLabel: `el próximo mes (${s} al ${e})` };
+  }
+  if (clean.includes("este mes") || clean.includes("mes") || clean.includes("this month")) {
+    const first = new Date(madrid.yyyy, madrid.mm - 1, 1);
+    const last = new Date(madrid.yyyy, madrid.mm, 0);
+    const s = isoDay(first.getFullYear(), first.getMonth() + 1, first.getDate());
+    const e = isoDay(last.getFullYear(), last.getMonth() + 1, last.getDate());
+    return { startISO: `${s}T00:00:00.000Z`, endISO: `${e}T23:59:59.999Z`, dateLabel: `este mes (${s} al ${e})` };
+  }
+
+  // Single-day resolution
+  let targetY = madrid.yyyy;
+  let targetM = madrid.mm;
+  let targetD = madrid.dd;
+
+  if (clean.includes("pasado mañana") || clean.includes("pasado manana")) {
+    const d = new Date(madrid.yyyy, madrid.mm - 1, madrid.dd + 2);
+    targetY = d.getFullYear(); targetM = d.getMonth() + 1; targetD = d.getDate();
+  } else if (clean.includes("mañana") || clean.includes("manana")) {
+    const d = new Date(madrid.yyyy, madrid.mm - 1, madrid.dd + 1);
+    targetY = d.getFullYear(); targetM = d.getMonth() + 1; targetD = d.getDate();
+  } else if (clean.includes("ayer") || clean.includes("yesterday")) {
+    const d = new Date(madrid.yyyy, madrid.mm - 1, madrid.dd - 1);
+    targetY = d.getFullYear(); targetM = d.getMonth() + 1; targetD = d.getDate();
+  } else if (clean.includes("hoy") || clean.includes("today")) {
+    // keep today
+  } else {
+    // ISO date YYYY-MM-DD
+    const isoMatch = clean.match(/(\d{4})-(\d{2})-(\d{2})/);
+    if (isoMatch) {
+      targetY = parseInt(isoMatch[1]); targetM = parseInt(isoMatch[2]); targetD = parseInt(isoMatch[3]);
+    } else {
+      // Weekday
+      const allWeekdays = { ...SPANISH_WEEKDAYS, ...DAYS_OF_WEEK_EN };
+      let matched: number | null = null;
+      for (const [wName, wNum] of Object.entries(allWeekdays)) {
+        if (clean.includes(wName)) { matched = wNum; break; }
+      }
+      if (matched !== null) {
+        const d = new Date(madrid.yyyy, madrid.mm - 1, madrid.dd);
+        let diff = matched - d.getDay();
+        if (diff <= 0) diff += 7;
+        d.setDate(d.getDate() + diff);
+        targetY = d.getFullYear(); targetM = d.getMonth() + 1; targetD = d.getDate();
+      } else {
+        // "DD de mes" or "DD/MM"
+        const dayMonthMatch = clean.match(/(\d{1,2})\s*(?:de|\/|-)?\s*([a-záéíóú]+|\d{1,2})/i);
+        if (dayMonthMatch) {
+          const parsedDay = parseInt(dayMonthMatch[1], 10);
+          if (parsedDay >= 1 && parsedDay <= 31) {
+            targetD = parsedDay;
+            const monthPart = dayMonthMatch[2].toLowerCase();
+            if (SPANISH_MONTHS[monthPart] !== undefined) {
+              targetM = SPANISH_MONTHS[monthPart] + 1;
+            } else {
+              const numMonth = parseInt(monthPart, 10);
+              if (!isNaN(numMonth) && numMonth >= 1 && numMonth <= 12) targetM = numMonth;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  const dateStr2 = isoDay(targetY, targetM, targetD);
+  return {
+    startISO: `${dateStr2}T00:00:00.000Z`,
+    endISO: `${dateStr2}T23:59:59.999Z`,
+    dateLabel: dateStr2,
+  };
+}
+
+/** Date keywords that signal a date context (not a patient name) */
+export const DATE_KEYWORDS = [
+  "mañana", "manana", "tomorrow", "pasado mañana",
+  "hoy", "today", "ayer", "yesterday", "semana",
+  "enero", "febrero", "marzo", "abril", "mayo", "junio",
+  "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre",
+];
+
+export function isDateKeyword(term: string): boolean {
+  const lower = term.toLowerCase();
+  if (DATE_KEYWORDS.some((kw) => lower.includes(kw))) return true;
+  const allWeekdays = { ...SPANISH_WEEKDAYS, ...DAYS_OF_WEEK_EN };
+  if (Object.keys(allWeekdays).some((d) => lower.includes(d))) return true;
+  if (/\d{4}-\d{2}-\d{2}/.test(lower)) return true;
+  if (/\d{1,2}\s*(?:de|\/|-)\s*(?:[a-z]+|\d{1,2})/i.test(lower)) return true;
+  return false;
+}

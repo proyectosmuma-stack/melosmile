@@ -1,318 +1,19 @@
 import { NextResponse } from "next/server";
-import { supabase } from "@/lib/supabase/client";
-
-// Keywords that indicate a date context, NOT a patient name
-const DATE_KEYWORDS = [
-  "mañana",
-  "manana",
-  "tomorrow",
-  "pasado mañana",
-  "hoy",
-  "today",
-  "ayer",
-  "yesterday",
-  "semana",
-  "enero",
-  "febrero",
-  "marzo",
-  "abril",
-  "mayo",
-  "junio",
-  "julio",
-  "agosto",
-  "septiembre",
-  "octubre",
-  "noviembre",
-  "diciembre",
-];
-
-const SPANISH_MONTHS: Record<string, number> = {
-  enero: 1,
-  febrero: 2,
-  marzo: 3,
-  abril: 4,
-  mayo: 5,
-  junio: 6,
-  julio: 7,
-  agosto: 8,
-  septiembre: 9,
-  octubre: 10,
-  noviembre: 11,
-  diciembre: 12,
-};
-
-const DAYS_OF_WEEK: Record<string, number> = {
-  lunes: 1, monday: 1,
-  martes: 2, tuesday: 2,
-  miercoles: 3, miércoles: 3, wednesday: 3,
-  jueves: 4, thursday: 4,
-  viernes: 5, friday: 5,
-  sabado: 6, sábado: 6, saturday: 6,
-  domingo: 0, sunday: 0
-};
-
-function isDateKeyword(term: string): boolean {
-  const lower = term.toLowerCase();
-  if (DATE_KEYWORDS.some((kw) => lower.includes(kw))) return true;
-  if (Object.keys(DAYS_OF_WEEK).some((d) => lower.includes(d))) return true;
-  if (/\d{4}-\d{2}-\d{2}/.test(lower)) return true;
-  if (/\d{1,2}\s*(?:de|\/|-)\s*(?:[a-z]+|\d{1,2})/i.test(lower)) return true;
-  return false;
-}
+import { supabaseAdmin as supabase } from "@/lib/supabase/server";
+import { isDateKeyword, getDateRange, getMadridDate } from "@/lib/utils/date-parser";
 
 function cleanPatientName(term: string): string {
   if (!term) return "";
   let clean = term;
-  try { clean = decodeURIComponent(clean); } catch (e) {}
+  try { clean = decodeURIComponent(clean); } catch (_e) {}
   clean = clean.replace(/^["']|["']$/g, "").trim();
-
-  // Strip conversational stop-words from patient search
   const stopPattern = /\b(cu[aá]ndo|tiene|cita|citas|de|para|ver|buscar|las|los|la|el|revisar|agenda)\b/gi;
-  let nameOnly = clean.replace(stopPattern, "").replace(/[?¿!¡]/g, "").replace(/\s+/g, " ").trim();
-
+  const nameOnly = clean.replace(stopPattern, "").replace(/[?¿!¡]/g, "").replace(/\s+/g, " ").trim();
   return (nameOnly.length >= 2 ? nameOnly : clean).toLowerCase();
 }
 
-/**
- * Returns current date components in Europe/Madrid timezone
- */
-function getMadridDate(): { yyyy: number; mm: number; dd: number; isoToday: string } {
-  const now = new Date();
-  const parts = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Europe/Madrid",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).format(now); // Format: "YYYY-MM-DD"
-
-  const [yyyy, mm, dd] = parts.split("-").map(Number);
-  return { yyyy, mm, dd, isoToday: parts };
-}
-
-/**
- * Parses natural language date strings into ISO start/end UTC range using Europe/Madrid baseline
- */
-function getDateRange(dateStr: string): { startISO: string; endISO: string; dateLabel: string } {
-  let clean = dateStr.replace(/^["']|["']$/g, "").toLowerCase().trim();
-  try { clean = decodeURIComponent(clean); } catch (e) {}
-
-  const madrid = getMadridDate();
-  let targetY = madrid.yyyy;
-  let targetM = madrid.mm;
-  let targetD = madrid.dd;
-
-  // 1. Check "semana pasada" / "last week"
-  if (clean.includes("semana pasada") || clean.includes("last week")) {
-    const d = new Date(madrid.yyyy, madrid.mm - 1, madrid.dd);
-    const dayOfWeek = d.getDay();
-    const diffToMon = (dayOfWeek === 0 ? -6 : 1 - dayOfWeek) - 7;
-    const monday = new Date(d);
-    monday.setDate(d.getDate() + diffToMon);
-    const sunday = new Date(monday);
-    sunday.setDate(monday.getDate() + 6);
-
-    const monY = monday.getFullYear();
-    const monM = String(monday.getMonth() + 1).padStart(2, "0");
-    const monD = String(monday.getDate()).padStart(2, "0");
-
-    const sunY = sunday.getFullYear();
-    const sunM = String(sunday.getMonth() + 1).padStart(2, "0");
-    const sunD = String(sunday.getDate()).padStart(2, "0");
-
-    return {
-      startISO: `${monY}-${monM}-${monD}T00:00:00.000Z`,
-      endISO: `${sunY}-${sunM}-${sunD}T23:59:59.999Z`,
-      dateLabel: `la semana pasada (${monY}-${monM}-${monD} al ${sunY}-${sunM}-${sunD})`,
-    };
-  }
-
-  // 2. Check "proxima semana" / "próxima semana" / "next week"
-  if (clean.includes("proxima semana") || clean.includes("próxima semana") || clean.includes("semana que viene") || clean.includes("next week")) {
-    const d = new Date(madrid.yyyy, madrid.mm - 1, madrid.dd);
-    const dayOfWeek = d.getDay();
-    const diffToMon = (dayOfWeek === 0 ? -6 : 1 - dayOfWeek) + 7;
-    const monday = new Date(d);
-    monday.setDate(d.getDate() + diffToMon);
-    const sunday = new Date(monday);
-    sunday.setDate(monday.getDate() + 6);
-
-    const monY = monday.getFullYear();
-    const monM = String(monday.getMonth() + 1).padStart(2, "0");
-    const monD = String(monday.getDate()).padStart(2, "0");
-
-    const sunY = sunday.getFullYear();
-    const sunM = String(sunday.getMonth() + 1).padStart(2, "0");
-    const sunD = String(sunday.getDate()).padStart(2, "0");
-
-    return {
-      startISO: `${monY}-${monM}-${monD}T00:00:00.000Z`,
-      endISO: `${sunY}-${sunM}-${sunD}T23:59:59.999Z`,
-      dateLabel: `la próxima semana (${monY}-${monM}-${monD} al ${sunY}-${sunM}-${sunD})`,
-    };
-  }
-
-  // 3. Check "esta semana" / "semana" / "this week"
-  if (clean.includes("esta semana") || clean.includes("semana") || clean.includes("this week")) {
-    const d = new Date(madrid.yyyy, madrid.mm - 1, madrid.dd);
-    const dayOfWeek = d.getDay();
-    const diffToMon = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
-    const monday = new Date(d);
-    monday.setDate(d.getDate() + diffToMon);
-    const sunday = new Date(monday);
-    sunday.setDate(monday.getDate() + 6);
-
-    const monY = monday.getFullYear();
-    const monM = String(monday.getMonth() + 1).padStart(2, "0");
-    const monD = String(monday.getDate()).padStart(2, "0");
-
-    const sunY = sunday.getFullYear();
-    const sunM = String(sunday.getMonth() + 1).padStart(2, "0");
-    const sunD = String(sunday.getDate()).padStart(2, "0");
-
-    return {
-      startISO: `${monY}-${monM}-${monD}T00:00:00.000Z`,
-      endISO: `${sunY}-${sunM}-${sunD}T23:59:59.999Z`,
-      dateLabel: `esta semana (${monY}-${monM}-${monD} al ${sunY}-${sunM}-${sunD})`,
-    };
-  }
-
-  // 4. Check "mes pasado" / "last month"
-  if (clean.includes("mes pasado") || clean.includes("last month")) {
-    const firstDay = new Date(madrid.yyyy, madrid.mm - 2, 1);
-    const lastDay = new Date(madrid.yyyy, madrid.mm - 1, 0);
-
-    const fY = firstDay.getFullYear();
-    const fM = String(firstDay.getMonth() + 1).padStart(2, "0");
-    const fD = String(firstDay.getDate()).padStart(2, "0");
-
-    const lY = lastDay.getFullYear();
-    const lM = String(lastDay.getMonth() + 1).padStart(2, "0");
-    const lD = String(lastDay.getDate()).padStart(2, "0");
-
-    return {
-      startISO: `${fY}-${fM}-${fD}T00:00:00.000Z`,
-      endISO: `${lY}-${lM}-${lD}T23:59:59.999Z`,
-      dateLabel: `el mes pasado (${fY}-${fM}-${fD} al ${lY}-${lM}-${lD})`,
-    };
-  }
-
-  // 5. Check "proximo mes" / "próximo mes" / "next month"
-  if (clean.includes("proximo mes") || clean.includes("próximo mes") || clean.includes("mes que viene") || clean.includes("next month")) {
-    const firstDay = new Date(madrid.yyyy, madrid.mm, 1);
-    const lastDay = new Date(madrid.yyyy, madrid.mm + 1, 0);
-
-    const fY = firstDay.getFullYear();
-    const fM = String(firstDay.getMonth() + 1).padStart(2, "0");
-    const fD = String(firstDay.getDate()).padStart(2, "0");
-
-    const lY = lastDay.getFullYear();
-    const lM = String(lastDay.getMonth() + 1).padStart(2, "0");
-    const lD = String(lastDay.getDate()).padStart(2, "0");
-
-    return {
-      startISO: `${fY}-${fM}-${fD}T00:00:00.000Z`,
-      endISO: `${lY}-${lM}-${lD}T23:59:59.999Z`,
-      dateLabel: `el próximo mes (${fY}-${fM}-${fD} al ${lY}-${lM}-${lD})`,
-    };
-  }
-
-  // 6. Check "este mes" / "this month"
-  if (clean.includes("este mes") || clean.includes("this month")) {
-    const firstDay = new Date(madrid.yyyy, madrid.mm - 1, 1);
-    const lastDay = new Date(madrid.yyyy, madrid.mm, 0);
-
-    const fY = firstDay.getFullYear();
-    const fM = String(firstDay.getMonth() + 1).padStart(2, "0");
-    const fD = String(firstDay.getDate()).padStart(2, "0");
-
-    const lY = lastDay.getFullYear();
-    const lM = String(lastDay.getMonth() + 1).padStart(2, "0");
-    const lD = String(lastDay.getDate()).padStart(2, "0");
-
-    return {
-      startISO: `${fY}-${fM}-${fD}T00:00:00.000Z`,
-      endISO: `${lY}-${lM}-${lD}T23:59:59.999Z`,
-      dateLabel: `este mes (${fY}-${fM}-${fD} al ${lY}-${lM}-${lD})`,
-    };
-  }
-
-  // 7. Check specific days of the week (e.g. "lunes", "martes", "próximo viernes")
-  const foundDay = Object.keys(DAYS_OF_WEEK).find((d) => clean.includes(d));
-  if (foundDay !== undefined) {
-    const targetDayIndex = DAYS_OF_WEEK[foundDay];
-    const todayDate = new Date(madrid.yyyy, madrid.mm - 1, madrid.dd);
-    const currentDayIndex = todayDate.getDay();
-
-    let daysToAdd = targetDayIndex - currentDayIndex;
-    if (clean.includes("pasado") || clean.includes("last")) {
-      if (daysToAdd >= 0) daysToAdd -= 7;
-    } else if (clean.includes("proximo") || clean.includes("próximo") || clean.includes("que viene") || clean.includes("next")) {
-      if (daysToAdd <= 0) daysToAdd += 7;
-    }
-
-    const targetDate = new Date(todayDate);
-    targetDate.setDate(todayDate.getDate() + daysToAdd);
-
-    targetY = targetDate.getFullYear();
-    targetM = targetDate.getMonth() + 1;
-    targetD = targetDate.getDate();
-  }
-
-  if (clean.includes("pasado mañana") || clean.includes("pasado manana")) {
-    const d = new Date(madrid.yyyy, madrid.mm - 1, madrid.dd + 2);
-    targetY = d.getFullYear();
-    targetM = d.getMonth() + 1;
-    targetD = d.getDate();
-  } else if (clean.includes("mañana") || clean.includes("manana") || clean.includes("tomorrow")) {
-    const d = new Date(madrid.yyyy, madrid.mm - 1, madrid.dd + 1);
-    targetY = d.getFullYear();
-    targetM = d.getMonth() + 1;
-    targetD = d.getDate();
-  } else if (clean.includes("ayer") || clean.includes("yesterday")) {
-    const d = new Date(madrid.yyyy, madrid.mm - 1, madrid.dd - 1);
-    targetY = d.getFullYear();
-    targetM = d.getMonth() + 1;
-    targetD = d.getDate();
-  } else if (clean.includes("hoy") || clean.includes("today")) {
-    // Keep target as madrid today
-  } else {
-    // Match "24 de julio", "24 de julio de 2026", "24/07", "24/07/2026"
-    const spanishDateMatch = clean.match(/(\d{1,2})\s*(?:de|\/|-)\s*([a-z]+|\d{1,2})(?:\s*(?:de|\/|-)\s*(\d{2,4}))?/i);
-    if (spanishDateMatch) {
-      const day = parseInt(spanishDateMatch[1], 10);
-      const monthRaw = spanishDateMatch[2].toLowerCase();
-      let month = parseInt(monthRaw, 10);
-      if (isNaN(month)) {
-        month = SPANISH_MONTHS[monthRaw] || madrid.mm;
-      }
-      let year = spanishDateMatch[3] ? parseInt(spanishDateMatch[3], 10) : madrid.yyyy;
-      if (year < 100) year += 2000;
-
-      targetY = year;
-      targetM = month;
-      targetD = day;
-    } else {
-      const isoMatch = clean.match(/(\d{4})-(\d{2})-(\d{2})/);
-      if (isoMatch) {
-        targetY = parseInt(isoMatch[1], 10);
-        targetM = parseInt(isoMatch[2], 10);
-        targetD = parseInt(isoMatch[3], 10);
-      }
-    }
-  }
-
-  const mmStr = String(targetM).padStart(2, "0");
-  const ddStr = String(targetD).padStart(2, "0");
-  const dateLabel = `${targetY}-${mmStr}-${ddStr}`;
-
-  return {
-    startISO: `${dateLabel}T00:00:00.000Z`,
-    endISO: `${dateLabel}T23:59:59.999Z`,
-    dateLabel,
-  };
-}
-
 export async function GET(req: Request) {
+
   try {
     const { searchParams } = new URL(req.url);
 
@@ -381,6 +82,18 @@ export async function GET(req: Request) {
       query = query.lte("appointment_date", endISO);
     }
 
+    // Filter by patient name at DB level (avoid post-fetch in-memory filtering)
+    if (patientTerm) {
+      const terms = patientTerm.split(/\s+/).filter((t: string) => t.length >= 2);
+      if (terms.length > 0) {
+        const orClauses = terms.flatMap((t: string) => [
+          `patients.first_name.ilike.%${t}%`,
+          `patients.last_name.ilike.%${t}%`,
+        ]).join(",");
+        query = query.or(orClauses);
+      }
+    }
+
     const { data: rawAppointments, error } = await query;
     if (error) throw error;
 
@@ -409,10 +122,7 @@ export async function GET(req: Request) {
       };
     });
 
-    // Filter by patient name if provided
-    if (patientTerm) {
-      results = results.filter((r: any) => r.paciente.toLowerCase().includes(patientTerm));
-    }
+    // Patient filter now applied at DB level — no post-fetch filtering needed
 
     let summaryText: string;
     if (results.length === 0) {

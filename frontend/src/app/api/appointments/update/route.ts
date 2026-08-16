@@ -4,112 +4,10 @@ export const revalidate = 0;
 export const runtime = "nodejs";
 
 import { NextResponse } from "next/server";
-import { supabase } from "@/lib/supabase/client";
-import { createClient } from "@supabase/supabase-js";
+import { supabaseAdmin } from "@/lib/supabase/server";
+import { parseAppointmentDate } from "@/lib/utils/date-parser";
 
-// Force Vercel deployment refresh: 2026-07-27T01:01:30
-const BUILD_VERSION = "2026.07.27.FORCE_PURGE_UPDATE_ROUTE_1";
 
-const _supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://amhfdzfcmpastmlsosou.supabase.co";
-const _serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-if (!_serviceKey) throw new Error("Missing SUPABASE_SERVICE_ROLE_KEY env var");
-
-const supabaseAdmin = createClient(_supabaseUrl, _serviceKey);
-
-function parseAppointmentDate(inputDate?: string): string {
-  if (!inputDate) return new Date().toISOString();
-
-  const str = inputDate.toLowerCase().trim();
-
-  // 1. Standard JS Date parse if valid ISO or YYYY-MM-DD
-  const direct = new Date(inputDate);
-  if (!isNaN(direct.getTime()) && str.includes("-")) return direct.toISOString();
-
-  // 2. Base Madrid Date calculation (Europe/Madrid)
-  const now = new Date();
-  const madridStr = now.toLocaleString("en-US", { timeZone: "Europe/Madrid" });
-  const madridNow = new Date(madridStr);
-
-  let targetYear = madridNow.getFullYear();
-  let targetMonth = madridNow.getMonth();
-  let targetDay = madridNow.getDate();
-  let hours = 12;
-  let minutes = 0;
-
-  // Extract time if present (HH:MM or HHhMM)
-  const timeMatch = str.match(/(\d{1,2})[:h](\d{2})?/i);
-  if (timeMatch) {
-    hours = parseInt(timeMatch[1], 10);
-    minutes = timeMatch[2] ? parseInt(timeMatch[2], 10) : 0;
-  }
-
-  // Remove time string portion from str to prevent day matching collision
-  const dateOnlyStr = str.replace(/(\d{1,2})[:h](\d{2})?/gi, "").trim();
-
-  const months: Record<string, number> = {
-    enero: 0, febrero: 1, marzo: 2, abril: 3, mayo: 4, junio: 5,
-    julio: 6, agosto: 7, septiembre: 8, octubre: 9, noviembre: 10, diciembre: 11
-  };
-
-  const weekdays: Record<string, number> = {
-    domingo: 0, lunes: 1, martes: 2, miércoles: 3, miercoles: 3,
-    jueves: 4, viernes: 5, sábado: 6, sabado: 6
-  };
-
-  // Check relative keywords
-  if (dateOnlyStr.includes("pasado mañana")) {
-    const d = new Date(madridNow);
-    d.setDate(d.getDate() + 2);
-    targetYear = d.getFullYear();
-    targetMonth = d.getMonth();
-    targetDay = d.getDate();
-  } else if (dateOnlyStr.includes("mañana")) {
-    const d = new Date(madridNow);
-    d.setDate(d.getDate() + 1);
-    targetYear = d.getFullYear();
-    targetMonth = d.getMonth();
-    targetDay = d.getDate();
-  } else if (dateOnlyStr.includes("ayer")) {
-    const d = new Date(madridNow);
-    d.setDate(d.getDate() - 1);
-    targetYear = d.getFullYear();
-    targetMonth = d.getMonth();
-    targetDay = d.getDate();
-  } else {
-    // Check weekdays
-    let matchedWeekday: number | null = null;
-    for (const [wName, wNum] of Object.entries(weekdays)) {
-      if (dateOnlyStr.includes(wName)) {
-        matchedWeekday = wNum;
-        break;
-      }
-    }
-
-    if (matchedWeekday !== null) {
-      const d = new Date(madridNow);
-      const currentDay = d.getDay();
-      let diff = matchedWeekday - currentDay;
-      if (diff <= 0) diff += 7; // Next upcoming day
-      d.setDate(d.getDate() + diff);
-      targetYear = d.getFullYear();
-      targetMonth = d.getMonth();
-      targetDay = d.getDate();
-    } else {
-      // Match day number (1-31) and optional month name
-      const dayMatch = dateOnlyStr.match(/(\d{1,2})\s*(?:de|\/|-)?\s*([a-z]+)?/i);
-      if (dayMatch) {
-        targetDay = parseInt(dayMatch[1], 10);
-        if (dayMatch[2] && months[dayMatch[2]] !== undefined) {
-          targetMonth = months[dayMatch[2]];
-        }
-      }
-    }
-  }
-
-  // Construct UTC date ISO string
-  const result = new Date(Date.UTC(targetYear, targetMonth, targetDay, hours, minutes, 0, 0));
-  return result.toISOString();
-}
 
 function scorePatientMatch(patient: any, targetQuery: string): number {
   const fullName = `${patient.first_name || ""} ${patient.last_name || ""}`.toLowerCase().trim();
@@ -188,7 +86,7 @@ export async function POST(req: Request) {
       String(status).toLowerCase().includes("borrar") ||
       String(status).toLowerCase().includes("eliminar");
 
-    const dbClient = (supabaseAdmin || supabase) as any;
+    const dbClient = supabaseAdmin as any;
 
     // 1. Resolve Patient ID if text or name is passed
     if (rawPatient && !String(rawPatient).toLowerCase().includes("todas") && !String(rawPatient).toLowerCase().includes("todo")) {

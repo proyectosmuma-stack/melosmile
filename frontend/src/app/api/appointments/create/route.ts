@@ -4,11 +4,10 @@ export const revalidate = 0;
 export const runtime = "nodejs";
 
 import { NextResponse } from "next/server";
+import { supabaseAdmin } from "@/lib/supabase/server";
+import { parseAppointmentDate } from "@/lib/utils/date-parser";
+import { getNextHistoriaId } from "@/lib/utils/patient-id";
 
-const BUILD_VERSION = "2026-07-27T05:59:00-pure-rest-v2-force-redeploy";
-const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-if (!SERVICE_ROLE_KEY) throw new Error("Missing SUPABASE_SERVICE_ROLE_KEY env var");
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://amhfdzfcmpastmlsosou.supabase.co";
 
 function toTitleCase(text: string): string {
   if (!text) return "";
@@ -30,49 +29,7 @@ function toTitleCase(text: string): string {
     .join(" ");
 }
 
-function parseAppointmentDate(inputDate?: string, inputTime?: string): string {
-  let combined = inputDate || "";
-  if (inputTime && !combined.includes(inputTime)) {
-    combined += ` ${inputTime}`;
-  }
 
-  const now = new Date();
-  let target = new Date(now);
-
-  if (combined.trim()) {
-    const parsed = new Date(combined);
-    if (!isNaN(parsed.getTime())) {
-      target = parsed;
-    } else {
-      const lower = combined.toLowerCase();
-      if (lower.includes("mañana")) {
-        target.setDate(target.getDate() + 1);
-      } else if (lower.includes("pasado mañana")) {
-        target.setDate(target.getDate() + 2);
-      }
-
-      const timeMatch = lower.match(/(\d{1,2})(?::(\d{2}))?/);
-      if (timeMatch) {
-        const hours = parseInt(timeMatch[1], 10);
-        const minutes = timeMatch[2] ? parseInt(timeMatch[2], 10) : 0;
-        target.setHours(hours, minutes, 0, 0);
-      } else {
-        target.setHours(10, 0, 0, 0);
-      }
-    }
-  } else {
-    target.setHours(10, 0, 0, 0);
-  }
-
-  const roundedMins = Math.round(target.getMinutes() / 15) * 15;
-  if (roundedMins === 60) {
-    target.setHours(target.getHours() + 1, 0, 0, 0);
-  } else {
-    target.setMinutes(roundedMins, 0, 0);
-  }
-
-  return target.toISOString();
-}
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const STOP_WORDS = new Set([
@@ -81,10 +38,13 @@ const STOP_WORDS = new Set([
 ]);
 
 async function dbFetch(path: string, options: RequestInit = {}) {
+  const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!SUPABASE_URL || !SERVICE_ROLE_KEY) throw new Error("Missing Supabase env vars");
   const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
     ...options,
     headers: {
-      "apikey": SERVICE_ROLE_KEY || "",
+      "apikey": SERVICE_ROLE_KEY,
       "Authorization": `Bearer ${SERVICE_ROLE_KEY}`,
       "Content-Type": "application/json",
       ...(options.headers || {})
@@ -93,6 +53,7 @@ async function dbFetch(path: string, options: RequestInit = {}) {
   const data = await res.json().catch(() => null);
   return { ok: res.ok, status: res.status, data };
 }
+
 
 export async function POST(req: Request) {
   try {
@@ -136,21 +97,8 @@ export async function POST(req: Request) {
         resolvedPatientId = searchRes.data[0].id;
         patientAmbiguous = true;
       } else {
-        // NO MATCH -> Create new patient with exact extracted names
-        let nextNum = 2;
-        const maxPacRes = await dbFetch(`patients?select=historia_id&historia_id=like.PAC-*&order=historia_id.desc&limit=100`);
-        if (maxPacRes.ok && maxPacRes.data) {
-          let highest = 0;
-          for (const p of maxPacRes.data) {
-            const match = (p.historia_id || "").match(/PAC-(\d+)/);
-            if (match) {
-              const num = parseInt(match[1], 10);
-              if (num > highest) highest = num;
-            }
-          }
-          if (highest > 0) nextNum = highest + 1;
-        }
-        const generatedHistoriaId = `PAC-${String(nextNum).padStart(3, "0")}`;
+        // NO MATCH → Crear nuevo paciente usando utility centralizado
+        const generatedHistoriaId = await getNextHistoriaId();
 
         const cleanEmail = `${firstName.toLowerCase().replace(/[^a-z0-9]/gi, '')}.${lastName.toLowerCase().replace(/[^a-z0-9]/gi, '')}.${Math.floor(Math.random() * 10000)}@melosmile.local`;
 
@@ -429,7 +377,6 @@ export async function POST(req: Request) {
           unified: true,
           message: `Cita unificada exitosamente a las ${isoDate}: ${combinedReason}`,
           data: updatedRecord,
-          version: BUILD_VERSION
         });
       }
     }
@@ -477,9 +424,9 @@ export async function POST(req: Request) {
       }
     }
 
-    return NextResponse.json({ success: true, data: newAppt, version: BUILD_VERSION });
+    return NextResponse.json({ success: true, data: newAppt });
   } catch (error: any) {
     console.error("Error creando cita:", error);
-    return NextResponse.json({ error: error.message, version: BUILD_VERSION }, { status: 500 });
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

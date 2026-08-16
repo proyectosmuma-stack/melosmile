@@ -1,32 +1,8 @@
 import { NextResponse } from 'next/server';
 import { supabaseAdmin as supabase } from '@/lib/supabase/server';
 import { processBillingLine, calculateSessionTotals, RawLineInput } from '@/lib/billing/calculator';
+import { getNextHistoriaId } from '@/lib/utils/patient-id';
 import * as XLSX from 'xlsx';
-
-/**
- * Obtiene el siguiente código secuencial historia_id (PAC-006, PAC-007...)
- */
-async function getNextHistoriaId(client: typeof supabase): Promise<string> {
-  const { data } = await client
-    .from('patients')
-    .select('historia_id')
-    .ilike('historia_id', 'PAC-%');
-
-  let maxNum = 0;
-  if (data && data.length > 0) {
-    for (const row of data) {
-      if (row.historia_id) {
-        const cleanStr = row.historia_id.replace(/^PAC-/, '').split('-')[0];
-        const numPart = parseInt(cleanStr, 10);
-        if (!isNaN(numPart) && numPart < 100000 && numPart > maxNum) {
-          maxNum = numPart;
-        }
-      }
-    }
-  }
-  const nextNum = maxNum + 1;
-  return `PAC-${String(nextNum).padStart(3, '0')}`;
-}
 
 export async function POST(request: Request) {
   try {
@@ -221,7 +197,7 @@ export async function POST(request: Request) {
 
         if (!matchedP && firstName.length >= 2) {
           // Auto-create patient with sequential PAC-XXX code
-          const nextHistoriaId = await getNextHistoriaId(supabase);
+          const nextHistoriaId = await getNextHistoriaId();
           const { data: newP, error: newPErr } = await supabase
             .from('patients')
             .insert({

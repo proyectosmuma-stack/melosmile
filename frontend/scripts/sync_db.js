@@ -13,6 +13,10 @@ try {
   const rootDir = path.join(__dirname, '../../');
   execSync('supabase db reset', { cwd: rootDir, stdio: 'inherit' });
 
+  // 3. Inyectar base de conocimiento de agentes (SOLO LOCAL)
+  console.log('\n3️⃣ Inyectando base de conocimiento de agentes (Local Only)...');
+  execSync('docker exec -i supabase_db_melosmile psql -U postgres < supabase/local_scripts/agent_learnings.sql', { cwd: rootDir, stdio: 'inherit' });
+
   console.log('\n🎉 ¡Sincronización y Redundancia completada con éxito!');
   console.log('Tu base de datos local ahora contiene la copia exacta de todos los datos procesados por n8n y los agentes en la nube.');
 } catch (error) {

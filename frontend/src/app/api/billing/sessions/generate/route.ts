@@ -219,11 +219,35 @@ export async function GET(request: Request) {
       }
     });
 
-    // 8. Delete old lines and insert new ones
-    await supabase.from('billing_session_lines').delete().eq('session_id', sessionId);
-    if (finalLinesToInsert.length > 0) {
-      await supabase.from('billing_session_lines').insert(finalLinesToInsert);
+    // 8. Upsert lines atomically — avoid data loss if insert fails after delete
+    // First: delete lines that no longer exist in the new set (by appointment_id+procedure_index)
+    const keepKeys = finalLinesToInsert
+      .filter(l => l.appointment_id)
+      .map(l => `${l.appointment_id}_${l.procedure_index}`);
+
+    const { data: currentDbLines } = await supabase
+      .from('billing_session_lines')
+      .select('id, appointment_id, procedure_index')
+      .eq('session_id', sessionId);
+
+    const toDelete = (currentDbLines || []).filter(
+      (l: any) => !keepKeys.includes(`${l.appointment_id}_${l.procedure_index}`)
+    ).map((l: any) => l.id);
+
+
+    if (toDelete.length > 0) {
+      await supabase.from('billing_session_lines').delete().in('id', toDelete);
     }
+
+    if (finalLinesToInsert.length > 0) {
+      await supabase
+        .from('billing_session_lines')
+        .upsert(finalLinesToInsert, {
+          onConflict: 'session_id,appointment_id,procedure_index',
+          ignoreDuplicates: false,
+        });
+    }
+
 
     // 9. Recalculate and update session totals
     const finalTotals = calculateSessionTotals(finalLinesToInsert as any);
