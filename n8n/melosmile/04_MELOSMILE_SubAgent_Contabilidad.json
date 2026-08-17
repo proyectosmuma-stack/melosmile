@@ -95,7 +95,7 @@
         },
         "sendBody": true,
         "toolDescription": "Envía recordatorio de pago a pacientes con facturas vencidas de más de 30 días.",
-        "url": "https://frontend-eight-dusky-42.vercel.app/api/billing/reminders"
+        "url": "https://melosmile-staging-git-develop-proyectosmuma-stacks-projects.vercel.app/api/billing/reminders"
       },
       "position": [
         700,
@@ -285,7 +285,7 @@
           },
           "sendBody": true,
           "toolDescription": "Envía recordatorio de pago a pacientes con facturas vencidas de más de 30 días.",
-          "url": "https://frontend-eight-dusky-42.vercel.app/api/billing/reminders"
+          "url": "https://melosmile-staging-git-develop-proyectosmuma-stacks-projects.vercel.app/api/billing/reminders"
         },
         "position": [
           700,

@@ -71,7 +71,7 @@
           ]
         },
         "toolDescription": "Recupera el historial clínico completo de un paciente por su ID o nombre.",
-        "url": "https://frontend-eight-dusky-42.vercel.app/api/patients/{patient_id}/clinical"
+        "url": "https://melosmile-staging-git-develop-proyectosmuma-stacks-projects.vercel.app/api/patients/{patient_id}/clinical"
       },
       "position": [
         700,
@@ -94,7 +94,7 @@
           ]
         },
         "toolDescription": "Obtiene un resumen ejecutivo del paciente: última visita, tratamientos activos y alertas.",
-        "url": "https://frontend-eight-dusky-42.vercel.app/api/patients/{patient_id}/summary"
+        "url": "https://melosmile-staging-git-develop-proyectosmuma-stacks-projects.vercel.app/api/patients/{patient_id}/summary"
       },
       "position": [
         700,
@@ -260,7 +260,7 @@
             ]
           },
           "toolDescription": "Recupera el historial clínico completo de un paciente por su ID o nombre.",
-          "url": "https://frontend-eight-dusky-42.vercel.app/api/patients/{patient_id}/clinical"
+          "url": "https://melosmile-staging-git-develop-proyectosmuma-stacks-projects.vercel.app/api/patients/{patient_id}/clinical"
         },
         "position": [
           700,
@@ -283,7 +283,7 @@
             ]
           },
           "toolDescription": "Obtiene un resumen ejecutivo del paciente: última visita, tratamientos activos y alertas.",
-          "url": "https://frontend-eight-dusky-42.vercel.app/api/patients/{patient_id}/summary"
+          "url": "https://melosmile-staging-git-develop-proyectosmuma-stacks-projects.vercel.app/api/patients/{patient_id}/summary"
         },
         "position": [
           700,

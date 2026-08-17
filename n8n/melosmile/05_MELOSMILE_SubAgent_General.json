@@ -65,7 +65,7 @@
       "parameters": {
         "description": "Consulta el diccionario de aprendizaje dinámico y modismos guardados del profesional.",
         "method": "GET",
-        "url": "https://frontend-eight-dusky-42.vercel.app/api/ai/memory/search?query={{ $fromAI('query', 'Palabra o frase a consultar') }}"
+        "url": "https://melosmile-staging-git-develop-proyectosmuma-stacks-projects.vercel.app/api/ai/memory/search?query={{ $fromAI('query', 'Palabra o frase a consultar') }}"
       },
       "position": [
         700,
@@ -83,7 +83,7 @@
         "method": "POST",
         "sendBody": true,
         "specifyBody": "json",
-        "url": "https://frontend-eight-dusky-42.vercel.app/api/ai/memory/learn"
+        "url": "https://melosmile-staging-git-develop-proyectosmuma-stacks-projects.vercel.app/api/ai/memory/learn"
       },
       "position": [
         700,
@@ -240,7 +240,7 @@
         "parameters": {
           "description": "Consulta el diccionario de aprendizaje dinámico y modismos guardados del profesional.",
           "method": "GET",
-          "url": "https://frontend-eight-dusky-42.vercel.app/api/ai/memory/search?query={{ $fromAI('query', 'Palabra o frase a consultar') }}"
+          "url": "https://melosmile-staging-git-develop-proyectosmuma-stacks-projects.vercel.app/api/ai/memory/search?query={{ $fromAI('query', 'Palabra o frase a consultar') }}"
         },
         "position": [
           700,
@@ -258,7 +258,7 @@
           "method": "POST",
           "sendBody": true,
           "specifyBody": "json",
-          "url": "https://frontend-eight-dusky-42.vercel.app/api/ai/memory/learn"
+          "url": "https://melosmile-staging-git-develop-proyectosmuma-stacks-projects.vercel.app/api/ai/memory/learn"
         },
         "position": [
           700,

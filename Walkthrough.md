@@ -23,4 +23,20 @@ Durante esta sesión, tanto Antigravity como Mumabot (OpenCode) colaboraron en u
 
 ## 3. Siguientes Pasos (Pendientes en OpenCode)
 * Reemplazar masivamente la URL de Vercel antigua en los flujos de n8n para restablecer la automatización externa.
-* Sincronizar la base de datos de pruebas local (Supabase) con la de Producción/Develop en Cloud para asegurar que los pacientes (ej. Munir) estén importados.
+
+## 4. Sincronización de Base de Datos (Completada ✅)
+* **Objetivo:** Sincronizar Supabase Local ← Cloud (staging develop). Cloud = fuente de verdad (decisión del usuario).
+* **Problema 1 (migración rota):** `20260816000001_add_is_active_to_patients_clinics.sql` tenía el *down migration sin comentar* → ADD + DROP inmediato → `is_active` nunca existía → `supabase db reset` fallaba en seed con `SQLSTATE 42703`. **Fix:** comentar el down migration.
+* **Problema 2 (IDs divergentes):** la migración `20260722000005` siembra clínicas/profesionales con `gen_random_uuid()` + `ON CONFLICT DO NOTHING` → el seed de cloud no sobrescribía los IDs → FK rotas. **Fix:** `TRUNCATE ... CASCADE` + recarga de `supabase/seed.sql`.
+* **Resultado:** Local = espejo exacto de Cloud. Clínicas: Goya `056bfb44`, RyA `0da2b67b`, Las Rozas `7c82ad1e`, D. Bustamante `59d7b4f4`. Profesionales: Osly `d7e5e2bb` (el que espera `billing/extract`), Norelys `a07e1bcf`, Shirley `c8c5b405`, Asencio `3056e04c`. Munir PAC-001 `cff20455` con is_active=true y sus clínicas (Goya + RyA primaria). FKs íntegras: 0 rotas. App 200 / Supabase 200.
+* **Pendiente:** el seed de cloud (`professional_clinics` 4, tags 6, treatments 53) está cargado; verificar contra n8n que los flujos apunten a la URL de staging correcta.
+
+## 5. Integración de Flujos n8n en Grafo y Base de Conocimiento (Completada ✅)
+* **Sincronización Completa:** Se descargaron los 86 workflows de la instancia `https://n8n.mumaweb.com`.
+  * **Melosmile (`melosmile/n8n/melosmile/`):** 6 flujos clínicos actualizados (`AI_Dispatcher`, `SubAgent_Agendamiento`, `SubAgent_Clinico`, `SubAgent_Contabilidad`, `SubAgent_General`, `Agent_Document_Cleaner`).
+  * **MumaLeads (`mumaLeads/n8n-workflows/`):** Más de 30 flujos sincronizados (`muma-email-engine`, `muma-gmaps-explorer`, `muma-lead-enricher`, `muma-scrape`, etc.).
+  * **Hub Global (`flujos N8N/workflows.json`):** Master copy de los 86 flujos sincronizada.
+* **Grafo de Código (CodeGraph):**
+  * Se creó `frontend/src/types/n8n-contracts.ts` conectando formalmente los flujos con las rutas de API internas de Next.js (`/api/appointments`, `/api/patients`, etc.).
+  * Reindexados con éxito los 3 repositorios: Melosmile (117 archivos, 1973 nodos), MumaLeads (221 archivos, 2870 nodos), y Flujos N8N (542 archivos, 3486 nodos).
+* **Base de Conocimiento:** Creado `docs/knowledge-base/domains/n8n-workflows.md` con topología, diagramas Mermaid y fichas técnicas.
