@@ -133,7 +133,7 @@ export function TagInput({ selectedTags, onChange, className }: TagInputProps) {
   return (
     <div ref={containerRef} className={cn("relative space-y-2", className)}>
       {/* Selected Tag Badges */}
-      <div className="flex flex-wrap gap-2 items-center min-h-[36px] p-2 bg-slate-50 border border-slate-200 rounded-xl focus-within:ring-2 focus-within:ring-rose-300 focus-within:border-rose-400 transition-all">
+      <div className="flex flex-wrap gap-2 items-center min-h-[36px] p-2 bg-muted/40 border border-border rounded-xl focus-within:ring-2 focus-within:ring-primary/60 focus-within:border-primary/60 transition-all">
         {selectedTags.map((tag) => {
           const style = getTagStyle(tag.color);
           return (
@@ -170,17 +170,17 @@ export function TagInput({ selectedTags, onChange, className }: TagInputProps) {
             }}
             onFocus={() => setIsOpen(true)}
             placeholder={selectedTags.length === 0 ? "Escribe para buscar o crear etiqueta (ej. Familiar, Henryschein)..." : "Añadir más etiquetas..."}
-            className="w-full bg-transparent text-sm font-medium text-slate-800 placeholder-slate-400 focus:outline-none px-1 py-0.5"
+            className="w-full bg-transparent text-sm font-medium text-foreground placeholder:text-muted-foreground focus:outline-none px-1 py-0.5"
           />
         </div>
       </div>
 
       {/* Autocomplete Dropdown (WordPress style) */}
       {isOpen && (query.trim().length > 0 || availableTags.length > 0) && (
-        <div className="absolute left-0 right-0 z-50 mt-1 max-h-60 overflow-y-auto bg-white border border-slate-200 rounded-xl shadow-xl py-1 divide-y divide-slate-100">
+        <div className="absolute left-0 right-0 z-50 mt-1 max-h-60 overflow-y-auto bg-card border border-border rounded-xl shadow-xl py-1 divide-y divide-border/60">
           {loading ? (
-            <div className="flex items-center justify-center p-3 text-slate-400 text-xs gap-2">
-              <Loader2 className="h-4 w-4 animate-spin text-rose-500" />
+            <div className="flex items-center justify-center p-3 text-muted-foreground text-xs gap-2">
+              <Loader2 className="h-4 w-4 animate-spin text-primary" />
               Cargando etiquetas...
             </div>
           ) : (
@@ -188,7 +188,7 @@ export function TagInput({ selectedTags, onChange, className }: TagInputProps) {
               {/* Filtered suggestions */}
               {filteredTags.length > 0 && (
                 <div className="py-1">
-                  <p className="px-3 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                  <p className="px-3 py-1 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
                     Sugerencias
                   </p>
                   {filteredTags.map((tag) => {
@@ -204,8 +204,8 @@ export function TagInput({ selectedTags, onChange, className }: TagInputProps) {
                         className={cn(
                           "w-full flex items-center justify-between px-3.5 py-2 text-xs font-semibold text-left transition-colors",
                           isSelected
-                            ? "bg-slate-50 text-slate-400 cursor-not-allowed"
-                            : "hover:bg-rose-50/60 text-slate-700 hover:text-rose-700"
+                            ? "bg-muted/40 text-muted-foreground cursor-not-allowed"
+                            : "hover:bg-primary/10 text-foreground hover:text-primary"
                         )}
                       >
                         <div className="flex items-center gap-2">
@@ -220,7 +220,7 @@ export function TagInput({ selectedTags, onChange, className }: TagInputProps) {
                             {tag.name}
                           </span>
                         </div>
-                        {isSelected && <Check className="h-3.5 w-3.5 text-slate-400" />}
+                        {isSelected && <Check className="h-3.5 w-3.5 text-muted-foreground" />}
                       </button>
                     );
                   })}
@@ -233,17 +233,17 @@ export function TagInput({ selectedTags, onChange, className }: TagInputProps) {
                   type="button"
                   onClick={handleCreateTag}
                   disabled={creating}
-                  className="w-full flex items-center gap-2 px-3.5 py-2.5 text-xs font-bold text-rose-600 bg-rose-50/40 hover:bg-rose-50 transition-colors border-t border-slate-100"
+                  className="w-full flex items-center gap-2 px-3.5 py-2.5 text-xs font-bold text-primary bg-primary/10 hover:bg-primary/15 transition-colors border-t border-border/60"
                 >
                   {creating ? (
-                    <Loader2 className="h-4 w-4 animate-spin text-rose-500" />
+                    <Loader2 className="h-4 w-4 animate-spin text-primary" />
                   ) : (
-                    <Plus className="h-4 w-4 text-rose-500" />
+                    <Plus className="h-4 w-4 text-primary" />
                   )}
                   <span>
                     Crear etiqueta <strong className="underline">"{query.trim()}"</strong>
                   </span>
-                  <Sparkles className="h-3.5 w-3.5 text-rose-400 ml-auto opacity-70" />
+                  <Sparkles className="h-3.5 w-3.5 text-primary/80 ml-auto opacity-70" />
                 </button>
               )}
             </>

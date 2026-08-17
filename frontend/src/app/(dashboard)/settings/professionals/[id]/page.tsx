@@ -254,8 +254,8 @@ export default function ProfessionalDetailPage({ params }: { params: Promise<{ i
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <Loader2 className="h-8 w-8 animate-spin text-rose-500" />
-        <span className="ml-3 text-slate-600 font-medium">Cargando ficha del profesional...</span>
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <span className="ml-3 text-muted-foreground font-medium">Cargando ficha del profesional...</span>
       </div>
     );
   }
@@ -263,8 +263,8 @@ export default function ProfessionalDetailPage({ params }: { params: Promise<{ i
   if (!professional) {
     return (
       <div className="flex flex-col items-center justify-center h-96 gap-4">
-        <AlertCircle className="h-12 w-12 text-slate-300" />
-        <p className="text-slate-600 font-semibold">Profesional no encontrado en la base de datos</p>
+        <AlertCircle className="h-12 w-12 text-muted-foreground/60" />
+        <p className="text-muted-foreground font-semibold">Profesional no encontrado en la base de datos</p>
         <Link href="/settings/professionals">
           <Button variant="outline">Volver a Profesionales</Button>
         </Link>
@@ -287,59 +287,59 @@ export default function ProfessionalDetailPage({ params }: { params: Promise<{ i
       <div>
         <Link
           href="/settings/professionals"
-          className="inline-flex items-center gap-2 text-xs font-bold text-slate-500 hover:text-rose-600 transition-colors"
+          className="inline-flex items-center gap-2 text-xs font-bold text-muted-foreground hover:text-primary transition-colors"
         >
           <ArrowLeft className="h-4 w-4" /> Volver a Profesionales
         </Link>
       </div>
 
       {/* Hero Header Card (Notion-style) */}
-      <Card className="border-0 shadow-lg rounded-3xl bg-white overflow-hidden">
-        <div className="h-24 bg-gradient-to-r from-emerald-600 via-teal-600 to-rose-500 relative" />
+      <Card className="border-0 shadow-lg rounded-3xl bg-card overflow-hidden">
+        <div className="h-24 bg-gradient-to-r from-success via-teal-600 to-primary relative" />
         <CardContent className="px-8 pb-8 pt-0 relative">
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 -mt-12">
             <div className="flex items-end gap-5">
-              <div className="h-24 w-24 rounded-3xl bg-slate-900 border-4 border-white shadow-xl flex items-center justify-center text-white font-black text-2xl bg-gradient-to-tr from-emerald-500 to-teal-500 shrink-0">
+              <div className="h-24 w-24 rounded-3xl bg-sidebar-accent border-4 border-border shadow-xl flex items-center justify-center text-white font-black text-2xl bg-gradient-to-tr from-emerald-500 to-teal-500 shrink-0">
                 {initials}
               </div>
               <div className="mb-1">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <h1 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight">
+                  <h1 className="text-2xl md:text-3xl font-black text-foreground tracking-tight">
                     Dra. {professional.first_name} {professional.last_name}
                   </h1>
                   {specialtiesList.map((s, i) => (
-                    <Badge key={i} className="bg-emerald-100 text-emerald-800 border-emerald-200 font-bold px-3 py-1 text-xs rounded-full">
+                    <Badge key={i} className="bg-success/15 text-success border-success/30 font-bold px-3 py-1 text-xs rounded-full">
                       {s}
                     </Badge>
                   ))}
                   {specialtiesList.length === 0 && (
-                    <Badge className="bg-slate-100 text-slate-700 border-slate-200 font-bold px-3 py-1 text-xs rounded-full">
+                    <Badge className="bg-muted text-foreground border-border font-bold px-3 py-1 text-xs rounded-full">
                       Sin especialidad
                     </Badge>
                   )}
                 </div>
 
-                <div className="flex items-center gap-4 text-xs text-slate-500 mt-2 font-medium flex-wrap">
+                <div className="flex items-center gap-4 text-xs text-muted-foreground mt-2 font-medium flex-wrap">
                   {professional.dni_nie && (
                     <span className="flex items-center gap-1.5 font-mono text-xs">
-                      <FileCheck className="h-3.5 w-3.5 text-slate-400" />
+                      <FileCheck className="h-3.5 w-3.5 text-muted-foreground" />
                       {professional.dni_nie}
                     </span>
                   )}
                   {professional.phone && (
                     <span className="flex items-center gap-1.5">
-                      <Phone className="h-3.5 w-3.5 text-slate-400" />
+                      <Phone className="h-3.5 w-3.5 text-muted-foreground" />
                       {professional.phone}
                     </span>
                   )}
                   {professional.email && (
                     <span className="flex items-center gap-1.5">
-                      <Mail className="h-3.5 w-3.5 text-slate-400" />
+                      <Mail className="h-3.5 w-3.5 text-muted-foreground" />
                       {professional.email}
                     </span>
                   )}
                   <span className="flex items-center gap-1.5">
-                    <Building2 className="h-3.5 w-3.5 text-slate-400" />
+                    <Building2 className="h-3.5 w-3.5 text-muted-foreground" />
                     {assignedClinics.length > 0
                       ? (assignedClinics.find(c => c.is_primary)?.name || assignedClinics[0].name)
                       : "Todas las sedes"}
@@ -352,9 +352,9 @@ export default function ProfessionalDetailPage({ params }: { params: Promise<{ i
               <Button
                 variant="outline"
                 onClick={openEditModal}
-                className="rounded-xl border-slate-200 hover:bg-slate-50 gap-2 font-semibold text-xs h-10 px-4"
+                className="rounded-xl border-border hover:bg-muted/40 gap-2 font-semibold text-xs h-10 px-4"
               >
-                <Edit3 className="h-4 w-4 text-slate-500" />
+                <Edit3 className="h-4 w-4 text-muted-foreground" />
                 <span>Editar Ficha</span>
               </Button>
             </div>
@@ -364,32 +364,32 @@ export default function ProfessionalDetailPage({ params }: { params: Promise<{ i
 
       {/* Quick KPI Stats Row */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="rounded-2xl border-0 shadow-sm bg-white p-5 flex items-center justify-between">
+        <Card className="rounded-2xl border-0 shadow-sm bg-card p-5 flex items-center justify-between">
           <div>
-            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">Citas Atendidas</span>
-            <span className="text-2xl font-black text-slate-900 mt-0.5 block">{totalAppointments}</span>
+            <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider block">Citas Atendidas</span>
+            <span className="text-2xl font-black text-foreground mt-0.5 block">{totalAppointments}</span>
           </div>
-          <div className="h-11 w-11 rounded-2xl bg-emerald-50 flex items-center justify-center text-emerald-600">
+          <div className="h-11 w-11 rounded-2xl bg-success/10 flex items-center justify-center text-success">
             <CalendarIcon className="h-5 w-5" />
           </div>
         </Card>
 
-        <Card className="rounded-2xl border-0 shadow-sm bg-white p-5 flex items-center justify-between">
+        <Card className="rounded-2xl border-0 shadow-sm bg-card p-5 flex items-center justify-between">
           <div>
-            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">Citas Este Mes</span>
-            <span className="text-2xl font-black text-rose-600 mt-0.5 block">{thisMonthAppointments}</span>
+            <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider block">Citas Este Mes</span>
+            <span className="text-2xl font-black text-primary mt-0.5 block">{thisMonthAppointments}</span>
           </div>
-          <div className="h-11 w-11 rounded-2xl bg-rose-50 flex items-center justify-center text-rose-500">
+          <div className="h-11 w-11 rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
             <Activity className="h-5 w-5" />
           </div>
         </Card>
 
-        <Card className="rounded-2xl border-0 shadow-sm bg-white p-5 flex items-center justify-between">
+        <Card className="rounded-2xl border-0 shadow-sm bg-card p-5 flex items-center justify-between">
           <div>
-            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">Pacientes Distintos</span>
-            <span className="text-2xl font-black text-slate-900 mt-0.5 block">{uniquePatientsCount}</span>
+            <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider block">Pacientes Distintos</span>
+            <span className="text-2xl font-black text-foreground mt-0.5 block">{uniquePatientsCount}</span>
           </div>
-          <div className="h-11 w-11 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-600">
+          <div className="h-11 w-11 rounded-2xl bg-info/10 flex items-center justify-center text-info">
             <User className="h-5 w-5" />
           </div>
         </Card>
@@ -400,78 +400,78 @@ export default function ProfessionalDetailPage({ params }: { params: Promise<{ i
         {/* Left Column: Info & Notes */}
         <div className="space-y-6">
           {/* General Info Card */}
-          <Card className="border-0 shadow-md rounded-2xl bg-white overflow-hidden">
-            <CardHeader className="pb-3 border-b border-slate-100">
-              <CardTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
-                <Stethoscope className="h-5 w-5 text-emerald-500" />
+          <Card className="border-0 shadow-md rounded-2xl bg-card overflow-hidden">
+            <CardHeader className="pb-3 border-b border-border/60">
+              <CardTitle className="text-base font-bold text-foreground flex items-center gap-2">
+                <Stethoscope className="h-5 w-5 text-success" />
                 Información del Profesional
               </CardTitle>
             </CardHeader>
             <CardContent className="p-6 space-y-4">
               <div>
-                <Label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Nombre Completo</Label>
-                <p className="text-sm font-semibold text-slate-800 mt-0.5">
+                <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Nombre Completo</Label>
+                <p className="text-sm font-semibold text-foreground mt-0.5">
                   Dra. {professional.first_name} {professional.last_name}
                 </p>
               </div>
 
               {professional.dni_nie && (
                 <div>
-                  <Label className="text-xs font-bold text-slate-400 uppercase tracking-wider">DNI / NIE / NIF</Label>
-                  <p className="text-sm font-semibold text-slate-800 mt-0.5 font-mono">{professional.dni_nie}</p>
+                  <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">DNI / NIE / NIF</Label>
+                  <p className="text-sm font-semibold text-foreground mt-0.5 font-mono">{professional.dni_nie}</p>
                 </div>
               )}
 
               <div>
-                <Label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Especialidades</Label>
+                <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Especialidades</Label>
                 <div className="flex flex-wrap gap-1.5 mt-1">
                   {specialtiesList.map((s, i) => (
-                    <Badge key={i} className="bg-emerald-50 text-emerald-700 border-emerald-200 text-xs font-semibold">
+                    <Badge key={i} className="bg-success/10 text-success border-success/30 text-xs font-semibold">
                       {s}
                     </Badge>
                   ))}
-                  {specialtiesList.length === 0 && <span className="text-sm text-slate-500">Sin especialidad</span>}
+                  {specialtiesList.length === 0 && <span className="text-sm text-muted-foreground">Sin especialidad</span>}
                 </div>
               </div>
 
               <div>
-                <Label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Sedes Vinculadas</Label>
+                <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Sedes Vinculadas</Label>
                 <div className="flex flex-wrap gap-1.5 mt-1.5">
                   {assignedClinics.length === 0 ? (
-                    <span className="text-sm font-semibold text-slate-800">Todas las sedes</span>
+                    <span className="text-sm font-semibold text-foreground">Todas las sedes</span>
                   ) : (
                     assignedClinics.map((c) => (
                       <span key={c.id} className={`text-xs px-2.5 py-1 rounded-full font-semibold border flex items-center gap-1 ${
-                        c.is_primary ? "bg-blue-50 border-blue-300 text-blue-700" : "bg-slate-100 border-slate-200 text-slate-700"
+                        c.is_primary ? "bg-info/10 border-info/30 text-info" : "bg-muted border-border text-foreground"
                       }`}>
-                        <Building2 className="h-3 w-3 text-slate-400" />
+                        <Building2 className="h-3 w-3 text-muted-foreground" />
                         {c.name}
-                        {c.is_primary && <span className="text-[10px] text-blue-600 font-bold ml-0.5">✓</span>}
+                        {c.is_primary && <span className="text-[10px] text-info font-bold ml-0.5">✓</span>}
                       </span>
                     ))
                   )}
                 </div>
               </div>
 
-              <div className="pt-2 border-t border-slate-100 space-y-3">
+              <div className="pt-2 border-t border-border/60 space-y-3">
                 {professional.phone && (
                   <div>
-                    <Label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Teléfono de Contacto</Label>
-                    <p className="text-sm font-semibold text-slate-800 mt-0.5">{professional.phone}</p>
+                    <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Teléfono de Contacto</Label>
+                    <p className="text-sm font-semibold text-foreground mt-0.5">{professional.phone}</p>
                   </div>
                 )}
 
                 {professional.email && (
                   <div>
-                    <Label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Email Corporativo</Label>
-                    <p className="text-sm font-semibold text-slate-800 mt-0.5">{professional.email}</p>
+                    <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Email Corporativo</Label>
+                    <p className="text-sm font-semibold text-foreground mt-0.5">{professional.email}</p>
                   </div>
                 )}
 
                 {professional.address && (
                   <div>
-                    <Label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Dirección</Label>
-                    <p className="text-sm font-semibold text-slate-800 mt-0.5">{professional.address}</p>
+                    <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Dirección</Label>
+                    <p className="text-sm font-semibold text-foreground mt-0.5">{professional.address}</p>
                   </div>
                 )}
               </div>
@@ -479,10 +479,10 @@ export default function ProfessionalDetailPage({ params }: { params: Promise<{ i
           </Card>
 
           {/* Professional Notes (Notion-style) */}
-          <Card className="border-0 shadow-md rounded-2xl bg-white overflow-hidden">
-            <CardHeader className="pb-3 border-b border-slate-100 flex flex-row items-center justify-between">
-              <CardTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
-                <FileText className="h-5 w-5 text-slate-400" />
+          <Card className="border-0 shadow-md rounded-2xl bg-card overflow-hidden">
+            <CardHeader className="pb-3 border-b border-border/60 flex flex-row items-center justify-between">
+              <CardTitle className="text-base font-bold text-foreground flex items-center gap-2">
+                <FileText className="h-5 w-5 text-muted-foreground" />
                 Notas & Observaciones (Notion-style)
               </CardTitle>
             </CardHeader>
@@ -491,9 +491,9 @@ export default function ProfessionalDetailPage({ params }: { params: Promise<{ i
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 placeholder="Anota acuerdos de horario, disponibilidad por sedes u observaciones internas..."
-                className="min-h-[140px] bg-slate-50/50 border-slate-200 resize-y text-sm rounded-xl"
+                className="min-h-[140px] bg-muted/40 border-border resize-y text-sm rounded-xl"
               />
-              <p className="text-[11px] text-slate-400 mt-2">
+              <p className="text-[11px] text-muted-foreground mt-2">
                 Estas notas sirven como guía interna y contexto para la gestión de la agenda.
               </p>
             </CardContent>
@@ -502,44 +502,44 @@ export default function ProfessionalDetailPage({ params }: { params: Promise<{ i
 
         {/* Right Column: Appointments History */}
         <div className="lg:col-span-2 space-y-6">
-          <Card className="border-0 shadow-md rounded-2xl bg-white overflow-hidden">
-            <CardHeader className="pb-3 border-b border-slate-100 flex flex-row items-center justify-between">
-              <CardTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
-                <CalendarIcon className="h-5 w-5 text-rose-500" />
+          <Card className="border-0 shadow-md rounded-2xl bg-card overflow-hidden">
+            <CardHeader className="pb-3 border-b border-border/60 flex flex-row items-center justify-between">
+              <CardTitle className="text-base font-bold text-foreground flex items-center gap-2">
+                <CalendarIcon className="h-5 w-5 text-primary" />
                 Historial de Citas Atendidas ({appointments.length})
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
               {appointments.length === 0 ? (
-                <div className="p-12 text-center text-slate-400">
+                <div className="p-12 text-center text-muted-foreground">
                   <AlertCircle className="h-8 w-8 mx-auto mb-2 opacity-40" />
                   <p className="text-sm font-semibold">No se registran citas previas para este profesional.</p>
                 </div>
               ) : (
-                <div className="divide-y divide-slate-100">
+                <div className="divide-y divide-border/60">
                   {appointments.map((a) => {
                     const dateObj = new Date(a.appointment_date);
                     return (
-                      <div key={a.id} className="p-4 hover:bg-slate-50/80 transition-colors flex items-center justify-between gap-4">
+                      <div key={a.id} className="p-4 hover:bg-muted/40 transition-colors flex items-center justify-between gap-4">
                         <div className="flex items-center gap-3">
-                          <div className="h-10 w-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-500 font-bold text-xs shrink-0">
+                          <div className="h-10 w-10 rounded-xl bg-muted flex items-center justify-center text-muted-foreground font-bold text-xs shrink-0">
                             {dateObj.toLocaleDateString("es-ES", { day: "2-digit", month: "short" })}
                           </div>
                           <div>
-                            <Link href={`/patients/${a.patient_id}`} className="font-bold text-sm text-slate-900 hover:text-rose-600 transition-colors flex items-center gap-1.5">
+                            <Link href={`/patients/${a.patient_id}`} className="font-bold text-sm text-foreground hover:text-primary transition-colors flex items-center gap-1.5">
                               {a.patient_first_name} {a.patient_last_name}
-                              <span className="text-xs text-rose-600 font-bold">({a.patient_historia_id})</span>
+                              <span className="text-xs text-primary font-bold">({a.patient_historia_id})</span>
                             </Link>
-                            <div className="flex items-center gap-3 text-xs text-slate-500 mt-0.5 font-medium">
+                            <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5 font-medium">
                               <span>{a.reason}</span>
                               <span>•</span>
                               <span className="flex items-center gap-1">
-                                <Building2 className="h-3 w-3 text-slate-400" />
+                                <Building2 className="h-3 w-3 text-muted-foreground" />
                                 {a.clinic_name}
                               </span>
                               <span>•</span>
                               <span className="flex items-center gap-1">
-                                <Clock className="h-3 w-3 text-slate-400" />
+                                <Clock className="h-3 w-3 text-muted-foreground" />
                                 {dateObj.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" })}
                               </span>
                             </div>
@@ -548,16 +548,16 @@ export default function ProfessionalDetailPage({ params }: { params: Promise<{ i
 
                         <div className="flex items-center gap-3 shrink-0">
                           <Badge className={
-                            a.status === "Realizada" ? "bg-emerald-100 text-emerald-800 border-emerald-200" :
-                            a.status === "Confirmada" ? "bg-blue-100 text-blue-800 border-blue-200" :
-                            a.status === "Cancelada" ? "bg-rose-100 text-rose-800 border-rose-200" :
-                            "bg-slate-100 text-slate-700 border-slate-200"
+                            a.status === "Realizada" ? "bg-success/15 text-success border-success/30" :
+                            a.status === "Confirmada" ? "bg-info/15 text-info border-info/30" :
+                            a.status === "Cancelada" ? "bg-primary/15 text-primary border-primary/30" :
+                            "bg-muted text-foreground border-border"
                           }>
                             {a.status}
                           </Badge>
 
                           <Link href={`/appointments/${a.id}`}>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg text-slate-400 hover:text-slate-900">
+                            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg text-muted-foreground hover:text-foreground">
                               <ChevronRight className="h-4 w-4" />
                             </Button>
                           </Link>
@@ -574,10 +574,10 @@ export default function ProfessionalDetailPage({ params }: { params: Promise<{ i
 
       {/* Edit Professional Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="sm:max-w-lg rounded-2xl p-6 bg-white shadow-2xl">
+        <DialogContent className="sm:max-w-lg rounded-2xl p-6 bg-card shadow-2xl">
           <DialogHeader>
-            <DialogTitle className="text-lg font-bold text-slate-900 flex items-center gap-2">
-              <Stethoscope className="h-5 w-5 text-emerald-500" />
+            <DialogTitle className="text-lg font-bold text-foreground flex items-center gap-2">
+              <Stethoscope className="h-5 w-5 text-success" />
               Editar Ficha del Profesional
             </DialogTitle>
           </DialogHeader>
@@ -585,40 +585,40 @@ export default function ProfessionalDetailPage({ params }: { params: Promise<{ i
           <div className="space-y-4 py-2">
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-slate-700">Nombre *</Label>
+                <Label className="text-xs font-semibold text-foreground">Nombre *</Label>
                 <Input value={fFirstName} onChange={(e) => setFFirstName(e.target.value)} className="rounded-lg" />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-slate-700">Apellidos *</Label>
+                <Label className="text-xs font-semibold text-foreground">Apellidos *</Label>
                 <Input value={fLastName} onChange={(e) => setFLastName(e.target.value)} className="rounded-lg" />
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-slate-700">DNI / NIE / NIF</Label>
+                <Label className="text-xs font-semibold text-foreground">DNI / NIE / NIF</Label>
                 <Input value={fDniNie} onChange={(e) => setFDniNie(e.target.value)} className="rounded-lg font-mono text-xs" />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-slate-700 flex items-center gap-1"><Phone className="h-3 w-3" />Teléfono</Label>
+                <Label className="text-xs font-semibold text-foreground flex items-center gap-1"><Phone className="h-3 w-3" />Teléfono</Label>
                 <Input value={fPhone} onChange={(e) => setFPhone(e.target.value)} className="rounded-lg" />
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-slate-700 flex items-center gap-1"><Mail className="h-3 w-3" />Email</Label>
+                <Label className="text-xs font-semibold text-foreground flex items-center gap-1"><Mail className="h-3 w-3" />Email</Label>
                 <Input value={fEmail} onChange={(e) => setFEmail(e.target.value)} className="rounded-lg" />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-slate-700 flex items-center gap-1"><MapPin className="h-3 w-3" />Dirección</Label>
+                <Label className="text-xs font-semibold text-foreground flex items-center gap-1"><MapPin className="h-3 w-3" />Dirección</Label>
                 <Input value={fAddress} onChange={(e) => setFAddress(e.target.value)} className="rounded-lg" />
               </div>
             </div>
 
             {/* Multi-Specialty Chips Selection */}
-            <div className="space-y-1.5 pt-2 border-t border-slate-100">
-              <Label className="text-xs font-semibold text-slate-700 block">Especialidades (Selección Múltiple)</Label>
+            <div className="space-y-1.5 pt-2 border-t border-border/60">
+              <Label className="text-xs font-semibold text-foreground block">Especialidades (Selección Múltiple)</Label>
               <div className="flex flex-wrap gap-1.5 pt-1">
                 {ALL_SPECIALTIES.map((spec) => {
                   const active = selectedSpecialties.includes(spec);
@@ -629,8 +629,8 @@ export default function ProfessionalDetailPage({ params }: { params: Promise<{ i
                       onClick={() => toggleSpecialty(spec)}
                       className={`text-xs px-2.5 py-1 rounded-xl font-semibold border transition-all ${
                         active
-                          ? "bg-emerald-500 text-white border-emerald-500 shadow-sm"
-                          : "bg-slate-50 text-slate-600 border-slate-200 hover:border-emerald-300"
+                          ? "bg-success text-white border-success shadow-sm"
+                          : "bg-muted/40 text-muted-foreground border-border hover:border-success"
                       }`}
                     >
                       {active ? "✓ " : "+ "}{spec}
@@ -652,7 +652,7 @@ export default function ProfessionalDetailPage({ params }: { params: Promise<{ i
 
           <DialogFooter className="pt-2 gap-2">
             <Button variant="outline" onClick={() => setEditDialogOpen(false)} className="rounded-xl">Cancelar</Button>
-            <Button onClick={handleSaveEdit} disabled={saving} className="bg-rose-500 hover:bg-rose-600 text-white rounded-xl gap-2 font-bold shadow-md shadow-rose-500/20">
+            <Button onClick={handleSaveEdit} disabled={saving} className="bg-primary hover:bg-primary/90 text-white rounded-xl gap-2 font-bold shadow-md shadow-primary/20">
               {saving && <Loader2 className="h-4 w-4 animate-spin" />}
               Guardar Cambios
             </Button>

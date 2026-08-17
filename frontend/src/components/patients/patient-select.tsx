@@ -163,7 +163,7 @@ export function PatientSelect({ value = "", onSelectPatient, placeholder = "Busc
   return (
     <div ref={containerRef} className="relative w-full">
       <div className="relative flex items-center">
-        <User className="absolute left-3 h-4 w-4 text-slate-400 pointer-events-none" />
+        <User className="absolute left-3 h-4 w-4 text-muted-foreground pointer-events-none" />
         <Input
           value={query}
           onChange={(e) => {
@@ -172,30 +172,30 @@ export function PatientSelect({ value = "", onSelectPatient, placeholder = "Busc
           }}
           onFocus={() => setIsOpen(true)}
           placeholder={placeholder}
-          className="pl-9 pr-8 text-sm rounded-xl border-slate-200 focus:border-indigo-500 focus:ring-indigo-500 bg-white"
+          className="pl-9 pr-8 text-sm rounded-xl border-border focus:border-primary focus:ring-primary bg-card"
         />
         {query ? (
           <button
             type="button"
             onClick={handleClear}
-            className="absolute right-2.5 p-1 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100 transition-colors"
+            className="absolute right-2.5 p-1 text-muted-foreground hover:text-foreground rounded-full hover:bg-muted transition-colors"
             title="Limpiar búsqueda"
           >
             <X className="h-3.5 w-3.5" />
           </button>
         ) : (
           loading && (
-            <Loader2 className="absolute right-2.5 h-3.5 w-3.5 text-indigo-500 animate-spin pointer-events-none" />
+            <Loader2 className="absolute right-2.5 h-3.5 w-3.5 text-primary animate-spin pointer-events-none" />
           )
         )}
       </div>
 
       {/* Autocomplete Dropdown List */}
       {isOpen && (
-        <div className="absolute top-full left-0 right-0 mt-1.5 z-50 max-h-72 overflow-y-auto bg-white rounded-2xl border border-slate-200 shadow-2xl p-1.5 opacity-100 animate-in fade-in-50 slide-in-from-top-1">
+        <div className="absolute top-full left-0 right-0 mt-1.5 z-50 max-h-72 overflow-y-auto bg-card rounded-2xl border border-border shadow-2xl p-1.5 opacity-100 animate-in fade-in-50 slide-in-from-top-1">
           {loading && patients.length === 0 ? (
-            <div className="p-4 text-center text-xs text-slate-400 flex items-center justify-center gap-2">
-              <Loader2 className="h-4 w-4 animate-spin text-indigo-500" />
+            <div className="p-4 text-center text-xs text-muted-foreground flex items-center justify-center gap-2">
+              <Loader2 className="h-4 w-4 animate-spin text-primary" />
               <span>Buscando pacientes en Supabase...</span>
             </div>
           ) : patients.length > 0 ? (
@@ -203,25 +203,25 @@ export function PatientSelect({ value = "", onSelectPatient, placeholder = "Busc
               <div
                 key={p.id}
                 onClick={() => handleSelect(p)}
-                className="flex items-center justify-between p-2.5 rounded-xl hover:bg-indigo-50/80 cursor-pointer transition-colors group"
+                className="flex items-center justify-between p-2.5 rounded-xl hover:bg-primary/10 cursor-pointer transition-colors group"
               >
                 <div>
-                  <p className="text-sm font-semibold text-slate-900 group-hover:text-indigo-900">
+                  <p className="text-sm font-semibold text-foreground group-hover:text-primary">
                     {p.firstName} {p.lastName}{" "}
-                    <span className="text-xs text-slate-400 font-normal ml-1">({p.historiaId})</span>
+                    <span className="text-xs text-muted-foreground font-normal ml-1">({p.historiaId})</span>
                   </p>
-                  <p className="text-xs text-slate-500 flex items-center gap-3 mt-0.5">
+                  <p className="text-xs text-muted-foreground flex items-center gap-3 mt-0.5">
                     {p.dni && <span>DNI: {p.dni}</span>}
                     {p.phone && <span>{p.phone}</span>}
                   </p>
                 </div>
                 {query.toLowerCase() === `${p.firstName} ${p.lastName}`.toLowerCase() && (
-                  <Check className="h-4 w-4 text-indigo-600 shrink-0" />
+                  <Check className="h-4 w-4 text-primary shrink-0" />
                 )}
               </div>
             ))
           ) : (
-            <div className="p-3 text-center text-xs text-slate-500">
+            <div className="p-3 text-center text-xs text-muted-foreground">
               No se encontró ningún paciente que coincida.
             </div>
           )}
@@ -233,9 +233,9 @@ export function PatientSelect({ value = "", onSelectPatient, placeholder = "Busc
               setIsOpen(false);
               setIsNewModalOpen(true);
             }}
-            className="w-full flex items-center justify-center gap-2 p-2.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold text-xs border border-indigo-200/80 mt-1 transition-colors"
+            className="w-full flex items-center justify-center gap-2 p-2.5 rounded-xl bg-primary/10 hover:bg-primary/15 text-primary font-semibold text-xs border border-primary/30 mt-1 transition-colors"
           >
-            <Plus className="h-3.5 w-3.5 text-indigo-600" />
+            <Plus className="h-3.5 w-3.5 text-primary" />
             <span>Crear nuevo paciente en Base de Datos</span>
           </button>
         </div>
@@ -243,10 +243,10 @@ export function PatientSelect({ value = "", onSelectPatient, placeholder = "Busc
 
       {/* New Patient Registration Modal */}
       <Dialog open={isNewModalOpen} onOpenChange={setIsNewModalOpen}>
-        <DialogContent className="sm:max-w-md rounded-2xl p-6 bg-white border border-slate-200 shadow-2xl opacity-100">
+        <DialogContent className="sm:max-w-md rounded-2xl p-6 bg-card border border-border shadow-2xl opacity-100">
           <DialogHeader>
-            <DialogTitle className="text-xl font-bold text-slate-900 flex items-center gap-2">
-              <User className="h-5 w-5 text-indigo-600" />
+            <DialogTitle className="text-xl font-bold text-foreground flex items-center gap-2">
+              <User className="h-5 w-5 text-primary" />
               Crear Ficha de Nuevo Paciente
             </DialogTitle>
           </DialogHeader>
@@ -254,28 +254,28 @@ export function PatientSelect({ value = "", onSelectPatient, placeholder = "Busc
           <div className="space-y-3 py-2">
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
-                <Label className="text-xs font-semibold text-slate-700">Nombre *</Label>
+                <Label className="text-xs font-semibold text-foreground">Nombre *</Label>
                 <Input value={newFirstName} onChange={(e) => setNewFirstName(e.target.value)} placeholder="Ej: Juan" className="text-sm rounded-lg" />
               </div>
               <div className="space-y-1">
-                <Label className="text-xs font-semibold text-slate-700">Apellidos</Label>
+                <Label className="text-xs font-semibold text-foreground">Apellidos</Label>
                 <Input value={newLastName} onChange={(e) => setNewLastName(e.target.value)} placeholder="Ej: Pérez" className="text-sm rounded-lg" />
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
-                <Label className="text-xs font-semibold text-slate-700">DNI / NIE</Label>
+                <Label className="text-xs font-semibold text-foreground">DNI / NIE</Label>
                 <Input value={newDni} onChange={(e) => setNewDni(e.target.value)} placeholder="12345678A" className="text-sm rounded-lg" />
               </div>
               <div className="space-y-1">
-                <Label className="text-xs font-semibold text-slate-700">Teléfono</Label>
+                <Label className="text-xs font-semibold text-foreground">Teléfono</Label>
                 <Input value={newPhone} onChange={(e) => setNewPhone(e.target.value)} placeholder="+34 600 000 000" className="text-sm rounded-lg" />
               </div>
             </div>
 
             <div className="space-y-1">
-              <Label className="text-xs font-semibold text-slate-700">Correo Electrónico</Label>
+              <Label className="text-xs font-semibold text-foreground">Correo Electrónico</Label>
               <Input value={newEmail} onChange={(e) => setNewEmail(e.target.value)} placeholder="correo@paciente.com" className="text-sm rounded-lg" />
             </div>
           </div>
@@ -287,7 +287,7 @@ export function PatientSelect({ value = "", onSelectPatient, placeholder = "Busc
             <Button
               onClick={handleCreateNew}
               disabled={creating || !newFirstName.trim()}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-md shadow-indigo-500/20"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl shadow-md shadow-primary/20"
             >
               {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : "Guardar y Seleccionar"}
             </Button>

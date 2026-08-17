@@ -25,11 +25,11 @@ export default function DashboardLayout({
 }) {
   return (
     <ClinicProvider>
-      <div className="flex h-screen w-full bg-slate-100/70 overflow-hidden">
+      <div className="flex h-screen w-full bg-muted/70 overflow-hidden">
       <Sidebar />
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Top Header Bar */}
-        <header className="h-20 shrink-0 bg-white/80 backdrop-blur-md border-b border-slate-200/80 px-8 flex items-center justify-between gap-4 z-10">
+        <header className="h-20 shrink-0 bg-card/80 backdrop-blur-md border-b border-border/80 px-8 flex items-center justify-between gap-4 z-10">
           {/* Search bar */}
           <div className="relative w-full max-w-md">
             <PatientSelect />
@@ -38,8 +38,8 @@ export default function DashboardLayout({
           {/* Action buttons & status badges */}
           <div className="flex items-center gap-3">
             {/* Odoo Status Badge */}
-            <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-100 border border-slate-200 text-xs font-semibold text-slate-700">
-              <span className="h-2 w-2 rounded-full bg-purple-500 animate-pulse" />
+            <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted border border-border text-xs font-semibold text-muted-foreground">
+              <span className="h-2 w-2 rounded-full bg-success animate-pulse" />
               <span>Odoo API: Connected</span>
             </div>
 
@@ -47,9 +47,9 @@ export default function DashboardLayout({
             <Button
               variant="outline"
               size="sm"
-              className="hidden lg:flex items-center gap-2 rounded-xl text-slate-700 border-slate-200 hover:bg-slate-50 h-10 px-3.5"
+              className="hidden lg:flex items-center gap-2 rounded-xl text-muted-foreground border-border hover:bg-muted h-10 px-3.5"
             >
-              <CalendarCheck2 className="h-4 w-4 text-rose-500" />
+              <CalendarCheck2 className="h-4 w-4 text-primary" />
               <span className="text-xs font-semibold">Sync Google/Apple</span>
             </Button>
 
@@ -72,7 +72,7 @@ export default function DashboardLayout({
             {/* Quick Action Button */}
             <Button 
               onClick={() => triggerNewAppointmentModal()}
-              className="h-10 px-4 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-semibold text-sm shadow-md shadow-rose-500/20 gap-2 transition-all cursor-pointer"
+              className="h-10 px-4 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-sm shadow-md shadow-primary/20 gap-2 transition-all cursor-pointer"
             >
               <Plus className="h-4 w-4" />
               <span>Nueva Cita</span>

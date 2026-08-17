@@ -93,17 +93,17 @@ const INTENT_META: Record<
   },
   general_query: {
     label: "Consulta General",
-    color: "text-slate-400 bg-slate-500/10 border-slate-500/30",
+    color: "text-sidebar-muted-foreground bg-sidebar-muted/10 border-sidebar-muted/30",
     icon: <HelpCircle className="h-3.5 w-3.5" />,
   },
   error: {
     label: "Error",
-    color: "text-rose-400 bg-rose-500/10 border-rose-500/30",
+    color: "text-destructive bg-destructive/10 border-destructive/30",
     icon: <AlertCircle className="h-3.5 w-3.5" />,
   },
   pending: {
     label: "Procesando",
-    color: "text-slate-400 bg-slate-500/10 border-slate-500/30",
+    color: "text-sidebar-muted-foreground bg-sidebar-muted/10 border-sidebar-muted/30",
     icon: <Loader2 className="h-3.5 w-3.5 animate-spin" />,
   },
 };
@@ -158,8 +158,8 @@ function EntityRow({ label, value }: { label: string; value: unknown }) {
   if (!value) return null;
   return (
     <div className="flex items-start gap-2 text-xs">
-      <span className="text-slate-400 shrink-0 w-24 text-right">{label}:</span>
-      <span className="text-slate-200 font-medium">{String(value)}</span>
+      <span className="text-sidebar-muted-foreground shrink-0 w-24 text-right">{label}:</span>
+      <span className="text-sidebar-foreground font-medium">{String(value)}</span>
     </div>
   );
 }
@@ -176,22 +176,22 @@ function AppointmentCard({
   details: string;
 }) {
   return (
-    <div className="flex items-start gap-3 p-3.5 rounded-xl bg-slate-900/90 border border-slate-800 hover:border-violet-500/40 transition-all shadow-sm group">
+    <div className="flex items-start gap-3 p-3.5 rounded-xl bg-sidebar-accent/90 border border-sidebar-border hover:border-violet-500/40 transition-all shadow-sm group">
       <div className="h-7 w-7 rounded-lg bg-violet-500/15 border border-violet-500/30 text-violet-400 font-bold text-xs flex items-center justify-center shrink-0">
         {index}
       </div>
       <div className="flex-1 min-w-0 space-y-1">
         <div className="flex items-center justify-between gap-2">
-          <h4 className="text-sm font-bold text-slate-100 truncate group-hover:text-violet-300 transition-colors">
+          <h4 className="text-sm font-bold text-sidebar-foreground truncate group-hover:text-violet-300 transition-colors">
             {patient}
           </h4>
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-800 text-slate-300 text-xs font-mono font-semibold shrink-0">
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-sidebar-muted text-sidebar-muted-foreground text-xs font-mono font-semibold shrink-0">
             <Clock className="h-3 w-3 text-violet-400" />
             {time}
           </span>
         </div>
         {details && (
-          <p className="text-xs text-slate-400 leading-relaxed truncate">
+          <p className="text-xs text-sidebar-muted-foreground leading-relaxed truncate">
             {details}
           </p>
         )}
@@ -226,7 +226,7 @@ function FormattedResponse({ text }: { text: string }) {
     return (
       <div className="space-y-3">
         {headerLines.length > 0 && (
-          <p className="text-sm font-semibold text-slate-200 leading-relaxed">
+          <p className="text-sm font-semibold text-sidebar-foreground/80 leading-relaxed">
             {headerLines.join("\n")}
           </p>
         )}
@@ -246,7 +246,7 @@ function FormattedResponse({ text }: { text: string }) {
   }
 
   return (
-    <p className="text-sm text-slate-100 leading-relaxed whitespace-pre-wrap">
+    <p className="text-sm text-sidebar-foreground/90 leading-relaxed whitespace-pre-wrap">
       {clean}
     </p>
   );
@@ -285,16 +285,16 @@ function AssistantBubble({
       <div className="flex-1 space-y-1.5">
         {/* Loading state */}
         {msg.isLoading ? (
-          <div className="bg-slate-900/90 border border-slate-800 rounded-2xl rounded-tl-sm px-5 py-4 flex items-center gap-3">
+          <div className="bg-sidebar-accent/90 border border-sidebar-border rounded-2xl rounded-tl-sm px-5 py-4 flex items-center gap-3">
             <Loader2 className="h-4 w-4 text-violet-400 animate-spin" />
-            <span className="text-sm text-slate-400 italic">
+            <span className="text-sm text-sidebar-muted-foreground italic">
               Musly está analizando tu instrucción…
             </span>
           </div>
         ) : (
           <>
             {/* Main bubble */}
-            <div className="bg-slate-900/90 border border-slate-800 rounded-2xl rounded-tl-sm p-4 sm:p-5 space-y-3 shadow-lg">
+            <div className="bg-sidebar-accent/90 border border-sidebar-border rounded-2xl rounded-tl-sm p-4 sm:p-5 space-y-3 shadow-lg">
               {/* Intent badge */}
               {payload && <IntentBadge intent={intent} />}
 
@@ -303,10 +303,10 @@ function AssistantBubble({
 
               {/* Entities section */}
               {hasEntities && (
-                <div className="pt-2 border-t border-slate-800/80 space-y-1">
+                <div className="pt-2 border-t border-sidebar-border space-y-1">
                   <button
                     onClick={() => setShowDetails(!showDetails)}
-                    className="flex items-center gap-1 text-[11px] font-medium text-slate-400 hover:text-slate-200 transition-colors"
+                    className="flex items-center gap-1 text-[11px] font-medium text-sidebar-muted-foreground hover:text-sidebar-foreground transition-colors"
                   >
                     {showDetails ? (
                       <ChevronDown className="h-3.5 w-3.5 text-violet-400" />
@@ -334,14 +334,14 @@ function AssistantBubble({
 
             {/* Timestamp & Report Button */}
             <div className="flex items-center justify-between pl-1 pt-0.5">
-              <span className="text-[10px] text-slate-500">{formatTime(msg.timestamp)}</span>
+              <span className="text-[10px] text-sidebar-muted-foreground">{formatTime(msg.timestamp)}</span>
               <button
                 type="button"
                 onClick={() => onReportError?.(msg.id)}
-                className="flex items-center gap-1 text-[10px] font-semibold text-rose-400/90 hover:text-rose-300 hover:bg-rose-500/10 px-2 py-0.5 rounded-lg transition-colors cursor-pointer border border-rose-500/20"
+                className="flex items-center gap-1 text-[10px] font-semibold text-primary/80 hover:text-primary hover:bg-primary/10 px-2 py-0.5 rounded-lg transition-colors cursor-pointer border border-primary/20"
                 title="Reportar fallo de lógica o contexto en esta respuesta"
               >
-                <AlertTriangle className="h-3 w-3 text-rose-400" />
+                <AlertTriangle className="h-3 w-3 text-primary/80" />
                 <span>Reportar error / contexto</span>
               </button>
             </div>
@@ -356,17 +356,17 @@ function UserBubble({ msg }: { msg: Message }) {
   return (
     <div className="flex items-start gap-3.5 max-w-[88%] ml-auto flex-row-reverse">
       {/* Avatar */}
-      <div className="h-9 w-9 rounded-xl bg-gradient-to-tr from-rose-500 to-pink-500 flex items-center justify-center shadow-md shadow-rose-500/20 shrink-0 mt-0.5">
+      <div className="h-9 w-9 rounded-xl bg-gradient-to-tr from-primary to-primary/70 flex items-center justify-center shadow-md shadow-primary/20 shrink-0 mt-0.5">
         <User className="h-5 w-5 text-white" />
       </div>
 
       <div className="flex-1 space-y-1.5 flex flex-col items-end">
         <div className="bg-gradient-to-r from-violet-900/40 to-indigo-900/40 border border-violet-500/30 rounded-2xl rounded-tr-sm px-5 py-3.5 shadow-md">
-          <p className="text-sm font-medium text-slate-100 leading-relaxed whitespace-pre-wrap">
+          <p className="text-sm font-medium text-sidebar-foreground leading-relaxed whitespace-pre-wrap">
             {msg.text}
           </p>
         </div>
-        <p className="text-[10px] text-slate-500 pr-1">{formatTime(msg.timestamp)}</p>
+        <p className="text-[10px] text-sidebar-muted-foreground pr-1">{formatTime(msg.timestamp)}</p>
       </div>
     </div>
   );
@@ -582,17 +582,17 @@ export function AIAgentBar({ fullHeight = false }: { fullHeight?: boolean }) {
 
   return (
     <div
-      className={`w-full flex flex-col bg-slate-950 text-white overflow-hidden relative ${
+      className={`w-full flex flex-col bg-sidebar text-sidebar-foreground overflow-hidden relative ${
         fullHeight ? "h-full" : "h-[560px]"
       }`}
     >
       {/* ── Notification Feedback Banner ── */}
       {reportFeedback && (
-        <div className="bg-emerald-900/90 text-emerald-100 border-b border-emerald-700/80 px-4 py-2.5 text-xs font-semibold flex items-center justify-between animate-in slide-in-from-top duration-200">
+        <div className="bg-success/20 text-success-foreground border-b border-success/40 px-4 py-2.5 text-xs font-semibold flex items-center justify-between animate-in slide-in-from-top duration-200">
           <span>{reportFeedback}</span>
           <button
             onClick={() => setReportFeedback(null)}
-            className="text-emerald-300 hover:text-white text-xs font-bold"
+            className="text-success-foreground/80 hover:text-white text-xs font-bold"
           >
             ✕
           </button>
@@ -616,14 +616,14 @@ export function AIAgentBar({ fullHeight = false }: { fullHeight?: boolean }) {
       </div>
 
       {/* ── Preset suggestions ── */}
-      <div className="px-5 pb-2.5 flex gap-2 flex-wrap shrink-0 border-t border-slate-900/60 pt-3">
+      <div className="px-5 pb-2.5 flex gap-2 flex-wrap shrink-0 border-t border-sidebar-border/60 pt-3">
         {PRESETS.map((p) => (
           <button
             key={p}
             type="button"
             onClick={() => sendMessage(p)}
             disabled={isProcessing}
-            className="text-xs px-3 py-1.5 rounded-xl bg-slate-900/80 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 transition-colors disabled:opacity-40 disabled:cursor-not-allowed font-medium"
+            className="text-xs px-3 py-1.5 rounded-xl bg-sidebar-accent/80 hover:bg-sidebar-muted text-sidebar-muted-foreground hover:text-white border border-sidebar-border transition-colors disabled:opacity-40 disabled:cursor-not-allowed font-medium"
           >
             {p}
           </button>
@@ -633,7 +633,7 @@ export function AIAgentBar({ fullHeight = false }: { fullHeight?: boolean }) {
       {/* ── Input Bar ── */}
       <form
         onSubmit={handleSubmit}
-        className="flex items-end gap-3 px-5 pb-5 pt-2 border-t border-slate-800/80 shrink-0 bg-slate-950"
+        className="flex items-end gap-3 px-5 pb-5 pt-2 border-t border-sidebar-border/80 shrink-0 bg-sidebar"
       >
         <div className="relative flex-1">
           <Sparkles className="absolute left-3.5 top-3.5 h-4 w-4 text-violet-400 pointer-events-none" />
@@ -650,7 +650,7 @@ export function AIAgentBar({ fullHeight = false }: { fullHeight?: boolean }) {
             rows={2}
             placeholder='Escribe tu instrucción… ej: "Cita para María el jueves a las 11:00"'
             disabled={isProcessing}
-            className="w-full pl-11 pr-4 py-3 bg-slate-900/90 border border-slate-800 text-white placeholder:text-slate-500 rounded-2xl focus:outline-none focus:ring-2 focus:ring-violet-500/60 text-sm resize-none min-h-[72px] font-sans leading-relaxed disabled:opacity-50"
+            className="w-full pl-11 pr-4 py-3 bg-sidebar-accent/90 border border-sidebar-border text-sidebar-foreground placeholder:text-sidebar-muted-foreground rounded-2xl focus:outline-none focus:ring-2 focus:ring-violet-500/60 text-sm resize-none min-h-[72px] font-sans leading-relaxed disabled:opacity-50"
           />
         </div>
 
@@ -672,27 +672,27 @@ export function AIAgentBar({ fullHeight = false }: { fullHeight?: boolean }) {
 
       {/* ── Modal / Dialog Reportar Error de Agente ── */}
       <Dialog open={reportModalOpen} onOpenChange={setReportModalOpen}>
-        <DialogContent className="sm:max-w-md bg-slate-900 border border-slate-800 text-white rounded-2xl p-6 shadow-2xl">
+        <DialogContent className="sm:max-w-md bg-sidebar-accent border border-sidebar-border text-sidebar-foreground rounded-2xl p-6 shadow-2xl">
           <DialogHeader>
-            <DialogTitle className="text-base font-bold flex items-center gap-2 text-rose-400">
+            <DialogTitle className="text-base font-bold flex items-center gap-2 text-primary">
               <AlertTriangle className="h-5 w-5" /> Reportar Fallo del Agente
             </DialogTitle>
           </DialogHeader>
 
           <div className="space-y-3 py-2 text-xs">
-            <p className="text-slate-300 leading-relaxed">
-              Describe brevemente qué entendió mal el agente o qué fallo de lógica ocurrió. Esta conversación completa se guardará en un archivo de Log (<code className="text-rose-300 font-mono bg-slate-800 px-1 py-0.5 rounded">logs/agent_reports.log</code>) para que el programador ajuste la lógica de Musly.
+            <p className="text-sidebar-muted-foreground leading-relaxed">
+              Describe brevemente qué entendió mal el agente o qué fallo de lógica ocurrió. Esta conversación completa se guardará en un archivo de Log (<code className="text-primary font-mono bg-sidebar-muted px-1 py-0.5 rounded">logs/agent_reports.log</code>) para que el programador ajuste la lógica de Musly.
             </p>
 
             <div className="space-y-1.5 pt-1">
-              <label className="font-bold text-slate-200 text-[11px] uppercase tracking-wider">
+              <label className="font-bold text-sidebar-foreground/80 text-[11px] uppercase tracking-wider">
                 Comentario del usuario:
               </label>
               <Textarea
                 value={reportComment}
                 onChange={(e) => setReportComment(e.target.value)}
                 placeholder='Ej: "El agente agendó la cita pero no asignó el tratamiento de ortodoncia correcto ni cargó los costes."'
-                className="bg-slate-950 border-slate-800 text-white text-xs min-h-[100px] rounded-xl focus:ring-rose-500"
+                className="bg-sidebar border-sidebar-border text-sidebar-foreground text-xs min-h-[100px] rounded-xl focus:ring-primary"
               />
             </div>
           </div>
@@ -701,14 +701,14 @@ export function AIAgentBar({ fullHeight = false }: { fullHeight?: boolean }) {
             <Button
               variant="ghost"
               onClick={() => setReportModalOpen(false)}
-              className="text-slate-400 hover:text-white hover:bg-slate-800 text-xs rounded-xl"
+              className="text-sidebar-muted-foreground hover:text-white hover:bg-sidebar-muted text-xs rounded-xl"
             >
               Cancelar
             </Button>
             <Button
               onClick={handleSendReport}
               disabled={submittingReport || !reportComment.trim()}
-              className="bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl gap-1.5 cursor-pointer shadow-md shadow-rose-600/20"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-bold rounded-xl gap-1.5 cursor-pointer shadow-md shadow-primary/20"
             >
               {submittingReport ? (
                 <Loader2 className="h-4 w-4 animate-spin" />

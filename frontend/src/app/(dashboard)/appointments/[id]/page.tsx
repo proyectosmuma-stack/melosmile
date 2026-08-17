@@ -695,8 +695,8 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <Loader2 className="h-8 w-8 animate-spin text-rose-500" />
-        <span className="ml-3 text-slate-600 font-medium">Cargando Ficha de Cita...</span>
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <span className="ml-3 text-muted-foreground font-medium">Cargando Ficha de Cita...</span>
       </div>
     );
   }
@@ -704,8 +704,8 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
   if (!appt) {
     return (
       <div className="flex flex-col items-center justify-center h-96 gap-4">
-        <AlertCircle className="h-12 w-12 text-slate-300" />
-        <p className="text-slate-600 font-semibold">Cita no encontrada en la base de datos</p>
+        <AlertCircle className="h-12 w-12 text-muted-foreground" />
+        <p className="text-muted-foreground font-semibold">Cita no encontrada en la base de datos</p>
         <Link href="/"><Button variant="outline">Volver a la agenda</Button></Link>
       </div>
     );
@@ -724,13 +724,13 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
   return (
     <div className="flex flex-col gap-6 max-w-[1280px] mx-auto p-4 md:p-6">
       <div>
-        <Link href={`/patients/${appt.patientId}`} className="inline-flex items-center gap-2 text-xs font-bold text-slate-500 hover:text-rose-600 transition-colors">
+        <Link href={`/patients/${appt.patientId}`} className="inline-flex items-center gap-2 text-xs font-bold text-muted-foreground hover:text-primary transition-colors">
           <ArrowLeft className="h-4 w-4" /> Volver a la ficha del paciente
         </Link>
       </div>
 
       {/* Notion-Style Top Header Banner with 3-Button Action Toolbar */}
-      <div className="bg-white border border-slate-200/80 rounded-2xl shadow-sm p-6 space-y-4">
+      <div className="bg-card border border-border rounded-2xl shadow-sm p-6 space-y-4">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-start gap-4">
             {/* Patient Avatar Icon Box with AI Gradient Ring */}
@@ -739,7 +739,7 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
                 ? "p-[3px] rounded-[18px] bg-gradient-to-tr from-violet-600 via-purple-500 to-indigo-500 shadow-md shadow-purple-500/25"
                 : ""
             }`}>
-              <div className="h-14 w-14 rounded-2xl bg-rose-50 border border-rose-100 flex items-center justify-center text-rose-600 font-black text-xl">
+              <div className="h-14 w-14 rounded-2xl bg-primary/10 border border-primary/10 flex items-center justify-center text-primary font-black text-xl">
                 {appt.patientName[0]}
               </div>
               {isAiAnalyzed && (
@@ -754,29 +754,29 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
 
             <div>
               <div className="flex items-center gap-2 flex-wrap">
-                <h1 className="text-2xl font-black text-slate-900">{appt.patientName}</h1>
-                <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-rose-50 text-rose-600 border border-rose-100">
+                <h1 className="text-2xl font-black text-foreground">{appt.patientName}</h1>
+                <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/10">
                   {appt.patientHistoriaId}
                 </span>
               </div>
-              <p className="text-xs text-slate-500 flex flex-wrap items-center gap-3 mt-1">
-                <span className="flex items-center gap-1 font-semibold text-slate-700">
-                  <CalendarIcon className="h-3.5 w-3.5 text-rose-500" />
+              <p className="text-xs text-muted-foreground flex flex-wrap items-center gap-3 mt-1">
+                <span className="flex items-center gap-1 font-semibold text-foreground">
+                  <CalendarIcon className="h-3.5 w-3.5 text-primary" />
                   {apptDate.toLocaleDateString("es-ES", { day: "2-digit", month: "long", year: "numeric" })}
                 </span>
                 <span>·</span>
-                <span className="flex items-center gap-1 font-semibold text-slate-700">
-                  <Clock className="h-3.5 w-3.5 text-rose-500" />
+                <span className="flex items-center gap-1 font-semibold text-foreground">
+                  <Clock className="h-3.5 w-3.5 text-primary" />
                   {apptDate.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" })}
                 </span>
                 <span>·</span>
-                <span className="flex items-center gap-1 font-medium text-slate-600">
-                  <Building2 className="h-3.5 w-3.5 text-slate-400" /> {appt.clinicName}
+                <span className="flex items-center gap-1 font-medium text-muted-foreground">
+                  <Building2 className="h-3.5 w-3.5 text-muted-foreground" /> {appt.clinicName}
                 </span>
                 <span>·</span>
-                <span className="flex items-center gap-1 font-medium text-slate-600">
-                  <Stethoscope className="h-3.5 w-3.5 text-slate-400" /> {appt.professionalName || "Dra. Osly Melo"}
-                  {guestDoctor && <span className="text-rose-600 font-bold ml-1 flex items-center gap-1"><UserCheck className="h-3.5 w-3.5" /> + {guestDoctor} (Invitado)</span>}
+                <span className="flex items-center gap-1 font-medium text-muted-foreground">
+                  <Stethoscope className="h-3.5 w-3.5 text-muted-foreground" /> {appt.professionalName || "Dra. Osly Melo"}
+                  {guestDoctor && <span className="text-primary font-bold ml-1 flex items-center gap-1"><UserCheck className="h-3.5 w-3.5" /> + {guestDoctor} (Invitado)</span>}
                 </span>
               </p>
             </div>
@@ -784,7 +784,7 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
 
           <div className="flex flex-wrap items-center gap-3">
             {/* Quick Action Toolbar for Expanded Appointment Options */}
-            <div className="flex items-center gap-1 bg-slate-100/80 p-1 rounded-xl border border-slate-200/80">
+            <div className="flex items-center gap-1 bg-muted/80 p-1 rounded-xl border border-border">
               {/* Button 1: Dr. Colaborador */}
               <Button
                 type="button"
@@ -794,8 +794,8 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
                 title="Añadir o editar Dr. Invitado / Colaborador"
                 className={`h-8 px-3 rounded-lg text-xs font-bold gap-1.5 transition-all cursor-pointer ${
                   showGuestPanel || guestDoctor
-                    ? "bg-rose-500 text-white shadow-xs hover:bg-rose-600"
-                    : "text-slate-700 hover:bg-white hover:text-slate-900"
+                    ? "bg-primary text-white shadow-xs hover:bg-primary/90"
+                    : "text-foreground hover:bg-card hover:text-foreground"
                 }`}
               >
                 <UserCheck className="h-3.5 w-3.5" />
@@ -811,8 +811,8 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
                 title="Mostrar u ocultar panel de contabilidad ($)"
                 className={`h-8 px-3 rounded-lg text-xs font-bold gap-1.5 transition-all cursor-pointer ${
                   showFinancials
-                    ? "bg-emerald-600 text-white shadow-xs hover:bg-emerald-700"
-                    : "text-slate-700 hover:bg-white hover:text-slate-900"
+                    ? "bg-success text-white shadow-xs hover:bg-success/90"
+                    : "text-foreground hover:bg-card hover:text-foreground"
                 }`}
               >
                 <DollarSign className="h-3.5 w-3.5" />
@@ -842,15 +842,15 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
                   }
                 }}
                 title="Modificar fecha, hora, sede o doctor de esta cita"
-                className="h-8 px-3 rounded-lg text-xs font-bold gap-1.5 transition-all text-slate-700 hover:bg-white hover:text-blue-600 border border-slate-200/80 bg-white shadow-2xs cursor-pointer"
+                className="h-8 px-3 rounded-lg text-xs font-bold gap-1.5 transition-all text-foreground hover:bg-card hover:text-info border border-border bg-card shadow-2xs cursor-pointer"
               >
-                <Pencil className="h-3.5 w-3.5 text-blue-600" />
+                <Pencil className="h-3.5 w-3.5 text-info" />
                 Modificar Cita
               </Button>
             </div>
 
             <Select value={status} onValueChange={(val) => setStatus(val || "")}>
-              <SelectTrigger className="w-[140px] bg-white border-slate-200 text-xs font-bold shadow-xs h-9">
+              <SelectTrigger className="w-[140px] bg-card border-border text-xs font-bold shadow-xs h-9">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -866,7 +866,7 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
             <Button
               onClick={handleSave}
               disabled={saving}
-              className="gap-2 bg-rose-500 hover:bg-rose-600 text-white font-bold text-xs rounded-xl h-9 shadow-md shadow-rose-500/20 cursor-pointer"
+              className="gap-2 bg-primary hover:bg-primary/90 text-white font-bold text-xs rounded-xl h-9 shadow-md shadow-primary/20 cursor-pointer"
             >
               {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} Guardar
             </Button>
@@ -875,10 +875,10 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
 
         {/* Expandable Top Panel for Guest / Collaborator Doctor Selection & Creation */}
         {showGuestPanel && (
-          <div className="pt-3 border-t border-slate-100 flex flex-col gap-3 bg-rose-50/50 p-4 rounded-xl border border-rose-100 animate-in fade-in">
+          <div className="pt-3 border-t border-border/60 flex flex-col gap-3 bg-primary/10 p-4 rounded-xl border border-primary/10 animate-in fade-in">
             <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2 text-xs font-bold text-slate-800">
-                <UserCheck className="h-4 w-4 text-rose-600 shrink-0" />
+              <div className="flex items-center gap-2 text-xs font-bold text-foreground">
+                <UserCheck className="h-4 w-4 text-primary shrink-0" />
                 <span>Dr. Invitado / Colaborador especialista de esta cita:</span>
               </div>
               {guestDoctor && (
@@ -887,7 +887,7 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
                   size="sm"
                   variant="ghost"
                   onClick={() => setGuestDoctor("")}
-                  className="h-7 px-2 text-[11px] text-slate-500 hover:text-rose-600 font-bold"
+                  className="h-7 px-2 text-[11px] text-muted-foreground hover:text-primary font-bold"
                 >
                   Quitar Dr. Invitado
                 </Button>
@@ -897,12 +897,12 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {/* Option A: Select from Database Professionals */}
               <div className="space-y-1">
-                <Label className="text-[11px] font-bold text-slate-600">Seleccionar de Profesionales en BD</Label>
+                <Label className="text-[11px] font-bold text-muted-foreground">Seleccionar de Profesionales en BD</Label>
                 <Select
                   value={guestDoctor || ""}
                   onValueChange={(val) => setGuestDoctor(val || "")}
                 >
-                  <SelectTrigger className="h-9 text-xs bg-white border-slate-200 rounded-xl font-medium">
+                  <SelectTrigger className="h-9 text-xs bg-card border-border rounded-xl font-medium">
                     <SelectValue placeholder="Seleccionar doctor registrado..." />
                   </SelectTrigger>
                   <SelectContent>
@@ -920,19 +920,19 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
 
               {/* Option B: Create new Professional in Database */}
               <div className="space-y-1">
-                <Label className="text-[11px] font-bold text-slate-600">¿Es un doctor nuevo? Escribe y guarda en la BD</Label>
+                <Label className="text-[11px] font-bold text-muted-foreground">¿Es un doctor nuevo? Escribe y guarda en la BD</Label>
                 <div className="flex items-center gap-2">
                   <Input
                     value={newDoctorInput}
                     onChange={(e) => setNewDoctorInput(e.target.value)}
                     placeholder="Ej: Dr. Manuel Rivas"
-                    className="h-9 text-xs bg-white border-slate-200 rounded-xl font-medium"
+                    className="h-9 text-xs bg-card border-border rounded-xl font-medium"
                   />
                   <Button
                     type="button"
                     onClick={handleCreateNewProfessional}
                     disabled={creatingDoctor || !newDoctorInput.trim()}
-                    className="h-9 px-3 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl shrink-0 gap-1.5 cursor-pointer shadow-xs"
+                    className="h-9 px-3 bg-primary hover:bg-primary/90 text-white font-bold text-xs rounded-xl shrink-0 gap-1.5 cursor-pointer shadow-xs"
                   >
                     {creatingDoctor ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />}
                     Guardar en BD
@@ -946,14 +946,14 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
 
       {/* AI Next Appointment Suggestion Banner */}
       {aiSuggestion && (
-        <div className="bg-gradient-to-r from-blue-50 to-violet-50 border border-blue-200 rounded-2xl p-4 flex items-center justify-between gap-4 text-blue-900 shadow-xs">
+        <div className="bg-gradient-to-r from-info/10 to-violet-50 border border-info/20 rounded-2xl p-4 flex items-center justify-between gap-4 text-info shadow-xs">
           <div className="flex items-center gap-3">
             <Sparkles className="h-5 w-5 text-violet-600 shrink-0" />
             <div className="text-xs">
-              <p className="font-bold text-blue-950">
+              <p className="font-bold text-info">
                 🤖 El Agente IA detectó una sugerencia de cita futura:
               </p>
-              <p className="text-blue-800 font-medium mt-0.5">
+              <p className="text-info font-medium mt-0.5">
                 <strong>Motivo:</strong> {aiSuggestion.motivo || aiSuggestion.detalles} · <strong>Sugerido:</strong> {aiSuggestion.timeframe}
               </p>
             </div>
@@ -968,13 +968,13 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
 
       {/* Anamnesis Alert Banner */}
       {(appt.patientAllergies || appt.patientDiseases || appt.patientMedication) && (
-        <div className="bg-amber-50/80 border border-amber-200/80 rounded-2xl p-4 flex items-start gap-3 text-amber-900 shadow-xs">
-          <ShieldAlert className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+        <div className="bg-warning/10 border border-warning/30 rounded-2xl p-4 flex items-start gap-3 text-warning shadow-xs">
+          <ShieldAlert className="h-5 w-5 text-warning shrink-0 mt-0.5" />
           <div className="text-xs space-y-1">
-            <p className="font-bold text-amber-950 uppercase tracking-wider text-[11px]">
+            <p className="font-bold text-warning uppercase tracking-wider text-[11px]">
               Alerta Médica de Anamnesis para la Consulta:
             </p>
-            <div className="flex flex-wrap gap-x-4 gap-y-1 text-amber-800 font-medium">
+            <div className="flex flex-wrap gap-x-4 gap-y-1 text-warning font-medium">
               {appt.patientAllergies && <span><strong>Alergias:</strong> {appt.patientAllergies}</span>}
               {appt.patientDiseases && <span><strong>Antecedentes:</strong> {appt.patientDiseases}</span>}
               {appt.patientMedication && <span><strong>Medicación habitual:</strong> {appt.patientMedication}</span>}
@@ -990,17 +990,17 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
         <div className="lg:col-span-2 space-y-6">
           
           {/* Multi-Procedure Section */}
-          <Card className="border-0 shadow-md rounded-2xl bg-white">
-            <CardHeader className="pb-3 border-b border-slate-100 flex flex-row items-center justify-between">
-              <CardTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
-                <Stethoscope className="h-5 w-5 text-rose-500" /> Tratamientos & Procedimientos de la Sesión
+          <Card className="border-0 shadow-md rounded-2xl bg-card">
+            <CardHeader className="pb-3 border-b border-border/60 flex flex-row items-center justify-between">
+              <CardTitle className="text-base font-bold text-foreground flex items-center gap-2">
+                <Stethoscope className="h-5 w-5 text-primary" /> Tratamientos & Procedimientos de la Sesión
               </CardTitle>
               <Button
                 type="button"
                 size="sm"
                 variant="outline"
                 onClick={addProcedureRow}
-                className="gap-1.5 text-xs font-bold rounded-xl text-rose-600 border-rose-200 hover:bg-rose-50"
+                className="gap-1.5 text-xs font-bold rounded-xl text-primary border-primary/30 hover:bg-primary/10"
               >
                 <Plus className="h-3.5 w-3.5" /> Añadir Procedimiento
               </Button>
@@ -1013,9 +1013,9 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
                 const effectiveLab = proc.overrideLabCost !== null ? proc.overrideLabCost : proc.dbLabCost;
 
                 return (
-                  <div key={proc.id} className="p-4 rounded-xl border border-slate-200/80 bg-slate-50/50 space-y-3 relative group">
+                  <div key={proc.id} className="p-4 rounded-xl border border-border bg-muted/40 space-y-3 relative group">
                     <div className="flex items-center justify-between">
-                      <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                      <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
                         Procedimiento #{index + 1}
                       </span>
                       <div className="flex items-center gap-2">
@@ -1023,7 +1023,7 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
                           type="button"
                           onClick={() => updateProcedure(proc.id, { showOverride: !proc.showOverride })}
                           className={`text-xs font-bold px-2 py-0.5 rounded-lg flex items-center gap-1 transition-all ${
-                            proc.showOverride ? "bg-amber-100 text-amber-800" : "text-slate-500 hover:text-slate-900 bg-white border border-slate-200"
+                            proc.showOverride ? "bg-warning/10 text-warning" : "text-muted-foreground hover:text-foreground bg-card border border-border"
                           }`}
                         >
                           <Settings2 className="h-3 w-3" /> Modificar valores
@@ -1032,7 +1032,7 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
                           <button
                             type="button"
                             onClick={() => removeProcedure(proc.id)}
-                            className="text-slate-400 hover:text-red-500 p-1"
+                            className="text-muted-foreground hover:text-destructive p-1"
                           >
                             <Trash2 className="h-4 w-4" />
                           </button>
@@ -1042,7 +1042,7 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
 
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                       <div className="sm:col-span-2 space-y-1">
-                        <Label className="text-xs font-semibold text-slate-700">Tratamiento del Catálogo</Label>
+                        <Label className="text-xs font-semibold text-foreground">Tratamiento del Catálogo</Label>
                         {treatmentsList.length > 0 ? (
                           <select
                             value={proc.serviceName}
@@ -1056,7 +1056,7 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
                                 dbLabCost: Number((found as any)?.lab_cost) || 0,
                               });
                             }}
-                            className="w-full h-9 rounded-xl border border-slate-200 bg-white px-3 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-rose-500"
+                            className="w-full h-9 rounded-xl border border-border bg-card px-3 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-primary/60"
                           >
                             <option value="">{proc.serviceName || "-- Seleccionar del catálogo --"}</option>
                             {treatmentsList.map((t) => (
@@ -1070,27 +1070,27 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
                             value={proc.serviceName}
                             onChange={(e) => updateProcedure(proc.id, { serviceName: e.target.value })}
                             placeholder="Ej: Ajuste de Ortodoncia"
-                            className="h-9 text-xs bg-white"
+                            className="h-9 text-xs bg-card"
                           />
                         )}
                       </div>
 
                       <div className="space-y-1">
-                        <Label className="text-xs font-semibold text-slate-700">Pieza / Zona Dental</Label>
+                        <Label className="text-xs font-semibold text-foreground">Pieza / Zona Dental</Label>
                         <Input
                           value={proc.toothRef}
                           onChange={(e) => updateProcedure(proc.id, { toothRef: e.target.value })}
                           placeholder="Ej: Pieza 36 / Cuadrante 2"
-                          className="h-9 text-xs bg-white rounded-xl"
+                          className="h-9 text-xs bg-card rounded-xl"
                         />
                       </div>
                     </div>
 
                     {/* Expandable Override Fields Panel (Local to this appointment) */}
                     {proc.showOverride && (
-                      <div className="pt-2 border-t border-slate-200/80 grid grid-cols-3 gap-3 bg-white p-3 rounded-xl border">
+                      <div className="pt-2 border-t border-border grid grid-cols-3 gap-3 bg-card p-3 rounded-xl border">
                         <div className="space-y-1">
-                          <Label className="text-[10px] uppercase font-bold text-slate-500">Precio Local (€)</Label>
+                          <Label className="text-[10px] uppercase font-bold text-muted-foreground">Precio Local (€)</Label>
                           <Input
                             type="number"
                             step="0.01"
@@ -1100,7 +1100,7 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
                           />
                         </div>
                         <div className="space-y-1">
-                          <Label className="text-[10px] uppercase font-bold text-slate-500">% Comisión Dra.</Label>
+                          <Label className="text-[10px] uppercase font-bold text-muted-foreground">% Comisión Dra.</Label>
                           <Input
                             type="number"
                             value={effectiveComm}
@@ -1109,7 +1109,7 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
                           />
                         </div>
                         <div className="space-y-1">
-                          <Label className="text-[10px] uppercase font-bold text-slate-500">Gasto Lab (€)</Label>
+                          <Label className="text-[10px] uppercase font-bold text-muted-foreground">Gasto Lab (€)</Label>
                           <Input
                             type="number"
                             step="0.01"
@@ -1127,27 +1127,27 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
           </Card>
 
           {/* Clinical Evolution & Medication */}
-          <Card className="border-0 shadow-md rounded-2xl bg-white">
-            <CardHeader className="pb-3 border-b border-slate-100">
-              <CardTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
-                <MessageSquare className="h-5 w-5 text-rose-500" /> Evolución Clínica & Observaciones del Doctor
+          <Card className="border-0 shadow-md rounded-2xl bg-card">
+            <CardHeader className="pb-3 border-b border-border/60">
+              <CardTitle className="text-base font-bold text-foreground flex items-center gap-2">
+                <MessageSquare className="h-5 w-5 text-primary" /> Evolución Clínica & Observaciones del Doctor
               </CardTitle>
             </CardHeader>
 
             <CardContent className="p-6 space-y-4">
               <div className="space-y-2">
-                <Label className="text-xs font-semibold text-slate-700">Notas de Evolución (Formato Libre / Notion Block)</Label>
+                <Label className="text-xs font-semibold text-foreground">Notas de Evolución (Formato Libre / Notion Block)</Label>
                 <Textarea
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
-                  className="min-h-[140px] bg-slate-50/60 border-slate-200 text-xs leading-relaxed resize-y rounded-xl p-4 font-normal"
+                  className="min-h-[140px] bg-muted/40 border-border text-xs leading-relaxed resize-y rounded-xl p-4 font-normal"
                   placeholder="Escribe aquí los detalles clínicos de la sesión, respuesta del paciente, técnica empleada..."
                 />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
+                  <Label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
                     <Pill className="h-3.5 w-3.5 text-purple-600" /> Medicación Recetada / Pauta
                   </Label>
                   <Input
@@ -1159,14 +1159,14 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
                 </div>
 
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
-                    <Activity className="h-3.5 w-3.5 text-blue-600" /> Pauta Próxima Cita / Seguimiento (Musly)
+                  <Label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                    <Activity className="h-3.5 w-3.5 text-info" /> Pauta Próxima Cita / Seguimiento (Musly)
                   </Label>
                   <Textarea
                     value={nextStepNotes}
                     onChange={(e) => setNextStepNotes(e.target.value)}
                     placeholder="Escribe la pauta para la próxima cita (ej. Citar en 3 semanas para quitar puntos). Musly analizará esto al guardar."
-                    className="rounded-xl text-xs min-h-[90px] bg-slate-50/60"
+                    className="rounded-xl text-xs min-h-[90px] bg-muted/40"
                   />
                 </div>
               </div>
@@ -1174,17 +1174,17 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
           </Card>
 
           {/* Dedicated Photo Registration Section (VPS Storage, Grouped by Date) */}
-          <Card className="border-0 shadow-md rounded-2xl bg-white">
-            <CardHeader className="flex flex-row items-center justify-between pb-3 border-b border-slate-100">
-              <CardTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
-                <Camera className="h-5 w-5 text-rose-500" /> Registro Fotográfico (Almacenado en VPS)
+          <Card className="border-0 shadow-md rounded-2xl bg-card">
+            <CardHeader className="flex flex-row items-center justify-between pb-3 border-b border-border/60">
+              <CardTitle className="text-base font-bold text-foreground flex items-center gap-2">
+                <Camera className="h-5 w-5 text-primary" /> Registro Fotográfico (Almacenado en VPS)
               </CardTitle>
               <Button
                 size="sm"
                 variant="outline"
                 onClick={() => imageInputRef.current?.click()}
                 disabled={uploadingDoc}
-                className="gap-1.5 rounded-xl text-xs font-semibold text-rose-600 border-rose-200 hover:bg-rose-50"
+                className="gap-1.5 rounded-xl text-xs font-semibold text-primary border-primary/30 hover:bg-primary/10"
               >
                 {uploadingDoc ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />} Subir Fotografías
               </Button>
@@ -1203,28 +1203,28 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
               {images.length === 0 ? (
                 <div
                   onClick={() => imageInputRef.current?.click()}
-                  className="border-2 border-dashed border-slate-200 hover:border-rose-300 rounded-2xl p-6 text-center bg-slate-50/50 transition-all cursor-pointer"
+                  className="border-2 border-dashed border-border hover:border-primary/40 rounded-2xl p-6 text-center bg-muted/40 transition-all cursor-pointer"
                 >
-                  <div className="flex flex-col items-center gap-2 text-slate-500">
-                    <ImageIcon className="h-7 w-7 text-slate-300" />
-                    <p className="text-xs font-semibold text-slate-700">Arrastra o selecciona fotografías clínicas de esta cita</p>
-                    <p className="text-[11px] text-slate-400">Guardado directo en VPS bajo paciente/registros/{apptDate.toISOString().substring(0,10)}/</p>
+                  <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                    <ImageIcon className="h-7 w-7 text-muted-foreground" />
+                    <p className="text-xs font-semibold text-foreground">Arrastra o selecciona fotografías clínicas de esta cita</p>
+                    <p className="text-[11px] text-muted-foreground">Guardado directo en VPS bajo paciente/registros/{apptDate.toISOString().substring(0,10)}/</p>
                   </div>
                 </div>
               ) : (
                 <div className="space-y-3">
-                  <div className="flex items-center justify-between text-xs font-bold text-slate-500 pb-1 border-b border-slate-100">
+                  <div className="flex items-center justify-between text-xs font-bold text-muted-foreground pb-1 border-b border-border/60">
                     <span>Fotos registradas el {apptDate.toLocaleDateString("es-ES", { day: "2-digit", month: "long", year: "numeric" })}</span>
-                    <span className="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">{images.length} foto(s)</span>
+                    <span className="text-[10px] bg-muted text-muted-foreground px-2 py-0.5 rounded-full">{images.length} foto(s)</span>
                   </div>
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                     {images.map((img) => (
-                      <div key={img.id} className="relative group rounded-xl border border-slate-200 overflow-hidden bg-slate-100 aspect-square flex items-center justify-center">
+                      <div key={img.id} className="relative group rounded-xl border border-border overflow-hidden bg-muted aspect-square flex items-center justify-center">
                         {img.file_url ? (
                           <img src={img.file_url} alt={img.file_name} className="w-full h-full object-cover" />
                         ) : (
-                          <div className="flex flex-col items-center p-2 text-center text-slate-500">
-                            <ImageIcon className="h-6 w-6 text-slate-400 mb-1" />
+                          <div className="flex flex-col items-center p-2 text-center text-muted-foreground">
+                            <ImageIcon className="h-6 w-6 text-muted-foreground mb-1" />
                             <span className="text-[10px] font-bold truncate max-w-[100px]">{img.file_name}</span>
                           </div>
                         )}
@@ -1240,10 +1240,10 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
           </Card>
 
           {/* Attached Non-Image Documents (Vectorized via n8n) */}
-          <Card className="border-0 shadow-md rounded-2xl bg-white">
-            <CardHeader className="flex flex-row items-center justify-between pb-3 border-b border-slate-100">
-              <CardTitle className="text-base font-bold text-slate-900 flex items-center gap-2">
-                <FileText className="h-5 w-5 text-rose-500" /> Documentos & Informes (Vectorizados n8n)
+          <Card className="border-0 shadow-md rounded-2xl bg-card">
+            <CardHeader className="flex flex-row items-center justify-between pb-3 border-b border-border/60">
+              <CardTitle className="text-base font-bold text-foreground flex items-center gap-2">
+                <FileText className="h-5 w-5 text-primary" /> Documentos & Informes (Vectorizados n8n)
               </CardTitle>
               <Button
                 size="sm"
@@ -1269,11 +1269,11 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
               {nonImageDocs.length > 0 && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {nonImageDocs.map((doc) => (
-                    <div key={doc.id} className="flex items-center gap-3 p-3 rounded-xl border border-slate-100 bg-slate-50/50">
-                      <FileText className="h-5 w-5 text-rose-500 shrink-0" />
+                    <div key={doc.id} className="flex items-center gap-3 p-3 rounded-xl border border-border/60 bg-muted/40">
+                      <FileText className="h-5 w-5 text-primary shrink-0" />
                       <div className="min-w-0 flex-1">
-                        <p className="text-xs font-bold text-slate-800 truncate">{doc.file_name}</p>
-                        <p className="text-[10px] text-slate-400">{doc.description || "Vectorizado 🧠"}</p>
+                        <p className="text-xs font-bold text-foreground truncate">{doc.file_name}</p>
+                        <p className="text-[10px] text-muted-foreground">{doc.description || "Vectorizado 🧠"}</p>
                       </div>
                       <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-violet-100 text-violet-700 border border-violet-200">
                         IA 🧠
@@ -1291,13 +1291,13 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
           
           {/* Collapsible Financial & Odoo Panel (Appears ABOVE Odontogram when active) */}
           {showFinancials && (
-            <Card className="border-0 shadow-lg rounded-2xl bg-gradient-to-b from-slate-900 to-slate-850 text-white animate-in fade-in slide-in-from-top-2">
-              <CardHeader className="pb-4 border-b border-slate-800">
+            <Card className="border-0 shadow-lg rounded-2xl bg-gradient-to-b from-sidebar-accent to-sidebar-border text-white animate-in fade-in slide-in-from-top-2">
+              <CardHeader className="pb-4 border-b border-sidebar-border">
                 <CardTitle className="text-base flex items-center justify-between text-white/90">
                   <span className="flex items-center gap-2">
-                    <CreditCard className="h-5 w-5 text-rose-400" /> Contabilidad & Odoo
+                    <CreditCard className="h-5 w-5 text-primary/80" /> Contabilidad & Odoo
                   </span>
-                  <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-slate-800 border border-slate-700 text-emerald-400">
+                  <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-sidebar-accent border border-sidebar-muted text-emerald-400">
                     {paymentStatus}
                   </span>
                 </CardTitle>
@@ -1305,11 +1305,11 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
 
               <CardContent className="p-6 space-y-5">
                 <div className="space-y-2">
-                  <Label className="text-xs text-slate-300">Estado del Pago</Label>
+                  <Label className="text-xs text-sidebar-muted-foreground">Estado del Pago</Label>
                   <select
                     value={paymentStatus}
                     onChange={(e) => setPaymentStatus(e.target.value)}
-                    className="w-full h-10 rounded-xl bg-slate-800 border border-slate-700 text-white text-xs px-3 focus:outline-none focus:ring-2 focus:ring-rose-500"
+                    className="w-full h-10 rounded-xl bg-sidebar-accent border border-sidebar-muted text-white text-xs px-3 focus:outline-none focus:ring-2 focus:ring-primary/60"
                   >
                     <option value="Pendiente">Pendiente de cobro</option>
                     <option value="Aconto">Aconto / Entrega parcial</option>
@@ -1318,20 +1318,20 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
                   </select>
                 </div>
 
-                <div className="p-4 rounded-xl bg-slate-800/80 border border-slate-700 space-y-3">
+                <div className="p-4 rounded-xl bg-sidebar-accent/80 border border-sidebar-muted space-y-3">
                   <div className="flex items-center justify-between text-xs">
-                    <span className="text-slate-400">Total Procedimientos</span>
+                    <span className="text-sidebar-muted-foreground">Total Procedimientos</span>
                     <span className="font-bold text-white text-sm">{totals.totalPrice.toFixed(2)} €</span>
                   </div>
                   <div className="flex items-center justify-between text-xs">
-                    <span className="text-slate-400">Total Gasto Laboratorio</span>
+                    <span className="text-sidebar-muted-foreground">Total Gasto Laboratorio</span>
                     <span className="font-bold text-amber-400">{totals.totalLabCost.toFixed(2)} €</span>
                   </div>
 
                   {/* Profitability Calculation */}
-                  <div className="pt-3 border-t border-slate-700 space-y-2">
+                  <div className="pt-3 border-t border-sidebar-muted space-y-2">
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-semibold text-slate-300">Neto Calculado</span>
+                      <span className="text-xs font-semibold text-sidebar-muted-foreground">Neto Calculado</span>
                       <span className={`text-xl font-bold ${
                         totals.profStatus === "loss" ? "text-red-400" :
                         totals.profStatus === "warning" ? "text-amber-400" :
@@ -1372,7 +1372,7 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
                 <div className="space-y-2 pt-2">
                   <Button
                     onClick={() => setPaymentModalOpen(true)}
-                    className="w-full bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl gap-2 font-bold text-xs h-10 shadow-md shadow-emerald-600/20 cursor-pointer"
+                    className="w-full bg-success hover:bg-success/90 text-white rounded-xl gap-2 font-bold text-xs h-10 shadow-md shadow-success/20 cursor-pointer"
                   >
                     <Plus className="h-4 w-4" /> Registrar Pago de esta Cita
                   </Button>
@@ -1423,17 +1423,17 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
       {/* Edit Appointment Modal */}
       {appt && (
         <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
-          <DialogContent className="sm:max-w-lg rounded-2xl p-6 bg-white shadow-2xl border border-slate-200">
+          <DialogContent className="sm:max-w-lg rounded-2xl p-6 bg-card shadow-2xl border border-border">
             <DialogHeader>
-              <DialogTitle className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                <Pencil className="h-5 w-5 text-blue-600" /> Modificar Datos de la Cita — {appt.patientName}
+              <DialogTitle className="text-lg font-bold text-foreground flex items-center gap-2">
+                <Pencil className="h-5 w-5 text-info" /> Modificar Datos de la Cita — {appt.patientName}
               </DialogTitle>
             </DialogHeader>
 
             <div className="space-y-4 py-3 text-xs">
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <Label className="text-xs font-semibold text-slate-700">Fecha de la Cita</Label>
+                  <Label className="text-xs font-semibold text-foreground">Fecha de la Cita</Label>
                   <Input
                     type="date"
                     value={editDate}
@@ -1442,7 +1442,7 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
                   />
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-xs font-semibold text-slate-700">Hora de la Cita</Label>
+                  <Label className="text-xs font-semibold text-foreground">Hora de la Cita</Label>
                   <Input
                     type="time"
                     value={editTime}
@@ -1453,11 +1453,11 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
               </div>
 
               <div className="space-y-1">
-                <Label className="text-xs font-semibold text-slate-700">Clínica / Sede</Label>
+                <Label className="text-xs font-semibold text-foreground">Clínica / Sede</Label>
                 <select
                   value={editClinicId}
                   onChange={(e) => setEditClinicId(e.target.value)}
-                  className="w-full h-9 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full h-9 rounded-xl border border-border bg-card px-3 text-xs font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-info/60"
                 >
                   <option value="">-- Seleccionar Clínica --</option>
                   {clinicsCatalog.map((c) => (
@@ -1467,11 +1467,11 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
               </div>
 
               <div className="space-y-1">
-                <Label className="text-xs font-semibold text-slate-700">Doctor / Profesional Principal</Label>
+                <Label className="text-xs font-semibold text-foreground">Doctor / Profesional Principal</Label>
                 <select
                   value={editProfessionalId}
                   onChange={(e) => setEditProfessionalId(e.target.value)}
-                  className="w-full h-9 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full h-9 rounded-xl border border-border bg-card px-3 text-xs font-semibold text-foreground focus:outline-none focus:ring-2 focus:ring-info/60"
                 >
                   <option value="">-- Seleccionar Doctor --</option>
                   {professionalsCatalog.map((p) => (
@@ -1481,7 +1481,7 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
               </div>
 
               <div className="space-y-1">
-                <Label className="text-xs font-semibold text-slate-700">Motivo / Tratamiento Principal</Label>
+                <Label className="text-xs font-semibold text-foreground">Motivo / Tratamiento Principal</Label>
                 <Input
                   value={editReason}
                   onChange={(e) => setEditReason(e.target.value)}
@@ -1513,7 +1513,7 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
                     alert(`Error actualizando cita: ${err.message}`);
                   }
                 }}
-                className="bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-md cursor-pointer"
+                className="bg-info hover:bg-info/90 text-white font-bold rounded-xl shadow-md cursor-pointer"
               >
                 Guardar Cambios
               </Button>

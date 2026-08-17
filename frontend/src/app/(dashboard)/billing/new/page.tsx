@@ -183,51 +183,51 @@ function DocumentCleanerPortal() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 p-6 flex justify-center">
+    <div className="min-h-screen bg-background p-6 flex justify-center">
       <div className="w-full max-w-4xl space-y-6">
         
         {/* Top Bar */}
         <div className="flex items-center gap-4">
           <Link href="/billing">
-            <Button variant="ghost" size="sm" className="gap-2 text-slate-600">
+            <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground">
               <ArrowLeft className="w-4 h-4" />
               Volver al Hub Contable
             </Button>
           </Link>
           <div className="flex-1 text-center">
-            <h1 className="text-xl font-bold text-slate-900 flex items-center justify-center gap-2">
-              <Sparkles className="w-5 h-5 text-emerald-600" />
+            <h1 className="text-xl font-bold text-foreground flex items-center justify-center gap-2">
+              <Sparkles className="w-5 h-5 text-success" />
               Portal Limpiador de Documentos
             </h1>
           </div>
         </div>
 
         {errorMessage && (
-          <div className="p-4 rounded-xl bg-rose-50 text-rose-700 border border-rose-200 flex items-center gap-2 font-medium">
+          <div className="p-4 rounded-xl bg-primary/10 text-primary border border-primary/30 flex items-center gap-2 font-medium">
             <AlertCircle className="w-5 h-5" />
             {errorMessage}
           </div>
         )}
 
         {successMessage && (
-          <div className="p-4 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-2 font-medium">
+          <div className="p-4 rounded-xl bg-success/10 text-success border border-success/30 flex items-center gap-2 font-medium">
             <CheckCircle2 className="w-5 h-5" />
             {successMessage}
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm space-y-8">
+        <form onSubmit={handleSubmit} className="bg-card p-8 rounded-2xl border border-border shadow-sm space-y-8">
           
-          <div className="bg-slate-50 p-6 rounded-xl border border-slate-200 grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="bg-muted/40 p-6 rounded-xl border border-border grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="space-y-2">
-              <label className="text-sm font-bold text-slate-700 flex items-center gap-2">
-                <Building2 className="w-4 h-4 text-emerald-600" />
+              <label className="text-sm font-bold text-foreground flex items-center gap-2">
+                <Building2 className="w-4 h-4 text-success" />
                 Clínica de Destino
               </label>
               <select
                 value={selectedClinicId}
                 onChange={(e) => setSelectedClinicId(e.target.value)}
-                className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm font-medium focus:ring-2 focus:ring-emerald-500"
+                className="w-full bg-card border border-input rounded-lg px-3 py-2 text-sm font-medium focus:ring-2 focus:ring-success"
               >
                 <option value="">-- Seleccionar Clínica --</option>
                 {clinics.map(c => (
@@ -237,14 +237,14 @@ function DocumentCleanerPortal() {
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-bold text-slate-700 flex items-center gap-2">
-                <CalendarIcon className="w-4 h-4 text-emerald-600" />
+              <label className="text-sm font-bold text-foreground flex items-center gap-2">
+                <CalendarIcon className="w-4 h-4 text-success" />
                 Mes Contable
               </label>
               <select
                 value={month}
                 onChange={(e) => setMonth(parseInt(e.target.value))}
-                className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm font-medium focus:ring-2 focus:ring-emerald-500"
+                className="w-full bg-card border border-input rounded-lg px-3 py-2 text-sm font-medium focus:ring-2 focus:ring-success"
               >
                 {MONTH_NAMES.map((m, idx) => (
                   <option key={idx + 1} value={idx + 1}>{m}</option>
@@ -253,25 +253,25 @@ function DocumentCleanerPortal() {
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-bold text-slate-700 flex items-center gap-2">
+              <label className="text-sm font-bold text-foreground flex items-center gap-2">
                 Año
               </label>
               <input
                 type="number"
                 value={year}
                 onChange={(e) => setYear(parseInt(e.target.value))}
-                className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm font-medium focus:ring-2 focus:ring-emerald-500"
+                className="w-full bg-card border border-input rounded-lg px-3 py-2 text-sm font-medium focus:ring-2 focus:ring-success"
               />
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-bold text-slate-700 flex items-center gap-2">
-                Día del Mes <span className="text-xs font-normal text-slate-400">(Opcional)</span>
+              <label className="text-sm font-bold text-foreground flex items-center gap-2">
+                Día del Mes <span className="text-xs font-normal text-muted-foreground">(Opcional)</span>
               </label>
               <select
                 value={day}
                 onChange={(e) => setDay(e.target.value ? parseInt(e.target.value) : "")}
-                className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm font-medium focus:ring-2 focus:ring-emerald-500"
+                className="w-full bg-card border border-input rounded-lg px-3 py-2 text-sm font-medium focus:ring-2 focus:ring-success"
               >
                 <option value="">Auto (o día 15)</option>
                 {Array.from({ length: 31 }, (_, i) => i + 1).map((d) => (
@@ -282,19 +282,19 @@ function DocumentCleanerPortal() {
           </div>
 
           {/* Modo de Ingesta (Acumular o Limpiar) */}
-          <div className="p-4 rounded-xl bg-amber-50/80 border border-amber-200 space-y-2">
+          <div className="p-4 rounded-xl bg-warning/10 border border-warning/30 space-y-2">
             <label className="flex items-center gap-3 cursor-pointer">
               <input
                 type="checkbox"
                 checked={clearExisting}
                 onChange={(e) => setClearExisting(e.target.checked)}
-                className="h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer"
+                className="h-4 w-4 rounded border-input text-success focus:ring-success cursor-pointer"
               />
               <div>
-                <span className="text-xs font-bold text-amber-900">
+                <span className="text-xs font-bold text-warning">
                   🧹 Limpiar / Borrar citas anteriores de esta sede y mes antes de cargar
                 </span>
-                <p className="text-[11px] text-amber-700 mt-0.5">
+                <p className="text-[11px] text-warning mt-0.5">
                   Si dejas esta casilla desmarcada (por defecto), el sistema <b>sumará y complementará</b> las nuevas imágenes a lo que ya tenías guardado sin borrar tus datos anteriores.
                 </p>
               </div>
@@ -303,42 +303,42 @@ function DocumentCleanerPortal() {
 
           {/* Source Selection */}
           <div className="space-y-4">
-            <h3 className="text-sm font-bold text-slate-700">Origen de los datos</h3>
+            <h3 className="text-sm font-bold text-foreground">Origen de los datos</h3>
             <div className="flex flex-wrap gap-3">
-              <Button type="button" variant={sourceType === "excel" ? "default" : "outline"} onClick={() => setSourceType("excel")} className={sourceType === "excel" ? "bg-emerald-600 hover:bg-emerald-700" : ""}>
+              <Button type="button" variant={sourceType === "excel" ? "default" : "outline"} onClick={() => setSourceType("excel")} className={sourceType === "excel" ? "bg-success hover:bg-success/90" : ""}>
                 Excel
               </Button>
-              <Button type="button" variant={sourceType === "image" ? "default" : "outline"} onClick={() => setSourceType("image")} className={sourceType === "image" ? "bg-emerald-600 hover:bg-emerald-700" : ""}>
+              <Button type="button" variant={sourceType === "image" ? "default" : "outline"} onClick={() => setSourceType("image")} className={sourceType === "image" ? "bg-success hover:bg-success/90" : ""}>
                 Imágenes (Fotos de notas / Varias a la vez)
               </Button>
-              <Button type="button" variant={sourceType === "text" ? "default" : "outline"} onClick={() => setSourceType("text")} className={sourceType === "text" ? "bg-emerald-600 hover:bg-emerald-700" : ""}>
+              <Button type="button" variant={sourceType === "text" ? "default" : "outline"} onClick={() => setSourceType("text")} className={sourceType === "text" ? "bg-success hover:bg-success/90" : ""}>
                 Texto Libre (WhatsApp / Email)
               </Button>
             </div>
           </div>
 
-          <div className="pt-4 border-t border-slate-100">
+          <div className="pt-4 border-t border-border/60">
             {sourceType === "text" ? (
               <textarea
                 value={rawText}
                 onChange={(e) => setRawText(e.target.value)}
                 placeholder="Pega aquí los mensajes de WhatsApp, el email con el resumen, o las notas transcritas..."
-                className="w-full min-h-[250px] bg-slate-50 border border-slate-300 rounded-xl p-4 text-sm focus:ring-2 focus:ring-emerald-500"
+                className="w-full min-h-[250px] bg-muted/40 border border-input rounded-xl p-4 text-sm focus:ring-2 focus:ring-success"
               />
             ) : (
-              <div className="border-2 border-dashed border-slate-300 rounded-xl p-8 text-center bg-slate-50 hover:bg-emerald-50/30 transition-colors">
-                <UploadCloud className="w-12 h-12 text-emerald-500 mx-auto mb-3" />
-                <h4 className="text-base font-bold text-slate-700 mb-1">
+              <div className="border-2 border-dashed border-input rounded-xl p-8 text-center bg-muted/40 hover:bg-success/10 transition-colors">
+                <UploadCloud className="w-12 h-12 text-success mx-auto mb-3" />
+                <h4 className="text-base font-bold text-foreground mb-1">
                   Sube uno o varios documentos / imágenes
                 </h4>
-                <p className="text-xs text-slate-500 mb-4">
+                <p className="text-xs text-muted-foreground mb-4">
                   Puedes seleccionar múltiples archivos a la vez (ej: foto 1, foto 2, excel de notas)
                 </p>
 
                 {selectedFiles.length > 0 && (
                   <div className="mb-4 flex flex-wrap justify-center gap-2">
                     {selectedFiles.map((file, idx) => (
-                      <span key={idx} className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-emerald-100 text-emerald-900 border border-emerald-300 text-xs font-semibold">
+                      <span key={idx} className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-success/15 text-success border border-success/30 text-xs font-semibold">
                         📄 {file.name} ({(file.size / 1024).toFixed(0)} KB)
                       </span>
                     ))}
@@ -356,7 +356,7 @@ function DocumentCleanerPortal() {
                       setSourceType("image");
                     }
                   }}
-                  className="mx-auto block text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 cursor-pointer"
+                  className="mx-auto block text-sm text-muted-foreground file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-success/10 file:text-success hover:file:bg-success/15 cursor-pointer"
                 />
               </div>
             )}
@@ -366,7 +366,7 @@ function DocumentCleanerPortal() {
             <Button
               type="submit"
               disabled={isProcessing}
-              className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold h-12 text-lg"
+              className="w-full bg-success hover:bg-success/90 text-white font-bold h-12 text-lg"
             >
               {isProcessing ? (
                 <>
@@ -386,38 +386,38 @@ function DocumentCleanerPortal() {
 
       {/* Modal de Carga Interactiva con Progreso */}
       {isProcessing && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
-          <div className="bg-white rounded-3xl p-8 max-w-md w-full border border-slate-100 shadow-2xl space-y-6 text-center">
+        <div className="fixed inset-0 z-50 bg-sidebar-accent/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-card rounded-3xl p-8 max-w-md w-full border border-border/60 shadow-2xl space-y-6 text-center">
             <div className="relative w-20 h-20 mx-auto flex items-center justify-center">
-              <div className="absolute inset-0 rounded-full border-4 border-emerald-100 border-t-emerald-600 animate-spin" />
-              <Sparkles className="w-8 h-8 text-emerald-600 animate-pulse" />
+              <div className="absolute inset-0 rounded-full border-4 border-success/15 border-t-success animate-spin" />
+              <Sparkles className="w-8 h-8 text-success animate-pulse" />
             </div>
 
             <div className="space-y-2">
-              <h3 className="text-xl font-extrabold text-slate-900">
+              <h3 className="text-xl font-extrabold text-foreground">
                 Procesando Documento con IA
               </h3>
-              <p className="text-xs text-slate-500 font-medium leading-relaxed">
+              <p className="text-xs text-muted-foreground font-medium leading-relaxed">
                 El Agente de IA está analizando los tratamientos, pacientes y horas de tus notas.
               </p>
             </div>
 
-            <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-2 text-left">
+            <div className="bg-muted/40 border border-border rounded-2xl p-4 space-y-2 text-left">
               <div className="flex items-center gap-2">
-                <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-ping" />
-                <span className="text-xs font-bold text-slate-700">Estado del Proceso:</span>
+                <span className="h-2.5 w-2.5 rounded-full bg-success animate-ping" />
+                <span className="text-xs font-bold text-foreground">Estado del Proceso:</span>
               </div>
-              <p className="text-xs font-medium text-emerald-700 bg-emerald-50 px-3 py-2 rounded-xl border border-emerald-200">
+              <p className="text-xs font-medium text-success bg-success/10 px-3 py-2 rounded-xl border border-success/30">
                 {processingStep}
               </p>
               {currentFileName && (
-                <p className="text-[11px] text-slate-500 font-mono">
+                <p className="text-[11px] text-muted-foreground font-mono">
                   📄 Archivo activo: {currentFileName}
                 </p>
               )}
             </div>
 
-            <div className="text-[11px] text-slate-400">
+            <div className="text-[11px] text-muted-foreground">
               Al finalizar, se emitirá una notificación en la campana y serás redirigido automáticamente al Hub Contable.
             </div>
           </div>

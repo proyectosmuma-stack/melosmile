@@ -2,6 +2,16 @@
 
 This project is indexed by CodeGraph. **Use CodeGraph MCP tools instead of Grep/Glob/Explore agents for code analysis.** The pre-built index provides instant, semantic, relationship-aware results.
 
+## 🧠 Wiki de Conocimiento (Protocolo Karpathy)
+
+**LEE PRIMERO `docs/knowledge-base/index.md`** antes de investigar cualquier tema del proyecto. Es la capa de conocimiento compilado: páginas de dominio, decisiones e incidentes mantenidas por los agentes. Reglas:
+
+1. Lee `index.md` primero (catálogo) y luego solo las páginas relevantes.
+2. Al descubrir algo nuevo, actualiza la página afectada (no dupliques).
+3. Registra cada cambio en `docs/knowledge-base/log.md` (`## [AAAA-MM-DD] accion | tema`).
+4. Sin placeholders; las contradicciones se marcan PENDING y se escalan al humano.
+5. Página clave del equipo de agentes: `docs/knowledge-base/domains/agent-team.md` (modelos, rutado, reglas de seguridad de MumaBot Cloud Pro).
+
 ### When to Use CodeGraph (Decision Matrix)
 
 | Instead of... | Use this CodeGraph tool | Why |

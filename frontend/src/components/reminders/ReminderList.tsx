@@ -20,13 +20,13 @@ export function ReminderList({ patientId }: ReminderListProps) {
 
   if (isError) {
     return (
-      <Card className="border-red-200 bg-red-50">
+      <Card className="border-destructive/30 bg-destructive/10">
         <CardHeader>
-          <CardTitle className="text-red-800 flex items-center gap-2">
+          <CardTitle className="text-destructive flex items-center gap-2">
             <AlertCircle className="w-5 h-5" />
             Error al cargar
           </CardTitle>
-          <CardDescription className="text-red-600">
+          <CardDescription className="text-destructive">
             No se pudieron cargar los recordatorios.
           </CardDescription>
         </CardHeader>
@@ -55,7 +55,7 @@ export function ReminderList({ patientId }: ReminderListProps) {
     return (
       <Card>
         <CardContent className="flex flex-col items-center justify-center p-8 text-muted-foreground">
-          <CalendarClock className="w-12 h-12 mb-4 text-gray-300" />
+          <CalendarClock className="w-12 h-12 mb-4 text-muted-foreground" />
           <p>No hay recordatorios pendientes programados.</p>
         </CardContent>
       </Card>
@@ -65,15 +65,15 @@ export function ReminderList({ patientId }: ReminderListProps) {
   const getStatusBadge = (status: string | null) => {
     switch (status) {
       case "pendiente":
-        return <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200"><Clock className="w-3 h-3 mr-1"/> Pendiente</Badge>;
+        return <Badge variant="outline" className="bg-warning/10 text-warning border-warning/30"><Clock className="w-3 h-3 mr-1"/> Pendiente</Badge>;
       case "enviado":
       case "leido":
-        return <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200"><CheckCircle2 className="w-3 h-3 mr-1"/> Enviado</Badge>;
+        return <Badge variant="outline" className="bg-success/10 text-success border-success/30"><CheckCircle2 className="w-3 h-3 mr-1"/> Enviado</Badge>;
       case "error":
       case "fallido":
-        return <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200"><AlertCircle className="w-3 h-3 mr-1"/> Error</Badge>;
+        return <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/30"><AlertCircle className="w-3 h-3 mr-1"/> Error</Badge>;
       case "cancelado":
-        return <Badge variant="outline" className="bg-gray-50 text-gray-700 border-gray-200"><XCircle className="w-3 h-3 mr-1"/> Cancelado</Badge>;
+        return <Badge variant="outline" className="bg-muted/40 text-muted-foreground border-border"><XCircle className="w-3 h-3 mr-1"/> Cancelado</Badge>;
       default:
         return <Badge variant="secondary">{status}</Badge>;
     }
@@ -109,7 +109,7 @@ export function ReminderList({ patientId }: ReminderListProps) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {reminders.map((reminder) => (
+              {reminders.map((reminder: any) => (
                 <TableRow key={reminder.id}>
                   <TableCell className="font-medium whitespace-nowrap">
                     {format(new Date(reminder.scheduled_at), "dd MMM yyyy, HH:mm", { locale: es })}
@@ -128,7 +128,7 @@ export function ReminderList({ patientId }: ReminderListProps) {
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                        className="text-destructive hover:text-destructive/90 hover:bg-destructive/10"
                         onClick={() => handleCancel(reminder.id)}
                       >
                         <XCircle className="w-4 h-4 mr-1" />

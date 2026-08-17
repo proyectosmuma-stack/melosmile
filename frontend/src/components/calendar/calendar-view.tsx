@@ -122,9 +122,9 @@ function DroppableCell({
       ref={setNodeRef}
       onClick={() => onCellClick(day, slot)}
       className={cn(
-        "border-r border-b border-slate-100/70 p-0.5 relative group cursor-pointer transition-colors min-h-[36px]",
-        isToday ? "bg-rose-50/10 hover:bg-rose-50/30" : "hover:bg-slate-50/80",
-        isOver && "bg-rose-100/60 ring-2 ring-rose-400 ring-inset"
+        "border-r border-b border-border/60 p-0.5 relative group cursor-pointer transition-colors min-h-[36px]",
+        isToday ? "bg-primary/10 hover:bg-primary/20" : "hover:bg-muted/80",
+        isOver && "bg-primary/15 ring-2 ring-primary ring-inset"
       )}
     >
       <div className="w-full h-full flex flex-col gap-1">{children}</div>
@@ -379,46 +379,46 @@ export function CalendarView({ selectedClinicId = "all" }: { selectedClinicId?: 
   });
 
   return (
-    <div className="w-full bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+    <div className="w-full bg-card rounded-2xl border border-border/80 shadow-sm overflow-hidden">
       {/* Toolbar Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between px-6 py-4 border-b border-slate-100 gap-4">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between px-6 py-4 border-b border-border/60 gap-4">
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-1">
             <button
               onClick={handlePrev}
-              className="h-9 w-9 rounded-xl border border-slate-200 flex items-center justify-center hover:bg-slate-50 transition-colors cursor-pointer"
+              className="h-9 w-9 rounded-xl border border-border flex items-center justify-center hover:bg-muted transition-colors cursor-pointer"
               title="Anterior"
             >
-              <ChevronLeft className="h-4 w-4 text-slate-600" />
+              <ChevronLeft className="h-4 w-4 text-muted-foreground" />
             </button>
             <button
               onClick={handleNext}
-              className="h-9 w-9 rounded-xl border border-slate-200 flex items-center justify-center hover:bg-slate-50 transition-colors cursor-pointer"
+              className="h-9 w-9 rounded-xl border border-border flex items-center justify-center hover:bg-muted transition-colors cursor-pointer"
               title="Siguiente"
             >
-              <ChevronRight className="h-4 w-4 text-slate-600" />
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
             </button>
           </div>
 
           <button
             onClick={handleToday}
-            className="flex items-center gap-1.5 text-xs font-bold px-3 py-2 rounded-xl bg-rose-50 text-rose-600 border border-rose-200 hover:bg-rose-100 transition-colors shadow-xs cursor-pointer"
+            className="flex items-center gap-1.5 text-xs font-bold px-3 py-2 rounded-xl bg-primary/10 text-primary border border-primary/30 hover:bg-primary/20 transition-colors shadow-xs cursor-pointer"
           >
             <Sun className="h-3.5 w-3.5" />
             Hoy
           </button>
 
-          <h2 className="text-base font-bold text-slate-800 ml-2">
+          <h2 className="text-base font-bold text-foreground ml-2">
             {format(currentDate, "MMMM yyyy", { locale: es }).toUpperCase()}
           </h2>
         </div>
 
-        <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-xl">
+        <div className="flex items-center gap-1 p-1 bg-muted rounded-xl">
           <button
             onClick={() => setViewMode("month")}
             className={cn(
               "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer",
-              viewMode === "month" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-900"
+              viewMode === "month" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
             )}
           >
             <CalendarDays className="h-3.5 w-3.5" />
@@ -428,7 +428,7 @@ export function CalendarView({ selectedClinicId = "all" }: { selectedClinicId?: 
             onClick={() => setViewMode("week")}
             className={cn(
               "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer",
-              viewMode === "week" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-900"
+              viewMode === "week" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
             )}
           >
             <CalendarIcon className="h-3.5 w-3.5" />
@@ -438,7 +438,7 @@ export function CalendarView({ selectedClinicId = "all" }: { selectedClinicId?: 
             onClick={() => setViewMode("day")}
             className={cn(
               "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer",
-              viewMode === "day" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-900"
+              viewMode === "day" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
             )}
           >
             <Clock className="h-3.5 w-3.5" />
@@ -450,7 +450,7 @@ export function CalendarView({ selectedClinicId = "all" }: { selectedClinicId?: 
       {/* ---------------- VISTA MENSUAL ---------------- */}
       {viewMode === "month" && (
         <div className="p-4">
-          <div className="grid grid-cols-7 text-center font-semibold text-xs text-slate-400 py-2 border-b border-slate-100">
+          <div className="grid grid-cols-7 text-center font-semibold text-xs text-muted-foreground py-2 border-b border-border/60">
             {["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"].map((d) => (
               <div key={d}>{d}</div>
             ))}
@@ -471,17 +471,17 @@ export function CalendarView({ selectedClinicId = "all" }: { selectedClinicId?: 
                     setViewMode("day");
                   }}
                   className={cn(
-                    "min-h-[95px] p-2 border rounded-xl cursor-pointer transition-all hover:border-rose-300",
-                    isCurrentMonth ? "bg-white border-slate-100" : "bg-slate-50/50 border-transparent text-slate-300",
-                    isToday && "ring-2 ring-rose-500 bg-rose-50/20"
+                    "min-h-[95px] p-2 border rounded-xl cursor-pointer transition-all hover:border-primary/40",
+                    isCurrentMonth ? "bg-card border-border/60" : "bg-muted/40 border-transparent text-muted-foreground/60",
+                    isToday && "ring-2 ring-primary bg-primary/10"
                   )}
                 >
                   <div className="flex items-center justify-between">
-                    <span className={cn("text-xs font-bold", isToday ? "text-rose-600" : "text-slate-700")}>
+                    <span className={cn("text-xs font-bold", isToday ? "text-primary" : "text-foreground")}>
                       {format(day, "d")}
                     </span>
                     {dayEvents.length > 0 && (
-                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-600">
+                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">
                         {dayEvents.length}
                       </span>
                     )}
@@ -517,19 +517,19 @@ export function CalendarView({ selectedClinicId = "all" }: { selectedClinicId?: 
                 minWidth: viewMode === "week" ? 800 : 350,
               }}
             >
-              <div className="sticky top-0 z-10 bg-white border-b border-slate-100 h-14" />
+              <div className="sticky top-0 z-10 bg-card border-b border-border/60 h-14" />
               {(viewMode === "week" ? weekDays : [currentDate]).map((day) => (
                 <div
                   key={day.toISOString()}
                   className={cn(
-                    "sticky top-0 z-10 bg-white border-b border-slate-100 h-14 flex flex-col items-center justify-center gap-0.5",
-                    isSameDay(day, today) && "bg-rose-50"
+                    "sticky top-0 z-10 bg-card border-b border-border/60 h-14 flex flex-col items-center justify-center gap-0.5",
+                    isSameDay(day, today) && "bg-primary/10"
                   )}
                 >
-                  <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+                  <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
                     {format(day, "EEEE", { locale: es })}
                   </span>
-                  <span className={cn("text-base font-bold leading-none", isSameDay(day, today) ? "text-rose-500" : "text-slate-800")}>
+                  <span className={cn("text-base font-bold leading-none", isSameDay(day, today) ? "text-primary" : "text-foreground")}>
                     {format(day, "d MMM")}
                   </span>
                 </div>
@@ -537,9 +537,9 @@ export function CalendarView({ selectedClinicId = "all" }: { selectedClinicId?: 
 
               {TIME_SLOTS.map((slot) => (
                 <React.Fragment key={slot}>
-                  <div className="flex items-start justify-end pr-2.5 pt-0.5 border-r border-slate-100 h-9 bg-slate-50/30">
+                  <div className="flex items-start justify-end pr-2.5 pt-0.5 border-r border-border/60 h-9 bg-muted/30">
                     {slot.endsWith(":00") || slot.endsWith(":30") ? (
-                      <span className="text-[10px] text-slate-400 font-semibold">{slot}</span>
+                      <span className="text-[10px] text-muted-foreground font-semibold">{slot}</span>
                     ) : null}
                   </div>
 

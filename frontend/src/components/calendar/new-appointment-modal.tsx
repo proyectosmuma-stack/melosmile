@@ -271,33 +271,33 @@ export function NewAppointmentModalGlobal() {
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogContent className="sm:max-w-lg rounded-2xl p-6 bg-white border border-slate-200 shadow-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-lg rounded-2xl p-6 bg-card border border-border shadow-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader className="pb-2">
-          <DialogTitle className="text-xl font-bold text-slate-900 flex items-center gap-2">
-            <CalendarCheck className="h-5 w-5 text-rose-500" />
+          <DialogTitle className="text-xl font-bold text-foreground flex items-center gap-2">
+            <CalendarCheck className="h-5 w-5 text-primary" />
             Nueva Cita — {appointmentDate}
           </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4 py-2">
           {/* AI Prompt Input */}
-          <div className="p-3.5 rounded-xl bg-gradient-to-br from-rose-50 to-pink-50 border border-rose-100 space-y-2">
-            <div className="flex items-center gap-2 text-xs font-semibold text-rose-700">
-              <Sparkles className="h-4 w-4 text-rose-500" />
+          <div className="p-3.5 rounded-xl bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20 space-y-2">
+            <div className="flex items-center gap-2 text-xs font-semibold text-primary">
+              <Sparkles className="h-4 w-4 text-primary" />
               <span>Asistente IA (Dictado / Lenguaje Natural)</span>
             </div>
             <Input
               value={naturalText}
               onChange={(e) => setNaturalText(e.target.value)}
               placeholder='Ej: "Vino Juan en Albacete, le hice Ortodoncia por 60€ duracion 45m"'
-              className="bg-white border-rose-200 text-sm focus-visible:ring-rose-500 rounded-lg"
+              className="bg-card border-primary/30 text-sm focus-visible:ring-primary/60 rounded-lg"
             />
           </div>
 
           {/* Date & Time selection */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-slate-700">Fecha</Label>
+              <Label className="text-xs font-semibold text-foreground">Fecha</Label>
               <div className="relative">
                 <Input
                   type="date"
@@ -305,19 +305,19 @@ export function NewAppointmentModalGlobal() {
                   onChange={(e) => setAppointmentDate(e.target.value)}
                   className="text-xs rounded-lg pl-8"
                 />
-                <CalendarIcon className="h-4 w-4 text-slate-400 absolute left-2.5 top-2.5 pointer-events-none" />
+                <CalendarIcon className="h-4 w-4 text-muted-foreground absolute left-2.5 top-2.5 pointer-events-none" />
               </div>
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-slate-700">Hora de Inicio</Label>
+              <Label className="text-xs font-semibold text-foreground">Hora de Inicio</Label>
               <Select
                 value={selectedStartTime}
                 onValueChange={(val) => val && setSelectedStartTime(val)}
               >
                 <SelectTrigger className="text-xs rounded-lg">
                   <div className="flex items-center gap-1.5">
-                    <Clock className="h-3.5 w-3.5 text-slate-400" />
+                    <Clock className="h-3.5 w-3.5 text-muted-foreground" />
                     <SelectValue />
                   </div>
                 </SelectTrigger>
@@ -330,7 +330,7 @@ export function NewAppointmentModalGlobal() {
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-slate-700">Duración</Label>
+              <Label className="text-xs font-semibold text-foreground">Duración</Label>
               <Select
                 value={String(durationMinutes)}
                 onValueChange={(val) => val && setDurationMinutes(parseInt(val))}
@@ -349,7 +349,7 @@ export function NewAppointmentModalGlobal() {
 
           {/* Patient Lookup with Autocomplete AJAX */}
           <div className="space-y-1.5">
-            <Label className="text-xs font-semibold text-slate-700">Paciente (Búsqueda o Nuevo)</Label>
+            <Label className="text-xs font-semibold text-foreground">Paciente (Búsqueda o Nuevo)</Label>
             <PatientSelect
               value={patientName}
               onSelectPatient={(p) => {
@@ -361,7 +361,7 @@ export function NewAppointmentModalGlobal() {
 
           {/* Free Text Treatment / Session Notes */}
           <div className="space-y-1.5">
-            <Label className="text-xs font-semibold text-slate-700">Tratamiento & Notas (Texto libre)</Label>
+            <Label className="text-xs font-semibold text-foreground">Tratamiento & Notas (Texto libre)</Label>
             <Input
               value={treatment}
               onChange={(e) => setTreatment(e.target.value)}
@@ -373,7 +373,7 @@ export function NewAppointmentModalGlobal() {
           {/* Clinic & Doctor Select */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-slate-700">Clínica / Sede</Label>
+              <Label className="text-xs font-semibold text-foreground">Clínica / Sede</Label>
               <Select
                 value={selectedClinicId}
                 onValueChange={(val) => val && setSelectedClinicId(val)}
@@ -381,9 +381,9 @@ export function NewAppointmentModalGlobal() {
               >
                 <SelectTrigger className="text-xs rounded-lg">
                   <div className="flex items-center gap-1.5">
-                    <Building2 className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                    <Building2 className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                     {catalogsLoading
-                      ? <span className="text-slate-400">Cargando...</span>
+                      ? <span className="text-muted-foreground">Cargando...</span>
                       : <SelectValue placeholder="Seleccionar clínica" />
                     }
                   </div>
@@ -400,7 +400,7 @@ export function NewAppointmentModalGlobal() {
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-slate-700">Profesional</Label>
+              <Label className="text-xs font-semibold text-foreground">Profesional</Label>
               <Select
                 value={selectedProfessionalId}
                 onValueChange={(val) => val && setSelectedProfessionalId(val)}
@@ -408,9 +408,9 @@ export function NewAppointmentModalGlobal() {
               >
                 <SelectTrigger className="text-xs rounded-lg">
                   <div className="flex items-center gap-1.5">
-                    <Stethoscope className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                    <Stethoscope className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                     {catalogsLoading
-                      ? <span className="text-slate-400">Cargando...</span>
+                      ? <span className="text-muted-foreground">Cargando...</span>
                       : <SelectValue placeholder="Seleccionar profesional" />
                     }
                   </div>
@@ -428,12 +428,12 @@ export function NewAppointmentModalGlobal() {
           </div>
 
           <div className="space-y-1">
-            <Label className="text-xs font-semibold text-slate-700">Dr. Invitado / Colaborador (Opcional)</Label>
+            <Label className="text-xs font-semibold text-foreground">Dr. Invitado / Colaborador (Opcional)</Label>
             <Input
               value={guestDoctor}
               onChange={(e) => setGuestDoctor(e.target.value)}
               placeholder="Ej: Dr. Carlos Pérez (Cirujano invitado)"
-              className="text-xs rounded-lg h-9 bg-white"
+              className="text-xs rounded-lg h-9 bg-card"
             />
           </div>
         </div>
@@ -449,7 +449,7 @@ export function NewAppointmentModalGlobal() {
           <Button
             onClick={handleSave}
             disabled={loading}
-            className="rounded-xl bg-rose-500 hover:bg-rose-600 text-white text-xs font-bold shadow-md shadow-rose-500/20"
+            className="rounded-xl bg-primary hover:bg-primary/90 text-white text-xs font-bold shadow-md shadow-primary/20"
           >
             {loading && <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />}
             Confirmar y Agendar Cita

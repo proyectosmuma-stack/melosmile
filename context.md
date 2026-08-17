@@ -39,7 +39,8 @@
 | **n8n (dev)** | `https://n8n.mumaweb.com` |
 | **Fichero env** | `frontend/.env.local` |
 | **Iniciar** | `npm --prefix frontend run dev` |
-| **Sincronizar datos** | `npm --prefix frontend run db:sync` |
+| **Iniciar Supabase Local** | `supabase start` |
+| **Sincronizar datos (Cloud → Local)** | `npm --prefix frontend run db:sync` (solo con `/actualiza-datos`) |
 
 **Variables `.env.local`:**
 ```env
@@ -199,7 +200,7 @@ El ingreso manual/importación de Excel o fotos manuscritas se realiza desde el 
 - **Separación de Notas y Observaciones Clínicas (`notes`)**: Toda indicación clínica no facturable (ej: *Ataches / Poner varios ataches*, *Quitar Brackets*, *Poner Brackets Superior*, *Hará un poco de IPR*, *Coloc Myobrace*, etc.) es extraída estrictamente hacia el campo `notes` de la cita (destinado al bloque de Evolución Clínica & Observaciones del Doctor) y NUNCA como un procedimiento facturable independiente.
 - **Sincronización en la N8N API**: Los Prompts del flujo `[MELOSMILE] Agent Document Cleaner` (`OG4Yy4N7qALXojTa`) fueron actualizados mediante la API REST de n8n (`n8n.mumaweb.com`) para garantizar determinismo en el motor de visión y texto.
 - **Inserción Automática en Supabase con Propagación de Cookie**: La ruta `/api/billing/document-cleaner/route.ts`
-- **Entornos & Redundancia**: Dual MCP (Supabase Cloud + Supabase Local en `127.0.0.1:54321`), Sincronización bidireccional automática `npm run db:sync`, Guard de Conexión IA en local (`ai-offline-guard.ts`), y Configuración Centralizada de Entorno (`src/config/env.ts`, estilo `wp-config.php`).
+- **Entornos & Redundancia**: Dual MCP (Supabase Cloud + Supabase Local en `127.0.0.1:54321`), Aislamiento de Entornos (Local 100% aislado con `seed.sql`, sincronización manual bajo `/actualiza-datos`), Guard de Conexión IA en local (`ai-offline-guard.ts`), y Configuración Centralizada de Entorno (`src/config/env.ts`, estilo `wp-config.php`).
 - **Unificación de Citas & Protocolo de Limpieza**: La API de citas (`/api/appointments/create`) unifica automáticamente tratamientos y precios para un mismo paciente a la misma hora según `AGENTS.md`. Protocolo de borrado de base de datos (`Borra datos`) en orden estricto de FK dejando la ficha limpia de Munir Mauel Callaos Cardama (`PAC-001`).
 , garantizando que toda ingesta procedente de n8n quede inmediatamente insertada en Supabase y visible en el Hub de Facturación.
 - **Agrupamiento por Paciente + Hora**: Mismo paciente a la misma hora (ej: 09:30 Lucas cementar 60€ y 09:30 Lucas líneas 50€) se unifica en **una sola cita** con array de tratamientos `["cementar", "líneas"]` e importe sumado (110 €).
@@ -221,72 +222,54 @@ El ingreso manual/importación de Excel o fotos manuscritas se realiza desde el 
      - *Tabla Detallada*: Registro cronológico con dropdowns e inputs inline.
      - *Resumen de Servicios*: Agregado por tratamiento clínico y proveedor de laboratorio (hoja "Resumen" del Excel).
      - *Pivot por Paciente*: Totales acumulados por paciente (hoja "Pivot" del Excel).
-   - **Motor de Validaciones en 4 Niveles**:
-     - 🔴 `ERROR`: Paciente `#N/A` o sin precio asignado (bloquea la aprobación).
-     - 🟡 `ALERTA`: Desviación de precio >20% respecto al catálogo o tratamiento no encontrado.
-     - 🔴 `NEGATIVO`: NETO negativo (gastos de lab superan comisión).
-     - 🔵 `INFO`: Cantidad 0 (seguimiento) o notas destacadas ("FINALIZA CUOTA", "A SU FAVOR").
+- **Motor de Validaciones en 4 Niveles**:
+      - 🔴 `ERROR`: Paciente `#N/A` o sin precio asignado (bloquea la aprobación).
+      - 🟡 `ALERTA`: Desviación de precio >20% respecto al catálogo o tratamiento no encontrado.
+      - 🔴 `NEGATIVO`: NETO negativo (gastos de lab superan comisión).
+      - 🔵 `INFO`: Cantidad 0 (seguimiento) o notas destacadas ("FINALIZA CUOTA", "A SU FAVOR").
 
 ---
 
-## 📁 Estructura del Código
+## 🤖 Equipo MumaBot Cloud Pro — Incidencia y Corrección (2026-08-18)
 
+### Diagnóstico: subagentes devolvían vacío
+Los subagentes `mumabot-architect`, `mumabot-coder-cloud` y `mumabot-designer` devolvían resultados vacíos al ser invocados desde el orquestador. **Causa raíz**: los modelos `google/gemini-2.5-pro` y `google/gemini-2.5-flash` ya no existen en la API de Google (agosto 2026). El error exacto quedó registrado en `~/.local/share/opencode/log/opencode.log`:
 ```
-melosmile/
-├── Walkthrough.md                   # Registro de cambios y pruebas maestro (solo develop)
-├── roadmap.md                       # Estado de fases y próximos desarrollos (solo develop)
-├── datos-prueba/
-│   └── datos prueba.xlsx            # Archivo Excel de prueba (Mayo 2026, Clínica Daniel Bustamante)
-├── frontend/
-    └── src/
-        ├── app/
-        │   ├── api/
-        │   │   ├── billing/
-        │   │   │   ├── sessions/route.ts        # GET/POST Sesiones contables por clínica/mes
-        │   │   │   ├── sessions/[id]/route.ts   # GET/PATCH/DELETE Detalle, edición inline y recálculo
-        │   │   │   ├── sessions/[id]/approve/route.ts # POST Aprobación contable con validación de errores
-        │   │   │   ├── extract/route.ts         # POST Extracción IA y Excel con auto-alta secuencial (PAC-00X), asignación Dra. Osly Melo, treatment_id en appointments y sugerencia de lab
-        │   │   │   └── report/[id]/route.ts     # GET Informe HTML imprimible/PDF en 6 secciones ALBACETE
-        │   └── (dashboard)/
-        │       ├── appointments/[id]/page.tsx   # Ficha de Cita con soporte para procedimientos en JSON y cadenas de texto
-        │       └── billing/
-        │           ├── page.tsx                 # Hub Contable: Grid multiclínica × 12 meses y KPIs
-        │           ├── new/page.tsx             # Formulario de alta y extracción multimodal (IA y Excel)
-        │           └── [id]/page.tsx            # Editor workspace a ancho completo con dropdowns para Paciente, Tratamiento, Equipo Lab (sugerencias destacadas), columnas % Dr y desglose total
-        └── lib/
-            └── billing/
-                └── calculator.ts                # Motor de cálculo financiero, TREATMENT_LAB_SUGGESTIONS y razonamiento del catálogo de tratamientos de la BD
+AI_APICallError: This model models/gemini-2.5-pro is no longer available to new users.
+Please update your code to use models/gemini-3.1-pro-preview
+AI_APICallError: This model models/gemini-2.5-flash is no longer available to new users.
+Please update your code to use models/gemini-3.6-flash
+```
+
+### Corrección aplicada (en `~/.config/opencode/agents/*.md`)
+| Agente | Antes | Después |
+|--------|-------|---------|
+| `mumabot-architect` | `google/gemini-2.5-pro` | `google/gemini-3.1-pro-preview` |
+| `mumabot-coder-cloud` | `google/gemini-2.5-flash` | `google/gemini-3.6-flash` |
+| `mumabot-designer` | `google/gemini-2.5-flash` | `google/gemini-3.6-flash` |
+| `mumabot-local-flash` | `mlx/qwen3-4b-q8` | **sin cambio** (mlx verificado operativo, 0.89s) |
+
+> **Nota mlx**: el diagnóstico inicial sugirió cambiar `mumabot-local-flash` a ollama, pero verificación posterior confirmó que el servicio mlx (llama-server + proxy vram-switch, puerto 18080) **está operativo** y es más rápido (0.89s vs 13s ollama). La primera llamada tras arranque tarda por la carga del modelo en VRAM.
+
+### Lecciones aprendidas
+1. **Las definiciones de agentes (`~/.config/opencode/agents/*.md`) se cachean al arrancar opencode**: los cambios de modelo requieren **reiniciar la sesión**; editar el archivo no basta en caliente.
+2. **Síntoma de agente "vacío" = error de modelo/provider**, no de prompt. Diagnóstico rápido: `grep -E "stream error|AI_APICallError" ~/.local/share/opencode/log/opencode.log | tail -20`.
+3. **Verificar modelos vigentes antes de asignar**: `opencode models | grep google/gemini-3`.
+4. Modelos Gemini 3 vigentes (2026-08): `gemini-3.1-pro-preview` (razonamiento), `gemini-3.6-flash` (código/velocidad), `gemini-3.5-flash-lite` (ultra-ligero).
+5. **Ollama local (puerto 11435) es el provider fiable**: `qwen3.7-agents:4b-q8`, `qwen3.5:9b`, `qwen2.5-coder:7b` disponibles. El provider `mlx` (puerto 18080) no estaba activo.
+
+### ⚠️ SEGUNDO HALLAZGO (test 2026-08-18): gemini-3.1-pro NO tiene free tier
+El test de verificación reveló que **`google/gemini-3.1-pro-preview` tiene quota 0 en el free tier de Google** (`Quota exceeded ... free_tier_input_token_count, limit: 0`). El modelo pro SOLO funciona con plan de pago de Google o vía **OpenRouter** (key ya configurada en `~/.local/share/opencode/auth.json` y modelo disponible).
+
+**Corrección final aplicada:**
+| Agente | Modelo definitivo |
+|--------|-------------------|
+| `mumabot-architect` | `openrouter/google/gemini-3.1-pro-preview` (NO `google/...`) |
+| `mumabot-coder-cloud` | `google/gemini-3.6-flash` (free tier OK) |
+| `mumabot-designer` | `google/gemini-3.6-flash` (free tier OK) |
+
+**Test ejecutado**: coder-cloud ✅ TEST OK · designer ✅ TEST OK · architect ❌ con `google/` (quota) → ✅ verificado vía API directa de OpenRouter (respuesta OK). Falta reiniciar opencode para que el architect cargue la ruta `openrouter/...` y re-testear.
+
+**Documentación persistente**: ADR "MumaBot Agent Team" en el grafo (codebase-memory), lección/decisión en RAG (Supabase local), wiki Karpathy en `docs/knowledge-base/` (index.md, log.md, domains/agent-team.md, decisions/incidente-2026-08-18-subagentes-vacios.md), referencia en `CLAUDE.md`.
 
 ---
-
-## 📅 Novedades: Planes de Tratamiento, Notificaciones Permanentes y Correcciones de Agenda
-Se ha ampliado la plataforma con las siguientes capacidades y mejoras:
-- **API Backend de Planes de Tratamiento (`/api/treatment-plans`)**: Solucionado el bloqueo de Row Level Security (RLS) en la tabla `treatment_plans` sustituyendo las consultas directas del navegador por un endpoint server-side con `SERVICE_ROLE_KEY` para lectura (`GET`), guardado/edición (`POST`) y eliminación (`DELETE`).
-- **Eliminar Planes de Tratamiento**: Opción de borrado disponible tanto desde la tarjeta del plan como dentro del modal de edición de la ficha del paciente.
-- **Sincronización en Tiempo Real de la Campana de Notificaciones**: Las alertas de revisión de cuotas ($\le 1$ cuota pendiente) se emiten dinámicamente mediante el evento `melosmile_notifications_updated`, reflejándose de forma permanente en la campana de la cabecera y en el banner de la ficha mientras el plan se mantenga `activo`.
-- **Limpieza de Notificaciones de Demostración**: Eliminación del dato ficticio pre-configurado en el centro de notificaciones (`Ingesta Completada...`).
-- **Seguimiento Híbrido y Multi-Plan Activo**: Soporte para planes independientes de Ortodoncia y Miofuncional en un mismo paciente, contabilizando citas no canceladas + cuotas pagadas manualmente.
-- **Fix KPI "Citas para Hoy" en Agenda**: Corrección del cálculo de la fecha local (`YYYY-MM-DD`) y exclusión de citas canceladas en la pantalla principal (`/`), mostrando la cifra real (2 citas) en lugar de recuentos erróneos de 31.
-- **Fix Enlace "Ver Paciente" en Drawer del Calendario**: Inclusión explícita de `id` y `historia_id` en las consultas de `calendar-view.tsx` y resolución de rutas en `appointment-detail-drawer.tsx`, habilitando la navegación directa a la ficha clínica del paciente.
-- **Auditoría Completa de Producción & Seguridad**:
-  - Eliminadas todas las credenciales hardcodeadas (JWTs fallback de Supabase) en las API routes.
-  - Credenciales de inicio de sesión migradas a `process.env.AUTH_USERNAME` y `process.env.AUTH_PASSWORD`.
-  - Reemplazadas llamadas internas estáticas `http://localhost:3028` en `document-cleaner` y `logout` por `INTERNAL_BASE_URL` dinámico compatible con Vercel serverless.
-  - Corregido bug de hoisting de `toTitleCase` en `create/route.ts`.
-  - Servidores server-side actualizados a `supabaseAdmin` para evitar bloqueos RLS.
-  - Build de Next.js verificado y compilado al 100% sin errores de TypeScript.
-- **Configuración de OpenCode a 22K Tokens & Habilitación de MCPs**:
-  - Fijado el presupuesto de contexto a **22.528 Tokens (22K)** en Ollama y `~/.config/opencode/opencode.jsonc` para eliminar cuellos de botella y congelamientos.
-  - Corregida la activación de herramientas (`"tools": true`) y la clave de límite de salida (`"output": 4096`) para `deepseek-coder-v2:lite`, `qwen2.5-coder:14b`, `gemma4:latest` y `gemma2:27b`.
-  - Enlazados los 4 servidores MCP en OpenCode (`supabase`, `n8n`, `notion`, `github`).
-  - Creada suite de benchmarking y el manual oficial global de equipos `MANUAL_EQUIPOS_OPENCODE.md` para probar los agentes Mumabot y SecBot en OpenCode IDE.
-
-
----
-
-## 10. ⚡ Optimización Backend y Limpieza de Deuda Técnica
-- **Centralización de Utils**: Creación de `lib/utils/date-parser.ts` y `lib/utils/patient-id.ts` para agrupar funciones redundantes presentes en `appointments`, `patients` y `billing`.
-- **Generación de ID Robusta (PAC-XXX)**: Cambio del escaneo masivo de filas en JS por una consulta eficiente `.order("id", { ascending: false }).limit(1)` en base de datos.
-- **Transacciones Atómicas de Facturación**: Implementado `.upsert()` con restricción de conflicto compuesta (`session_id, appointment_id, procedure_index`) al sobreescribir sesiones contables, asegurando 0% riesgo de pérdida de datos.
-- **Búsqueda Filtrada Nativa (Appointments)**: El buscador de citas por nombre de paciente ahora delega la carga computacional a Supabase usando `.or()` con `.ilike()`, mejorando drásticamente el rendimiento del API al no traer todas las citas del día para filtrarlas post-fetch.
-- **Retroalimentación del Agente**: Se documentaron los principios arquitectónicos adquiridos sobre atomicidad y filtros Supabase directamente en `agent_learnings` (memoria vectorial del agente).

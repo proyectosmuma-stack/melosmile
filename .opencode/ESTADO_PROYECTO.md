@@ -1,23 +1,26 @@
-**ESTADO_PROYECTO.md**
+## 🧩 ESTADO_PROYECTO.md - Melosmile
 
 ### ✅ Objetivo Actual
-Análisis técnico de arquitectura y propuesta de código para el módulo de facturación de Melosmile. Identificar estructura del motor de facturación, radio de impacto de refactorizaciones y generar una función pura `validateBillingEligibility` en TypeScript.
+Optimizar y corregir la lógica de cálculo financiero en `/api/billing/extract/route.ts` para garantizar:
+- Aplicación precisa de descuentos de laboratorio y comisiones.
+- Resolución determinista de conflictos de precios (manual vs. catálogo).
+- Sincronización 100% fiel con Supabase y n8n.
 
 ### 📁 Archivos Modificados/Relevantes
-- frontend/src/lib/billing/calculator.ts (interpretTreatment)
-- frontend/src/lib/billing/utils.ts (validateBillingEligibility)
-- frontend/src/types/appointment.ts (tipado para Appointment)
+- `calculator.ts` (motor de cálculo financiero)
+- `/api/billing/extract/route.ts`
+- `[MELOSMILE] Agent Document Cleaner` (n8n flow)
+- `lib/utils/date-parser.ts`, `patient-id.ts` (utils centralizados)
+- `.env.local`, `.env.remote`, `.env.remote.production` (configuraciones de entorno)
 
-### ⚙️ Decisiones Tomadas
-- Uso de TypeScript con tipado estricto
-- Integración con Supabase para validaciones
-- Función pura `validateBillingEligibility` que verifica:
-  - Presencia de paciente/clinica
-  - Formato de fecha válido
-  - Precio de tratamiento
-  - Estado no cancelado
+### 🛠 Decisions Tomadas
+- Centralización de utils en `lib/utils/`.
+- Uso de Supabase filters para búsqueda eficiente.
+- Transacciones atómicas con `.upsert()` en facturación.
+- Integración completa con n8n para procesamiento de documentos.
 
-### 🧪 Próximos Pasos
-1. ✅ Implementado: Pruebas unitarias para validateBillingEligibility
-2. ✅ Actualizado: Documentación en billing/
-3. ✅ Completado: Integración con Supabase para validaciones adicionales
+### 🚀 Próximos Pasos
+1. Analizar `calculator.ts` y `/api/billing/extract/route.ts`.
+2. Escribir pruebas unitarias para casos críticos (ej: NETO negativo, precios manual vs. catálogo).
+3. Validar sincronización con n8n y Supabase.
+4. Ajustar documentación de flujo en `agent_learnings`.

@@ -22,10 +22,10 @@
 Cuando el usuario diga **"Inicia Sesión"** o ejecute `/inicia-sesion`:
 *(Nota: Este comando es para preparar el entorno local de desarrollo. NUNCA pedir usuario ni contraseña).*
 1. **Comprobación Previa de Estado (Health Check)**:
-   - Ejecutar la comprobación HTTP: `curl -s -o /dev/null -w "%{http_code}" -L http://localhost:3028 && curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:54321/rest/v1/`.
+   - Ejecutar la comprobación HTTP: `curl -s -o /dev/null -w "%{http_code}" -L http://localhost:3028 && curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:54321/auth/v1/health`.
    - **Si ambos responden HTTP 200 (salida 200200)**: Omitir el reinicio de servidores, cargar el contexto (`context.md`, `roadmap.md`, `Walkthrough.md`) y responder inmediatamente: `"✅ Entorno local y Supabase activos y listos para trabajar."`
 2. **Contexto**: Leer exhaustivamente los documentos `context.md`, `roadmap.md` y `Walkthrough.md` para ponerse en contexto completo con el estado actual del proyecto y las tareas planificadas.
-3. **Supabase & Redundancia**: Si Supabase Local no está activo, ejecutar `npm --prefix frontend run db:sync` para sincronizar datos e iniciar Supabase.
+3. **Supabase & Redundancia**: Si Supabase Local no está activo, ejecutar `supabase start` para iniciar los contenedores de Supabase Local con los datos de prueba locales.
 4. **Servidor Web**: Si el servidor en `http://localhost:3028` no está activo, iniciarlo ejecutando `npm --prefix frontend run dev`.
 
 ### Comando: "Actualiza datos"
@@ -75,5 +75,8 @@ Para optimizar el uso de contexto y evitar la degradación en modelos locales co
    - Tras realizar un cambio o ejecutar un comando, responde con un resumen conciso de 2 a 4 líneas.
    - **NO** repitas el contenido de los archivos creados o modificados en tus respuestas.
 
-3. **Búsqueda Quirúrgica**:
-   - Utiliza herramientas de búsqueda (ej. `grep_search`) para ubicar funciones o componentes específicos en lugar de cargar archivos `.tsx`/`.ts` enormes.
+3. **Inteligencia de Código con CodeGraph (OBLIGATORIO)**:
+   - SIEMPRE usar `codegraph_query` en vez de Grep para buscar funciones, componentes o símbolos.
+   - SIEMPRE usar `codegraph_callers` antes de modificar una función para saber quién la llama.
+   - SIEMPRE usar `codegraph_structure` para entender la arquitectura de un módulo sin leer archivos completos.
+   - SIEMPRE usar `codegraph_impact` antes de editar un archivo para evaluar posibles rupturas.

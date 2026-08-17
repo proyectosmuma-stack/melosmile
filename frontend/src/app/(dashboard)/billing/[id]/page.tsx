@@ -405,8 +405,8 @@ export default function BillingDetailPage({ params }: { params: Promise<{ id: st
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-50 p-12 text-center text-slate-500">
-        <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-emerald-500 border-t-transparent mb-3"></div>
+      <div className="min-h-screen bg-background p-12 text-center text-muted-foreground">
+        <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-success border-t-transparent mb-3"></div>
         <div>Cargando contabilidad y catálogo de tratamientos...</div>
       </div>
     );
@@ -414,7 +414,7 @@ export default function BillingDetailPage({ params }: { params: Promise<{ id: st
 
   if (!session) {
     return (
-      <div className="min-h-screen bg-slate-50 p-12 text-center text-slate-500">
+      <div className="min-h-screen bg-background p-12 text-center text-muted-foreground">
         Sesión contable no encontrada.
       </div>
     );
@@ -467,11 +467,11 @@ export default function BillingDetailPage({ params }: { params: Promise<{ id: st
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 p-6 space-y-6">
+    <div className="min-h-screen bg-background p-6 space-y-6">
       {/* Top Bar */}
       <div className="flex items-center justify-between">
         <Link href="/billing">
-          <Button variant="ghost" size="sm" className="gap-2 text-slate-600">
+          <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground">
             <ArrowLeft className="w-4 h-4" />
             Volver al Hub Contable
           </Button>
@@ -480,7 +480,7 @@ export default function BillingDetailPage({ params }: { params: Promise<{ id: st
         <div className="flex items-center gap-3">
           <a href={`/api/billing/report/${id}`} target="_blank" rel="noopener noreferrer">
             <Button variant="outline" size="sm" className="gap-2">
-              <Printer className="w-4 h-4 text-slate-600" />
+              <Printer className="w-4 h-4 text-muted-foreground" />
               Ver PDF / Imprimir
             </Button>
           </a>
@@ -503,7 +503,7 @@ export default function BillingDetailPage({ params }: { params: Promise<{ id: st
             disabled={saving || session.status === "approved"}
             variant="outline"
             size="sm"
-            className="gap-2 border-emerald-300 text-emerald-700 hover:bg-emerald-50"
+            className="gap-2 border-success/30 text-success hover:bg-success/10"
           >
             <Save className="w-4 h-4" />
             {saving ? "Guardando..." : "Guardar Borrador"}
@@ -513,7 +513,7 @@ export default function BillingDetailPage({ params }: { params: Promise<{ id: st
             <Button
               onClick={handleApprove}
               disabled={approving || totals?.has_blocking_errors}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold gap-2 shadow-sm"
+              className="bg-success hover:bg-success/90 text-white font-bold gap-2 shadow-sm"
             >
               <CheckCircle2 className="w-4 h-4" />
               {approving ? "Aprobando..." : "Aprobar Contabilidad"}
@@ -525,7 +525,7 @@ export default function BillingDetailPage({ params }: { params: Promise<{ id: st
       {/* Feedback Banner */}
       {feedbackMessage && (
         <div className={`p-4 rounded-xl text-sm flex items-center justify-between ${
-          feedbackMessage.type === 'success' ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-rose-100 text-rose-800 border border-rose-300'
+          feedbackMessage.type === 'success' ? 'bg-success/15 text-success border border-success/30' : 'bg-primary/15 text-primary border border-primary/30'
         }`}>
           <span>{feedbackMessage.text}</span>
           <button onClick={() => setFeedbackMessage(null)} className="font-bold text-xs">✕</button>
@@ -533,7 +533,7 @@ export default function BillingDetailPage({ params }: { params: Promise<{ id: st
       )}
 
       {/* Header Info Box */}
-      <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+      <div className="bg-card p-6 rounded-2xl border border-border shadow-sm space-y-4">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div 
@@ -542,40 +542,40 @@ export default function BillingDetailPage({ params }: { params: Promise<{ id: st
             />
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-2xl font-extrabold text-slate-900">{session.clinic_name}</h1>
+                <h1 className="text-2xl font-extrabold text-foreground">{session.clinic_name}</h1>
                 <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold uppercase ${
-                  session.status === 'approved' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+                  session.status === 'approved' ? 'bg-success/15 text-success' : 'bg-warning/15 text-warning'
                 }`}>
                   {session.status}
                 </span>
               </div>
-              <p className="text-sm text-slate-500 font-medium mt-0.5">
+              <p className="text-sm text-muted-foreground font-medium mt-0.5">
                 Período: <strong>{periodTitle}</strong> | Modelo: <strong className="uppercase">{session.model_type}</strong>
               </p>
             </div>
           </div>
 
           {/* Editable Commission % and Lab % */}
-          <div className="flex items-center gap-6 bg-slate-50 p-3 rounded-xl border border-slate-200">
+          <div className="flex items-center gap-6 bg-muted/40 p-3 rounded-xl border border-border">
             <div>
-              <label className="text-xs font-bold text-slate-500 block">% Comisión Profesional</label>
+              <label className="text-xs font-bold text-muted-foreground block">% Comisión Profesional</label>
               <input
                 type="number"
                 value={commissionPct}
                 onChange={(e) => setCommissionPct(parseFloat(e.target.value) || 0)}
                 disabled={session.status === "approved"}
-                className="w-20 bg-white border border-slate-300 rounded-lg px-2 py-1 text-sm font-extrabold text-emerald-700 focus:ring-2 focus:ring-emerald-500"
+                className="w-20 bg-card border border-input rounded-lg px-2 py-1 text-sm font-extrabold text-success focus:ring-2 focus:ring-success"
               />
             </div>
 
             <div>
-              <label className="text-xs font-bold text-slate-500 block">% Descuento Lab</label>
+              <label className="text-xs font-bold text-muted-foreground block">% Descuento Lab</label>
               <input
                 type="number"
                 value={labDiscountPct}
                 onChange={(e) => setLabDiscountPct(parseFloat(e.target.value) || 0)}
                 disabled={session.status === "approved"}
-                className="w-20 bg-white border border-slate-300 rounded-lg px-2 py-1 text-sm font-extrabold text-indigo-700 focus:ring-2 focus:ring-emerald-500"
+                className="w-20 bg-card border border-input rounded-lg px-2 py-1 text-sm font-extrabold text-indigo-700 focus:ring-2 focus:ring-success"
               />
             </div>
           </div>
@@ -583,27 +583,27 @@ export default function BillingDetailPage({ params }: { params: Promise<{ id: st
 
         {/* Validation Status Banner */}
         {totals && (
-          <div className="flex flex-wrap items-center gap-4 text-xs font-semibold pt-2 border-t border-slate-100">
+          <div className="flex flex-wrap items-center gap-4 text-xs font-semibold pt-2 border-t border-border/60">
             {totals.has_blocking_errors ? (
-              <span className="text-rose-700 bg-rose-50 px-3 py-1.5 rounded-lg border border-rose-200 flex items-center gap-1.5">
-                <AlertTriangle className="w-4 h-4 text-rose-600" />
+              <span className="text-primary bg-primary/10 px-3 py-1.5 rounded-lg border border-primary/30 flex items-center gap-1.5">
+                <AlertTriangle className="w-4 h-4 text-primary" />
                 {totals.error_count} errores críticos (bloquean aprobación)
               </span>
             ) : (
-              <span className="text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-200 flex items-center gap-1.5">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+              <span className="text-success bg-success/10 px-3 py-1.5 rounded-lg border border-success/30 flex items-center gap-1.5">
+                <CheckCircle2 className="w-4 h-4 text-success" />
                 Sin errores críticos (listo para aprobar)
               </span>
             )}
 
             {totals.warning_count > 0 && (
-              <span className="text-amber-700 bg-amber-50 px-3 py-1.5 rounded-lg border border-amber-200">
+              <span className="text-warning bg-warning/10 px-3 py-1.5 rounded-lg border border-warning/30">
                 ⚠️ {totals.warning_count} advertencias (desviación precio / NETO negativo)
               </span>
             )}
 
             {totals.info_count > 0 && (
-              <span className="text-blue-700 bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-200">
+              <span className="text-info bg-info/10 px-3 py-1.5 rounded-lg border border-info/30">
                 ℹ️ {totals.info_count} informativos (seguimientos / notas)
               </span>
             )}
@@ -612,13 +612,13 @@ export default function BillingDetailPage({ params }: { params: Promise<{ id: st
       </div>
 
       {/* Tabs */}
-      <div className="flex border-b border-slate-200 gap-2">
+      <div className="flex border-b border-border gap-2">
         <button
           onClick={() => setActiveTab("detail")}
           className={`px-4 py-2.5 font-bold text-sm border-b-2 transition-all flex items-center gap-2 ${
             activeTab === "detail"
-              ? "border-emerald-600 text-emerald-700 bg-white rounded-t-lg"
-              : "border-transparent text-slate-500 hover:text-slate-800"
+              ? "border-success text-success bg-card rounded-t-lg"
+              : "border-transparent text-muted-foreground hover:text-foreground"
           }`}
         >
           <FileText className="w-4 h-4" />
@@ -629,8 +629,8 @@ export default function BillingDetailPage({ params }: { params: Promise<{ id: st
           onClick={() => setActiveTab("resumen")}
           className={`px-4 py-2.5 font-bold text-sm border-b-2 transition-all flex items-center gap-2 ${
             activeTab === "resumen"
-              ? "border-emerald-600 text-emerald-700 bg-white rounded-t-lg"
-              : "border-transparent text-slate-500 hover:text-slate-800"
+              ? "border-success text-success bg-card rounded-t-lg"
+              : "border-transparent text-muted-foreground hover:text-foreground"
           }`}
         >
           <PieChart className="w-4 h-4" />
@@ -641,8 +641,8 @@ export default function BillingDetailPage({ params }: { params: Promise<{ id: st
           onClick={() => setActiveTab("pivot")}
           className={`px-4 py-2.5 font-bold text-sm border-b-2 transition-all flex items-center gap-2 ${
             activeTab === "pivot"
-              ? "border-emerald-600 text-emerald-700 bg-white rounded-t-lg"
-              : "border-transparent text-slate-500 hover:text-slate-800"
+              ? "border-success text-success bg-card rounded-t-lg"
+              : "border-transparent text-muted-foreground hover:text-foreground"
           }`}
         >
           <UserCheck className="w-4 h-4" />
@@ -652,10 +652,10 @@ export default function BillingDetailPage({ params }: { params: Promise<{ id: st
 
       {/* TAB 1: Detailed Table */}
       {activeTab === "detail" && (
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-x-auto">
+        <div className="bg-card rounded-2xl border border-border shadow-sm overflow-x-auto">
           <table className="w-full text-left text-xs border-collapse">
             <thead>
-              <tr className="bg-slate-100 text-slate-700 font-bold border-b border-slate-200">
+              <tr className="bg-muted text-foreground font-bold border-b border-border">
                 <th className="p-3 w-10">#</th>
                 <th className="p-3 min-w-[110px]">Fecha</th>
                 <th className="p-3 min-w-[170px]">Paciente (BD / Selección)</th>
@@ -666,7 +666,7 @@ export default function BillingDetailPage({ params }: { params: Promise<{ id: st
                 <th className="p-3 w-20 text-right">Otro P. €</th>
                 <th className="p-3 w-16 text-right">Dto. €</th>
                 <th className="p-3 w-20 text-right">Subtotal</th>
-                <th className="p-3 w-22 text-right text-emerald-800">Comisión €</th>
+                <th className="p-3 w-22 text-right text-success">Comisión €</th>
                 <th className="p-3 min-w-[180px]">Equipo / Trabajo Lab</th>
                 <th className="p-3 w-14 text-right">Cant L</th>
                 <th className="p-3 w-20 text-right">Coste L €</th>
@@ -682,11 +682,11 @@ export default function BillingDetailPage({ params }: { params: Promise<{ id: st
               {lines.map((l, idx) => (
                 <tr 
                   key={idx}
-                  className={`border-b border-slate-100 hover:bg-slate-50/80 transition-colors ${
-                    l.needs_review ? "bg-rose-50/70" : l.is_negative ? "bg-amber-50/70" : l.zero_quantity ? "bg-slate-100/50" : ""
+                  className={`border-b border-border/60 hover:bg-muted/80 transition-colors ${
+                    l.needs_review ? "bg-primary/10" : l.is_negative ? "bg-warning/10" : l.zero_quantity ? "bg-muted/50" : ""
                   }`}
                 >
-                  <td className="p-2 text-slate-400 font-medium">{idx + 1}</td>
+                  <td className="p-2 text-muted-foreground font-medium">{idx + 1}</td>
 
                   {/* Fecha */}
                   <td className="p-2">
@@ -695,7 +695,7 @@ export default function BillingDetailPage({ params }: { params: Promise<{ id: st
                       value={l.session_date || ""}
                       onChange={(e) => handleLineChange(idx, "session_date", e.target.value)}
                       disabled={session.status === "approved"}
-                      className="w-full bg-transparent border border-transparent hover:border-slate-300 focus:border-emerald-500 rounded px-1 py-1 text-xs"
+                      className="w-full bg-transparent border border-transparent hover:border-border focus:border-success rounded px-1 py-1 text-xs"
                     />
                   </td>
 
@@ -706,8 +706,8 @@ export default function BillingDetailPage({ params }: { params: Promise<{ id: st
                         value={l.patient_id || ''}
                         onChange={(e) => handlePatientSelect(idx, e.target.value)}
                         disabled={session.status === "approved"}
-                        className={`w-full font-semibold border rounded px-1.5 py-1 text-xs bg-white text-slate-900 focus:ring-1 focus:ring-emerald-500 ${
-                          !l.patient_name || l.patient_name === '#N/A' ? 'border-rose-500 bg-rose-50 text-rose-900' : 'border-slate-200'
+                        className={`w-full font-semibold border rounded px-1.5 py-1 text-xs bg-card text-foreground focus:ring-1 focus:ring-success ${
+                          !l.patient_name || l.patient_name === '#N/A' ? 'border-primary bg-primary/10 text-primary' : 'border-border'
                         }`}
                       >
                         {l.patient_id ? (
@@ -732,7 +732,7 @@ export default function BillingDetailPage({ params }: { params: Promise<{ id: st
                           {l.appointment_id ? (
                             <Calendar className="w-3.5 h-3.5 text-indigo-600" />
                           ) : (
-                            <UserCheck className="w-3.5 h-3.5 text-emerald-600" />
+                            <UserCheck className="w-3.5 h-3.5 text-success" />
                           )}
                         </Link>
                       )}
@@ -745,7 +745,7 @@ export default function BillingDetailPage({ params }: { params: Promise<{ id: st
                       value={l.treatment_id || ''}
                       onChange={(e) => handleTreatmentSelect(idx, e.target.value)}
                       disabled={session.status === "approved"}
-                      className="w-full bg-white border border-slate-200 hover:border-slate-300 focus:border-emerald-500 rounded px-1.5 py-1 text-xs font-semibold text-slate-800"
+                      className="w-full bg-card border border-border hover:border-border focus:border-success rounded px-1.5 py-1 text-xs font-semibold text-foreground"
                     >
                       <option value="">{l.treatment_name || '-- Seleccionar Tratamiento --'}</option>
                       {treatmentsCatalog.map(t => (
@@ -763,7 +763,7 @@ export default function BillingDetailPage({ params }: { params: Promise<{ id: st
                       value={l.observation || ""}
                       onChange={(e) => handleLineChange(idx, "observation", e.target.value)}
                       disabled={session.status === "approved"}
-                      className="w-full bg-transparent border border-transparent hover:border-slate-300 focus:border-emerald-500 rounded px-1.5 py-1 text-xs text-slate-600"
+                      className="w-full bg-transparent border border-transparent hover:border-border focus:border-success rounded px-1.5 py-1 text-xs text-muted-foreground"
                     />
                   </td>
 
@@ -774,7 +774,7 @@ export default function BillingDetailPage({ params }: { params: Promise<{ id: st
                       value={l.quantity}
                       onChange={(e) => handleLineChange(idx, "quantity", parseFloat(e.target.value) || 0)}
                       disabled={session.status === "approved"}
-                      className="w-12 text-right bg-transparent border border-transparent hover:border-slate-300 rounded px-1 py-1 text-xs"
+                      className="w-12 text-right bg-transparent border border-transparent hover:border-border rounded px-1 py-1 text-xs"
                     />
                   </td>
 
@@ -785,7 +785,7 @@ export default function BillingDetailPage({ params }: { params: Promise<{ id: st
                       value={l.unit_price}
                       onChange={(e) => handleLineChange(idx, "unit_price", parseFloat(e.target.value) || 0)}
                       disabled={session.status === "approved"}
-                      className="w-16 text-right bg-transparent border border-transparent hover:border-slate-300 rounded px-1 py-1 text-xs font-semibold"
+                      className="w-16 text-right bg-transparent border border-transparent hover:border-border rounded px-1 py-1 text-xs font-semibold"
                     />
                   </td>
 
@@ -796,7 +796,7 @@ export default function BillingDetailPage({ params }: { params: Promise<{ id: st
                       value={l.alt_price}
                       onChange={(e) => handleLineChange(idx, "alt_price", parseFloat(e.target.value) || 0)}
                       disabled={session.status === "approved"}
-                      className="w-16 text-right bg-transparent border border-transparent hover:border-slate-300 rounded px-1 py-1 text-xs"
+                      className="w-16 text-right bg-transparent border border-transparent hover:border-border rounded px-1 py-1 text-xs"
                     />
                   </td>
 
@@ -807,17 +807,17 @@ export default function BillingDetailPage({ params }: { params: Promise<{ id: st
                       value={l.discount}
                       onChange={(e) => handleLineChange(idx, "discount", parseFloat(e.target.value) || 0)}
                       disabled={session.status === "approved"}
-                      className="w-12 text-right bg-transparent border border-transparent hover:border-slate-300 rounded px-1 py-1 text-xs"
+                      className="w-12 text-right bg-transparent border border-transparent hover:border-border rounded px-1 py-1 text-xs"
                     />
                   </td>
 
                   {/* Subtotal */}
-                  <td className="p-2 text-right font-bold text-slate-800">
+                  <td className="p-2 text-right font-bold text-foreground">
                     {l.subtotal.toFixed(2)} €
                   </td>
 
                   {/* Comisión € */}
-                  <td className="p-2 text-right font-bold text-emerald-700">
+                  <td className="p-2 text-right font-bold text-success">
                     {l.commission_amount.toFixed(2)} €
                   </td>
 
@@ -830,8 +830,8 @@ export default function BillingDetailPage({ params }: { params: Promise<{ id: st
                         disabled={session.status === "approved"}
                         className={`w-full border rounded px-1.5 py-1 text-xs font-medium transition-colors ${
                           l.is_lab_suggested 
-                            ? 'bg-amber-50 border-amber-300 text-amber-900 font-semibold shadow-sm' 
-                            : 'bg-white border-slate-200 text-slate-800'
+                            ? 'bg-warning/10 border-warning/30 text-warning font-semibold shadow-sm' 
+                            : 'bg-card border-border text-foreground'
                         }`}
                       >
                         <option value="">{l.lab_name || '-- Sin Equipo / Lab --'}</option>
@@ -842,7 +842,7 @@ export default function BillingDetailPage({ params }: { params: Promise<{ id: st
                         ))}
                       </select>
                       {l.is_lab_suggested && (
-                        <span className="absolute -top-2 right-1 bg-amber-400 text-amber-950 px-1.5 py-0.2 rounded-full text-[9px] font-black uppercase shadow-xs flex items-center gap-0.5 pointer-events-none">
+                        <span className="absolute -top-2 right-1 bg-warning text-warning-foreground px-1.5 py-0.2 rounded-full text-[9px] font-black uppercase shadow-xs flex items-center gap-0.5 pointer-events-none">
                           <Lightbulb className="w-2.5 h-2.5" /> Sugerido
                         </span>
                       )}
@@ -856,7 +856,7 @@ export default function BillingDetailPage({ params }: { params: Promise<{ id: st
                       value={l.lab_quantity}
                       onChange={(e) => handleLineChange(idx, "lab_quantity", parseFloat(e.target.value) || 0)}
                       disabled={session.status === "approved"}
-                      className="w-12 text-right bg-transparent border border-transparent hover:border-slate-300 rounded px-1 py-1 text-xs"
+                      className="w-12 text-right bg-transparent border border-transparent hover:border-border rounded px-1 py-1 text-xs"
                     />
                   </td>
 
@@ -867,7 +867,7 @@ export default function BillingDetailPage({ params }: { params: Promise<{ id: st
                       value={l.lab_unit_cost}
                       onChange={(e) => handleLineChange(idx, "lab_unit_cost", parseFloat(e.target.value) || 0)}
                       disabled={session.status === "approved"}
-                      className="w-16 text-right bg-transparent border border-transparent hover:border-slate-300 rounded px-1 py-1 text-xs font-medium text-slate-700"
+                      className="w-16 text-right bg-transparent border border-transparent hover:border-border rounded px-1 py-1 text-xs font-medium text-foreground"
                     />
                   </td>
 
@@ -883,7 +883,7 @@ export default function BillingDetailPage({ params }: { params: Promise<{ id: st
                       value={l.pct_dr_main}
                       onChange={(e) => handleLineChange(idx, "pct_dr_main", parseFloat(e.target.value) || 0)}
                       disabled={session.status === "approved"}
-                      className="w-12 text-right bg-transparent border border-transparent hover:border-slate-300 rounded px-1 py-1 text-xs text-sky-800 font-bold"
+                      className="w-12 text-right bg-transparent border border-transparent hover:border-border rounded px-1 py-1 text-xs text-sky-800 font-bold"
                     />
                   </td>
 
@@ -893,7 +893,7 @@ export default function BillingDetailPage({ params }: { params: Promise<{ id: st
                   </td>
 
                   {/* NETO € */}
-                  <td className={`p-2 text-right font-extrabold text-sm ${l.net_amount < 0 ? 'text-rose-600' : 'text-emerald-700'}`}>
+                  <td className={`p-2 text-right font-extrabold text-sm ${l.net_amount < 0 ? 'text-primary' : 'text-success'}`}>
                     {l.net_amount.toFixed(2)} €
                   </td>
 
@@ -916,7 +916,7 @@ export default function BillingDetailPage({ params }: { params: Promise<{ id: st
                     <td className="p-2 text-center">
                       <button
                         onClick={() => handleRemoveLine(idx)}
-                        className="text-slate-400 hover:text-rose-600 transition-colors p-1"
+                        className="text-muted-foreground hover:text-primary transition-colors p-1"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -928,19 +928,19 @@ export default function BillingDetailPage({ params }: { params: Promise<{ id: st
           </table>
 
           {session.status !== "approved" && (
-            <div className="p-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
+            <div className="p-4 bg-muted/40 border-t border-border flex items-center justify-between">
               <Button
                 onClick={handleAddLine}
                 variant="outline"
                 size="sm"
-                className="gap-2 text-emerald-700 border-emerald-300 hover:bg-emerald-50 font-bold"
+                className="gap-2 text-success border-success/30 hover:bg-success/10 font-bold"
               >
                 <Plus className="w-4 h-4" />
                 Añadir Línea Manual
               </Button>
 
-              <div className="text-xs text-slate-500 font-medium">
-                💡 <span className="bg-amber-100 text-amber-900 px-1.5 py-0.5 rounded font-bold">Campos Amarillos</span> indican aparatología/laboratorio auto-sugerido por el sistema según el tratamiento.
+              <div className="text-xs text-muted-foreground font-medium">
+                💡 <span className="bg-warning/15 text-warning px-1.5 py-0.5 rounded font-bold">Campos Amarillos</span> indican aparatología/laboratorio auto-sugerido por el sistema según el tratamiento.
               </div>
             </div>
           )}
@@ -950,13 +950,13 @@ export default function BillingDetailPage({ params }: { params: Promise<{ id: st
       {/* TAB 2: Resumen por Servicio */}
       {activeTab === "resumen" && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-            <h3 className="font-bold text-slate-900 border-l-4 border-emerald-600 pl-3">
+          <div className="bg-card p-6 rounded-2xl border border-border shadow-sm space-y-4">
+            <h3 className="font-bold text-foreground border-l-4 border-success pl-3">
               Servicios Clínicos Agregados
             </h3>
             <table className="w-full text-xs">
               <thead>
-                <tr className="bg-slate-100 text-slate-700 font-bold">
+                <tr className="bg-muted text-foreground font-bold">
                   <th className="p-2 text-left">Tratamiento</th>
                   <th className="p-2 text-right">Cant</th>
                   <th className="p-2 text-right">Subtotal</th>
@@ -965,24 +965,24 @@ export default function BillingDetailPage({ params }: { params: Promise<{ id: st
               </thead>
               <tbody>
                 {Array.from(servicesMap.entries()).map(([name, s], idx) => (
-                  <tr key={idx} className="border-b border-slate-100">
-                    <td className="p-2 font-semibold text-slate-800">{name}</td>
+                  <tr key={idx} className="border-b border-border/60">
+                    <td className="p-2 font-semibold text-foreground">{name}</td>
                     <td className="p-2 text-right font-medium">{s.qty}</td>
                     <td className="p-2 text-right">{s.subtotal.toFixed(2)} €</td>
-                    <td className="p-2 text-right font-bold text-emerald-700">{s.commission.toFixed(2)} €</td>
+                    <td className="p-2 text-right font-bold text-success">{s.commission.toFixed(2)} €</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
 
-          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-            <h3 className="font-bold text-slate-900 border-l-4 border-indigo-600 pl-3">
+          <div className="bg-card p-6 rounded-2xl border border-border shadow-sm space-y-4">
+            <h3 className="font-bold text-foreground border-l-4 border-indigo-600 pl-3">
               Equipo de Laboratorio Agregado
             </h3>
             <table className="w-full text-xs">
               <thead>
-                <tr className="bg-slate-100 text-slate-700 font-bold">
+                <tr className="bg-muted text-foreground font-bold">
                   <th className="p-2 text-left">Proveedor / Trabajo</th>
                   <th className="p-2 text-right">Cant</th>
                   <th className="p-2 text-right">Coste Lab</th>
@@ -991,8 +991,8 @@ export default function BillingDetailPage({ params }: { params: Promise<{ id: st
               </thead>
               <tbody>
                 {Array.from(labMap.entries()).map(([name, l], idx) => (
-                  <tr key={idx} className="border-b border-slate-100">
-                    <td className="p-2 font-semibold text-slate-800">{name}</td>
+                  <tr key={idx} className="border-b border-border/60">
+                    <td className="p-2 font-semibold text-foreground">{name}</td>
                     <td className="p-2 text-right font-medium">{l.qty}</td>
                     <td className="p-2 text-right">{l.subtotal.toFixed(2)} €</td>
                     <td className="p-2 text-right font-bold text-indigo-700">{l.discounted.toFixed(2)} €</td>
@@ -1006,13 +1006,13 @@ export default function BillingDetailPage({ params }: { params: Promise<{ id: st
 
       {/* TAB 3: Pivot por Paciente */}
       {activeTab === "pivot" && (
-        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-          <h3 className="font-bold text-slate-900 border-l-4 border-emerald-600 pl-3">
+        <div className="bg-card p-6 rounded-2xl border border-border shadow-sm space-y-4">
+          <h3 className="font-bold text-foreground border-l-4 border-success pl-3">
             Resumen Acumulado por Paciente (Hoja Pivot)
           </h3>
           <table className="w-full text-xs">
             <thead>
-              <tr className="bg-slate-100 text-slate-700 font-bold">
+              <tr className="bg-muted text-foreground font-bold">
                 <th className="p-2 text-left">Paciente</th>
                 <th className="p-2 text-right">Total Precio Tratamientos</th>
                 <th className="p-2 text-right">Total Gasto Lab</th>
@@ -1021,11 +1021,11 @@ export default function BillingDetailPage({ params }: { params: Promise<{ id: st
             </thead>
             <tbody>
               {Array.from(pivotMap.entries()).map(([pName, p], idx) => (
-                <tr key={idx} className="border-b border-slate-100">
-                  <td className="p-2 font-bold text-slate-800">{pName}</td>
+                <tr key={idx} className="border-b border-border/60">
+                  <td className="p-2 font-bold text-foreground">{pName}</td>
                   <td className="p-2 text-right font-medium">{p.totalPrice.toFixed(2)} €</td>
-                  <td className="p-2 text-right text-slate-600">{p.totalLab.toFixed(2)} €</td>
-                  <td className="p-2 text-right font-extrabold text-emerald-700 text-sm">{p.neto.toFixed(2)} €</td>
+                  <td className="p-2 text-right text-muted-foreground">{p.totalLab.toFixed(2)} €</td>
+                  <td className="p-2 text-right font-extrabold text-success text-sm">{p.neto.toFixed(2)} €</td>
                 </tr>
               ))}
             </tbody>
@@ -1035,32 +1035,32 @@ export default function BillingDetailPage({ params }: { params: Promise<{ id: st
 
       {/* Sticky Totals Footer Bar with Comprehensive Percentage & Amount Breakdowns */}
       {totals && (
-        <div className="bg-slate-900 text-white p-6 rounded-2xl shadow-xl flex flex-wrap items-center justify-between gap-6">
+        <div className="bg-sidebar-accent text-white p-6 rounded-2xl shadow-xl flex flex-wrap items-center justify-between gap-6">
           <div className="flex flex-wrap items-center gap-8">
             <div>
-              <div className="text-xs text-slate-400 uppercase font-semibold">Total Subtotal</div>
-              <div className="text-lg font-bold">{totals.total_subtotal.toFixed(2)} € <span className="text-xs text-slate-400 font-normal">(100%)</span></div>
+              <div className="text-xs text-sidebar-muted-foreground uppercase font-semibold">Total Subtotal</div>
+              <div className="text-lg font-bold">{totals.total_subtotal.toFixed(2)} € <span className="text-xs text-sidebar-muted-foreground font-normal">(100%)</span></div>
             </div>
 
             <div>
-              <div className="text-xs text-slate-400 uppercase font-semibold">Comisión Bruta Dr. ({commissionPct}%)</div>
-              <div className="text-lg font-bold text-emerald-400">{totals.total_commission.toFixed(2)} €</div>
+              <div className="text-xs text-sidebar-muted-foreground uppercase font-semibold">Comisión Bruta Dr. ({commissionPct}%)</div>
+              <div className="text-lg font-bold text-success">{totals.total_commission.toFixed(2)} €</div>
             </div>
 
             <div>
-              <div className="text-xs text-slate-400 uppercase font-semibold">Gastos Lab ({labDiscountPct}% Dto)</div>
+              <div className="text-xs text-sidebar-muted-foreground uppercase font-semibold">Gastos Lab ({labDiscountPct}% Dto)</div>
               <div className="text-lg font-bold text-indigo-300">{totals.total_lab.toFixed(2)} €</div>
             </div>
 
             <div>
-              <div className="text-xs text-slate-400 uppercase font-semibold">Honorarios Netos Dr.</div>
+              <div className="text-xs text-sidebar-muted-foreground uppercase font-semibold">Honorarios Netos Dr.</div>
               <div className="text-lg font-bold text-sky-300">{(totals.total_dr_main ?? totals.total_neto).toFixed(2)} €</div>
             </div>
           </div>
 
-          <div className="bg-emerald-500/20 border border-emerald-500/40 px-6 py-3 rounded-xl text-right">
-            <div className="text-xs text-emerald-300 uppercase font-bold">NETO A LIQUIDAR (MÉDICO)</div>
-            <div className="text-2xl font-extrabold text-emerald-400">{totals.total_neto.toFixed(2)} €</div>
+          <div className="bg-success/20 border border-success/40 px-6 py-3 rounded-xl text-right">
+            <div className="text-xs text-success uppercase font-bold">NETO A LIQUIDAR (MÉDICO)</div>
+            <div className="text-2xl font-extrabold text-success">{totals.total_neto.toFixed(2)} €</div>
           </div>
         </div>
       )}

@@ -223,8 +223,8 @@ export default function ClinicsSettingsPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <Loader2 className="h-8 w-8 animate-spin text-rose-500" />
-        <span className="ml-3 text-slate-600">Cargando clínicas...</span>
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <span className="ml-3 text-muted-foreground">Cargando clínicas...</span>
       </div>
     );
   }
@@ -234,14 +234,14 @@ export default function ClinicsSettingsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
-            <Building2 className="h-6 w-6 text-blue-500" /> Clínicas & Sedes
+          <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
+            <Building2 className="h-6 w-6 text-info" /> Clínicas & Sedes
           </h1>
-          <p className="text-sm text-slate-500 mt-0.5">
+          <p className="text-sm text-muted-foreground mt-0.5">
             Configura datos de contacto y reglas de comisión por familia de tratamiento.
           </p>
         </div>
-        <Button onClick={openAdd} className="bg-rose-500 hover:bg-rose-600 text-white rounded-xl gap-2 shadow-md shadow-rose-500/20">
+        <Button onClick={openAdd} className="bg-primary hover:bg-primary/90 text-white rounded-xl gap-2 shadow-md shadow-primary/20">
           <Plus className="h-4 w-4" /> Nueva Clínica
         </Button>
       </div>
@@ -249,8 +249,8 @@ export default function ClinicsSettingsPage() {
       {/* Clinics List */}
       <div className="space-y-4">
         {clinics.length === 0 && (
-          <Card className="rounded-2xl border-dashed border-slate-200">
-            <CardContent className="p-8 text-center text-slate-400">
+          <Card className="rounded-2xl border-dashed border-border">
+            <CardContent className="p-8 text-center text-muted-foreground">
               <AlertCircle className="h-8 w-8 mx-auto mb-2 opacity-40" />
               <p className="text-sm">No hay clínicas configuradas. Crea la primera.</p>
             </CardContent>
@@ -262,8 +262,8 @@ export default function ClinicsSettingsPage() {
           const clinicRules = rules.filter(r => r.clinic_id === clinic.id);
 
           return (
-            <Card key={clinic.id} className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-              <CardHeader className="flex flex-row items-center justify-between pb-3 border-b border-slate-100">
+            <Card key={clinic.id} className="rounded-2xl border border-border bg-card shadow-sm overflow-hidden">
+              <CardHeader className="flex flex-row items-center justify-between pb-3 border-b border-border/60">
                 <div className="flex items-center gap-3">
                   <div
                     className="h-11 w-11 rounded-xl flex items-center justify-center text-white shadow-sm"
@@ -272,8 +272,8 @@ export default function ClinicsSettingsPage() {
                     <Building2 className="h-5 w-5" />
                   </div>
                   <div>
-                    <CardTitle className="text-base font-bold text-slate-900">{clinic.name}</CardTitle>
-                    <div className="flex gap-4 text-xs text-slate-500 mt-0.5">
+                    <CardTitle className="text-base font-bold text-foreground">{clinic.name}</CardTitle>
+                    <div className="flex gap-4 text-xs text-muted-foreground mt-0.5">
                       {clinic.phone && <span className="flex items-center gap-1"><Phone className="h-3 w-3" />{clinic.phone}</span>}
                       {clinic.email && <span className="flex items-center gap-1"><Mail className="h-3 w-3" />{clinic.email}</span>}
                       {clinic.address && <span className="flex items-center gap-1"><MapPin className="h-3 w-3" />{clinic.address}</span>}
@@ -281,17 +281,17 @@ export default function ClinicsSettingsPage() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold text-slate-600 bg-slate-100 px-3 py-1 rounded-full flex items-center gap-1">
+                  <span className="text-xs font-bold text-muted-foreground bg-muted px-3 py-1 rounded-full flex items-center gap-1">
                     <Percent className="h-3 w-3" /> Base: {clinic.base_commission_pct}%
                   </span>
-                  <Button variant="ghost" size="icon" onClick={() => openEdit(clinic)} className="h-9 w-9 rounded-xl text-slate-500 hover:text-slate-900">
+                  <Button variant="ghost" size="icon" onClick={() => openEdit(clinic)} className="h-9 w-9 rounded-xl text-muted-foreground hover:text-foreground">
                     <Edit2 className="h-4 w-4" />
                   </Button>
-                  <Button variant="ghost" size="icon" onClick={() => promptDeleteClinic(clinic)} className="h-9 w-9 rounded-xl text-rose-400 hover:text-rose-600 hover:bg-rose-50">
+                  <Button variant="ghost" size="icon" onClick={() => promptDeleteClinic(clinic)} className="h-9 w-9 rounded-xl text-primary/80 hover:text-primary hover:bg-primary/10">
                     <Trash2 className="h-4 w-4" />
                   </Button>
-                  <Button variant="ghost" size="sm" onClick={() => toggleExpand(clinic)} className="text-xs gap-1 rounded-xl text-slate-600">
-                    <Percent className="h-3.5 w-3.5 text-rose-500" />
+                  <Button variant="ghost" size="sm" onClick={() => toggleExpand(clinic)} className="text-xs gap-1 rounded-xl text-muted-foreground">
+                    <Percent className="h-3.5 w-3.5 text-primary" />
                     Reglas
                     {isExpanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
                   </Button>
@@ -300,20 +300,20 @@ export default function ClinicsSettingsPage() {
 
               {/* Commission Rules Panel */}
               {isExpanded && (
-                <CardContent className="pt-4 pb-5 bg-slate-50/50">
+                <CardContent className="pt-4 pb-5 bg-muted/40">
                   {savedMessage && (
-                    <div className="mb-3 p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold flex items-center justify-between shadow-sm">
+                    <div className="mb-3 p-3 rounded-xl bg-success/10 border border-success/30 text-success text-xs font-semibold flex items-center justify-between shadow-sm">
                       <span>{savedMessage}</span>
                     </div>
                   )}
                   {errorMessage && (
-                    <div className="mb-3 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-semibold flex items-center justify-between shadow-sm">
+                    <div className="mb-3 p-3 rounded-xl bg-primary/10 border border-primary/30 text-destructive text-xs font-semibold flex items-center justify-between shadow-sm">
                       <span>{errorMessage}</span>
                     </div>
                   )}
 
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-sm font-bold text-slate-700">Reglas de Comisión por Familia de Tratamiento</h3>
+                    <h3 className="text-sm font-bold text-foreground">Reglas de Comisión por Familia de Tratamiento</h3>
                     <Button
                       type="button"
                       size="sm"
@@ -323,7 +323,7 @@ export default function ClinicsSettingsPage() {
                         handleSaveRules(clinic);
                       }}
                       disabled={saving}
-                      className="bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-xs gap-1.5 font-bold shadow-md shadow-emerald-500/20"
+                      className="bg-success hover:bg-success/90 text-white rounded-xl text-xs gap-1.5 font-bold shadow-md shadow-success/20"
                     >
                       {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
                       Guardar Reglas
@@ -331,7 +331,7 @@ export default function ClinicsSettingsPage() {
                   </div>
 
                   <div className="grid gap-2">
-                    <div className="grid grid-cols-12 text-[10px] font-bold text-slate-400 uppercase tracking-wider px-3">
+                    <div className="grid grid-cols-12 text-[10px] font-bold text-muted-foreground uppercase tracking-wider px-3">
                       <span className="col-span-6">Familia</span>
                       <span className="col-span-3 text-center">% Comisión Dra.</span>
                       <span className="col-span-3 text-center">% Dto. Lab</span>
@@ -343,15 +343,15 @@ export default function ClinicsSettingsPage() {
                       const existingRule = clinicRules.find(r => r.family_id === fam.id);
 
                       return (
-                        <div key={fam.id} className="grid grid-cols-12 items-center gap-2 bg-white rounded-xl border border-slate-200 px-3 py-2.5">
+                        <div key={fam.id} className="grid grid-cols-12 items-center gap-2 bg-card rounded-xl border border-border px-3 py-2.5">
                           <div className="col-span-6 flex items-center gap-2">
                             <span
                               className="h-2.5 w-2.5 rounded-full shrink-0"
                               style={{ backgroundColor: fam.color_hex }}
                             />
-                            <span className="text-xs font-semibold text-slate-700">{fam.name}</span>
+                            <span className="text-xs font-semibold text-foreground">{fam.name}</span>
                             {!existingRule && (
-                              <span className="text-[10px] text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded font-medium">
+                              <span className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded font-medium">
                                 usa base
                               </span>
                             )}
@@ -394,37 +394,37 @@ export default function ClinicsSettingsPage() {
 
       {/* Create / Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="sm:max-w-md rounded-2xl p-6 bg-white shadow-2xl">
+        <DialogContent className="sm:max-w-md rounded-2xl p-6 bg-card shadow-2xl">
           <DialogHeader>
-            <DialogTitle className="text-lg font-bold text-slate-900 flex items-center gap-2">
-              <Building2 className="h-5 w-5 text-blue-500" />
+            <DialogTitle className="text-lg font-bold text-foreground flex items-center gap-2">
+              <Building2 className="h-5 w-5 text-info" />
               {editingClinic ? "Editar Clínica" : "Nueva Clínica"}
             </DialogTitle>
           </DialogHeader>
 
           <div className="space-y-4 py-2">
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-slate-700">Nombre de la Sede</Label>
+              <Label className="text-xs font-semibold text-foreground">Nombre de la Sede</Label>
               <Input value={fName} onChange={(e) => setFName(e.target.value)} placeholder="Ej: Clínica Goya" className="rounded-lg" />
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
-                <MapPin className="h-3.5 w-3.5 text-slate-400" /> Dirección
+              <Label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                <MapPin className="h-3.5 w-3.5 text-muted-foreground" /> Dirección
               </Label>
               <Input value={fAddress} onChange={(e) => setFAddress(e.target.value)} placeholder="Ej: Calle de Goya 47, Madrid" className="rounded-lg" />
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
-                  <Phone className="h-3.5 w-3.5 text-slate-400" /> Teléfono
+                <Label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                  <Phone className="h-3.5 w-3.5 text-muted-foreground" /> Teléfono
                 </Label>
                 <Input value={fPhone} onChange={(e) => setFPhone(e.target.value)} placeholder="+34 91 000 0000" className="rounded-lg" />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
-                  <Mail className="h-3.5 w-3.5 text-slate-400" /> Email
+                <Label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                  <Mail className="h-3.5 w-3.5 text-muted-foreground" /> Email
                 </Label>
                 <Input value={fEmail} onChange={(e) => setFEmail(e.target.value)} placeholder="goya@melosmile.com" className="rounded-lg" />
               </div>
@@ -432,13 +432,13 @@ export default function ClinicsSettingsPage() {
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
-                  <Percent className="h-3.5 w-3.5 text-slate-400" /> % Comisión Base Dr.
+                <Label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                  <Percent className="h-3.5 w-3.5 text-muted-foreground" /> % Comisión Base Dr.
                 </Label>
                 <Input type="number" value={fBaseCommission} onChange={(e) => setFBaseCommission(e.target.value)} placeholder="40" className="rounded-lg" />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-slate-700">Color Identificador</Label>
+                <Label className="text-xs font-semibold text-foreground">Color Identificador</Label>
                 <div className="flex items-center gap-2 pt-1">
                   {COLOR_OPTIONS.map((c) => (
                     <button
@@ -459,24 +459,24 @@ export default function ClinicsSettingsPage() {
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-slate-700">Tarifa Odoo Asociada</Label>
+              <Label className="text-xs font-semibold text-foreground">Tarifa Odoo Asociada</Label>
               <select
                 value={fOdooPricelist}
                 onChange={(e) => setFOdooPricelist(e.target.value)}
-                className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent"
+                className="w-full h-10 rounded-lg border border-border bg-card px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/60 focus:border-transparent"
               >
                 <option value="">Sin tarifa asociada</option>
                 {pricelists.map(p => (
                   <option key={p.id} value={p.id}>{p.name}</option>
                 ))}
               </select>
-              <p className="text-[11px] text-slate-500">Selecciona la tarifa de Odoo que usa esta clínica. Las actualizaciones de precios se enviarán automáticamente a Odoo.</p>
+              <p className="text-[11px] text-muted-foreground">Selecciona la tarifa de Odoo que usa esta clínica. Las actualizaciones de precios se enviarán automáticamente a Odoo.</p>
             </div>
           </div>
 
           <DialogFooter className="pt-2 gap-2">
             <Button variant="outline" onClick={() => setDialogOpen(false)} className="rounded-xl">Cancelar</Button>
-            <Button onClick={handleSaveClinic} disabled={saving} className="bg-rose-500 hover:bg-rose-600 text-white rounded-xl shadow-md shadow-rose-500/20 gap-2">
+            <Button onClick={handleSaveClinic} disabled={saving} className="bg-primary hover:bg-primary/90 text-white rounded-xl shadow-md shadow-primary/20 gap-2">
               {saving && <Loader2 className="h-4 w-4 animate-spin" />}
               Guardar Clínica
             </Button>
@@ -486,22 +486,22 @@ export default function ClinicsSettingsPage() {
 
       {/* Delete Confirmation Modal */}
       <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
-        <DialogContent className="sm:max-w-md rounded-2xl p-6 bg-white shadow-2xl">
+        <DialogContent className="sm:max-w-md rounded-2xl p-6 bg-card shadow-2xl">
           <DialogHeader>
-            <DialogTitle className="text-lg font-bold text-slate-900 flex items-center gap-2">
-              <AlertCircle className="h-5 w-5 text-rose-500" />
+            <DialogTitle className="text-lg font-bold text-foreground flex items-center gap-2">
+              <AlertCircle className="h-5 w-5 text-primary" />
               Confirmar Eliminación
             </DialogTitle>
           </DialogHeader>
-          <p className="text-sm text-slate-600 py-2">
-            ¿Estás seguro de que deseas eliminar la clínica <span className="font-bold text-slate-900">&quot;{clinicToDelete?.name}&quot;</span>?
+          <p className="text-sm text-muted-foreground py-2">
+            ¿Estás seguro de que deseas eliminar la clínica <span className="font-bold text-foreground">&quot;{clinicToDelete?.name}&quot;</span>?
             Se eliminarán también sus reglas de comisión configuradas.
           </p>
           <DialogFooter className="pt-2 gap-2">
             <Button variant="outline" onClick={() => setDeleteConfirmOpen(false)} className="rounded-xl">
               Cancelar
             </Button>
-            <Button onClick={confirmDeleteClinic} disabled={saving} className="bg-rose-600 hover:bg-rose-700 text-white rounded-xl gap-2 font-bold shadow-md shadow-rose-600/20">
+            <Button onClick={confirmDeleteClinic} disabled={saving} className="bg-primary hover:bg-primary/90 text-white rounded-xl gap-2 font-bold shadow-md shadow-primary/20">
               {saving && <Loader2 className="h-4 w-4 animate-spin" />}
               Sí, Eliminar Clínica
             </Button>

@@ -1,6 +1,21 @@
 const fs = require('fs');
 const path = require('path');
+const dns = require('dns');
 const { createClient } = require('@supabase/supabase-js');
+
+// Configuración de resolución DNS para entornos donde libc dns cachea fallos temporales
+const origLookup = dns.lookup;
+dns.lookup = (hostname, options, callback) => {
+  if (typeof options === 'function') {
+    callback = options;
+    options = {};
+  }
+  if (hostname === 'amhfdzfcmpastmlsosou.supabase.co') {
+    if (options && options.all) return callback(null, [{ address: '172.64.149.246', family: 4 }]);
+    return callback(null, '172.64.149.246', 4);
+  }
+  return origLookup(hostname, options, callback);
+};
 
 const SUPABASE_URL = 'https://amhfdzfcmpastmlsosou.supabase.co';
 const SUPABASE_SERVICE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFtaGZkemZjbXBhc3RtbHNvc291Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NDczNTM3NCwiZXhwIjoyMTAwMzExMzc0fQ.yPLQaV1xbfnuJJcNktxqbneP9Yb5UGlWfXA1tKYx6ZM';

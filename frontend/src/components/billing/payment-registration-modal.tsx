@@ -117,14 +117,14 @@ export function PaymentRegistrationModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md rounded-2xl p-6 bg-white shadow-2xl">
+      <DialogContent className="sm:max-w-md rounded-2xl p-6 bg-card shadow-2xl">
         <DialogHeader>
-          <DialogTitle className="text-lg font-bold text-slate-900 flex items-center gap-2">
-            <Receipt className="h-5 w-5 text-emerald-500" />
+          <DialogTitle className="text-lg font-bold text-foreground flex items-center gap-2">
+            <Receipt className="h-5 w-5 text-success" />
             Registrar Pago / Cobro
           </DialogTitle>
-          <p className="text-xs text-slate-500">
-            Registra un cobro realizado o aconto a cuenta para <span className="font-semibold text-slate-800">{patientName}</span>.
+          <p className="text-xs text-muted-foreground">
+            Registra un cobro realizado o aconto a cuenta para <span className="font-semibold text-foreground">{patientName}</span>.
           </p>
         </DialogHeader>
 
@@ -132,11 +132,11 @@ export function PaymentRegistrationModal({
           {/* Cita Asociada */}
           {appointments.length > 0 && (
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-slate-700">Cita / Concepto Asociado (Opcional)</Label>
+              <Label className="text-xs font-semibold text-foreground">Cita / Concepto Asociado (Opcional)</Label>
               <select
                 value={appointmentId}
                 onChange={(e) => setAppointmentId(e.target.value)}
-                className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-rose-500"
+                className="w-full h-10 rounded-lg border border-border bg-card px-3 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-primary"
               >
                 <option value="">-- Sin cita (Aconto / Pago General) --</option>
                 {appointments.map((a) => {
@@ -154,7 +154,7 @@ export function PaymentRegistrationModal({
           {/* Importe y Fecha */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-slate-700">Monto (€) *</Label>
+              <Label className="text-xs font-semibold text-foreground">Monto (€) *</Label>
               <div className="relative">
                 <Input
                   type="number"
@@ -163,14 +163,14 @@ export function PaymentRegistrationModal({
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
                   placeholder="0.00"
-                  className="rounded-lg pl-8 text-sm font-bold text-slate-900"
+                  className="rounded-lg pl-8 text-sm font-bold text-foreground"
                 />
-                <span className="absolute left-3 top-2.5 text-xs text-slate-400 font-bold">€</span>
+                <span className="absolute left-3 top-2.5 text-xs text-muted-foreground font-bold">€</span>
               </div>
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-slate-700">Fecha de Cobro</Label>
+              <Label className="text-xs font-semibold text-foreground">Fecha de Cobro</Label>
               <Input
                 type="date"
                 value={paymentDate}
@@ -183,11 +183,11 @@ export function PaymentRegistrationModal({
           {/* Método de Pago & Estado */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-slate-700">Método de Pago</Label>
+              <Label className="text-xs font-semibold text-foreground">Método de Pago</Label>
               <select
                 value={paymentMethod}
                 onChange={(e) => setPaymentMethod(e.target.value)}
-                className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-rose-500"
+                className="w-full h-10 rounded-lg border border-border bg-card px-3 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-primary"
               >
                 {PAYMENT_METHODS.map((method) => (
                   <option key={method} value={method}>{method}</option>
@@ -196,11 +196,11 @@ export function PaymentRegistrationModal({
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-slate-700">Estado del Pago</Label>
+              <Label className="text-xs font-semibold text-foreground">Estado del Pago</Label>
               <select
                 value={status}
                 onChange={(e) => setStatus(e.target.value)}
-                className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-rose-500"
+                className="w-full h-10 rounded-lg border border-border bg-card px-3 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-primary"
               >
                 {PAYMENT_STATUSES.map((st) => (
                   <option key={st.id} value={st.id}>{st.label}</option>
@@ -211,7 +211,7 @@ export function PaymentRegistrationModal({
 
           {/* Notas u Observaciones */}
           <div className="space-y-1.5">
-            <Label className="text-xs font-semibold text-slate-700">Observaciones (Opcional)</Label>
+            <Label className="text-xs font-semibold text-foreground">Observaciones (Opcional)</Label>
             <Input
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
@@ -232,7 +232,7 @@ export function PaymentRegistrationModal({
           <Button
             onClick={handleSave}
             disabled={saving || !amount || parseFloat(amount) <= 0}
-            className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl gap-2 font-bold shadow-md shadow-emerald-600/20 text-xs"
+            className="bg-success hover:bg-success/90 text-white rounded-xl gap-2 font-bold shadow-md shadow-success/20 text-xs"
           >
             {saving && <Loader2 className="h-4 w-4 animate-spin" />}
             Guardar Pago

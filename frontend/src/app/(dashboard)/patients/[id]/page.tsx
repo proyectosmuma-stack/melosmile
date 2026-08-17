@@ -129,18 +129,18 @@ function calculateAge(dob: string): { years: number; label: string; isMinor: boo
 
 function getStatusBadge(status: string) {
   const map: Record<string, string> = {
-    Realizada: "bg-emerald-50 text-emerald-700 border-emerald-200",
-    Confirmada: "bg-blue-50 text-blue-700 border-blue-200",
-    Pendiente: "bg-amber-50 text-amber-700 border-amber-200",
-    Cancelada: "bg-red-50 text-red-700 border-red-200",
-    Aprobado: "bg-emerald-50 text-emerald-700 border-emerald-200",
+    Realizada: "bg-success/10 text-success border-success/30",
+    Confirmada: "bg-info/10 text-info border-info/30",
+    Pendiente: "bg-warning/10 text-warning border-warning/30",
+    Cancelada: "bg-destructive/10 text-destructive border-destructive/30",
+    Aprobado: "bg-success/10 text-success border-success/30",
     "Facturado Odoo": "bg-purple-50 text-purple-700 border-purple-200",
-    pendiente: "bg-amber-50 text-amber-700 border-amber-200",
-    enviado: "bg-blue-50 text-blue-700 border-blue-200",
-    leido: "bg-emerald-50 text-emerald-700 border-emerald-200",
-    error: "bg-red-50 text-red-700 border-red-200",
+    pendiente: "bg-warning/10 text-warning border-warning/30",
+    enviado: "bg-info/10 text-info border-info/30",
+    leido: "bg-success/10 text-success border-success/30",
+    error: "bg-destructive/10 text-destructive border-destructive/30",
   };
-  return map[status] ?? "bg-slate-100 text-slate-600 border-slate-200";
+  return map[status] ?? "bg-muted text-muted-foreground border-border";
 }
 
 const REMINDER_TYPE_LABELS: Record<string, string> = {
@@ -217,18 +217,18 @@ function DocumentDropZone({ patientId, onUpload }: { patientId: string; onUpload
       onDrop={(e) => { e.preventDefault(); setDragging(false); handleFiles(e.dataTransfer.files); }}
       onClick={() => inputRef.current?.click()}
       className={`border-2 border-dashed rounded-2xl p-10 flex flex-col items-center justify-center gap-3 cursor-pointer transition-all ${
-        dragging ? "border-rose-400 bg-rose-50" : "border-slate-200 hover:border-rose-300 hover:bg-rose-50/40"
+        dragging ? "border-primary/60 bg-primary/10" : "border-border hover:border-primary/40 hover:bg-primary/10"
       }`}
     >
       <input ref={inputRef} type="file" multiple className="hidden" onChange={(e) => handleFiles(e.target.files)} />
       {uploading ? (
-        <Loader2 className="h-8 w-8 animate-spin text-rose-500" />
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       ) : (
-        <Upload className={`h-8 w-8 ${dragging ? "text-rose-500" : "text-slate-300"}`} />
+        <Upload className={`h-8 w-8 ${dragging ? "text-primary" : "text-muted-foreground"}`} />
       )}
       <div className="text-center">
-        <p className="font-semibold text-sm text-slate-700">Arrastra archivos aquí o haz clic para seleccionar</p>
-        <p className="text-xs text-slate-400 mt-1">Consentimientos, RX, fotografías, informes · PDF, JPG, PNG</p>
+        <p className="font-semibold text-sm text-foreground">Arrastra archivos aquí o haz clic para seleccionar</p>
+        <p className="text-xs text-muted-foreground mt-1">Consentimientos, RX, fotografías, informes · PDF, JPG, PNG</p>
       </div>
     </div>
   );
@@ -598,8 +598,8 @@ function toTitleCase(text: string): string {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <Loader2 className="h-8 w-8 animate-spin text-rose-500" />
-        <span className="ml-3 text-slate-600 font-medium">Cargando ficha del paciente...</span>
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <span className="ml-3 text-muted-foreground font-medium">Cargando ficha del paciente...</span>
       </div>
     );
   }
@@ -607,8 +607,8 @@ function toTitleCase(text: string): string {
   if (!patient) {
     return (
       <div className="flex flex-col items-center justify-center h-96 gap-4">
-        <AlertCircle className="h-12 w-12 text-slate-300" />
-        <p className="text-slate-600 font-semibold">Paciente no encontrado</p>
+        <AlertCircle className="h-12 w-12 text-muted-foreground" />
+        <p className="text-muted-foreground font-semibold">Paciente no encontrado</p>
         <Link href="/patients"><Button variant="outline">Volver al directorio</Button></Link>
       </div>
     );
@@ -633,42 +633,42 @@ function toTitleCase(text: string): string {
     <div className="flex flex-col gap-6 max-w-[1200px] mx-auto p-4 md:p-6">
       {/* Back */}
       <div>
-        <Link href="/patients" className="inline-flex items-center gap-2 text-xs font-bold text-slate-500 hover:text-rose-600 transition-colors">
+        <Link href="/patients" className="inline-flex items-center gap-2 text-xs font-bold text-muted-foreground hover:text-primary transition-colors">
           <ArrowLeft className="h-4 w-4" /> Volver al directorio de pacientes
         </Link>
       </div>
 
       {/* ── Header Profile Card ─────────────────────────────────── */}
-      <Card className="border-0 shadow-xl rounded-2xl overflow-hidden bg-white">
-        <div className="bg-gradient-to-r from-rose-500 via-rose-600 to-pink-500 h-28" />
+      <Card className="border-0 shadow-xl rounded-2xl overflow-hidden bg-card">
+        <div className="bg-gradient-to-r from-primary via-primary to-primary/70 h-28" />
         <CardContent className="px-6 sm:px-10 pb-8 relative">
           <div className="flex flex-col sm:flex-row gap-6 sm:items-end -mt-12 mb-6">
-            <div className="h-24 w-24 rounded-2xl bg-white p-2 shadow-xl flex-shrink-0 flex items-center justify-center border border-slate-100">
-              <div className="h-full w-full rounded-xl bg-rose-50 flex items-center justify-center text-rose-600 font-black text-2xl">
+            <div className="h-24 w-24 rounded-2xl bg-card p-2 shadow-xl flex-shrink-0 flex items-center justify-center border border-border/60">
+              <div className="h-full w-full rounded-xl bg-primary/10 flex items-center justify-center text-primary font-black text-2xl">
                 {initials}
               </div>
             </div>
             <div className="flex-1">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                  <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 flex flex-wrap items-center gap-3">
+                  <h1 className="text-2xl sm:text-3xl font-bold text-foreground flex flex-wrap items-center gap-3">
                     {patient.firstName} {patient.lastName}
-                    <Badge variant="outline" className={`text-xs px-3 py-0.5 rounded-full font-bold border ${patient.inTreatment ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-slate-100 text-slate-600"}`}>
+                    <Badge variant="outline" className={`text-xs px-3 py-0.5 rounded-full font-bold border ${patient.inTreatment ? "bg-success/10 text-success border-success/30" : "bg-muted text-muted-foreground"}`}>
                       {patient.inTreatment ? "En Tratamiento" : "Alta"}
                     </Badge>
                     {ageInfo?.isMinor && (
-                      <Badge variant="outline" className="text-xs px-3 py-0.5 rounded-full font-bold border bg-amber-50 text-amber-700 border-amber-200 flex items-center gap-1">
+                      <Badge variant="outline" className="text-xs px-3 py-0.5 rounded-full font-bold border bg-warning/10 text-warning border-warning/30 flex items-center gap-1">
                         <Baby className="h-3 w-3" /> Menor de edad
                       </Badge>
                     )}
                   </h1>
-                  <div className="flex flex-wrap items-center gap-3 text-sm text-slate-500 mt-1">
-                    <span className="font-bold text-rose-600 bg-rose-50 px-2.5 py-0.5 rounded border border-rose-100">{patient.historiaId}</span>
+                  <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground mt-1">
+                    <span className="font-bold text-primary bg-primary/10 px-2.5 py-0.5 rounded border border-primary/20">{patient.historiaId}</span>
                     {patient.gender && <span>Sexo: <strong>{patient.gender}</strong></span>}
                     {dobFormatted && <span>Nacido: <strong>{dobFormatted}</strong></span>}
                     {ageInfo && (
-                      <span className="flex items-center gap-1 font-semibold text-slate-700">
-                        <UserCheck className="h-3.5 w-3.5 text-slate-400" /> {ageInfo.label}
+                      <span className="flex items-center gap-1 font-semibold text-foreground">
+                        <UserCheck className="h-3.5 w-3.5 text-muted-foreground" /> {ageInfo.label}
                       </span>
                     )}
                   </div>
@@ -681,7 +681,7 @@ function toTitleCase(text: string): string {
                         </span>
                       ))}
                       {[...visitedOtherClinics.entries()].map(([id, name]) => (
-                        <span key={id} className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-lg bg-slate-100 text-slate-500 border border-slate-200">
+                        <span key={id} className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-lg bg-muted text-muted-foreground border border-border">
                           <Building2 className="h-3 w-3" /> {name} (visita puntual)
                         </span>
                       ))}
@@ -712,7 +712,7 @@ function toTitleCase(text: string): string {
                 <div className="flex gap-2 flex-wrap">
                   <Link href={`/patients/${targetId}/edit`}>
                     <Button variant="outline" className="h-9 gap-2 rounded-xl text-xs font-semibold">
-                      <Edit3 className="h-4 w-4 text-slate-500" /> Editar Ficha
+                      <Edit3 className="h-4 w-4 text-muted-foreground" /> Editar Ficha
                     </Button>
                   </Link>
                   <Button
@@ -722,7 +722,7 @@ function toTitleCase(text: string): string {
                         patientName: `${patient.firstName} ${patient.lastName}`,
                       })
                     }
-                    className="h-9 gap-2 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-semibold text-xs shadow-md shadow-rose-500/20 cursor-pointer"
+                    className="h-9 gap-2 rounded-xl bg-primary hover:bg-primary/90 text-white font-semibold text-xs shadow-md shadow-primary/20 cursor-pointer"
                   >
                     <CalendarIcon className="h-4 w-4" /> Agendar Cita
                   </Button>
@@ -731,41 +731,41 @@ function toTitleCase(text: string): string {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6 border-t border-slate-100">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6 border-t border-border/60">
             {/* Contact */}
             <div className="space-y-3">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2">
-                <Phone className="h-4 w-4 text-rose-500" /> Información de Contacto
+              <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                <Phone className="h-4 w-4 text-primary" /> Información de Contacto
               </h3>
-              <div className="text-xs text-slate-700 space-y-1.5 font-medium">
-                {patient.phone && <p className="flex items-center gap-2"><Phone className="h-3.5 w-3.5 text-slate-400" /> {patient.phone}</p>}
-                {patient.email && <p className="flex items-center gap-2"><Mail className="h-3.5 w-3.5 text-slate-400" /> {patient.email}</p>}
-                {patient.address && <p className="flex items-start gap-2 text-slate-500 pt-1"><MapPin className="h-3.5 w-3.5 text-slate-400 mt-0.5 shrink-0" />{patient.address}</p>}
-                {patient.dni && <p className="flex items-center gap-2 text-slate-400"><FileText className="h-3.5 w-3.5" /> DNI/NIE: {patient.dni}</p>}
+              <div className="text-xs text-foreground space-y-1.5 font-medium">
+                {patient.phone && <p className="flex items-center gap-2"><Phone className="h-3.5 w-3.5 text-muted-foreground" /> {patient.phone}</p>}
+                {patient.email && <p className="flex items-center gap-2"><Mail className="h-3.5 w-3.5 text-muted-foreground" /> {patient.email}</p>}
+                {patient.address && <p className="flex items-start gap-2 text-muted-foreground pt-1"><MapPin className="h-3.5 w-3.5 text-muted-foreground mt-0.5 shrink-0" />{patient.address}</p>}
+                {patient.dni && <p className="flex items-center gap-2 text-muted-foreground"><FileText className="h-3.5 w-3.5" /> DNI/NIE: {patient.dni}</p>}
               </div>
             </div>
 
             {/* Medical Alerts */}
             <div className="space-y-3">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2">
-                <ShieldAlert className="h-4 w-4 text-rose-500" /> Alertas Médicas & Anamnesis
+              <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                <ShieldAlert className="h-4 w-4 text-primary" /> Alertas Médicas & Anamnesis
               </h3>
               <div className="text-xs space-y-2">
                 {patient.allergies && (
-                  <div className="flex items-start gap-2 text-rose-700 bg-rose-50 p-2.5 rounded-xl border border-rose-100 font-semibold">
+                  <div className="flex items-start gap-2 text-primary bg-primary/10 p-2.5 rounded-xl border border-primary/20 font-semibold">
                     <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
                     <span><strong>Alergias:</strong> {patient.allergies}</span>
                   </div>
                 )}
                 {patient.importantDiseases && (
-                  <div className="flex items-start gap-2 text-amber-800 bg-amber-50 p-2.5 rounded-xl border border-amber-100 font-medium">
-                    <Activity className="h-4 w-4 shrink-0 text-amber-600 mt-0.5" />
+                  <div className="flex items-start gap-2 text-warning bg-warning/10 p-2.5 rounded-xl border border-warning/20 font-medium">
+                    <Activity className="h-4 w-4 shrink-0 text-warning mt-0.5" />
                     <span><strong>Antecedentes:</strong> {patient.importantDiseases}</span>
                   </div>
                 )}
                 {patient.previousOperations && (
-                  <div className="flex items-start gap-2 text-blue-800 bg-blue-50 p-2.5 rounded-xl border border-blue-100 font-medium">
-                    <Stethoscope className="h-4 w-4 shrink-0 text-blue-500 mt-0.5" />
+                  <div className="flex items-start gap-2 text-info bg-info/10 p-2.5 rounded-xl border border-info/20 font-medium">
+                    <Stethoscope className="h-4 w-4 shrink-0 text-info mt-0.5" />
                     <span><strong>Operaciones:</strong> {patient.previousOperations}</span>
                   </div>
                 )}
@@ -776,7 +776,7 @@ function toTitleCase(text: string): string {
                   </div>
                 )}
                 {!patient.allergies && !patient.importantDiseases && !patient.previousOperations && !patient.currentMedication && (
-                  <p className="text-slate-400 text-xs italic">Sin alertas médicas registradas</p>
+                  <p className="text-muted-foreground text-xs italic">Sin alertas médicas registradas</p>
                 )}
               </div>
             </div>
@@ -788,10 +788,10 @@ function toTitleCase(text: string): string {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         
         {/* Left Column: AI Clinical Summary & Treatment Plan */}
-        <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-6 space-y-4 flex flex-col justify-between">
+        <div className="bg-card border border-border rounded-2xl shadow-sm p-6 space-y-4 flex flex-col justify-between">
           <div className="space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
+            <div className="flex items-center justify-between pb-3 border-b border-border/60">
+              <h2 className="text-base font-bold text-foreground flex items-center gap-2">
                 <Sparkles className="h-5 w-5 text-violet-600" /> Resumen Técnico IA & Plan de Tratamiento
               </h2>
               <Button
@@ -835,20 +835,20 @@ function toTitleCase(text: string): string {
                 <p className="text-xs text-violet-950 leading-relaxed font-medium whitespace-pre-line">{patient.aiSummary}</p>
               </div>
             ) : (
-              <div className="p-6 rounded-xl bg-slate-50 border border-dashed border-slate-200 text-center space-y-2">
-                <Sparkles className="h-7 w-7 text-slate-300 mx-auto" />
-                <p className="text-xs font-semibold text-slate-600">Sin informe de IA generado aún</p>
-                <p className="text-[11px] text-slate-400">Haz clic en &quot;Generar Informe IA&quot; para sintetizar todas las notas clínicas del paciente.</p>
+              <div className="p-6 rounded-xl bg-muted/40 border border-dashed border-border text-center space-y-2">
+                <Sparkles className="h-7 w-7 text-muted-foreground mx-auto" />
+                <p className="text-xs font-semibold text-muted-foreground">Sin informe de IA generado aún</p>
+                <p className="text-[11px] text-muted-foreground">Haz clic en &quot;Generar Informe IA&quot; para sintetizar todas las notas clínicas del paciente.</p>
               </div>
             )}
 
             {/* Treatment Plan Section */}
-            <div className="space-y-1.5 pt-2 border-t border-slate-100">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-                <Stethoscope className="h-3.5 w-3.5 text-rose-500" /> Plan de Tratamiento Registrado
+            <div className="space-y-1.5 pt-2 border-t border-border/60">
+              <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                <Stethoscope className="h-3.5 w-3.5 text-primary" /> Plan de Tratamiento Registrado
               </span>
-              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80">
-                <p className="text-xs text-slate-800 font-semibold leading-relaxed">
+              <div className="p-3 rounded-xl bg-muted/40 border border-border">
+                <p className="text-xs text-foreground font-semibold leading-relaxed">
                   {patient.treatmentPlan ? patient.treatmentPlan.replace(/\[OdontogramaBase:\s*[\s\S]*?\]/gi, '').trim() || "Sin plan registrado" : "Sin plan registrado"}
                 </p>
               </div>
@@ -857,8 +857,8 @@ function toTitleCase(text: string): string {
             {/* Active Treatment Plans Section (Ortodoncia / Miofuncional / Ambos) */}
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
-                  <BadgeCheck className="h-4 w-4 text-emerald-600" /> Planes de Tratamiento Pautados
+                <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                  <BadgeCheck className="h-4 w-4 text-success" /> Planes de Tratamiento Pautados
                 </span>
                 <div className="flex items-center gap-1.5">
                   <Button
@@ -880,7 +880,7 @@ function toTitleCase(text: string): string {
                       });
                       setEditingPlanModalOpen(true);
                     }}
-                    className="h-7 px-2 text-[11px] font-bold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border-emerald-200 rounded-lg cursor-pointer"
+                    className="h-7 px-2 text-[11px] font-bold text-success bg-success/10 hover:bg-success/20 border-success/30 rounded-lg cursor-pointer"
                   >
                     + Plan Ortodoncia
                   </Button>
@@ -903,7 +903,7 @@ function toTitleCase(text: string): string {
                       });
                       setEditingPlanModalOpen(true);
                     }}
-                    className="h-7 px-2 text-[11px] font-bold text-blue-800 bg-blue-50 hover:bg-blue-100 border-blue-200 rounded-lg cursor-pointer"
+                    className="h-7 px-2 text-[11px] font-bold text-info bg-info/10 hover:bg-info/20 border-info/30 rounded-lg cursor-pointer"
                   >
                     + Plan Miofuncional
                   </Button>
@@ -915,11 +915,11 @@ function toTitleCase(text: string): string {
                   const { totalCompleted, totalInst, remaining, isNearOrFinished, typeName } = getPlanProgress(plan);
 
                   return (
-                    <div key={plan.id} className="p-4 rounded-xl bg-emerald-50/70 border border-emerald-200 space-y-3">
+                    <div key={plan.id} className="p-4 rounded-xl bg-success/10 border border-success/30 space-y-3">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          <BadgeCheck className="h-4 w-4 text-emerald-600" />
-                          <span className="text-xs font-bold text-emerald-950 uppercase tracking-wider">
+                          <BadgeCheck className="h-4 w-4 text-success" />
+                          <span className="text-xs font-bold text-success uppercase tracking-wider">
                             Plan de {typeName} Pautado
                           </span>
                         </div>
@@ -943,7 +943,7 @@ function toTitleCase(text: string): string {
                               });
                               setEditingPlanModalOpen(true);
                             }}
-                            className="h-7 px-2.5 text-[11px] font-bold text-emerald-800 bg-emerald-100/80 hover:bg-emerald-200/80 border-emerald-300 rounded-lg gap-1 cursor-pointer"
+                            className="h-7 px-2.5 text-[11px] font-bold text-success bg-success/15 hover:bg-success/20 border-success/40 rounded-lg gap-1 cursor-pointer"
                           >
                             <Edit3 className="h-3 w-3" /> Editar Plan
                           </Button>
@@ -961,7 +961,7 @@ function toTitleCase(text: string): string {
                                 alert(`Error al eliminar plan: ${err.message}`);
                               }
                             }}
-                            className="h-7 px-2 text-[11px] font-bold text-rose-700 hover:bg-rose-100 hover:text-rose-900 rounded-lg gap-1 cursor-pointer"
+                            className="h-7 px-2 text-[11px] font-bold text-primary hover:bg-primary/15 hover:text-primary rounded-lg gap-1 cursor-pointer"
                           >
                             <Trash2 className="h-3 w-3" /> Eliminar
                           </Button>
@@ -970,11 +970,11 @@ function toTitleCase(text: string): string {
 
                       {/* Warning Alert Banner when remaining installments <= 1 */}
                       {isNearOrFinished && (
-                        <div className="flex items-start gap-2 p-3 rounded-xl bg-amber-100/90 border border-amber-300 text-amber-950 text-xs font-bold shadow-xs">
-                          <AlertCircle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+                        <div className="flex items-start gap-2 p-3 rounded-xl bg-warning/15 border border-warning/40 text-warning text-xs font-bold shadow-xs">
+                          <AlertCircle className="h-4 w-4 text-warning shrink-0 mt-0.5" />
                           <div>
                             <p>⚠️ Atención ({typeName}): El paciente ha completado {totalCompleted} de las {totalInst} mensualidades estipuladas.</p>
-                            <p className="text-[11px] text-amber-800 font-medium mt-0.5">
+                            <p className="text-[11px] text-warning font-medium mt-0.5">
                               {remaining === 0 ? "¡Plan alcanzado al 100%! Revisa el plan por si requiere prórroga o modificación." : "Queda solo 1 mensualidad pendiente antes de finalizar las cuotas pautadas."}
                             </p>
                           </div>
@@ -983,32 +983,32 @@ function toTitleCase(text: string): string {
 
                       <div className="space-y-2">
                         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 pt-1">
-                          <div className="bg-white/80 p-2.5 rounded-lg border border-emerald-100 text-center">
-                            <span className="text-[10px] uppercase font-bold text-slate-400 block">Mensualidad Control</span>
-                            <span className="text-sm font-black text-emerald-700">{plan.monthly_fee} €</span>
+                          <div className="bg-card/80 p-2.5 rounded-lg border border-success/20 text-center">
+                            <span className="text-[10px] uppercase font-bold text-muted-foreground block">Mensualidad Control</span>
+                            <span className="text-sm font-black text-success">{plan.monthly_fee} €</span>
                           </div>
-                          <div className="bg-white/80 p-2.5 rounded-lg border border-emerald-100 text-center">
-                            <span className="text-[10px] uppercase font-bold text-slate-400 block">Controles Realizados</span>
-                            <span className="text-xs font-black text-slate-800">
+                          <div className="bg-card/80 p-2.5 rounded-lg border border-success/20 text-center">
+                            <span className="text-[10px] uppercase font-bold text-muted-foreground block">Controles Realizados</span>
+                            <span className="text-xs font-black text-foreground">
                               {totalCompleted} de {totalInst}
-                              <span className="block text-[10px] text-emerald-600 font-bold">({remaining} pendientes)</span>
+                              <span className="block text-[10px] text-success font-bold">({remaining} pendientes)</span>
                             </span>
                           </div>
-                          <div className="bg-white/80 p-2.5 rounded-lg border border-emerald-100 text-center">
-                            <span className="text-[10px] uppercase font-bold text-slate-400 block">Pago Inicial / Entrada</span>
-                            <span className="text-sm font-black text-slate-700">{plan.initial_payment ? `${plan.initial_payment} €` : '0 €'}</span>
+                          <div className="bg-card/80 p-2.5 rounded-lg border border-success/20 text-center">
+                            <span className="text-[10px] uppercase font-bold text-muted-foreground block">Pago Inicial / Entrada</span>
+                            <span className="text-sm font-black text-foreground">{plan.initial_payment ? `${plan.initial_payment} €` : '0 €'}</span>
                           </div>
-                          <div className="bg-white/80 p-2.5 rounded-lg border border-emerald-100 text-center">
-                            <span className="text-[10px] uppercase font-bold text-slate-400 block">Pago / Cuota Final</span>
-                            <span className="text-sm font-black text-slate-700">{plan.final_payment ? `${plan.final_payment} €` : '0 €'}</span>
+                          <div className="bg-card/80 p-2.5 rounded-lg border border-success/20 text-center">
+                            <span className="text-[10px] uppercase font-bold text-muted-foreground block">Pago / Cuota Final</span>
+                            <span className="text-sm font-black text-foreground">{plan.final_payment ? `${plan.final_payment} €` : '0 €'}</span>
                           </div>
-                          <div className="bg-white/80 p-2.5 rounded-lg border border-emerald-100 text-center">
-                            <span className="text-[10px] uppercase font-bold text-slate-400 block">Costo Total Plan</span>
-                            <span className="text-sm font-black text-slate-800">{plan.total_cost ? `${plan.total_cost} €` : '—'}</span>
+                          <div className="bg-card/80 p-2.5 rounded-lg border border-success/20 text-center">
+                            <span className="text-[10px] uppercase font-bold text-muted-foreground block">Costo Total Plan</span>
+                            <span className="text-sm font-black text-foreground">{plan.total_cost ? `${plan.total_cost} €` : '—'}</span>
                           </div>
-                          <div className="bg-white/80 p-2.5 rounded-lg border border-emerald-100 text-center flex flex-col justify-center items-center">
-                            <span className="text-[10px] uppercase font-bold text-slate-400 block">Estado</span>
-                            <Badge className="mt-0.5 bg-emerald-100 text-emerald-800 font-extrabold border-emerald-200 capitalize">
+                          <div className="bg-card/80 p-2.5 rounded-lg border border-success/20 text-center flex flex-col justify-center items-center">
+                            <span className="text-[10px] uppercase font-bold text-muted-foreground block">Estado</span>
+                            <Badge className="mt-0.5 bg-success/15 text-success font-extrabold border-success/30 capitalize">
                               {plan.status}
                             </Badge>
                           </div>
@@ -1018,7 +1018,7 @@ function toTitleCase(text: string): string {
                   );
                 })
               ) : (
-                <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-500 italic">
+                <div className="p-4 rounded-xl bg-muted/40 border border-border text-xs text-muted-foreground italic">
                   Sin cuota de mensualidad específica asignada. Las citas usarán el precio por defecto del catálogo. Haz clic en los botones superiores para activar un plan de Ortodoncia o Miofuncional.
                 </div>
               )}
@@ -1027,13 +1027,13 @@ function toTitleCase(text: string): string {
         </div>
 
         {/* Right Column: Odontogram General (Visión de Boca) */}
-        <div className="bg-white border border-slate-200 rounded-2xl shadow-sm p-6 space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
+        <div className="bg-card border border-border rounded-2xl shadow-sm p-6 space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-border/60">
             <div>
-              <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                <Smile className="h-5 w-5 text-rose-500" /> Odontograma General (Visión de Boca)
+              <h2 className="text-base font-bold text-foreground flex items-center gap-2">
+                <Smile className="h-5 w-5 text-primary" /> Odontograma General (Visión de Boca)
               </h2>
-              <p className="text-[11px] text-slate-500 mt-0.5">
+              <p className="text-[11px] text-muted-foreground mt-0.5">
                 Estado consolidado de las piezas dentales. Por defecto en solo lectura.
               </p>
             </div>
@@ -1045,7 +1045,7 @@ function toTitleCase(text: string): string {
                   size="sm"
                   variant="outline"
                   onClick={() => setIsEditingOdontogram(true)}
-                  className="h-8 text-xs font-bold gap-1.5 rounded-xl border-slate-300 text-slate-700 hover:bg-slate-50 cursor-pointer"
+                  className="h-8 text-xs font-bold gap-1.5 rounded-xl border-border text-foreground hover:bg-muted cursor-pointer"
                 >
                   <Edit3 className="h-3.5 w-3.5" /> Editar Base
                 </Button>
@@ -1056,7 +1056,7 @@ function toTitleCase(text: string): string {
                     size="sm"
                     variant="outline"
                     onClick={() => setIsEditingOdontogram(false)}
-                    className="h-8 text-xs font-bold rounded-xl text-slate-600 border-slate-200"
+                    className="h-8 text-xs font-bold rounded-xl text-muted-foreground border-border"
                   >
                     Cancelar
                   </Button>
@@ -1085,7 +1085,7 @@ function toTitleCase(text: string): string {
                         setSavingOdontogram(false);
                       }
                     }}
-                    className="h-8 text-xs font-bold gap-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer"
+                    className="h-8 text-xs font-bold gap-1.5 rounded-xl bg-success hover:bg-success/90 text-white cursor-pointer"
                   >
                     {savingOdontogram ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />} Guardar Base
                   </Button>
@@ -1106,27 +1106,27 @@ function toTitleCase(text: string): string {
       {/* ── Stats Row ───────────────────────────────────────────── */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { label: "Visitas totales", value: appointments.length, icon: CalendarIcon, color: "text-blue-600 bg-blue-50 border-blue-100" },
-          { label: "Recordatorios", value: reminders.length, icon: Bell, color: "text-amber-600 bg-amber-50 border-amber-100" },
-          { label: "Total cobrado", value: `${totalPaid.toFixed(0)} €`, icon: CheckCircle2, color: "text-emerald-600 bg-emerald-50 border-emerald-100" },
-          { label: "Pendiente cobro", value: `${totalPending.toFixed(0)} €`, icon: CreditCard, color: "text-rose-600 bg-rose-50 border-rose-100" },
+          { label: "Visitas totales", value: appointments.length, icon: CalendarIcon, color: "text-info bg-info/10 border-info/20" },
+          { label: "Recordatorios", value: reminders.length, icon: Bell, color: "text-warning bg-warning/10 border-warning/20" },
+          { label: "Total cobrado", value: `${totalPaid.toFixed(0)} €`, icon: CheckCircle2, color: "text-success bg-success/10 border-success/20" },
+          { label: "Pendiente cobro", value: `${totalPending.toFixed(0)} €`, icon: CreditCard, color: "text-primary bg-primary/10 border-primary/20" },
         ].map(stat => (
-          <div key={stat.label} className="bg-white rounded-2xl border border-slate-100 shadow-sm p-4 flex items-center gap-3">
+          <div key={stat.label} className="bg-card rounded-2xl border border-border/60 shadow-sm p-4 flex items-center gap-3">
             <div className={`h-10 w-10 rounded-xl flex items-center justify-center border ${stat.color}`}>
               <stat.icon className="h-5 w-5" />
             </div>
             <div>
-              <p className="text-lg font-black text-slate-900">{stat.value}</p>
-              <p className="text-[11px] text-slate-500 font-medium">{stat.label}</p>
+              <p className="text-lg font-black text-foreground">{stat.value}</p>
+              <p className="text-[11px] text-muted-foreground font-medium">{stat.label}</p>
             </div>
           </div>
         ))}
       </div>
 
       {/* ── Tabs ────────────────────────────────────────────────── */}
-      <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+      <div className="bg-card border border-border rounded-2xl shadow-sm overflow-hidden">
         {/* Tab nav */}
-        <div className="flex border-b border-slate-100 overflow-x-auto">
+        <div className="flex border-b border-border/60 overflow-x-auto">
           {([
             { id: "historial", label: `Historial de Citas${appointments.length > 0 ? ` (${appointments.length})` : ""}`, icon: CalendarIcon },
             { id: "facturacion", label: `Facturación y Pagos${billing.length > 0 ? ` (${billing.length})` : ""}`, icon: Receipt },
@@ -1137,8 +1137,8 @@ function toTitleCase(text: string): string {
               onClick={() => setActiveTab(tab.id)}
               className={`flex items-center gap-2 px-5 py-3.5 text-xs font-bold whitespace-nowrap border-b-2 transition-all ${
                 activeTab === tab.id
-                  ? "border-rose-500 text-rose-600 bg-rose-50/50"
-                  : "border-transparent text-slate-500 hover:text-slate-700 hover:bg-slate-50"
+                  ? "border-primary text-primary bg-primary/10"
+                  : "border-transparent text-muted-foreground hover:text-foreground hover:bg-muted"
               }`}
             >
               <tab.icon className="h-4 w-4" /> {tab.label}
@@ -1150,23 +1150,23 @@ function toTitleCase(text: string): string {
         {activeTab === "historial" && (
           <div className="p-0">
             {/* Header bar */}
-            <div className="flex items-center justify-between px-5 py-3 border-b border-slate-50">
+            <div className="flex items-center justify-between px-5 py-3 border-b border-border/60">
               <div className="flex items-center gap-3">
                 {/* Select all toggle */}
                 {appointments.length > 0 && (
                   <button
                     onClick={toggleSelectAllAppointments}
-                    className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-rose-600 transition-colors"
+                    className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-primary transition-colors"
                   >
                     {selectedAppointmentIds.length === appointments.length ? (
-                      <CheckSquare className="h-4 w-4 text-rose-500" />
+                      <CheckSquare className="h-4 w-4 text-primary" />
                     ) : (
                       <Square className="h-4 w-4" />
                     )}
                     {selectedAppointmentIds.length === appointments.length ? "Deseleccionar todo" : "Seleccionar todo"}
                   </button>
                 )}
-                <p className="text-xs text-slate-400 font-medium">Historial completo de visitas</p>
+                <p className="text-xs text-muted-foreground font-medium">Historial completo de visitas</p>
               </div>
               <Button
                 size="sm"
@@ -1176,7 +1176,7 @@ function toTitleCase(text: string): string {
                     patientName: `${patient.firstName} ${patient.lastName}`,
                   })
                 }
-                className="h-7 gap-1.5 rounded-lg bg-rose-500 hover:bg-rose-600 text-white text-[11px] font-semibold shadow-sm cursor-pointer"
+                className="h-7 gap-1.5 rounded-lg bg-primary hover:bg-primary/90 text-white text-[11px] font-semibold shadow-sm cursor-pointer"
               >
                 <Plus className="h-3 w-3" /> Nueva Cita
               </Button>
@@ -1184,8 +1184,8 @@ function toTitleCase(text: string): string {
 
             {/* Bulk action bar — shown when items are selected */}
             {selectedAppointmentIds.length > 0 && (
-              <div className="flex flex-wrap items-center gap-2 px-5 py-2.5 bg-rose-50 border-b border-rose-100">
-                <span className="text-xs font-bold text-rose-700">
+              <div className="flex flex-wrap items-center gap-2 px-5 py-2.5 bg-primary/10 border-b border-primary/20">
+                <span className="text-xs font-bold text-primary">
                   {selectedAppointmentIds.length} cita(s) seleccionada(s)
                 </span>
                 <div className="flex flex-wrap items-center gap-2 ml-2">
@@ -1193,7 +1193,7 @@ function toTitleCase(text: string): string {
                     disabled={bulkActionLoading}
                     defaultValue=""
                     onChange={(e) => { if (e.target.value) handleBulkStatusChange(e.target.value); }}
-                    className="text-xs font-semibold border border-slate-200 rounded-lg px-2 py-1.5 bg-white text-slate-700 cursor-pointer focus:ring-2 focus:ring-rose-300 focus:outline-none"
+                    className="text-xs font-semibold border border-border rounded-lg px-2 py-1.5 bg-card text-foreground cursor-pointer focus:ring-2 focus:ring-primary/60 focus:outline-none"
                   >
                     <option value="" disabled>Cambiar estado…</option>
                     <option value="Confirmada">✅ Confirmada</option>
@@ -1205,14 +1205,14 @@ function toTitleCase(text: string): string {
                     size="sm"
                     disabled={bulkActionLoading}
                     onClick={handleBulkDeleteAppointments}
-                    className="h-7 gap-1.5 rounded-lg bg-red-500 hover:bg-red-600 text-white text-[11px] font-bold cursor-pointer"
+                    className="h-7 gap-1.5 rounded-lg bg-destructive hover:bg-destructive/90 text-white text-[11px] font-bold cursor-pointer"
                   >
                     {bulkActionLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}
                     Eliminar seleccionadas
                   </Button>
                   <button
                     onClick={() => setSelectedAppointmentIds([])}
-                    className="text-xs text-slate-400 hover:text-slate-600 transition-colors ml-1"
+                    className="text-xs text-muted-foreground hover:text-foreground transition-colors ml-1"
                   >
                     <X className="h-3.5 w-3.5" />
                   </button>
@@ -1221,12 +1221,12 @@ function toTitleCase(text: string): string {
             )}
 
             {appointments.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-16 text-slate-400">
-                <CalendarIcon className="h-10 w-10 mb-3 text-slate-200" />
+              <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
+                <CalendarIcon className="h-10 w-10 mb-3 text-muted-foreground" />
                 <p className="font-semibold text-sm">Sin citas registradas</p>
               </div>
             ) : (
-              <div className="divide-y divide-slate-50">
+              <div className="divide-y divide-border">
                 {appointments.map((app) => {
                   const d = formatDate(app.appointment_date);
                   const isSelected = selectedAppointmentIds.includes(app.id);
@@ -1234,16 +1234,16 @@ function toTitleCase(text: string): string {
                     <div
                       key={app.id}
                       className={`px-5 py-4 flex items-center gap-3 transition-colors ${
-                        isSelected ? "bg-rose-50/70" : "hover:bg-slate-50"
+                        isSelected ? "bg-primary/10" : "hover:bg-muted"
                       }`}
                     >
                       {/* Checkbox */}
                       <button
                         onClick={() => toggleAppointmentSelection(app.id)}
-                        className="shrink-0 text-slate-300 hover:text-rose-500 transition-colors"
+                        className="shrink-0 text-muted-foreground hover:text-primary transition-colors"
                       >
                         {isSelected ? (
-                          <CheckSquare className="h-4 w-4 text-rose-500" />
+                          <CheckSquare className="h-4 w-4 text-primary" />
                         ) : (
                           <Square className="h-4 w-4" />
                         )}
@@ -1252,29 +1252,29 @@ function toTitleCase(text: string): string {
                       {/* Row content — click navigates to detail */}
                       <Link href={`/appointments/${app.id}`} className="flex items-center justify-between flex-1 group cursor-pointer">
                         <div className="flex items-start gap-4">
-                          <div className="h-12 w-12 rounded-xl bg-rose-50 flex flex-col items-center justify-center shrink-0 border border-rose-100">
-                            <span className="text-sm font-black text-slate-800">{d.day}</span>
-                            <span className="text-[10px] font-bold text-rose-600 uppercase">{d.month}</span>
+                          <div className="h-12 w-12 rounded-xl bg-primary/10 flex flex-col items-center justify-center shrink-0 border border-primary/20">
+                            <span className="text-sm font-black text-foreground">{d.day}</span>
+                            <span className="text-[10px] font-bold text-primary uppercase">{d.month}</span>
                           </div>
                           <div>
-                            <p className="font-bold text-slate-900 text-sm group-hover:text-rose-600 transition-colors">
+                            <p className="font-bold text-foreground text-sm group-hover:text-primary transition-colors">
                               {app.reason} — {app.treatmentName}
                             </p>
-                            <p className="text-xs text-slate-500 flex flex-wrap items-center gap-2 mt-0.5">
+                            <p className="text-xs text-muted-foreground flex flex-wrap items-center gap-2 mt-0.5">
                               <span className="flex items-center gap-1">
                                 <User className="h-3 w-3" />
                                 {app.professionalName}
-                                {app.guestDoctor && <span className="font-bold text-rose-600 ml-0.5">(+ {app.guestDoctor})</span>}
+                                {app.guestDoctor && <span className="font-bold text-primary ml-0.5">(+ {app.guestDoctor})</span>}
                               </span>
                               <span className="flex items-center gap-1"><Building2 className="h-3 w-3" />{app.clinicName}</span>
                               <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{d.time}</span>
                             </p>
-                            {app.notes && <p className="text-[11px] text-slate-400 mt-1 italic truncate max-w-md">{app.notes}</p>}
+                            {app.notes && <p className="text-[11px] text-muted-foreground mt-1 italic truncate max-w-md">{app.notes}</p>}
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
                           <Badge variant="outline" className={`text-xs font-semibold ${getStatusBadge(app.status)}`}>{app.status}</Badge>
-                          <ChevronRight className="h-4 w-4 text-slate-300 group-hover:text-rose-400 transition-colors" />
+                          <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-primary/80 transition-colors" />
                         </div>
                       </Link>
 
@@ -1302,8 +1302,8 @@ function toTitleCase(text: string): string {
                         disabled={app.status === "Realizada" || app.status === "realizada"}
                         className={`p-1.5 rounded-lg border transition-all ${
                           app.status === "Realizada" || app.status === "realizada"
-                            ? "opacity-30 cursor-not-allowed border-transparent text-slate-300"
-                            : "border-slate-200 text-slate-400 hover:text-red-600 hover:bg-red-50 hover:border-red-200 cursor-pointer"
+                            ? "opacity-30 cursor-not-allowed border-transparent text-muted-foreground"
+                            : "border-border text-muted-foreground hover:text-destructive hover:bg-destructive/10 hover:border-destructive/30 cursor-pointer"
                         }`}
                       >
                         <Trash2 className="h-4 w-4" />
@@ -1320,20 +1320,20 @@ function toTitleCase(text: string): string {
         {activeTab === "facturacion" && (
           <div className="p-0">
             {/* Billing data & action header */}
-            <div className="px-5 py-3.5 border-b border-slate-100 flex flex-wrap items-center justify-between gap-3 bg-slate-50/50">
+            <div className="px-5 py-3.5 border-b border-border/60 flex flex-wrap items-center justify-between gap-3 bg-muted/40">
               <div className="flex items-center gap-6">
                 <div>
-                  <p className="text-[10px] uppercase font-bold text-slate-400">Total cobrado</p>
-                  <p className="text-base font-black text-emerald-600">{totalPaid.toFixed(2)} €</p>
+                  <p className="text-[10px] uppercase font-bold text-muted-foreground">Total cobrado</p>
+                  <p className="text-base font-black text-success">{totalPaid.toFixed(2)} €</p>
                 </div>
                 {totalPending > 0 && (
                   <div>
-                    <p className="text-[10px] uppercase font-bold text-slate-400">Pendiente cobro</p>
-                    <p className="text-base font-black text-amber-600">{totalPending.toFixed(2)} €</p>
+                    <p className="text-[10px] uppercase font-bold text-muted-foreground">Pendiente cobro</p>
+                    <p className="text-base font-black text-warning">{totalPending.toFixed(2)} €</p>
                   </div>
                 )}
                 {selectedBillingIds.length > 0 && (
-                  <div className="pl-4 border-l border-slate-200">
+                  <div className="pl-4 border-l border-border">
                     <p className="text-[10px] uppercase font-bold text-violet-500">Seleccionados para Factura</p>
                     <p className="text-sm font-black text-violet-700">
                       {selectedBillingIds.length} cobro(s) · {
@@ -1351,7 +1351,7 @@ function toTitleCase(text: string): string {
                 <Button
                   size="sm"
                   onClick={() => setPaymentModalOpen(true)}
-                  className="h-9 px-3.5 gap-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-sm cursor-pointer"
+                  className="h-9 px-3.5 gap-1.5 rounded-xl bg-success hover:bg-success/90 text-white text-xs font-bold shadow-sm cursor-pointer"
                 >
                   <Plus className="h-4 w-4" /> Crear Pago
                 </Button>
@@ -1406,7 +1406,7 @@ function toTitleCase(text: string): string {
                   className={`h-9 px-3.5 gap-1.5 rounded-xl text-xs font-bold shadow-sm transition-all ${
                     selectedBillingIds.length > 0
                       ? "bg-violet-600 hover:bg-violet-700 text-white cursor-pointer"
-                      : "bg-slate-200 text-slate-400 border-slate-200 cursor-not-allowed"
+                      : "bg-muted text-muted-foreground border-border cursor-not-allowed"
                   }`}
                 >
                   {generatingInvoice ? (
@@ -1421,16 +1421,16 @@ function toTitleCase(text: string): string {
 
             {/* Billing data fields */}
             {(patient.nifCif || patient.billingName) && (
-              <div className="px-5 py-3 bg-slate-50 border-b border-slate-100">
-                <p className="text-[11px] font-bold text-slate-400 uppercase mb-2">Datos de facturación</p>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs text-slate-700">
-                  {patient.billingName && <div><span className="text-slate-400">Nombre/Razón social:</span><br/><strong>{patient.billingName}</strong></div>}
-                  {patient.nifCif && <div><span className="text-slate-400">NIF/CIF:</span><br/><strong>{patient.nifCif}</strong></div>}
-                  {patient.billingAddress && <div><span className="text-slate-400">Dirección:</span><br/><strong>{patient.billingAddress}</strong></div>}
-                  {patient.billingCity && <div><span className="text-slate-400">Ciudad/CP:</span><br/><strong>{patient.billingCity} {patient.billingPostalCode}</strong></div>}
+              <div className="px-5 py-3 bg-muted/40 border-b border-border/60">
+                <p className="text-[11px] font-bold text-muted-foreground uppercase mb-2">Datos de facturación</p>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs text-foreground">
+                  {patient.billingName && <div><span className="text-muted-foreground">Nombre/Razón social:</span><br/><strong>{patient.billingName}</strong></div>}
+                  {patient.nifCif && <div><span className="text-muted-foreground">NIF/CIF:</span><br/><strong>{patient.nifCif}</strong></div>}
+                  {patient.billingAddress && <div><span className="text-muted-foreground">Dirección:</span><br/><strong>{patient.billingAddress}</strong></div>}
+                  {patient.billingCity && <div><span className="text-muted-foreground">Ciudad/CP:</span><br/><strong>{patient.billingCity} {patient.billingPostalCode}</strong></div>}
                   {patient.odooPartnerId && (
                     <div>
-                      <span className="text-slate-400">Odoo Partner:</span><br/>
+                      <span className="text-muted-foreground">Odoo Partner:</span><br/>
                       <a href={`${process.env.NEXT_PUBLIC_ODOO_URL}/web#id=${patient.odooPartnerId}&model=res.partner`} target="_blank" rel="noopener noreferrer" className="text-violet-600 font-bold flex items-center gap-1 hover:underline">
                         #{patient.odooPartnerId} <ExternalLink className="h-3 w-3" />
                       </a>
@@ -1441,15 +1441,15 @@ function toTitleCase(text: string): string {
             )}
 
             {billing.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-16 text-slate-400">
-                <CreditCard className="h-10 w-10 mb-3 text-slate-200" />
+              <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
+                <CreditCard className="h-10 w-10 mb-3 text-muted-foreground" />
                 <p className="font-semibold text-sm">Sin registros financieros</p>
-                <p className="text-xs text-slate-400 mt-1">Usa el botón &quot;Crear Pago&quot; para añadir el primer cobro</p>
+                <p className="text-xs text-muted-foreground mt-1">Usa el botón &quot;Crear Pago&quot; para añadir el primer cobro</p>
               </div>
             ) : (
               <div>
                 {/* Select All Checkbox Header */}
-                <div className="px-5 py-2.5 bg-slate-100/70 border-b border-slate-200/80 flex items-center justify-between text-xs font-semibold text-slate-600">
+                <div className="px-5 py-2.5 bg-muted/70 border-b border-border flex items-center justify-between text-xs font-semibold text-muted-foreground">
                   <div className="flex items-center gap-2">
                     <input
                       type="checkbox"
@@ -1473,10 +1473,10 @@ function toTitleCase(text: string): string {
                     />
                     <span>Seleccionar todos los cobros pendientes de factura</span>
                   </div>
-                  <span className="text-[11px] text-slate-400 font-normal">Los cobros ya facturados no se pueden volver a seleccionar</span>
+                  <span className="text-[11px] text-muted-foreground font-normal">Los cobros ya facturados no se pueden volver a seleccionar</span>
                 </div>
 
-                <div className="divide-y divide-slate-100">
+                <div className="divide-y divide-border">
                   {billing.map((b) => {
                     const monthDate = new Date(b.billing_month);
                     const monthLabel = monthDate.toLocaleDateString("es-ES", { month: "long", year: "numeric" });
@@ -1488,7 +1488,7 @@ function toTitleCase(text: string): string {
                       <div
                         key={b.id}
                         className={`px-5 py-3.5 flex items-center justify-between transition-colors ${
-                          isSelected ? "bg-violet-50/50" : isFacturado ? "bg-slate-50/40" : "hover:bg-slate-50"
+                          isSelected ? "bg-violet-50/50" : isFacturado ? "bg-muted/40" : "hover:bg-muted"
                         }`}
                       >
                         <div className="flex items-center gap-3">
@@ -1509,26 +1509,26 @@ function toTitleCase(text: string): string {
 
                           <div>
                             <div className="flex items-center gap-2">
-                              <p className="font-bold text-slate-900 text-sm capitalize">{b.appointment_reason}</p>
+                              <p className="font-bold text-foreground text-sm capitalize">{b.appointment_reason}</p>
                               {isFacturado ? (
                                 <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full font-bold bg-violet-100 text-violet-800 border border-violet-200">
                                   <Receipt className="h-3 w-3 text-violet-600" /> Facturada ({invoiceRef})
                                 </span>
                               ) : (
-                                <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full font-bold bg-amber-50 text-amber-800 border border-amber-200">
+                                <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full font-bold bg-warning/10 text-warning border border-warning/30">
                                   Por Facturar
                                 </span>
                               )}
                             </div>
 
-                            <p className="text-xs text-slate-500 mt-0.5">
+                            <p className="text-xs text-muted-foreground mt-0.5">
                               {monthLabel} {b.payment_method && `· ${b.payment_method}`}
                             </p>
                           </div>
                         </div>
 
                         <div className="text-right flex flex-col items-end gap-1">
-                          <p className="font-black text-slate-900 text-sm">{b.custom_price.toFixed(2)} €</p>
+                          <p className="font-black text-foreground text-sm">{b.custom_price.toFixed(2)} €</p>
                           <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold border ${getStatusBadge(b.status)}`}>
                             {b.status}
                           </span>
@@ -1545,34 +1545,34 @@ function toTitleCase(text: string): string {
         {/* RECORDATORIOS */}
         {activeTab === "recordatorios" && (
           <div className="p-0">
-            <div className="flex items-center justify-between px-5 py-3 border-b border-slate-50">
-              <p className="text-xs text-slate-500 font-medium">Recordatorios por Email, WhatsApp y SMS</p>
+            <div className="flex items-center justify-between px-5 py-3 border-b border-border/60">
+              <p className="text-xs text-muted-foreground font-medium">Recordatorios por Email, WhatsApp y SMS</p>
               <Button
                 size="sm"
                 onClick={() => setNewReminderModalOpen(true)}
-                className="h-8 gap-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md shadow-emerald-600/20 cursor-pointer"
+                className="h-8 gap-1.5 rounded-xl bg-success hover:bg-success/90 text-white text-xs font-bold shadow-md shadow-success/20 cursor-pointer"
               >
                 <Plus className="h-3.5 w-3.5" /> Nuevo Recordatorio
               </Button>
             </div>
             {reminders.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-16 text-slate-400 space-y-3">
-                <Bell className="h-10 w-10 text-slate-200" />
+              <div className="flex flex-col items-center justify-center py-16 text-muted-foreground space-y-3">
+                <Bell className="h-10 w-10 text-muted-foreground" />
                 <div className="text-center">
-                  <p className="font-bold text-slate-700 text-sm">Sin recordatorios programados</p>
-                  <p className="text-xs text-slate-400 mt-0.5">Programa notificaciones por WhatsApp o Email para el paciente</p>
+                  <p className="font-bold text-foreground text-sm">Sin recordatorios programados</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">Programa notificaciones por WhatsApp o Email para el paciente</p>
                 </div>
                 <Button
                   size="sm"
                   variant="outline"
                   onClick={() => setNewReminderModalOpen(true)}
-                  className="rounded-xl text-xs font-bold gap-1.5 text-emerald-700 border-emerald-200 bg-emerald-50 hover:bg-emerald-100"
+                  className="rounded-xl text-xs font-bold gap-1.5 text-success border-success/30 bg-success/10 hover:bg-success/20"
                 >
                   <Plus className="h-3.5 w-3.5" /> Crear Primer Recordatorio
                 </Button>
               </div>
             ) : (
-              <div className="divide-y divide-slate-50">
+              <div className="divide-y divide-border">
                 {reminders.map((r) => {
                   const d = formatDate(r.scheduled_at);
                   const isWhatsapp = r.channel === "whatsapp";
@@ -1580,28 +1580,28 @@ function toTitleCase(text: string): string {
                   const isPending = r.status === "pendiente";
 
                   return (
-                    <div key={r.id} className="px-5 py-4 flex items-center justify-between hover:bg-slate-50 transition-colors">
+                    <div key={r.id} className="px-5 py-4 flex items-center justify-between hover:bg-muted transition-colors">
                       <div className="flex items-start gap-3">
                         <div className={`h-10 w-10 rounded-xl flex items-center justify-center shrink-0 border ${
-                          isWhatsapp ? "bg-emerald-50 border-emerald-100 text-emerald-600" :
-                          isEmail ? "bg-blue-50 border-blue-100 text-blue-600" :
+                          isWhatsapp ? "bg-success/10 border-success/20 text-success" :
+                          isEmail ? "bg-info/10 border-info/20 text-info" :
                           "bg-purple-50 border-purple-100 text-purple-600"
                         }`}>
                           {isWhatsapp ? <MessageSquare className="h-5 w-5" /> : isEmail ? <Mail className="h-5 w-5" /> : <Bell className="h-5 w-5" />}
                         </div>
                         <div>
                           <div className="flex items-center gap-2">
-                            <p className="font-bold text-slate-900 text-sm">{r.subject || REMINDER_TYPE_LABELS[r.reminder_type]}</p>
+                            <p className="font-bold text-foreground text-sm">{r.subject || REMINDER_TYPE_LABELS[r.reminder_type]}</p>
                             <span className={`text-[10px] uppercase font-extrabold px-2 py-0.5 rounded-full ${
-                              isWhatsapp ? "bg-emerald-100 text-emerald-800" :
-                              isEmail ? "bg-blue-100 text-blue-800" :
+                              isWhatsapp ? "bg-success/15 text-success" :
+                              isEmail ? "bg-info/15 text-info" :
                               "bg-purple-100 text-purple-800"
                             }`}>
                               {r.channel}
                             </span>
                           </div>
-                          <p className="text-xs text-slate-500 mt-0.5">Programado para: {d.full}</p>
-                          <p className="text-xs text-slate-600 mt-1 italic bg-slate-50 p-2 rounded-lg border border-slate-100 max-w-lg">
+                          <p className="text-xs text-muted-foreground mt-0.5">Programado para: {d.full}</p>
+                          <p className="text-xs text-muted-foreground mt-1 italic bg-muted/40 p-2 rounded-lg border border-border/60 max-w-lg">
                             &quot;{r.message}&quot;
                           </p>
                         </div>
@@ -1638,7 +1638,7 @@ function toTitleCase(text: string): string {
                                 setSendingReminderId(null);
                               }
                             }}
-                            className="h-8 px-2.5 text-[11px] font-bold text-emerald-700 bg-emerald-50 border-emerald-200 hover:bg-emerald-100 rounded-xl gap-1"
+                            className="h-8 px-2.5 text-[11px] font-bold text-success bg-success/10 border-success/30 hover:bg-success/20 rounded-xl gap-1"
                           >
                             {sendingReminderId === r.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <SendIcon className="h-3 w-3" />}
                             Enviar Ahora
@@ -1669,13 +1669,13 @@ function toTitleCase(text: string): string {
       )}
 
       {/* ── Documentos y Consentimientos (full width, bottom) ───── */}
-      <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+      <div className="bg-card border border-border rounded-2xl shadow-sm overflow-hidden">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border/60">
           <div className="flex items-center gap-2">
-            <FileText className="h-5 w-5 text-rose-500" />
-            <h2 className="text-base font-bold text-slate-900">Documentos y Consentimientos</h2>
+            <FileText className="h-5 w-5 text-primary" />
+            <h2 className="text-base font-bold text-foreground">Documentos y Consentimientos</h2>
             {documents.length > 0 && (
-              <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-500">{documents.length}</span>
+              <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-muted text-muted-foreground">{documents.length}</span>
             )}
           </div>
         </div>
@@ -1688,17 +1688,17 @@ function toTitleCase(text: string): string {
               {documents.map((doc) => {
                 const d = formatDate(doc.created_at);
                 return (
-                  <div key={doc.id} className="flex items-center gap-3 p-3 rounded-xl border border-slate-100 hover:border-rose-200 hover:bg-rose-50/30 transition-all cursor-pointer group">
-                    <div className="h-10 w-10 rounded-lg bg-slate-100 flex items-center justify-center shrink-0">
-                      <FileText className="h-5 w-5 text-slate-400" />
+                  <div key={doc.id} className="flex items-center gap-3 p-3 rounded-xl border border-border/60 hover:border-primary/30 hover:bg-primary/10 transition-all cursor-pointer group">
+                    <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center shrink-0">
+                      <FileText className="h-5 w-5 text-muted-foreground" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs font-bold text-slate-800 truncate group-hover:text-rose-600">{doc.file_name}</p>
-                      <p className="text-[11px] text-slate-400">{DOC_TYPE_LABELS[doc.document_type] ?? doc.document_type} · {d.full}</p>
+                      <p className="text-xs font-bold text-foreground truncate group-hover:text-primary">{doc.file_name}</p>
+                      <p className="text-[11px] text-muted-foreground">{DOC_TYPE_LABELS[doc.document_type] ?? doc.document_type} · {d.full}</p>
                     </div>
                     {doc.file_url && (
                       <a href={doc.file_url} target="_blank" rel="noopener noreferrer">
-                        <ExternalLink className="h-3.5 w-3.5 text-slate-300 group-hover:text-rose-500" />
+                        <ExternalLink className="h-3.5 w-3.5 text-muted-foreground group-hover:text-primary" />
                       </a>
                     )}
                   </div>
@@ -1726,11 +1726,11 @@ function toTitleCase(text: string): string {
 
       {/* Edit Treatment Plan Modal */}
       {editingPlanModalOpen && (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4 border border-slate-100">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                <BadgeCheck className="h-4 w-4 text-emerald-600" /> {editingPlanId ? "Editar Plan de Tratamiento" : "Nuevo Plan de Tratamiento"}
+        <div className="fixed inset-0 bg-sidebar-accent/50 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-card rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4 border border-border/60">
+            <div className="flex items-center justify-between pb-3 border-b border-border/60">
+              <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
+                <BadgeCheck className="h-4 w-4 text-success" /> {editingPlanId ? "Editar Plan de Tratamiento" : "Nuevo Plan de Tratamiento"}
               </h3>
               <Button variant="ghost" size="sm" onClick={() => setEditingPlanModalOpen(false)} className="h-7 w-7 p-0 rounded-full">
                 <X className="h-4 w-4" />
@@ -1740,11 +1740,11 @@ function toTitleCase(text: string): string {
             <div className="space-y-3 text-xs">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="font-semibold text-slate-700 block mb-1">Tipo de Tratamiento*</label>
+                  <label className="font-semibold text-foreground block mb-1">Tipo de Tratamiento*</label>
                   <select
                     value={planForm.treatment_type}
                     onChange={(e) => setPlanForm({ ...planForm, treatment_type: e.target.value })}
-                    className="w-full h-9 px-3 border border-slate-200 rounded-xl text-sm font-medium bg-white"
+                    className="w-full h-9 px-3 border border-border rounded-xl text-sm font-medium bg-card"
                   >
                     <option value="Ortodoncia">Ortodoncia</option>
                     <option value="Miofuncional">Miofuncional</option>
@@ -1752,36 +1752,36 @@ function toTitleCase(text: string): string {
                   </select>
                 </div>
                 <div>
-                  <label className="font-semibold text-slate-700 block mb-1">Precio Mensualidad Control (€)*</label>
+                  <label className="font-semibold text-foreground block mb-1">Precio Mensualidad Control (€)*</label>
                   <input
                     type="number"
                     value={planForm.monthly_fee}
                     onChange={(e) => setPlanForm({ ...planForm, monthly_fee: e.target.value })}
-                    className="w-full h-9 px-3 border border-slate-200 rounded-xl text-sm font-bold text-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    className="w-full h-9 px-3 border border-border rounded-xl text-sm font-bold text-success focus:outline-none focus:ring-2 focus:ring-success/60"
                     placeholder="Ej. 60"
                   />
-                  <p className="text-[10px] text-slate-400 mt-0.5 leading-tight">Este precio se aplicará prioritariamente a todas sus citas de tipo &quot;Control&quot;.</p>
+                  <p className="text-[10px] text-muted-foreground mt-0.5 leading-tight">Este precio se aplicará prioritariamente a todas sus citas de tipo &quot;Control&quot;.</p>
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="font-semibold text-slate-700 block mb-1">Pago Inicial / Entrada (€)</label>
+                  <label className="font-semibold text-foreground block mb-1">Pago Inicial / Entrada (€)</label>
                   <input
                     type="number"
                     value={planForm.initial_payment}
                     onChange={(e) => setPlanForm({ ...planForm, initial_payment: e.target.value })}
-                    className="w-full h-9 px-3 border border-slate-200 rounded-xl text-sm font-medium"
+                    className="w-full h-9 px-3 border border-border rounded-xl text-sm font-medium"
                     placeholder="Ej. 300"
                   />
                 </div>
                 <div>
-                  <label className="font-semibold text-slate-700 block mb-1">Pago / Cuota Final (€)</label>
+                  <label className="font-semibold text-foreground block mb-1">Pago / Cuota Final (€)</label>
                   <input
                     type="number"
                     value={planForm.final_payment}
                     onChange={(e) => setPlanForm({ ...planForm, final_payment: e.target.value })}
-                    className="w-full h-9 px-3 border border-slate-200 rounded-xl text-sm font-medium"
+                    className="w-full h-9 px-3 border border-border rounded-xl text-sm font-medium"
                     placeholder="Ej. 150"
                   />
                 </div>
@@ -1789,47 +1789,47 @@ function toTitleCase(text: string): string {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="font-semibold text-slate-700 block mb-1">Número de Mensualidades</label>
+                  <label className="font-semibold text-foreground block mb-1">Número de Mensualidades</label>
                   <input
                     type="number"
                     value={planForm.total_installments}
                     onChange={(e) => setPlanForm({ ...planForm, total_installments: e.target.value })}
-                    className="w-full h-9 px-3 border border-slate-200 rounded-xl text-sm font-medium"
+                    className="w-full h-9 px-3 border border-border rounded-xl text-sm font-medium"
                     placeholder="Ej. 18"
                   />
                 </div>
                 <div>
-                  <label className="font-semibold text-slate-700 block mb-1">Costo Total Plan (€)</label>
+                  <label className="font-semibold text-foreground block mb-1">Costo Total Plan (€)</label>
                   <input
                     type="number"
                     value={planForm.total_cost}
                     onChange={(e) => setPlanForm({ ...planForm, total_cost: e.target.value })}
-                    className="w-full h-9 px-3 border border-slate-200 rounded-xl text-sm font-medium"
+                    className="w-full h-9 px-3 border border-border rounded-xl text-sm font-medium"
                     placeholder="Ej. 1080"
                   />
                 </div>
               </div>
 
-              <div className="border-t border-slate-100 pt-3">
-                <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Datos Históricos (Volcado)</h4>
+              <div className="border-t border-border/60 pt-3">
+                <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">Datos Históricos (Volcado)</h4>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="font-semibold text-slate-700 block mb-1">Mensualidades Ya Pagadas</label>
+                    <label className="font-semibold text-foreground block mb-1">Mensualidades Ya Pagadas</label>
                     <input
                       type="number"
                       value={planForm.paid_installments_count}
                       onChange={(e) => setPlanForm({ ...planForm, paid_installments_count: e.target.value })}
-                      className="w-full h-9 px-3 border border-slate-200 rounded-xl text-sm font-medium"
+                      className="w-full h-9 px-3 border border-border rounded-xl text-sm font-medium"
                       placeholder="Ej. 5"
                     />
                   </div>
                   <div>
-                    <label className="font-semibold text-slate-700 block mb-1">Monto Ya Pagado (€)</label>
+                    <label className="font-semibold text-foreground block mb-1">Monto Ya Pagado (€)</label>
                     <input
                       type="number"
                       value={planForm.already_paid_amount}
                       onChange={(e) => setPlanForm({ ...planForm, already_paid_amount: e.target.value })}
-                      className="w-full h-9 px-3 border border-slate-200 rounded-xl text-sm font-medium"
+                      className="w-full h-9 px-3 border border-border rounded-xl text-sm font-medium"
                       placeholder="Ej. 300"
                     />
                   </div>
@@ -1837,11 +1837,11 @@ function toTitleCase(text: string): string {
               </div>
 
               <div>
-                <label className="font-semibold text-slate-700 block mb-1">Estado del Plan</label>
+                <label className="font-semibold text-foreground block mb-1">Estado del Plan</label>
                 <select
                   value={planForm.status}
                   onChange={(e) => setPlanForm({ ...planForm, status: e.target.value })}
-                  className="w-full h-9 px-3 border border-slate-200 rounded-xl text-sm font-medium bg-white"
+                  className="w-full h-9 px-3 border border-border rounded-xl text-sm font-medium bg-card"
                 >
                   <option value="activo">Activo</option>
                   <option value="completado">Completado</option>
@@ -1850,7 +1850,7 @@ function toTitleCase(text: string): string {
               </div>
             </div>
 
-            <div className="flex items-center justify-between pt-3 border-t border-slate-100">
+            <div className="flex items-center justify-between pt-3 border-t border-border/60">
               {editingPlanId ? (
                 <Button
                   type="button"
@@ -1867,7 +1867,7 @@ function toTitleCase(text: string): string {
                       alert(`Error: ${err.message}`);
                     }
                   }}
-                  className="text-rose-600 hover:bg-rose-50 hover:text-rose-700 text-xs font-bold rounded-xl gap-1 cursor-pointer"
+                  className="text-primary hover:bg-primary/10 hover:text-primary text-xs font-bold rounded-xl gap-1 cursor-pointer"
                 >
                   <Trash2 className="h-3.5 w-3.5" /> Eliminar Plan
                 </Button>
@@ -1911,7 +1911,7 @@ function toTitleCase(text: string): string {
                     alert(`Error guardando el plan: ${err.message}`);
                   }
                 }}
-                className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl"
+                className="bg-success hover:bg-success/90 text-white font-bold rounded-xl"
               >
                 <Save className="h-4 w-4 mr-1" /> Guardar Plan
               </Button>

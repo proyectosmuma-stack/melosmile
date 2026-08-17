@@ -5,7 +5,7 @@
 ### Paso 1: Comprobación de Estado (Health Check)
 Ejecutar este comando exacto en bash:
 ```bash
-curl -s -o /dev/null -w "%{http_code}" -L http://localhost:3028 && curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:54321/rest/v1/
+curl -s -o /dev/null -w "%{http_code}" -L http://localhost:3028 && curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:54321/auth/v1/health
 ```
 
 ### Paso 2: Evaluación
@@ -16,7 +16,7 @@ curl -s -o /dev/null -w "%{http_code}" -L http://localhost:3028 && curl -s -o /d
   3. **DETENER EJECUCIÓN**. No ejecutar ningún otro comando de consola.
 
 - **Si Supabase Local no responde HTTP 200**:
-  - Ejecutar: `npm --prefix frontend run db:sync`
+  - Ejecutar: `supabase start`
 
 - **Si el servidor local (3028) no responde HTTP 200**:
   - Ejecutar: `npm --prefix frontend run dev`

@@ -39,7 +39,7 @@ Para cada reporte pendiente, analizar:
 4. **Respuesta del Backend / API:** ¿El endpoint HTTP devolvió los datos requeridos o sanitizó los términos de búsqueda correctamente?
 
 ### Paso 3: Aplicar la Solución Técnica
-- Si el fallo fue de enrutamiento o prompt: Actualizar la instrucción del agente o subir el modelo LLM en n8n (ej: a `google/gemini-2.5-pro`).
+- Si el fallo fue de enrutamiento o prompt: Actualizar la instrucción del agente o subir el modelo LLM en n8n (ej: a `google/gemini-3.1-pro-preview` o `google/gemini-3.6-flash` — los modelos Gemini 2.5 quedaron deprecados en la API en agosto 2026).
 - Si el fallo fue por falta de herramientas: Añadir el nodo/tool faltante al flujo de n8n.
 - Si el fallo fue de API/código Next.js: Corregir el archivo en `frontend/src/app/api/...`.
 

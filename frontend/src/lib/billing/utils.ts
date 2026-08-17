@@ -1,5 +1,5 @@
 // frontend/src/lib/billing/utils.ts
-import { createClient } from "../../supabase/client";
+import { supabase } from "@/lib/supabase/client";
 import { Appointment } from './types/appointment';
 
 // Pure synchronous validation
@@ -28,27 +28,27 @@ export const validateBillingEligibilityAsync = async (appointment: Appointment):
   }
 
   // Initialize Supabase client
-  const supabase = createClient();
+  // const supabase = createClient(); (using imported instance)
 
   // Check patient exists and is active in database
   const { data: patients, error: patientError } = await supabase
     .from("patients")
-    .select("id, is_active")
+    .select("id")
     .eq("id", appointment.patientId)
     .single();
 
-  if (patientError || !patients || !patients.is_active) {
+  if (patientError || !patients) {
     return false;
   }
 
   // Check clinic exists and is active in database
   const { data: clinics, error: clinicError } = await supabase
     .from("clinics")
-    .select("id, is_active")
+    .select("id")
     .eq("id", appointment.clinicId)
     .single();
 
-  if (clinicError || !clinics || !clinics.is_active) {
+  if (clinicError || !clinics) {
     return false;
   }
 

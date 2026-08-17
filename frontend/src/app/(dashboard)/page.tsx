@@ -105,22 +105,22 @@ export default function DashboardPage() {
       {/* Page Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">
             Agenda Principal
           </h1>
-          <p className="text-xs text-slate-500 mt-0.5">
+          <p className="text-xs text-muted-foreground mt-0.5">
             Gestiona citas, tratamientos y facturación integrada en lenguaje natural.
           </p>
         </div>
 
         {/* Quick Clinic Filter Pills */}
-        <div className="flex items-center gap-1.5 p-1 bg-slate-200/60 rounded-xl w-fit flex-wrap">
+        <div className="flex items-center gap-1.5 p-1 bg-muted rounded-xl w-fit flex-wrap">
           <button
             onClick={() => setSelectedClinicId("all")}
             className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all ${
               selectedClinicId === "all"
-                ? "bg-white text-slate-900 shadow-sm"
-                : "text-slate-600 hover:text-slate-900"
+                ? "bg-card text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
             }`}
           >
             Todas las Sedes
@@ -131,8 +131,8 @@ export default function DashboardPage() {
               onClick={() => setSelectedClinicId(clinic.id)}
               className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all ${
                 selectedClinicId === clinic.id
-                  ? "bg-white text-slate-900 shadow-sm"
-                  : "text-slate-600 hover:text-slate-900"
+                  ? "bg-card text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
               }`}
             >
               {clinic.name}
@@ -150,49 +150,49 @@ export default function DashboardPage() {
               window.dispatchEvent(new CustomEvent("switch-to-today-day-view"));
             }
           }}
-          className="rounded-xl border border-slate-200/80 bg-white shadow-xs hover:shadow-md hover:border-rose-300 transition-all cursor-pointer group"
+          className="rounded-xl border border-border/80 bg-card shadow-xs hover:shadow-md hover:border-primary/40 transition-all cursor-pointer group"
           title="Haz clic para ver las citas de hoy en vista diaria"
         >
           <CardContent className="p-3.5 flex items-center gap-3">
-            <div className="h-9 w-9 rounded-lg bg-rose-50 text-rose-500 flex items-center justify-center font-bold shrink-0 group-hover:bg-rose-500 group-hover:text-white transition-colors">
+            <div className="h-9 w-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-bold shrink-0 group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
               <CalendarIcon className="h-4 w-4" />
             </div>
             <div>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Citas para Hoy</p>
-              <h3 className="text-lg font-bold text-slate-900 leading-tight flex items-center gap-2">
-                {loading ? <Loader2 className="h-4 w-4 animate-spin text-slate-400" /> : `${stats.appointmentsToday} Citas`}
+              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Citas para Hoy</p>
+              <h3 className="text-lg font-bold text-foreground leading-tight flex items-center gap-2">
+                {loading ? <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" /> : `${stats.appointmentsToday} Citas`}
               </h3>
-              <p className="text-[11px] text-rose-600 font-semibold mt-0.5 group-hover:underline">Ver vista del día →</p>
+              <p className="text-[11px] text-primary font-semibold mt-0.5 group-hover:underline">Ver vista del día →</p>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="rounded-xl border border-slate-200/80 bg-white shadow-xs">
+        <Card className="rounded-xl border border-border/80 bg-card shadow-xs">
           <CardContent className="p-3.5 flex items-center gap-3">
-            <div className="h-9 w-9 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold shrink-0">
+            <div className="h-9 w-9 rounded-lg bg-success/10 text-success flex items-center justify-center font-bold shrink-0">
               <TrendingUp className="h-4 w-4" />
             </div>
             <div>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Facturado Este Mes</p>
-              <h3 className="text-lg font-bold text-slate-900 leading-tight flex items-center gap-2">
-                {loading ? <Loader2 className="h-4 w-4 animate-spin text-slate-400" /> : `${stats.billedThisMonth.toLocaleString('es-ES')} €`}
+              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Facturado Este Mes</p>
+              <h3 className="text-lg font-bold text-foreground leading-tight flex items-center gap-2">
+                {loading ? <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" /> : `${stats.billedThisMonth.toLocaleString('es-ES')} €`}
               </h3>
-              <p className="text-[11px] text-emerald-600 font-semibold mt-0.5">Facturación activa</p>
+              <p className="text-[11px] text-success font-semibold mt-0.5">Facturación activa</p>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="rounded-xl border border-slate-200/80 bg-white shadow-xs">
+        <Card className="rounded-xl border border-border/80 bg-card shadow-xs">
           <CardContent className="p-3.5 flex items-center gap-3">
-            <div className="h-9 w-9 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center font-bold shrink-0">
+            <div className="h-9 w-9 rounded-lg bg-info/10 text-info flex items-center justify-center font-bold shrink-0">
               <Users className="h-4 w-4" />
             </div>
             <div>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Pacientes Atendidos</p>
-              <h3 className="text-lg font-bold text-slate-900 leading-tight flex items-center gap-2">
-                {loading ? <Loader2 className="h-4 w-4 animate-spin text-slate-400" /> : `${stats.patientsThisMonth} Pacientes`}
+              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Pacientes Atendidos</p>
+              <h3 className="text-lg font-bold text-foreground leading-tight flex items-center gap-2">
+                {loading ? <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" /> : `${stats.patientsThisMonth} Pacientes`}
               </h3>
-              <p className="text-[11px] text-slate-500 font-medium mt-0.5">En el mes actual</p>
+              <p className="text-[11px] text-muted-foreground font-medium mt-0.5">En el mes actual</p>
             </div>
           </CardContent>
         </Card>

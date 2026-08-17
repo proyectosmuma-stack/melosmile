@@ -102,5 +102,15 @@
         ]
       }
     ]
-  }
+  },
+  "customCommands": [
+    {
+      "name": "cargar-estado",
+      "prompt": "Lee detalladamente el archivo .opencode/ESTADO_PROYECTO.md. Basándote en la sección de \"Próximos Pasos\" y \"Objetivo Actual\", indícame exactamente en qué fase nos quedamos y pregúntame cómo deseas proceder."
+    },
+    {
+      "name": "inicia-sesion",
+      "prompt": "Quiero iniciar la sesión de trabajo. Por favor, usa tu herramienta bash para levantar los servicios locales si están apagados (por ejemplo docker, ollama) y confírmame que todo está listo para trabajar. Si no sabes el comando exacto, asume que Ollama y Supabase ya están corriendo en background."
+    }
+  ]
 }

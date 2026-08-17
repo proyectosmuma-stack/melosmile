@@ -41,9 +41,9 @@ export function ClinicMultiSelect({
   };
 
   return (
-    <div className="space-y-1.5 pt-2 border-t border-slate-100">
-      <Label className="text-xs font-semibold text-slate-700 block">{label}</Label>
-      {description && <p className="text-xs text-slate-500 mb-2">{description}</p>}
+    <div className="space-y-1.5 pt-2 border-t border-border/60">
+      <Label className="text-xs font-semibold text-foreground block">{label}</Label>
+      {description && <p className="text-xs text-muted-foreground mb-2">{description}</p>}
 
       <div className="flex flex-wrap gap-2">
         {allClinics.map((clinic) => {
@@ -56,7 +56,7 @@ export function ClinicMultiSelect({
               className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-semibold cursor-pointer transition-all ${
                 selected
                   ? "bg-blue-50 border-blue-300 text-blue-700 shadow-sm"
-                  : "bg-slate-50 border-slate-200 text-slate-500 hover:border-blue-200"
+                  : "bg-muted/40 border-border text-muted-foreground hover:border-blue-200"
               }`}
               onClick={() => toggleClinic(clinic.id)}
             >
@@ -77,7 +77,7 @@ export function ClinicMultiSelect({
                   className={`ml-1 text-[10px] px-1.5 py-0.5 rounded-lg font-bold border transition-all ${
                     isPrimary
                       ? "bg-blue-600 text-white border-blue-600"
-                      : "bg-white text-blue-400 border-blue-200 hover:bg-blue-100"
+                      : "bg-card text-blue-400 border-blue-200 hover:bg-blue-100"
                   }`}
                 >
                   {isPrimary ? "Principal ✓" : "Principal"}

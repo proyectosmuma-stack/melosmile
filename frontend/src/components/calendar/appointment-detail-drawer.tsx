@@ -76,7 +76,7 @@ export function AppointmentDetailDrawer({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-md rounded-3xl p-6 bg-[#f8fafc] border border-slate-200/90 shadow-2xl text-slate-800">
+      <DialogContent className="sm:max-w-md rounded-3xl p-6 bg-background border border-border/90 shadow-2xl text-foreground">
         {/* Top Header Action Buttons (Google Calendar Style - Single Pencil, Trash, Mail) */}
         <div className="flex items-center justify-end gap-1 pr-6 mb-2">
           <button
@@ -84,7 +84,7 @@ export function AppointmentDetailDrawer({
               onClose();
               router.push(`/appointments/${event.id}`);
             }}
-            className="p-2 text-slate-600 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors cursor-pointer"
+            className="p-2 text-muted-foreground hover:text-info hover:bg-info/10 rounded-full transition-colors cursor-pointer"
             title="Modificar Cita"
           >
             <Pencil className="h-4 w-4" />
@@ -92,7 +92,7 @@ export function AppointmentDetailDrawer({
 
           <button
             onClick={() => setShowDeleteConfirm(true)}
-            className="p-2 text-slate-600 hover:text-rose-600 hover:bg-rose-50 rounded-full transition-colors cursor-pointer"
+            className="p-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-full transition-colors cursor-pointer"
             title="Eliminar cita"
           >
             <Trash2 className="h-4 w-4" />
@@ -100,7 +100,7 @@ export function AppointmentDetailDrawer({
 
           <button
             onClick={() => alert(`Enviando recordatorio por correo para ${event.patient}`)}
-            className="p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-200/70 rounded-full transition-colors cursor-pointer"
+            className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-full transition-colors cursor-pointer"
             title="Enviar correo"
           >
             <Mail className="h-4 w-4" />
@@ -109,24 +109,24 @@ export function AppointmentDetailDrawer({
 
         {/* Delete Confirmation Alert Banner (Inline) */}
         {showDeleteConfirm && (
-          <div className="mb-4 p-3.5 bg-rose-50 border border-rose-200 rounded-2xl flex flex-col gap-2.5 animate-in fade-in slide-in-from-top-2 duration-200">
-            <div className="flex items-center gap-2 text-rose-800 text-xs font-bold">
-              <AlertTriangle className="h-4 w-4 text-rose-600 shrink-0" />
+          <div className="mb-4 p-3.5 bg-destructive/10 border border-destructive/30 rounded-2xl flex flex-col gap-2.5 animate-in fade-in slide-in-from-top-2 duration-200">
+            <div className="flex items-center gap-2 text-destructive text-xs font-bold">
+              <AlertTriangle className="h-4 w-4 text-destructive shrink-0" />
               <span>¿Eliminar la cita de {event.patient}?</span>
             </div>
-            <p className="text-[11px] text-rose-700">Esta acción es permanente y eliminará la cita de la agenda.</p>
+            <p className="text-[11px] text-destructive/80">Esta acción es permanente y eliminará la cita de la agenda.</p>
             <div className="flex items-center justify-end gap-2 pt-1">
               <button
                 onClick={() => setShowDeleteConfirm(false)}
                 disabled={isDeleting}
-                className="px-3 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-200/60 rounded-lg transition-colors cursor-pointer"
+                className="px-3 py-1 text-xs font-semibold text-muted-foreground hover:bg-muted rounded-lg transition-colors cursor-pointer"
               >
                 Cancelar
               </button>
               <button
                 onClick={handleDelete}
                 disabled={isDeleting}
-                className="px-3.5 py-1 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-lg shadow-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+                className="px-3.5 py-1 text-xs font-bold text-destructive-foreground bg-destructive hover:bg-destructive/90 rounded-lg shadow-xs flex items-center gap-1.5 transition-colors cursor-pointer"
               >
                 {isDeleting && <Loader2 className="h-3 w-3 animate-spin" />}
                 Confirmar y Eliminar
@@ -139,29 +139,29 @@ export function AppointmentDetailDrawer({
         <div className="flex items-start gap-3 mt-1">
           <span className={cn("w-3.5 h-3.5 mt-1.5 rounded-sm shrink-0 shadow-xs", clinic.color)} />
           <div>
-            <h3 className="text-xl font-medium text-slate-900 leading-snug">{event.patient}</h3>
-            <p className="text-xs sm:text-sm text-slate-600 font-normal mt-0.5 capitalize">
+            <h3 className="text-xl font-medium text-foreground leading-snug">{event.patient}</h3>
+            <p className="text-xs sm:text-sm text-muted-foreground font-normal mt-0.5 capitalize">
               {formattedDateStr} · {event.startTime} – {endTimeStr}
             </p>
           </div>
         </div>
 
         {/* Google Calendar Details List */}
-        <div className="space-y-3.5 pt-4 mt-4 border-t border-slate-200/60 text-xs text-slate-700">
+        <div className="space-y-3.5 pt-4 mt-4 border-t border-border/60 text-xs text-muted-foreground">
           {/* Notification Row */}
           <div className="flex items-center gap-3">
-            <Bell className="h-4 w-4 text-slate-500 shrink-0" />
+            <Bell className="h-4 w-4 text-muted-foreground shrink-0" />
             <div>
-              <p className="font-medium text-slate-800">10 minutos antes, en un correo</p>
-              <p className="text-slate-500 text-[11px]">Paciente avisado por WhatsApp</p>
+              <p className="font-medium text-foreground">10 minutos antes, en un correo</p>
+              <p className="text-muted-foreground text-[11px]">Paciente avisado por WhatsApp</p>
             </div>
           </div>
 
           {/* Organizer / Patient Row */}
           <div className="flex items-center gap-3">
-            <CalendarIcon className="h-4 w-4 text-slate-500 shrink-0" />
+            <CalendarIcon className="h-4 w-4 text-muted-foreground shrink-0" />
             <div className="flex items-center gap-2">
-              <span className="font-semibold text-slate-800">{event.patient}</span>
+              <span className="font-semibold text-foreground">{event.patient}</span>
               {(event.patientHistoriaId || event.patientId) && (
                 <button
                   onClick={() => {
@@ -169,7 +169,7 @@ export function AppointmentDetailDrawer({
                     const ref = event.patientHistoriaId || event.patientId;
                     router.push(`/patients/${ref}`);
                   }}
-                  className="text-[11px] font-bold text-blue-600 hover:underline cursor-pointer"
+                  className="text-[11px] font-bold text-info hover:underline cursor-pointer"
                 >
                   (Ver Expediente)
                 </button>
@@ -179,19 +179,19 @@ export function AppointmentDetailDrawer({
 
           {/* Clinic & Doctor Row */}
           <div className="flex items-center gap-3">
-            <Building2 className="h-4 w-4 text-slate-500 shrink-0" />
+            <Building2 className="h-4 w-4 text-muted-foreground shrink-0" />
             <div>
-              <p className="font-medium text-slate-800">{clinic.name}</p>
-              <p className="text-slate-500 text-[11px]">Doctora: {event.doctor}</p>
+              <p className="font-medium text-foreground">{clinic.name}</p>
+              <p className="text-muted-foreground text-[11px]">Doctora: {event.doctor}</p>
             </div>
           </div>
 
           {/* Treatment / Reason Row */}
           <div className="flex items-center gap-3">
-            <Stethoscope className="h-4 w-4 text-slate-500 shrink-0" />
+            <Stethoscope className="h-4 w-4 text-muted-foreground shrink-0" />
             <div>
-              <p className="font-medium text-slate-800">{event.title}</p>
-              <span className="inline-block mt-0.5 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
+              <p className="font-medium text-foreground">{event.title}</p>
+              <span className="inline-block mt-0.5 px-2 py-0.5 rounded-full text-[10px] font-bold bg-success/10 text-success">
                 Estado: Confirmada
               </span>
             </div>
@@ -199,7 +199,7 @@ export function AppointmentDetailDrawer({
         </div>
 
         {/* Footer Actions - Single Clean Action */}
-        <div className="mt-6 pt-3 border-t border-slate-200/60 flex items-center justify-between">
+        <div className="mt-6 pt-3 border-t border-border/60 flex items-center justify-between">
           <Button
             variant="outline"
             onClick={() => {
@@ -211,9 +211,9 @@ export function AppointmentDetailDrawer({
                 alert("No se encontró la ficha del paciente para esta cita.");
               }
             }}
-            className="text-xs rounded-xl border-slate-300 bg-white cursor-pointer"
+            className="text-xs rounded-xl border-border bg-card cursor-pointer"
           >
-            <User className="h-3.5 w-3.5 mr-1.5 text-slate-500" />
+            <User className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
             Ver Paciente
           </Button>
 
@@ -222,7 +222,7 @@ export function AppointmentDetailDrawer({
               onClose();
               router.push(`/appointments/${event.id}`);
             }}
-            className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-xl px-4 shadow-sm cursor-pointer"
+            className="bg-info hover:bg-info/90 text-info-foreground text-xs font-semibold rounded-xl px-4 shadow-sm cursor-pointer"
           >
             <Pencil className="h-3.5 w-3.5 mr-1.5" />
             Modificar Cita

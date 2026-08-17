@@ -21,11 +21,11 @@ function Field({ label, name, value, onChange, type = "text", placeholder = "", 
 }) {
   return (
     <div className="space-y-1.5">
-      <label className="text-xs font-bold text-slate-600 uppercase tracking-wide">{label}{required && <span className="text-rose-500 ml-1">*</span>}</label>
+      <label className="text-xs font-bold text-muted-foreground uppercase tracking-wide">{label}{required && <span className="text-primary ml-1">*</span>}</label>
       <input
         type={type} name={name} value={value} onChange={onChange} required={required}
         placeholder={placeholder}
-        className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-900 font-medium placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-rose-300 focus:border-rose-400 transition-all"
+        className="w-full rounded-xl border border-border bg-muted px-3.5 py-2.5 text-sm text-foreground font-medium placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/60 focus:border-primary/40 transition-all"
       />
     </div>
   );
@@ -37,10 +37,10 @@ function TextArea({ label, name, value, onChange, placeholder = "", rows = 3 }: 
 }) {
   return (
     <div className="space-y-1.5">
-      <label className="text-xs font-bold text-slate-600 uppercase tracking-wide">{label}</label>
+      <label className="text-xs font-bold text-muted-foreground uppercase tracking-wide">{label}</label>
       <textarea
         name={name} value={value} onChange={onChange} rows={rows} placeholder={placeholder}
-        className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-900 font-medium placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-rose-300 focus:border-rose-400 transition-all resize-none"
+        className="w-full rounded-xl border border-border bg-muted px-3.5 py-2.5 text-sm text-foreground font-medium placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/60 focus:border-primary/40 transition-all resize-none"
       />
     </div>
   );
@@ -291,8 +291,8 @@ export default function EditPatientPage({ params }: { params: Promise<{ id: stri
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <Loader2 className="h-8 w-8 animate-spin text-rose-500" />
-        <span className="ml-3 text-slate-600 font-medium">Cargando datos del paciente...</span>
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <span className="ml-3 text-muted-foreground font-medium">Cargando datos del paciente...</span>
       </div>
     );
   }
@@ -301,19 +301,19 @@ export default function EditPatientPage({ params }: { params: Promise<{ id: stri
     <div className="flex flex-col gap-6 max-w-[900px] mx-auto p-4 md:p-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <Link href={`/patients/${targetId}`} className="inline-flex items-center gap-2 text-xs font-bold text-slate-500 hover:text-rose-600 transition-colors">
+        <Link href={`/patients/${targetId}`} className="inline-flex items-center gap-2 text-xs font-bold text-muted-foreground hover:text-primary transition-colors">
           <ArrowLeft className="h-4 w-4" /> Volver a la ficha
         </Link>
         <div className="flex items-center gap-3">
           {success && (
-            <span className="text-xs font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-xl flex items-center gap-1.5">
+            <span className="text-xs font-bold text-success bg-success/10 border border-success/30 px-3 py-1.5 rounded-xl flex items-center gap-1.5">
               <BadgeCheck className="h-4 w-4" /> Guardado correctamente
             </span>
           )}
           <Button
             onClick={handleSave}
             disabled={saving}
-            className="h-9 gap-2 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-semibold text-xs shadow-md shadow-rose-500/20"
+            className="h-9 gap-2 rounded-xl bg-primary hover:bg-primary/90 text-white font-semibold text-xs shadow-md shadow-primary/20"
           >
             {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
             Guardar Cambios
@@ -321,17 +321,17 @@ export default function EditPatientPage({ params }: { params: Promise<{ id: stri
         </div>
       </div>
 
-      <h1 className="text-2xl font-black text-slate-900 flex items-center gap-2">
-        <User className="h-6 w-6 text-rose-500" /> Editar Ficha del Paciente
+      <h1 className="text-2xl font-black text-foreground flex items-center gap-2">
+        <User className="h-6 w-6 text-primary" /> Editar Ficha del Paciente
       </h1>
 
       <form onSubmit={handleSave} className="space-y-6">
 
         {/* ── Datos Personales ─────────────────────────────────── */}
-        <Card className="border-0 shadow-sm rounded-2xl bg-white">
-          <CardHeader className="pb-3 border-b border-slate-100">
-            <CardTitle className="text-sm font-bold text-slate-900 flex items-center gap-2">
-              <User className="h-4 w-4 text-rose-500" /> Datos Personales
+        <Card className="border-0 shadow-sm rounded-2xl bg-card">
+          <CardHeader className="pb-3 border-b border-border/60">
+            <CardTitle className="text-sm font-bold text-foreground flex items-center gap-2">
+              <User className="h-4 w-4 text-primary" /> Datos Personales
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -340,9 +340,9 @@ export default function EditPatientPage({ params }: { params: Promise<{ id: stri
             <Field label="DNI / NIE" name="dni_nie" value={form.dni_nie} onChange={handleChange} placeholder="12345678A" />
             <Field label="Fecha de Nacimiento" name="dob" value={form.dob} onChange={handleChange} type="date" />
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-600 uppercase tracking-wide">Sexo</label>
+              <label className="text-xs font-bold text-muted-foreground uppercase tracking-wide">Sexo</label>
               <select name="gender" value={form.gender} onChange={handleChange}
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-900 font-medium focus:outline-none focus:ring-2 focus:ring-rose-300 transition-all">
+                className="w-full rounded-xl border border-border bg-muted px-3.5 py-2.5 text-sm text-foreground font-medium focus:outline-none focus:ring-2 focus:ring-primary/60 transition-all">
                 <option value="">Seleccionar...</option>
                 <option value="Masculino">Masculino</option>
                 <option value="Femenino">Femenino</option>
@@ -350,9 +350,9 @@ export default function EditPatientPage({ params }: { params: Promise<{ id: stri
               </select>
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-600 uppercase tracking-wide">Estado</label>
+              <label className="text-xs font-bold text-muted-foreground uppercase tracking-wide">Estado</label>
               <select name="in_treatment" value={form.in_treatment} onChange={handleChange}
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5 text-sm text-slate-900 font-medium focus:outline-none focus:ring-2 focus:ring-rose-300 transition-all">
+                className="w-full rounded-xl border border-border bg-muted px-3.5 py-2.5 text-sm text-foreground font-medium focus:outline-none focus:ring-2 focus:ring-primary/60 transition-all">
                 <option value="true">En Tratamiento</option>
                 <option value="false">Alta</option>
               </select>
@@ -361,14 +361,14 @@ export default function EditPatientPage({ params }: { params: Promise<{ id: stri
         </Card>
 
         {/* ── Etiquetas & Categorización ─────────────────────────── */}
-        <Card className="border-0 shadow-sm rounded-2xl bg-white overflow-hidden">
-          <CardHeader className="pb-3 border-b border-slate-100">
-            <CardTitle className="text-sm font-bold text-slate-900 flex items-center gap-2">
-              <TagIcon className="h-4 w-4 text-rose-500" /> Etiquetas & Categorización (Familiar, Henryschein, Referido...)
+        <Card className="border-0 shadow-sm rounded-2xl bg-card overflow-hidden">
+          <CardHeader className="pb-3 border-b border-border/60">
+            <CardTitle className="text-sm font-bold text-foreground flex items-center gap-2">
+              <TagIcon className="h-4 w-4 text-primary" /> Etiquetas & Categorización (Familiar, Henryschein, Referido...)
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-4 space-y-2">
-            <p className="text-xs font-medium text-slate-500">
+            <p className="text-xs font-medium text-muted-foreground">
               Busca o crea etiquetas dinámicas para organizar y filtrar a este paciente (estilo WordPress):
             </p>
             <TagInput selectedTags={selectedTags} onChange={setSelectedTags} />
@@ -376,10 +376,10 @@ export default function EditPatientPage({ params }: { params: Promise<{ id: stri
         </Card>
 
         {/* ── Contacto ─────────────────────────────────────────── */}
-        <Card className="border-0 shadow-sm rounded-2xl bg-white">
-          <CardHeader className="pb-3 border-b border-slate-100">
-            <CardTitle className="text-sm font-bold text-slate-900 flex items-center gap-2">
-              <Phone className="h-4 w-4 text-rose-500" /> Contacto
+        <Card className="border-0 shadow-sm rounded-2xl bg-card">
+          <CardHeader className="pb-3 border-b border-border/60">
+            <CardTitle className="text-sm font-bold text-foreground flex items-center gap-2">
+              <Phone className="h-4 w-4 text-primary" /> Contacto
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -392,14 +392,14 @@ export default function EditPatientPage({ params }: { params: Promise<{ id: stri
         </Card>
 
         {/* ── Clínicas Vinculadas ───────────────────────────────── */}
-        <Card className="border-0 shadow-sm rounded-2xl bg-white">
-          <CardHeader className="pb-3 border-b border-slate-100">
-            <CardTitle className="text-sm font-bold text-slate-900 flex items-center gap-2">
-              <Building2 className="h-4 w-4 text-rose-500" /> Clínicas Asignadas
+        <Card className="border-0 shadow-sm rounded-2xl bg-card">
+          <CardHeader className="pb-3 border-b border-border/60">
+            <CardTitle className="text-sm font-bold text-foreground flex items-center gap-2">
+              <Building2 className="h-4 w-4 text-primary" /> Clínicas Asignadas
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-5">
-            <p className="text-xs text-slate-500 mb-3">Selecciona las clínicas a las que pertenece este paciente. Marca una como principal.</p>
+            <p className="text-xs text-muted-foreground mb-3">Selecciona las clínicas a las que pertenece este paciente. Marca una como principal.</p>
             <div className="flex flex-wrap gap-2">
               {allClinics.map(clinic => {
                 const selected = selectedClinicIds.includes(clinic.id);
@@ -407,14 +407,14 @@ export default function EditPatientPage({ params }: { params: Promise<{ id: stri
                 return (
                   <div key={clinic.id} className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-semibold cursor-pointer transition-all ${
                     selected
-                      ? "bg-blue-50 border-blue-300 text-blue-700"
-                      : "bg-slate-50 border-slate-200 text-slate-500 hover:border-blue-200"
+                      ? "bg-info/10 border-info/30 text-info"
+                      : "bg-muted border-border text-muted-foreground hover:border-info/40"
                   }`}>
                     <input
                       type="checkbox"
                       checked={selected}
                       onChange={() => toggleClinic(clinic.id)}
-                      className="accent-blue-500 cursor-pointer"
+                      className="accent-info cursor-pointer"
                     />
                     <span onClick={() => toggleClinic(clinic.id)}>{clinic.name}</span>
                     {selected && (
@@ -422,7 +422,7 @@ export default function EditPatientPage({ params }: { params: Promise<{ id: stri
                         type="button"
                         onClick={() => setPrimaryClinicId(isPrimary ? null : clinic.id)}
                         className={`ml-1 text-[10px] px-1.5 py-0.5 rounded-lg font-bold border transition-all ${
-                          isPrimary ? "bg-blue-600 text-white border-blue-600" : "bg-white text-blue-400 border-blue-200 hover:bg-blue-100"
+                          isPrimary ? "bg-info text-white border-info" : "bg-card text-info/70 border-info/40 hover:bg-info/10"
                         }`}
                       >
                         {isPrimary ? "Principal ✓" : "Principal"}
@@ -437,17 +437,17 @@ export default function EditPatientPage({ params }: { params: Promise<{ id: stri
 
         {/* ── Representantes (si es menor) ─────────────────────── */}
         {isMinor && (
-          <Card className="border-0 shadow-sm rounded-2xl bg-amber-50 border-amber-200">
-            <CardHeader className="pb-3 border-b border-amber-100">
-              <CardTitle className="text-sm font-bold text-amber-800 flex items-center gap-2">
-                <Baby className="h-4 w-4 text-amber-600" /> Representante Legal (Menor de edad)
+          <Card className="border-0 shadow-sm rounded-2xl bg-warning/10 border-warning/30">
+            <CardHeader className="pb-3 border-b border-warning/20">
+              <CardTitle className="text-sm font-bold text-warning flex items-center gap-2">
+                <Baby className="h-4 w-4 text-warning" /> Representante Legal (Menor de edad)
               </CardTitle>
             </CardHeader>
             <CardContent className="pt-5 space-y-4">
               {representatives.map((rep, i) => (
-                <div key={i} className="bg-white rounded-xl border border-amber-100 p-4 space-y-3 relative">
+                <div key={i} className="bg-card rounded-xl border border-warning/20 p-4 space-y-3 relative">
                   <button type="button" onClick={() => removeRep(i)}
-                    className="absolute top-3 right-3 text-slate-300 hover:text-red-500">
+                    className="absolute top-3 right-3 text-muted-foreground hover:text-destructive">
                     <X className="h-4 w-4" />
                   </button>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -459,13 +459,13 @@ export default function EditPatientPage({ params }: { params: Promise<{ id: stri
                     <div className="flex items-center gap-2 pt-5">
                       <input type="checkbox" checked={rep.is_primary_contact}
                         onChange={(e) => handleRepChange(i, "is_primary_contact", e.target.checked)}
-                        className="accent-amber-500" id={`primary-rep-${i}`} />
-                      <label htmlFor={`primary-rep-${i}`} className="text-xs font-semibold text-amber-700">Contacto principal</label>
+                        className="accent-warning" id={`primary-rep-${i}`} />
+                      <label htmlFor={`primary-rep-${i}`} className="text-xs font-semibold text-warning">Contacto principal</label>
                     </div>
                   </div>
                 </div>
               ))}
-              <Button type="button" variant="outline" size="sm" onClick={addRep} className="h-8 gap-1.5 text-xs rounded-xl border-amber-200 text-amber-700 hover:bg-amber-100">
+              <Button type="button" variant="outline" size="sm" onClick={addRep} className="h-8 gap-1.5 text-xs rounded-xl border-warning/30 text-warning hover:bg-warning/10">
                 <Plus className="h-3.5 w-3.5" /> Añadir representante
               </Button>
             </CardContent>
@@ -473,10 +473,10 @@ export default function EditPatientPage({ params }: { params: Promise<{ id: stri
         )}
 
         {/* ── Anamnesis ─────────────────────────────────────────── */}
-        <Card className="border-0 shadow-sm rounded-2xl bg-white">
-          <CardHeader className="pb-3 border-b border-slate-100">
-            <CardTitle className="text-sm font-bold text-slate-900 flex items-center gap-2">
-              <ShieldAlertIcon className="h-4 w-4 text-rose-500" /> Anamnesis Médica
+        <Card className="border-0 shadow-sm rounded-2xl bg-card">
+          <CardHeader className="pb-3 border-b border-border/60">
+            <CardTitle className="text-sm font-bold text-foreground flex items-center gap-2">
+              <ShieldAlertIcon className="h-4 w-4 text-primary" /> Anamnesis Médica
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -491,10 +491,10 @@ export default function EditPatientPage({ params }: { params: Promise<{ id: stri
         </Card>
 
         {/* ── Datos de Facturación (para Odoo) ─────────────────── */}
-        <Card className="border-0 shadow-sm rounded-2xl bg-white">
-          <CardHeader className="pb-3 border-b border-slate-100">
-            <CardTitle className="text-sm font-bold text-slate-900 flex items-center gap-2">
-              <CreditCard className="h-4 w-4 text-rose-500" /> Datos de Facturación (Odoo)
+        <Card className="border-0 shadow-sm rounded-2xl bg-card">
+          <CardHeader className="pb-3 border-b border-border/60">
+            <CardTitle className="text-sm font-bold text-foreground flex items-center gap-2">
+              <CreditCard className="h-4 w-4 text-primary" /> Datos de Facturación (Odoo)
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -514,7 +514,7 @@ export default function EditPatientPage({ params }: { params: Promise<{ id: stri
           <Link href={`/patients/${targetId}`}>
             <Button variant="outline" type="button" className="h-10 rounded-xl text-sm font-semibold">Cancelar</Button>
           </Link>
-          <Button type="submit" disabled={saving} className="h-10 gap-2 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-semibold shadow-md shadow-rose-500/20">
+          <Button type="submit" disabled={saving} className="h-10 gap-2 rounded-xl bg-primary hover:bg-primary/90 text-white font-semibold shadow-md shadow-primary/20">
             {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
             Guardar Cambios
           </Button>

@@ -131,21 +131,21 @@ export function NewReminderModal({
 
   return (
     <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in">
-      <div className="bg-white rounded-3xl shadow-2xl border border-slate-200 w-full max-w-xl overflow-hidden flex flex-col max-h-[90vh]">
+      <div className="bg-card rounded-3xl shadow-2xl border border-border w-full max-w-xl overflow-hidden flex flex-col max-h-[90vh]">
         {/* Header */}
-        <div className="px-6 py-5 bg-gradient-to-r from-slate-900 to-slate-800 text-white flex items-center justify-between">
+        <div className="px-6 py-5 bg-gradient-to-r from-sidebar-accent to-sidebar-border text-sidebar-foreground flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-2xl bg-rose-500/20 border border-rose-500/30 flex items-center justify-center text-rose-400">
+            <div className="h-10 w-10 rounded-2xl bg-primary/20 border border-primary/30 flex items-center justify-center text-primary/80">
               <Bell className="h-5 w-5" />
             </div>
             <div>
               <h2 className="text-base font-bold">Programar Recordatorio para el Paciente</h2>
-              <p className="text-xs text-slate-300">{patientName}</p>
+              <p className="text-xs text-sidebar-muted-foreground">{patientName}</p>
             </div>
           </div>
           <button
             onClick={() => onOpenChange(false)}
-            className="text-slate-400 hover:text-white p-1 rounded-xl transition-colors"
+            className="text-sidebar-muted-foreground hover:text-sidebar-foreground p-1 rounded-xl transition-colors"
           >
             <X className="h-5 w-5" />
           </button>
@@ -155,18 +155,18 @@ export function NewReminderModal({
         <div className="p-6 overflow-y-auto space-y-5 flex-1">
           {/* Channel Selector */}
           <div className="space-y-2">
-            <Label className="text-xs font-bold text-slate-700 uppercase tracking-wider">Canal de Envío</Label>
+            <Label className="text-xs font-bold text-foreground uppercase tracking-wider">Canal de Envío</Label>
             <div className="grid grid-cols-3 gap-2">
               <button
                 type="button"
                 onClick={() => setChannel("whatsapp")}
                 className={`flex items-center justify-center gap-2 p-3 rounded-2xl border text-xs font-bold transition-all ${
                   channel === "whatsapp"
-                    ? "bg-emerald-50 border-emerald-500 text-emerald-800 ring-2 ring-emerald-500/20 shadow-xs"
-                    : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
+                    ? "bg-success/10 border-success text-success ring-2 ring-success/20 shadow-xs"
+                    : "bg-card border-border text-muted-foreground hover:bg-muted"
                 }`}
               >
-                <MessageSquare className="h-4 w-4 text-emerald-600" /> WhatsApp
+                <MessageSquare className="h-4 w-4 text-success" /> WhatsApp
               </button>
 
               <button
@@ -174,11 +174,11 @@ export function NewReminderModal({
                 onClick={() => setChannel("email")}
                 className={`flex items-center justify-center gap-2 p-3 rounded-2xl border text-xs font-bold transition-all ${
                   channel === "email"
-                    ? "bg-blue-50 border-blue-500 text-blue-800 ring-2 ring-blue-500/20 shadow-xs"
-                    : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
+                    ? "bg-info/10 border-info text-info ring-2 ring-info/20 shadow-xs"
+                    : "bg-card border-border text-muted-foreground hover:bg-muted"
                 }`}
               >
-                <Mail className="h-4 w-4 text-blue-600" /> Email
+                <Mail className="h-4 w-4 text-info" /> Email
               </button>
 
               <button
@@ -186,20 +186,20 @@ export function NewReminderModal({
                 onClick={() => setChannel("sms")}
                 className={`flex items-center justify-center gap-2 p-3 rounded-2xl border text-xs font-bold transition-all ${
                   channel === "sms"
-                    ? "bg-purple-50 border-purple-500 text-purple-800 ring-2 ring-purple-500/20 shadow-xs"
-                    : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
+                    ? "bg-primary/10 border-primary/60 text-primary ring-2 ring-primary/20 shadow-xs"
+                    : "bg-card border-border text-muted-foreground hover:bg-muted"
                 }`}
               >
-                <Send className="h-4 w-4 text-purple-600" /> SMS
+                <Send className="h-4 w-4 text-primary" /> SMS
               </button>
             </div>
             {channel === "whatsapp" && (
-              <p className="text-[11px] text-emerald-700 font-medium bg-emerald-50/60 p-2 rounded-xl border border-emerald-100 flex items-center gap-1.5">
+              <p className="text-[11px] text-success font-medium bg-success/10 p-2 rounded-xl border border-success/30 flex items-center gap-1.5">
                 💬 Destinatario: {patientPhone || "Teléfono no registrado"} (Webhook n8n WhatsApp)
               </p>
             )}
             {channel === "email" && (
-              <p className="text-[11px] text-blue-700 font-medium bg-blue-50/60 p-2 rounded-xl border border-blue-100 flex items-center gap-1.5">
+              <p className="text-[11px] text-info font-medium bg-info/10 p-2 rounded-xl border border-info/30 flex items-center gap-1.5">
                 📧 Destinatario: {patientEmail || "Email no registrado"} (Webhook n8n Email)
               </p>
             )}
@@ -207,7 +207,7 @@ export function NewReminderModal({
 
           {/* Quick Template Presets */}
           <div className="space-y-2">
-            <Label className="text-xs font-bold text-slate-700 uppercase tracking-wider">Plantilla Automática</Label>
+            <Label className="text-xs font-bold text-foreground uppercase tracking-wider">Plantilla Automática</Label>
             <div className="flex flex-wrap gap-1.5">
               {[
                 { id: "recordatorio_cita", label: "📅 Recordatorio Cita" },
@@ -226,8 +226,8 @@ export function NewReminderModal({
                   }}
                   className={`text-[11px] font-bold px-3 py-1.5 rounded-xl border transition-all ${
                     reminderType === tmpl.id
-                      ? "bg-slate-900 text-white border-slate-900 shadow-xs"
-                      : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
+                      ? "bg-sidebar-accent text-sidebar-foreground border-sidebar-accent shadow-xs"
+                      : "bg-muted/40 text-foreground border-border hover:bg-muted"
                   }`}
                 >
                   {tmpl.label}
@@ -240,7 +240,7 @@ export function NewReminderModal({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {appointments.length > 0 && (
               <div className="space-y-1.5">
-                <Label className="text-xs font-semibold text-slate-700">Cita Vinculada (Opcional)</Label>
+                <Label className="text-xs font-semibold text-foreground">Cita Vinculada (Opcional)</Label>
                 <select
                   value={selectedAppointmentId}
                   onChange={(e) => {
@@ -249,7 +249,7 @@ export function NewReminderModal({
                     const found = appointments.find(a => a.id === val);
                     applyTemplate(reminderType, found);
                   }}
-                  className="w-full h-10 rounded-xl border border-slate-200 bg-white px-3 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-rose-500"
+                  className="w-full h-10 rounded-xl border border-border bg-card px-3 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-primary/60"
                 >
                   <option value="">-- Sin cita vinculada --</option>
                   {appointments.map((a) => (
@@ -262,7 +262,7 @@ export function NewReminderModal({
             )}
 
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-slate-700">Fecha Programada de Envío</Label>
+              <Label className="text-xs font-semibold text-foreground">Fecha Programada de Envío</Label>
               <Input
                 type="date"
                 value={scheduledDate}
@@ -272,7 +272,7 @@ export function NewReminderModal({
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-slate-700">Hora de Envío</Label>
+              <Label className="text-xs font-semibold text-foreground">Hora de Envío</Label>
               <Input
                 type="time"
                 value={scheduledTime}
@@ -285,7 +285,7 @@ export function NewReminderModal({
           {/* Subject & Message Textarea */}
           <div className="space-y-3">
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-slate-700">Asunto del Mensaje</Label>
+              <Label className="text-xs font-semibold text-foreground">Asunto del Mensaje</Label>
               <Input
                 value={subject}
                 onChange={(e) => setSubject(e.target.value)}
@@ -295,25 +295,25 @@ export function NewReminderModal({
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-slate-700">Cuerpo del Mensaje</Label>
+              <Label className="text-xs font-semibold text-foreground">Cuerpo del Mensaje</Label>
               <Textarea
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
                 rows={4}
                 placeholder="Escribe el mensaje que se enviará al paciente..."
-                className="text-xs rounded-xl leading-relaxed p-3 bg-slate-50/50"
+                className="text-xs rounded-xl leading-relaxed p-3 bg-muted/40"
               />
             </div>
           </div>
         </div>
 
         {/* Footer Actions */}
-        <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between gap-3">
+        <div className="px-6 py-4 bg-muted/40 border-t border-border/60 flex items-center justify-between gap-3">
           <Button
             type="button"
             variant="outline"
             onClick={() => onOpenChange(false)}
-            className="rounded-xl text-xs font-semibold text-slate-600 border-slate-200"
+            className="rounded-xl text-xs font-semibold text-muted-foreground border-border"
           >
             Cancelar
           </Button>
@@ -324,7 +324,7 @@ export function NewReminderModal({
               variant="outline"
               disabled={loading}
               onClick={() => handleCreate(true)}
-              className="rounded-xl text-xs font-bold border-emerald-300 text-emerald-700 hover:bg-emerald-50 gap-1.5 cursor-pointer"
+              className="rounded-xl text-xs font-bold border-success/40 text-success hover:bg-success/10 gap-1.5 cursor-pointer"
             >
               {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />} Enviar Ahora
             </Button>
@@ -333,7 +333,7 @@ export function NewReminderModal({
               type="button"
               disabled={loading}
               onClick={() => handleCreate(false)}
-              className="rounded-xl text-xs font-bold bg-slate-900 hover:bg-slate-800 text-white gap-1.5 shadow-md cursor-pointer"
+              className="rounded-xl text-xs font-bold bg-sidebar-accent hover:bg-sidebar-border text-sidebar-foreground gap-1.5 shadow-md cursor-pointer"
             >
               {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Calendar className="h-3.5 w-3.5" />} Programar Envío
             </Button>

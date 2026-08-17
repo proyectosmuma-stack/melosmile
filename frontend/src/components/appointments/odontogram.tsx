@@ -75,10 +75,10 @@ export function Odontogram({ initialData = {}, isMinor = false, onChange, readOn
         onClick={() => handleToothClick(id)}
         title={`Pieza ${id}: ${cfg.label}`}
         className={`flex flex-col items-center justify-center p-1 rounded-lg transition-all cursor-pointer select-none group ${
-          isMarked ? "bg-slate-50 border border-slate-200 shadow-xs" : "hover:bg-slate-100/80"
+          isMarked ? "bg-muted/40 border border-border shadow-xs" : "hover:bg-muted/80"
         }`}
       >
-        <span className="text-[10px] font-bold text-slate-500 mb-0.5 group-hover:text-slate-900">{id}</span>
+        <span className="text-[10px] font-bold text-muted-foreground mb-0.5 group-hover:text-foreground">{id}</span>
         
         <div className="relative w-6 h-7 flex items-center justify-center">
           <svg viewBox="0 0 40 46" className="w-full h-full drop-shadow-xs">
@@ -103,7 +103,7 @@ export function Odontogram({ initialData = {}, isMinor = false, onChange, readOn
 
         <span
           className={`text-[8px] font-extrabold mt-1 px-1 rounded-full truncate max-w-[34px] ${
-            isMarked ? "text-slate-800" : "text-slate-300"
+            isMarked ? "text-foreground" : "text-muted-foreground"
           }`}
         >
           {isMarked ? cfg.label.split(" ")[0] : "—"}
@@ -113,20 +113,20 @@ export function Odontogram({ initialData = {}, isMinor = false, onChange, readOn
   };
 
   return (
-    <div className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-sm space-y-4">
-      <div className="flex items-center justify-between gap-2 pb-3 border-b border-slate-100 flex-wrap">
+    <div className="bg-card border border-border rounded-2xl p-4 shadow-sm space-y-4">
+      <div className="flex items-center justify-between gap-2 pb-3 border-b border-border/60 flex-wrap">
         <div className="flex items-center gap-2">
-          <Smile className="h-4 w-4 text-rose-500" />
-          <h3 className="text-xs font-bold text-slate-900">Odontograma Interactivo (FDI)</h3>
+          <Smile className="h-4 w-4 text-primary" />
+          <h3 className="text-xs font-bold text-foreground">Odontograma Interactivo (FDI)</h3>
         </div>
 
         {isMinor && (
-          <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded-lg text-[10px] font-bold">
+          <div className="flex items-center gap-1 bg-muted p-0.5 rounded-lg text-[10px] font-bold">
             <button
               type="button"
               onClick={() => setShowPrimary(false)}
               className={`px-2 py-0.5 rounded-md transition-all ${
-                !showPrimary ? "bg-white text-slate-900 shadow-xs" : "text-slate-500 hover:text-slate-800"
+                !showPrimary ? "bg-card text-foreground shadow-xs" : "text-muted-foreground hover:text-foreground"
               }`}
             >
               Permanente
@@ -135,7 +135,7 @@ export function Odontogram({ initialData = {}, isMinor = false, onChange, readOn
               type="button"
               onClick={() => setShowPrimary(true)}
               className={`px-2 py-0.5 rounded-md transition-all ${
-                showPrimary ? "bg-rose-500 text-white shadow-xs" : "text-slate-500 hover:text-slate-800"
+                showPrimary ? "bg-primary text-primary-foreground shadow-xs" : "text-muted-foreground hover:text-foreground"
               }`}
             >
               Leche
@@ -146,7 +146,7 @@ export function Odontogram({ initialData = {}, isMinor = false, onChange, readOn
 
       {!readOnly && (
         <div className="space-y-1.5">
-          <span className="text-[10px] uppercase font-bold text-slate-400">Marcado activo:</span>
+          <span className="text-[10px] uppercase font-bold text-muted-foreground">Marcado activo:</span>
           <div className="flex flex-wrap gap-1">
             {(Object.keys(STATUS_CONFIG) as ToothStatus[])
               .filter((st) => st !== "sin_tratar")
@@ -160,8 +160,8 @@ export function Odontogram({ initialData = {}, isMinor = false, onChange, readOn
                     onClick={() => setSelectedStatus(st)}
                     className={`flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-bold border transition-all ${
                       isActive
-                        ? "bg-slate-900 text-white border-slate-900 shadow-xs"
-                        : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"
+                        ? "bg-sidebar-accent text-sidebar-foreground border-sidebar-accent shadow-xs"
+                        : "bg-card text-foreground border-border hover:bg-muted"
                     }`}
                   >
                     <span className="h-2 w-2 rounded-full" style={{ backgroundColor: conf.color }} />
@@ -174,8 +174,8 @@ export function Odontogram({ initialData = {}, isMinor = false, onChange, readOn
       )}
 
       <div className="space-y-3 pt-1">
-        <div className="bg-slate-50/60 rounded-xl p-2 border border-slate-100">
-          <span className="text-[9px] uppercase font-bold text-slate-400 block mb-1 text-center">Maxilar Superior</span>
+        <div className="bg-muted/40 rounded-xl p-2 border border-border/60">
+          <span className="text-[9px] uppercase font-bold text-muted-foreground block mb-1 text-center">Maxilar Superior</span>
           
           {showPrimary ? (
             <div className="grid grid-cols-10 gap-0.5 justify-items-center">
@@ -190,8 +190,8 @@ export function Odontogram({ initialData = {}, isMinor = false, onChange, readOn
           )}
         </div>
 
-        <div className="bg-slate-50/60 rounded-xl p-2 border border-slate-100">
-          <span className="text-[9px] uppercase font-bold text-slate-400 block mb-1 text-center">Maxilar Inferior</span>
+        <div className="bg-muted/40 rounded-xl p-2 border border-border/60">
+          <span className="text-[9px] uppercase font-bold text-muted-foreground block mb-1 text-center">Maxilar Inferior</span>
           
           {showPrimary ? (
             <div className="grid grid-cols-10 gap-0.5 justify-items-center">
@@ -207,9 +207,9 @@ export function Odontogram({ initialData = {}, isMinor = false, onChange, readOn
         </div>
       </div>
 
-      <div className="pt-2 border-t border-slate-100 flex flex-wrap items-center justify-between text-[10px] text-slate-400 gap-2">
+      <div className="pt-2 border-t border-border/60 flex flex-wrap items-center justify-between text-[10px] text-muted-foreground gap-2">
         <span className="flex items-center gap-1 font-medium">
-          <Info className="h-3 w-3 text-slate-400" /> Clic sobre cada diente para marcar.
+          <Info className="h-3 w-3 text-muted-foreground" /> Clic sobre cada diente para marcar.
         </span>
         {Object.keys(data).length > 0 && (
           <button
@@ -218,7 +218,7 @@ export function Odontogram({ initialData = {}, isMinor = false, onChange, readOn
               setData({});
               if (onChange) onChange({});
             }}
-            className="flex items-center gap-1 text-slate-500 hover:text-rose-600 font-bold"
+            className="flex items-center gap-1 text-muted-foreground hover:text-primary font-bold"
           >
             <RefreshCw className="h-3 w-3" /> Limpiar
           </button>

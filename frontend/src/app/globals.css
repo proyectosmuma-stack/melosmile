@@ -31,6 +31,70 @@
     --ring: 346.8 77.2% 49.8%;
 
     --radius: 0.75rem;
+
+    /* Sidebar oscura (identidad slate-950) */
+    --sidebar: 222.2 84% 4.9%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-border: 217 33% 17%;
+    --sidebar-accent: 217 33% 12%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-muted: 215 25% 27%;
+    --sidebar-muted-foreground: 215 20% 55%;
+
+    /* Semánticos (estados) */
+    --success: 160 84% 39%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+    --info: 217 91% 60%;
+    --info-foreground: 0 0% 100%;
+
+    /* Marca IA (Musly) */
+    --brand-ai-from: 262 83% 58%;
+    --brand-ai-to: 243 75% 59%;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+
+    --card: 222.2 84% 7%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222.2 84% 7%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 346.8 77.2% 49.8%;
+    --primary-foreground: 355.7 100% 97.3%;
+
+    --secondary: 217 33% 12%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217 33% 12%;
+    --muted-foreground: 215 20% 65%;
+
+    --accent: 217 33% 17%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217 33% 17%;
+    --input: 217 33% 17%;
+    --ring: 346.8 77.2% 49.8%;
+
+    --sidebar: 222.2 84% 4.9%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-border: 217 33% 17%;
+    --sidebar-accent: 217 33% 17%;
+    --sidebar-accent-foreground: 210 40% 98%;
+
+    --success: 160 84% 39%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+    --info: 217 91% 60%;
+    --info-foreground: 0 0% 100%;
   }
 }
 
@@ -43,45 +107,45 @@
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: hsl(var(--muted-foreground) / 0.35);
   border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: hsl(var(--muted-foreground) / 0.55);
 }
 
 /* Glassmorphism utility */
 .glass-panel {
-  background: rgba(255, 255, 255, 0.85);
+  background: hsl(var(--card) / 0.85);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(226, 232, 240, 0.8);
+  border: 1px solid hsl(var(--border) / 0.8);
 }
 
 .dark-glass {
-  background: rgba(15, 23, 42, 0.85);
+  background: hsl(var(--sidebar) / 0.85);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(30, 41, 59, 0.8);
+  border: 1px solid hsl(var(--sidebar-border) / 0.8);
 }
 
 /* FullCalendar Modern Overrides */
 .fc {
   font-family: inherit;
-  --fc-border-color: #e2e8f0;
-  --fc-button-bg-color: #ffffff;
-  --fc-button-border-color: #e2e8f0;
-  --fc-button-text-color: #334155;
-  --fc-button-hover-bg-color: #f1f5f9;
-  --fc-button-hover-border-color: #cbd5e1;
-  --fc-button-active-bg-color: #e2e8f0;
-  --fc-today-bg-color: #fff1f2;
+  --fc-border-color: hsl(var(--border));
+  --fc-button-bg-color: hsl(var(--card));
+  --fc-button-border-color: hsl(var(--border));
+  --fc-button-text-color: hsl(var(--foreground));
+  --fc-button-hover-bg-color: hsl(var(--muted));
+  --fc-button-hover-border-color: hsl(var(--muted-foreground) / 0.4);
+  --fc-button-active-bg-color: hsl(var(--muted));
+  --fc-today-bg-color: hsl(var(--primary) / 0.08);
 }
 
 .fc .fc-toolbar-title {
   font-size: 1.25rem;
   font-weight: 700;
-  color: #0f172a;
+  color: hsl(var(--foreground));
   letter-spacing: -0.02em;
 }
 
@@ -96,10 +160,10 @@
 
 .fc .fc-button-primary:not(:disabled).fc-button-active,
 .fc .fc-button-primary:not(:disabled):active {
-  background-color: #e11d48 !important;
-  border-color: #e11d48 !important;
-  color: #ffffff !important;
-  box-shadow: 0 4px 12px rgba(225, 29, 72, 0.25);
+  background-color: hsl(var(--primary)) !important;
+  border-color: hsl(var(--primary)) !important;
+  color: hsl(var(--primary-foreground)) !important;
+  box-shadow: 0 4px 12px hsl(var(--primary) / 0.25);
 }
 
 .fc .fc-event {
@@ -118,13 +182,13 @@
 }
 
 .fc-theme-standard td, .fc-theme-standard th {
-  border-color: #f1f5f9;
+  border-color: hsl(var(--muted) / 0.6);
 }
 
 .fc-col-header-cell {
-  background-color: #f8fafc;
+  background-color: hsl(var(--muted) / 0.4);
   padding: 8px 0;
   font-weight: 600;
-  color: #475569;
+  color: hsl(var(--muted-foreground));
   font-size: 0.875rem;
 }

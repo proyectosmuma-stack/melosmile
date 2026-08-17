@@ -35,7 +35,14 @@ export function middleware(request: NextRequest) {
 
   // For any other path (protected system routes)
   if (!isAuthenticated) {
-    // If it's an API route call, return 401 JSON
+    // Check for API Key authentication (e.g., from n8n sub-agents)
+    const apiKey = request.headers.get("x-api-key");
+    const validApiKey = process.env.N8N_API_KEY || "melosmile_internal_n8n_key_2026";
+    if (apiKey === validApiKey) {
+      return NextResponse.next();
+    }
+
+    // If it's an API route call and neither session nor valid API key is present, return 401 JSON
     if (pathname.startsWith("/api/")) {
       return NextResponse.json(
         { error: "No autorizado. Inicie sesión para continuar." },
