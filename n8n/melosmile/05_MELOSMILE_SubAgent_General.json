@@ -65,7 +65,15 @@
       "parameters": {
         "description": "Consulta el diccionario de aprendizaje dinámico y modismos guardados del profesional.",
         "method": "GET",
-        "url": "https://melosmile-staging-git-develop-proyectosmuma-stacks-projects.vercel.app/api/ai/memory/search?query={{ $fromAI('query', 'Palabra o frase a consultar') }}"
+        "url": "https://melosmile-staging-git-develop-proyectosmuma-stacks-projects.vercel.app/api/ai/memory/search?query={{ $fromAI('query', 'Palabra o frase a consultar') }}",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-api-key",
+              "value": "melosmile_internal_n8n_key_2026"
+            }
+          ]
+        }
       },
       "position": [
         700,
@@ -83,7 +91,15 @@
         "method": "POST",
         "sendBody": true,
         "specifyBody": "json",
-        "url": "https://melosmile-staging-git-develop-proyectosmuma-stacks-projects.vercel.app/api/ai/memory/learn"
+        "url": "https://melosmile-staging-git-develop-proyectosmuma-stacks-projects.vercel.app/api/ai/memory/learn",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-api-key",
+              "value": "melosmile_internal_n8n_key_2026"
+            }
+          ]
+        }
       },
       "position": [
         700,

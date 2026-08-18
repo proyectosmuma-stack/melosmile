@@ -71,7 +71,15 @@
           ]
         },
         "toolDescription": "Recupera el historial clínico completo de un paciente por su ID o nombre.",
-        "url": "https://melosmile-staging-git-develop-proyectosmuma-stacks-projects.vercel.app/api/patients/{patient_id}/clinical"
+        "url": "https://melosmile-staging-git-develop-proyectosmuma-stacks-projects.vercel.app/api/patients/{patient_id}/clinical",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-api-key",
+              "value": "melosmile_internal_n8n_key_2026"
+            }
+          ]
+        }
       },
       "position": [
         700,
@@ -94,7 +102,15 @@
           ]
         },
         "toolDescription": "Obtiene un resumen ejecutivo del paciente: última visita, tratamientos activos y alertas.",
-        "url": "https://melosmile-staging-git-develop-proyectosmuma-stacks-projects.vercel.app/api/patients/{patient_id}/summary"
+        "url": "https://melosmile-staging-git-develop-proyectosmuma-stacks-projects.vercel.app/api/patients/{patient_id}/summary",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-api-key",
+              "value": "melosmile_internal_n8n_key_2026"
+            }
+          ]
+        }
       },
       "position": [
         700,

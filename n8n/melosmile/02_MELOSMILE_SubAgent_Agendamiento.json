@@ -65,7 +65,15 @@
       "parameters": {
         "description": "Busca pacientes por nombre, apellido, código de historia (PAC-###) o teléfono en Melosmile",
         "method": "GET",
-        "url": "https://melosmile-staging-git-develop-proyectosmuma-stacks-projects.vercel.app/api/patients/search?q={{ $fromAI('query', 'Nombre, apellido, código PAC-### o teléfono del paciente') }}"
+        "url": "https://melosmile-staging-git-develop-proyectosmuma-stacks-projects.vercel.app/api/patients/search?q={{ $fromAI('query', 'Nombre, apellido, código PAC-### o teléfono del paciente') }}",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-api-key",
+              "value": "melosmile_internal_n8n_key_2026"
+            }
+          ]
+        }
       },
       "position": [
         840,
@@ -106,7 +114,15 @@
         "method": "POST",
         "sendBody": true,
         "specifyBody": "keypair",
-        "url": "https://melosmile-staging-git-develop-proyectosmuma-stacks-projects.vercel.app/api/appointments/update"
+        "url": "https://melosmile-staging-git-develop-proyectosmuma-stacks-projects.vercel.app/api/appointments/update",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-api-key",
+              "value": "melosmile_internal_n8n_key_2026"
+            }
+          ]
+        }
       },
       "position": [
         660,
@@ -121,7 +137,15 @@
       "parameters": {
         "description": "Consulta y busca citas existentes por fecha o por nombre de paciente. Acepta fechas relativas: 'hoy', 'mañana', 'ayer', 'esta semana', 'semana pasada', 'próxima semana', 'este mes', 'mes pasado', 'próximo mes', o días de la semana ('lunes', 'martes', 'próximo viernes'). Úsala para revisar huecos o franjas horarias ocupadas en la agenda de la clínica.",
         "method": "GET",
-        "url": "https://melosmile-staging-git-develop-proyectosmuma-stacks-projects.vercel.app/api/appointments/list?date={{ $fromAI('date_range', 'PASA EXACTAMENTE LO QUE EL USUARIO PIDIÓ: esta semana, mañana, hoy, próxima semana, etc.') }}&clinic={{ $fromAI('clinic', 'Nombre de la clínica si fue mencionada, ej: Goya') }}"
+        "url": "https://melosmile-staging-git-develop-proyectosmuma-stacks-projects.vercel.app/api/appointments/list?date={{ $fromAI('date_range', 'PASA EXACTAMENTE LO QUE EL USUARIO PIDIÓ: esta semana, mañana, hoy, próxima semana, etc.') }}&clinic={{ $fromAI('clinic', 'Nombre de la clínica si fue mencionada, ej: Goya') }}",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-api-key",
+              "value": "melosmile_internal_n8n_key_2026"
+            }
+          ]
+        }
       },
       "position": [
         480,
@@ -136,7 +160,15 @@
       "parameters": {
         "description": "Busca expresiones idiomáticas, modismos o términos específicos en la memoria persistente de Melosmile",
         "method": "GET",
-        "url": "https://melosmile-staging-git-develop-proyectosmuma-stacks-projects.vercel.app/api/ai/memory/search?query={{ $fromAI('query', 'Palabra o frase a consultar') }}"
+        "url": "https://melosmile-staging-git-develop-proyectosmuma-stacks-projects.vercel.app/api/ai/memory/search?query={{ $fromAI('query', 'Palabra o frase a consultar') }}",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-api-key",
+              "value": "melosmile_internal_n8n_key_2026"
+            }
+          ]
+        }
       },
       "position": [
         704,
@@ -154,6 +186,10 @@
             {
               "name": "Content-Type",
               "value": "application/json"
+            },
+            {
+              "name": "x-api-key",
+              "value": "melosmile_internal_n8n_key_2026"
             }
           ]
         },
@@ -206,7 +242,15 @@
         "method": "POST",
         "sendBody": true,
         "specifyBody": "keypair",
-        "url": "https://melosmile-staging-git-develop-proyectosmuma-stacks-projects.vercel.app/api/appointments/update"
+        "url": "https://melosmile-staging-git-develop-proyectosmuma-stacks-projects.vercel.app/api/appointments/update",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-api-key",
+              "value": "melosmile_internal_n8n_key_2026"
+            }
+          ]
+        }
       },
       "position": [
         300,
