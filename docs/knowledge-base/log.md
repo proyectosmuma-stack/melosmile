@@ -2,6 +2,20 @@
 
 Registro cronológico (append-only) de ingestas y actualizaciones del wiki.
 
+## [2026-08-18] n8n | PLAN 3 completado: fix autenticación n8n ↔ Vercel staging
+- **Diagnóstico**: tras el cambio de URL (PLAN 1), los 4 sub-agentes n8n llamaban a staging Vercel **sin `x-api-key`** → todos los endpoints devolvían 401 (`{"error":"No autorizado..."}` del middleware).
+- **Causa raíz doble**:
+  1. Los nodos `toolHttpRequest` de los flujos no enviaban header `x-api-key` (headers `[]`, credentials `{}`).
+  2. El middleware con lógica `x-api-key` (commit `4e00c76`) NO estaba desplegado en Vercel staging: los commits locales no estaban en `origin/develop` (branch 4 commits ahead).
+- **Fix aplicado**:
+  - Añadido `headerParameters: x-api-key: melosmile_internal_n8n_key_2026` a **11 nodos** toolHttpRequest (Agendamiento 6, Clínico 2, Contabilidad 1, General 2) y desplegado vía API n8n (`PUT /api/v1/workflows/{id}`, payload filtrado sin `meta`/`nodeGroups`/`binaryMode`).
+  - Push a `origin/develop` (`d196eb5..4a0366c` + `4a0366c..014e9a2`) → redeploy Vercel automático.
+  - Creado endpoint **`POST /api/billing/reminders`** para el tool `Tool_Reminders_Dispatcher` de Contabilidad (apuntaba a ruta inexistente → 404). Acepta `invoiceId` (resuelve paciente vía billing_records→appointments) o `patientId`. Enums correctos: `channel` default `email` (`email|telegram|web|sms`), `reminder_type` default `pago_pendiente`.
+- **Verificación final (PASS)**: endpoints staging 200 con key / 401 sin key; endpoint nuevo probado en local (3028) y staging.
+- **Bug pre-existente detectado**: `frontend/src/app/api/reminders/create/route.ts` usa default `channel: "whatsapp"` que NO existe en el enum `reminder_channel` → falla al crear reminder sin channel explícito. Pendiente fix a `email`.
+- **Lección**: el deploy de Vercel staging usa `origin/develop`, no el develop local. Si los commits no están pusheados, Vercel despliega una versión antigua — verificar `git rev-list --left-right --count origin/develop...develop` (ahead) antes de confiar en staging.
+- **Limitación del reviewer**: `mumabot-reviewer` (llama3.1:8b) alucinó un script Grokscript inexistente al auditar los flujos JSON → la auditoría se completó manualmente por el orquestador con `python3` (PASS). Registrar en agent-team.md.
+
 ## [2026-08-18] update | Equipo MumaBot + incidente
 - Creado `docs/knowledge-base/` con `index.md`, `log.md`, `domains/agent-team.md`, `decisions/incidente-2026-08-18-subagentes-vacios.md`.
 - Motivación: incidente de subagentes vacíos (modelos Gemini 2.5 deprecados) — compilar el conocimiento del equipo para que no se repita.

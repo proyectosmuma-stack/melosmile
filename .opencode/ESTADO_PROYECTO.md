@@ -1,7 +1,7 @@
 # 🧩 ESTADO_PROYECTO.md - Melosmile
 
 > ⚠️ **REGLA DE RAMAS**: Trabajo en rama `develop`. Nunca fusionar este archivo a `main`.
-> **Última actualización**: 2026-08-18 (PLAN 1 n8n completado + evaluación del equipo MumaBot)
+> **Última actualización**: 2026-08-18 (PLAN 3 completado: fix autenticación n8n ↔ staging + endpoint billing/reminders)
 > **Para reiniciar la conversación**: "Lee .opencode/ESTADO_PROYECTO.md y sigamos desde ahí."
 
 ---
@@ -10,16 +10,30 @@
 
 **PLAN 1 — URL staging en flujos n8n: COMPLETADO ✅ (2026-08-18)**
 **PLAN 2 — Sincronización BD Local ← Cloud: COMPLETADO ✅ (sesión previa)**
+**PLAN 3 — Verificación n8n ↔ BD: COMPLETADO ✅ (2026-08-18, esta sesión)**
 
 PLAN 1 consistía en reemplazar la URL obsoleta `frontend-eight-dusky-42.vercel.app` (devolvía 404) por `melosmile-staging-git-develop-proyectosmuma-stacks-projects.vercel.app` en los flujos n8n. **Ejecutado y verificado en la instancia n8n** (n8n.mumaweb.com): 4 sub-agentes actualizados, 0 refs obsoletas, 22 refs staging, todos los workflows siguen activos. Dispatcher y Document Cleaner NO usaban esa URL (delegan vía `toolWorkflow` nativo, sin HTTP directo).
 
-**PLAN 3 (pendiente)**: verificar que los agentes n8n consultan local (3028) y cloud correctamente tras el cambio de URL.
+**PLAN 3 — Fix de autenticación n8n ↔ Vercel staging (esta sesión)**. Diagnóstico: los sub-agentes n8n llamaban a staging Vercel **sin `x-api-key`** → 401 en todos los endpoints. Doble causa raíz:
+1. **Flujos n8n**: los nodos `toolHttpRequest` no enviaban header `x-api-key` → añadido a **11 nodos** (Agendamiento 6, Clínico 2, Contabilidad 1, General 2) con valor `melosmile_internal_n8n_key_2026` y desplegado vía API n8n (4 workflows activos).
+2. **Vercel staging**: el middleware con lógica `x-api-key` (commit `4e00c76`) NO estaba desplegado porque los commits locales no estaban en `origin/develop` → **push** (`d196eb5..4a0366c` y luego `4a0366c..014e9a2`) → redeploy automático.
+
+**Verificación final (PASS)**: `/api/patients/search`, `/api/appointments/list`, `/api/ai/memory/search`, `/api/patients/{uuid}/clinical`, `/api/billing/reminders` → **200 con key, 401 sin key**. Endpoint nuevo `POST /api/billing/reminders` creado y verificado en local + staging.
 
 ---
 
 ## 📁 Archivos Modificados/Relevantes
 
-**PLAN 1 (n8n) — editados y desplegados hoy:**
+**PLAN 3 (fix autenticación) — editados y desplegados hoy (esta sesión):**
+- `n8n/melosmile/02_MELOSMILE_SubAgent_Agendamiento.json` — +header `x-api-key` en 6 nodos (workflow `jTWHg9bHaNOdzL13`)
+- `n8n/melosmile/03_MELOSMILE_SubAgent_Clinico.json` — +header `x-api-key` en 2 nodos (workflow `Q7oxrbUuohca81Gn`)
+- `n8n/melosmile/04_MELOSMILE_SubAgent_Contabilidad.json` — +header `x-api-key` en 1 nodo (workflow `XSLNwq6ihH1SHPRl`)
+- `n8n/melosmile/05_MELOSMILE_SubAgent_General.json` — +header `x-api-key` en 2 nodos (workflow `MIok0ruU7JhpTxWv`)
+- `frontend/src/app/api/billing/reminders/route.ts` — **NUEVO** endpoint POST para el tool `Tool_Reminders_Dispatcher` (Contabilidad). Acepta `invoiceId` (resuelve paciente vía billing_records→appointments) o `patientId` directo. Enums válidos: `channel` default `email` (`email|telegram|web|sms`), `reminder_type` default `pago_pendiente` (`cambio_alineador|confirmar_cita|recordatorio_cita|pago_pendiente|seguimiento|personalizado`).
+- Push a `origin/develop`: `d196eb5..014e9a2` (2 commits: middleware + fix n8n/endpoint).
+- **Ojo**: `frontend/src/app/api/reminders/create/route.ts` usa default `channel: "whatsapp"` que **NO existe** en el enum `reminder_channel` → bug pre-existente (fallará al crear reminder sin channel explícito). Pendiente de fix.
+
+**PLAN 1 (n8n) — editados y desplegados en sesión previa:**
 - `n8n/melosmile/02_MELOSMILE_SubAgent_Agendamiento.json` — 12 refs URL → staging (workflow `jTWHg9bHaNOdzL13`)
 - `n8n/melosmile/03_MELOSMILE_SubAgent_Clinico.json` — 4 refs URL → staging (workflow `Q7oxrbUuohca81Gn`)
 - `n8n/melosmile/04_MELOSMILE_SubAgent_Contabilidad.json` — 2 refs URL → staging (workflow `XSLNwq6ihH1SHPRl`)
@@ -53,6 +67,8 @@ PLAN 1 consistía en reemplazar la URL obsoleta `frontend-eight-dusky-42.vercel.
 2. **Bug 1 (migración rota):** comentar el down migration en `20260816000001` → `is_active` se crea y el reset+seed completan.
 3. **Bug 2 (IDs divergentes):** `TRUNCATE ... CASCADE` de tablas de datos + recarga de `supabase/seed.sql` (el seed de la migración `20260722000005` usa `gen_random_uuid()` y no deja sobrescribir IDs).
 4. **Deploy n8n vía API pública**: la API rechaza `meta`, `nodeGroups`, `authors` y `settings.binaryMode` (`400 request/body/settings must NOT have additional properties`). Fix: filtrar payload a `{name, nodes, connections, settings}` sin `binaryMode` (script `/var/folders/.../opencode/clean_wf.py`, temporal).
+5. **Autenticación n8n ↔ staging (nuevo, PLAN 3)**: se adoptó `x-api-key: melosmile_internal_n8n_key_2026` (fallback del middleware, sin `N8N_API_KEY` en Vercel) como header estándar de los sub-agentes contra staging. **Lección crítica**: Vercel staging despliega desde `origin/develop`, NO desde el develop local → siempre verificar `git rev-list --left-right --count origin/develop...develop` antes de confiar en staging.
+6. **Enums de recordatorios (nuevo)**: `reminder_channel` = `email|telegram|web|sms` (¡NO hay `whatsapp`!), `reminder_type` incluye `pago_pendiente`. Cualquier endpoint que cree reminders debe usar estos valores válidos.
 5. **FIABILIDAD DEL EQUIPO (nuevo, crítico)**: `mumabot-coder-local` (qwen3.7-agents:4b-q8) **falló 2/2 en el deploy** (alucinó respuestas 400 falsas sin ejecutar). El orquestador ejecutó el deploy directamente con la key sin imprimirla (seguridad intacta). Benchmark real: **MLX 4.6 tok/s ≈ Ollama 4.3 tok/s → descartada la propuesta de "mumabot-local-flash 4x más rápido"** (era falsa). coder-cloud (gemini-3.6-flash) sí fue fiable para edición.
 6. **BENCHMARK DE 7 MODELOS LOCALES (2026-08-18)**: probados qwen2.5-coder:14b (12 tok/s, tools roto), qwen2.5-coder:7b (22.4 tok/s, tools en texto), deepseek-coder-v2:16b (**sin tools en Ollama**), mistral-nemo:12b (tools INCONSISTENTE 1/5), llama3.1:8b (**22.9 tok/s, tools 100% consistente**), qwen2.5-coder:1.5b (47 tok/s, tools en texto), nomic-embed (✅ RAG).
 7. **MODELOS FINALES DEL EQUIPO (2026-08-18)**: `mumabot-coder-local` → **`ollama/llama3.1:8b`**; `mumabot-reviewer` → **`ollama/llama3.1:8b`** (ambos con tool calling nativo consistente). Registrados en `~/.config/opencode/opencode.jsonc` (provider ollama). **REQUIERE REINICIAR opencode**. Ver `docs/knowledge-base/domains/agent-team.md`.
@@ -63,11 +79,12 @@ PLAN 1 consistía en reemplazar la URL obsoleta `frontend-eight-dusky-42.vercel.
 
 ## 🚀 Próximos Pasos Pendientes
 
-1. **PLAN 3 — Verificar sincronización n8n ↔ BD**: comprobar que los agentes n8n consultan local (3028) y cloud correctamente tras el cambio de URL.
-2. **Decisión de diseño pendiente (preguntar al usuario)**: ¿eliminar el seed de la migración `20260722000005` para que `supabase db reset` sea limpio en 1 solo paso (sin TRUNCATE manual)?
-3. **Auditoría del reviewer** sobre los cambios de hoy (flujos n8n + docs) — aún no ejecutada (opcional).
-4. Considerar commit de los cambios a `develop` (migración fix + seed + flujos n8n + docs).
-5. **Decisión de equipo (2026-08-18, resuelta)**: `mumabot-coder-local` y `mumabot-reviewer` ahora usan `ollama/llama3.1:8b` (tool calling consistente). **Pendiente: reiniciar opencode para cargar los nuevos modelos.**
+1. **Limpieza reminder de prueba en cloud**: durante la verificación de `/api/billing/reminders` en staging se creó el reminder `bb5bac4c-e435-470e-bb37-8a6ccd601988` en la BD cloud (la service role key cloud no está en `.env.local`; está en Vercel env). Borrarlo con la key de Vercel o desde el dashboard Supabase.
+2. **Fix bug pre-existente**: `frontend/src/app/api/reminders/create/route.ts` usa default `channel: "whatsapp"` que NO existe en el enum `reminder_channel` (`email|telegram|web|sms`) → crear reminder sin `channel` explícito falla con 500. Cambiar default a `email`.
+3. **Decisión de diseño pendiente (preguntar al usuario)**: ¿eliminar el seed de la migración `20260722000005` para que `supabase db reset` sea limpio en 1 solo paso (sin TRUNCATE manual)?
+4. **Auditoría del reviewer** (opcional): el reviewer local (llama3.1:8b) alucinó un script inexistente en la auditoría de esta sesión; la verificación se completó manualmente con PASS. Registrar limitación en `docs/knowledge-base/domains/agent-team.md`.
+5. Considerar limpiar `n8n-workflows/melosmile/` (versiones antiguas con URL obsoleta — NO desplegadas).
+6. **Decisión de equipo (2026-08-18, resuelta)**: `mumabot-coder-local` y `mumabot-reviewer` ahora usan `ollama/llama3.1:8b` (tool calling consistente). **Pendiente: reiniciar opencode para cargar los nuevos modelos.**
 
 ---
 
