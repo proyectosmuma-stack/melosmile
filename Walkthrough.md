@@ -40,3 +40,14 @@ Durante esta sesión, tanto Antigravity como Mumabot (OpenCode) colaboraron en u
   * Se creó `frontend/src/types/n8n-contracts.ts` conectando formalmente los flujos con las rutas de API internas de Next.js (`/api/appointments`, `/api/patients`, etc.).
   * Reindexados con éxito los 3 repositorios: Melosmile (117 archivos, 1973 nodos), MumaLeads (221 archivos, 2870 nodos), y Flujos N8N (542 archivos, 3486 nodos).
 * **Base de Conocimiento:** Creado `docs/knowledge-base/domains/n8n-workflows.md` con topología, diagramas Mermaid y fichas técnicas.
+
+## 6. Optimización y Configuración Final del Equipo de Subagentes (Completada ✅)
+* **Benchmark Empírico en Hardware Local:**
+  * `mistral-nemo:12b`: Descalificado para tareas reales de proxy (falló 4/4 en tool calling devolviendo texto plano).
+  * `llama3.1:8b`: Ganador absoluto en estabilidad (100% acierto en `tool_calls` nativo, velocidad de 22.9 tok/s, 4.9 GB RAM).
+* **Asignación Definitiva de Modelos:**
+  * `mumabot-coder-local`: `ollama/llama3.1:8b` (operaciones de seguridad, `.env`, tokens y base de datos local).
+  * `mumabot-reviewer`: `ollama/llama3.1:8b` (auditoría y linting offline rápido).
+  * `mumabot-coder-cloud`: `google/gemini-3.6-flash` (desarrollo ágil de código frontend/TypeScript).
+  * `mumabot-architect`: `openrouter/google/gemini-3.1-pro-preview` (diseño de sistemas y contratos de arquitectura).
+* **Liberación de Memoria:** Eliminado proceso zombie de MLX en puerto 18080 que consumía 6.6 GB (34% RAM). La memoria disponible subió a más de 8.5 GB libres.

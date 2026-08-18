@@ -15,8 +15,8 @@ Equipo mixto (cloud + local) orquestado por **MumaBot Cloud Pro**. El orquestado
 | `mumabot-architect` | `openrouter/google/gemini-3.1-pro-preview` | subagent | Arquitectura, ERD, contratos API |
 | `mumabot-coder-cloud` | `google/gemini-3.6-flash` | subagent | Código público, algoritmos, tests |
 | `mumabot-designer` | `google/gemini-3.6-flash` | subagent | UI/UX premium, CSS, HTML, animaciones |
-| `mumabot-coder-local` | `ollama/qwen3.7-agents:4b-q8` | subagent | 🔒 .env, API keys, secretos (100% offline) |
-| `mumabot-reviewer` | `ollama/qwen3.5:9b` | subagent | Auditoría final local (lint, seguridad, formato) |
+| `mumabot-coder-local` | `ollama/llama3.1:8b` | subagent | 🔒 .env, API keys, secretos (100% offline) |
+| `mumabot-reviewer` | `ollama/llama3.1:8b` | subagent | Auditoría final local (lint, seguridad, formato) |
 
 ## Flujo de orquestación
 
@@ -34,8 +34,12 @@ Equipo mixto (cloud + local) orquestado por **MumaBot Cloud Pro**. El orquestado
 | `google/gemini-2.5-pro` / `gemini-2.5-flash` | ❌ DEPRECADOS (ago 2026) | NUNCA usar — causa del incidente |
 | `google/gemini-3.6-flash` | ✅ Free tier OK | coder-cloud, designer |
 | `openrouter/google/gemini-3.1-pro-preview` | ✅ vía OpenRouter | architect (NO en free tier de Google, quota 0) |
-| `ollama/qwen3.7-agents:4b-q8` | ✅ Local | coder-local |
-| `ollama/qwen3.5:9b` | ✅ Local | reviewer |
+| `ollama/llama3.1:8b` | ✅ Local | coder-local + reviewer (tool calling nativo CONSISTENTE) |
+| `ollama/mistral-nemo:12b` | ❌ INCONSISTENTE (1/5 tool calls) | NO usar — a veces JSON en texto o alucina |
+| `ollama/qwen3.7-agents:4b-q8` | ⚠️ Retirado (falló 2x en deploy) | sustituido por llama3.1:8b |
+| `ollama/qwen3.5:9b` | ⚠️ Retirado (más lento) | sustituido por llama3.1:8b |
+| `ollama/deepseek-coder-v2:16b` | ❌ No soporta tools en Ollama | NO usar como agente |
+| `mlx/qwen3-4b-q8` | ❌ Zombie (18080) + sin ventaja | NO usar |
 
 **Verificación previa**: `opencode models | grep google/gemini-3` antes de asignar un modelo cloud.
 **Cacheo**: los cambios en `~/.config/opencode/agents/*.md` se cachean al arrancar — requieren **reiniciar opencode**.
