@@ -34,20 +34,15 @@ import { supabase } from "@/lib/supabase/client";
 import { PatientSelect } from "@/components/patients/patient-select";
 import { useRouter } from "next/navigation";
 
-const TIME_SLOTS = [
-  "09:00", "09:15", "09:30", "09:45",
-  "10:00", "10:15", "10:30", "10:45",
-  "11:00", "11:15", "11:30", "11:45",
-  "12:00", "12:15", "12:30", "12:45",
-  "13:00", "13:15", "13:30", "13:45",
-  "14:00", "14:15", "14:30", "14:45",
-  "15:00", "15:15", "15:30", "15:45",
-  "16:00", "16:15", "16:30", "16:45",
-  "17:00", "17:15", "17:30", "17:45",
-  "18:00", "18:15", "18:30", "18:45",
-  "19:00", "19:15", "19:30", "19:45",
-  "20:00",
-];
+// 15-minute time slots from 09:30 to 20:30 — clinic opening hours
+const TIME_SLOTS: string[] = [];
+for (let totalMins = 9 * 60 + 30; totalMins <= 20 * 60 + 30; totalMins += 15) {
+  const h = Math.floor(totalMins / 60);
+  const m = totalMins % 60;
+  const hh = String(h).padStart(2, "0");
+  const mm = String(m).padStart(2, "0");
+  TIME_SLOTS.push(`${hh}:${mm}`);
+}
 
 const DURATION_OPTIONS = [
   { value: 15, label: "15 min (Consulta rápida)" },

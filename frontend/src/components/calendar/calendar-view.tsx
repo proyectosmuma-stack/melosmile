@@ -65,14 +65,14 @@ export const DEFAULT_CLINICS: Clinic[] = [
 
 type ViewMode = "month" | "week" | "day";
 
-// 15-minute grid slots from 07:00 to 23:45 so all morning, evening & night appointments fit
+// 15-minute grid slots from 09:30 to 20:30 — clinic opening hours
 const TIME_SLOTS: string[] = [];
-for (let h = 7; h <= 23; h++) {
-  for (let m = 0; m < 60; m += 15) {
-    const hh = String(h).padStart(2, "0");
-    const mm = String(m).padStart(2, "0");
-    TIME_SLOTS.push(`${hh}:${mm}`);
-  }
+for (let totalMins = 9 * 60 + 30; totalMins <= 20 * 60 + 30; totalMins += 15) {
+  const h = Math.floor(totalMins / 60);
+  const m = totalMins % 60;
+  const hh = String(h).padStart(2, "0");
+  const mm = String(m).padStart(2, "0");
+  TIME_SLOTS.push(`${hh}:${mm}`);
 }
 
 const today = new Date();
