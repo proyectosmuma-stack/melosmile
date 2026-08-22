@@ -15,8 +15,8 @@ Equipo mixto (cloud + local) orquestado por **MumaBot Cloud Pro**. El orquestado
 | `mumabot-architect` | `openrouter/google/gemini-3.1-pro-preview` | subagent | Arquitectura, ERD, contratos API |
 | `mumabot-coder-cloud` | `google/gemini-3.6-flash` | subagent | Código público, algoritmos, tests |
 | `mumabot-designer` | `google/gemini-3.6-flash` | subagent | UI/UX premium, CSS, HTML, animaciones |
-| `mumabot-coder-local` | `ollama/llama3.1:8b` | subagent | 🔒 .env, API keys, secretos (100% offline) |
-| `mumabot-reviewer` | `ollama/llama3.1:8b` | subagent | Auditoría final local (lint, seguridad, formato) |
+| `mumabot-coder-local` | `ollama/qwen3.5:9b` | subagent | 🔒 .env, API keys, secretos (100% offline) |
+| `mumabot-reviewer` | `ollama/qwen3.5:9b` | subagent | Auditoría final local (lint, seguridad, formato) |
 
 ## Flujo de orquestación
 

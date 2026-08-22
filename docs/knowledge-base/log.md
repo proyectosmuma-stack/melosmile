@@ -86,3 +86,17 @@ Registro cronológico (append-only) de ingestas y actualizaciones del wiki.
 - **coder-local (llama3.1:8b)** ❌: ante el push a cloud respondió una "configuración segura de .env" NO solicitada sin tocar ningún archivo real (alucinación pura; .env.local intacto). El push quedó bloqueado además por falta de auth CLI (`supabase whoami` falla; sin SUPABASE_ACCESS_TOKEN).
 - **Infra restaurada**: proxy Ollama 11435 estaba caído → puente TCP propio (`python3` socket forwarder en scratch) hacia 11434 nativo; equipo local operativo de nuevo.
 - **PENDIENTE (humano)**: aplicar `ALTER TYPE public.reminder_channel ADD VALUE IF NOT EXISTS 'whatsapp';` en Supabase CLOUD vía dashboard SQL Editor, o hacer `supabase login` para habilitar `db push`.
+
+## [2026-08-22] ui | Modo oscuro activado + gotcha crítico de Select en @base-ui/react
+- **Modo oscuro**: `layout.tsx` nunca tuvo la clase `dark` en `<html>` (desde commit inicial) y el diseño era dark (`.dark` tokens completos en globals.css). Fix: `className="dark ..."` + `lang="es"`.
+- **Tailwind v4**: para que la clase `.dark` dirija la variante `dark:` hace falta `@custom-variant dark (&:where(.dark, .dark *));` y el mapeo `@theme inline { --color-*: hsl(var(--*)) }` (añadido a globals.css; cobertura verificada 32/32 vars). Sin eso los utilitarios semánticos no resuelven.
+- **GOTCHA Base UI (documentar para siempre)**: shadcn moderno usa `@base-ui/react`, NO Radix. `<Select.Value/>` solo resuelve etiquetas si `Select.Root` recibe prop `items=[{value,label}]`; si no, con el popup cerrado muestra el VALOR CRUDO (fallback `serializeValue` en `internals/resolveValueLabel.js`). Causó que el selector "Sede Activa" pintara el UUID `59d7b4f4...` al elegir una clínica. Corregidos 13 selects en 5 archivos.
+- **Drawer de citas**: resolvía clínica contra `DEFAULT_CLINICS` (IDs hardcodeados "goya"/"albacete") → siempre mostraba la primera. Ahora recibe `clinics` reales desde calendar-view.
+- **Facturación multiclinica**: `/api/ai-context` devolvía bien las 4 clínicas; el hub filtraba por el selector global persistido en localStorage. Tras `db reset` esos UUIDs quedaron huérfanos. Fixes: hub ignora el filtro global (vista contable = todas las clínicas) y clinic-context valida el ID persistido contra la BD (huérfano → reset a "all").
+- **Equipo**: reviewer (`qwen3.5:9b`) devolvió `task_result` VACÍO otra vez → auditoría manual del orquestador 8/8 PASS (secretos/rutas/markdown limpios, patrón items 13/13, sin bucles, tsc solo errores pre-existentes conocidos). El fallo de output vacío/truncado afecta también al modelo nuevo.
+
+## [2026-08-22] data | Citas demo de Munir PAC-001 sembradas en seed.sql
+- Tras el `db reset` el paciente canónico quedó sin citas (nunca estuvieron en el seed; se creaban por UI). Usuario aprobó sembrarlas.
+- 3 citas con **fechas relativas a now()** (siempre vigentes tras futuros resets): Realizada hace ~35d en RyA (con billed_at → facturable), Realizada hace ~10d en Goya (billed_at NULL → caso "pendiente de facturar"), Confirmada +5 días hábiles en RyA (guard anti-fin-de-semana).
+- UUIDs fijos `00000000-0000-4000-8000-00000000000X` + ON CONFLICT DO NOTHING → idempotente (re-ejecución = INSERT 0 0, verificado).
+- Aplicadas a BD local y persistidas en seed.sql (+6 líneas). Verificación independiente del orquestador: 3/3 citas visibles con JOIN a clínicas correcto.

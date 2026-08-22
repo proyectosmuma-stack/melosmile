@@ -80,14 +80,12 @@ PLAN 1 consistía en reemplazar la URL obsoleta `frontend-eight-dusky-42.vercel.
 
 ## 🚀 Próximos Pasos Pendientes
 
-0. ~~**🔴 APLICAR MIGRACIÓN DEL ENUM EN CLOUD**~~ **RESUELTO (2026-08-22)** ✅ — el usuario aplicó las migraciones en Supabase CLOUD manualmente y confirma historial 100% sincronizado. Local y cloud comparten el enum ampliado (`email|telegram|web|sms|whatsapp`). Commit local: `1f99ea0`.
-1. **Limpieza reminder de prueba en cloud**: durante la verificación de `/api/billing/reminders` en staging se crearon 3 reminders de prueba en la BD cloud (`cf8006ac…`, `bb5bac4c…`, `7c053a9f…`, canal email, created_by `agente_contabilidad`). Ya eliminados del `seed.sql` local y verificado que local no los tenía (0 reminders). Borrarlos en cloud con la key de Vercel o desde el dashboard Supabase.
-2. ~~**Fix bug pre-existente**: default `channel: "whatsapp"` → `"email"` en `frontend/src/app/api/reminders/create/route.ts`.~~ **RESUELTO (2026-08-22)** ✅. La parte UI quedó resuelta por la vía B elegida por el usuario: migración que AÑADE `whatsapp` al enum → el modal funciona end-to-end sin cambios (verificado por designer).
-3. ~~**Decisión de diseño pendiente**: ¿eliminar el seed de la migración `20260722000005`?~~ **RESUELTO (2026-08-22)** ✅ — usuario aprobó; seed eliminado de la migración, `supabase db reset` ahora completa limpio en 1 paso (EXIT_CODE=0), datos únicos desde `seed.sql`.
-4. ~~Registrar limitación reviewer en `docs/knowledge-base/domains/agent-team.md`.~~ **RESUELTO** ✅ + ampliada con los 2 fallos de hoy (truncado + alucinación) y la caída/restauración del proxy 11435.
-5. Considerar limpiar `n8n-workflows/melosmile/` — **DECIDIDO (2026-08-22): conservarlo** como referencia histórica.
-6. ~~Reiniciar opencode para cargar los nuevos modelos.~~ **RESUELTO**: sesión 2026-08-22 ya con llama3.1:8b.
-7. **Nota infra**: el proxy 11435 era efímero; se restauró con un puente TCP python (scratch). Si vuelve a caer tras reinicio, recrearlo o apuntar `opencode.jsonc` a 11434 nativo.
+0. ~~Migración enum en cloud~~ **RESUELTO (2026-08-22)** ✅ — usuario la aplicó; historial 100% sincronizado. Commit `1f99ea0`.
+1. **🔴 SIN COMMITEAR (ronda bugs UI 2026-08-22 tarde)**: 11 archivos frontend con 3 fixes — (a) modo oscuro (`layout.tsx` clase dark + `globals.css` @custom-variant/@theme inline), (b) hub facturación multiclínica + guard anti-ID-huérfano en clinic-context, (c) 13 selects Base UI con prop `items` + drawer de citas. Auditoría manual 8/8 PASS. **Pendiente: confirmación visual del usuario + commit.**
+2. **Limpieza reminder de prueba en cloud**: ids `cf8006ac…`, `bb5bac4c…`, `7c053a9f…` (created_by agente_contabilidad) siguen en la BD cloud. Borrarlos vía dashboard o key de Vercel.
+3. **Nota infra**: proxy Ollama 11435 restaurado con puente TCP efímero (scratch). Si cae tras reinicio, recrearlo o apuntar a 11434.
+4. **Deuda técnica conocida**: `src/lib/billing/utils.test.ts` tiene sintaxis rota (tsc falla ahí); selects nativos del modal Editar Cita pendientes de migrar; dropdown "Clínica:" del Filter Bar del hub muta el contexto global sin filtrar esa grid (decidir si se oculta o se vuelve filtro local).
+5. ~~Reiniciar opencode para modelos nuevos~~ RESUELTO. Limitaciones del equipo local documentadas en agent-team.md (reviewer qwen3.5:9b también devuelve resultados vacíos a veces → auditoría manual como fallback).
 
 ---
 
