@@ -44,6 +44,15 @@ Equipo mixto (cloud + local) orquestado por **MumaBot Cloud Pro**. El orquestado
 **Verificación previa**: `opencode models | grep google/gemini-3` antes de asignar un modelo cloud.
 **Cacheo**: los cambios en `~/.config/opencode/agents/*.md` se cachean al arrancar — requieren **reiniciar opencode**.
 
+## Limitaciones conocidas del equipo (lecciones operativas)
+
+| Agente | Limitación | Mitigación |
+|--------|-----------|------------|
+| `mumabot-reviewer` (`llama3.1:8b`) | Alucinó un script inexistente al auditar flujos JSON de n8n (2026-08-18) y no pudo acceder a algunos archivos `.md` | Auditorías de sintaxis/JSON verificarlas manualmente por el orquestador (`python3 -m json.tool`, `grep`); reviewer reservado para lint/código plano |
+| `mumabot-coder-local` (`qwen3.7-agents:4b-q8`, histórico) | Falló 2/2 en deploys vía API n8n: alucinó respuestas 400 sin ejecutar herramientas | El orquestador ejecuta deploys críticos directamente; delegar solo tareas de archivo local |
+| Todos los locales en paralelo | OOM (`signal: killed`) con RAM 18GB al límite | Agentes locales en solitario/secuencial; cloud puede ir en paralelo |
+| Modelos "thinking" locales (`qwen3.7-agents`) | Respuestas cortadas con `finish: length` si `max_tokens` < 500 | Ampliar `max_tokens` (500+) al invocarlos |
+
 ## Referencias cruzadas
 
 - [Incidente 2026-08-18](decisions/incidente-2026-08-18-subagentes-vacios.md)

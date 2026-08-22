@@ -107,3 +107,37 @@ La migración cumple la especificación `design-system.md`. Todos los componente
 ## 8. Observaciones
 
 Las 3 observaciones de la primera pasada (O1 estados del agente, O2 blob del login, O3 tokens en `.dark`) fueron **resueltas** en la segunda pasada y verificadas con `npx next build` correcto. No quedan observaciones pendientes.
+---
+
+# Auditoría Sesión 2026-08-22 — Fix canal reminders + reset BD
+
+**Fecha:** 2026-08-22
+**Alcance:** fix de canal en API reminders, migración enum `whatsapp`, limpieza de seed, docs KB.
+**Método:** auditoría del reviewer local intentada (2 delegaciones fallidas: resultado truncado / respuesta alucinada sin ejecutar) → completada manualmente por el orquestador con verificación mecánica (precedente decisión #12).
+
+## Veredictos por archivo
+
+| Archivo | Cambio | Veredicto |
+|---|---|---|
+| `frontend/src/app/api/reminders/create/route.ts` | default `whatsapp`→`email` + `newReminder.channel` en descripción | **PASS** — tsc sin errores nuevos; eslint solo `any` pre-existentes; lógica coherente |
+| `supabase/migrations/20260822000000_add_whatsapp_to_reminder_channel.sql` | NUEVO | **PASS** — contiene solo `ALTER TYPE ... ADD VALUE IF NOT EXISTS 'whatsapp'` |
+| `supabase/migrations/20260722000005_treatments_and_clinic_rules.sql` | seeds §7-§10 eliminados | **PASS** — DDL puro (85 líneas), 0 INSERTs, conserva tablas/ALTERs/RLS |
+| `supabase/seed.sql` | filas de prueba eliminadas | **PASS** — 0 ids de prueba (cf8006ac/bb5bac4c/7c053a9f); maestros íntegros (4 clínicas, Munir cff20455 presente) |
+| Docs (log.md, agent-team.md, ESTADO_PROYECTO.md) | actualizados | **PASS** — coherentes entre sí, fecha 2026-08-22 |
+
+## Checklist de seguridad
+
+- [x] Sin API keys/tokens/passwords en archivos tocados (patrones eyJ/sk-/service_role/access_token: LIMPIO)
+- [x] Sin rutas absolutas `/Users/` en código fuente (LIMPIO)
+- [x] `.env.local` intacto (timestamp original 29-jul; el fallo del coder-local no tocó nada real)
+- [x] Verificación funcional post-reset (coder-cloud): enum = email|telegram|web|sms|whatsapp; conteos 4/4/53/10/10; PAC-001 activo; 0 FKs rotas
+
+## Incidencias del equipo durante la sesión (registradas en KB)
+
+1. Proxy Ollama 11435 caído → puente TCP restaurado a 11434.
+2. Reviewer (llama3.1:8b): resultado truncado sin veredicto → auditoría completada manualmente.
+3. Coder-local (llama3.1:8b): respondió una tarea no solicitada (.env) sin tocar archivos reales → push a cloud NO realizado.
+
+## Conclusión global: PASS (local) — PENDIENTE aplicar migración enum en CLOUD (requiere auth CLI o dashboard)
+
+**Veredicto global: APROBADO** para los cambios locales. Acción pendiente escalada al humano: aplicar la migración del enum en Supabase cloud (dashboard SQL Editor o `supabase login` + `supabase db push`).

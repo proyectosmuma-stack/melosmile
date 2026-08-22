@@ -31,7 +31,8 @@ export async function POST(req: Request) {
         patient_id: patientId,
         appointment_id: appointmentId || null,
         reminder_type: reminderType || "personalizado",
-        channel: channel || "whatsapp",
+        // Enum válido reminder_channel: email | telegram | web | sms (NO existe "whatsapp")
+        channel: channel || "email",
         scheduled_at: scheduledAt || new Date().toISOString(),
         subject: subject || "Notificación Melosmile",
         message,
@@ -49,7 +50,7 @@ export async function POST(req: Request) {
     await (supabase as any).from("reminder_events").insert({
       reminder_id: newReminder.id,
       event_type: "created",
-      description: `Recordatorio creado para canal ${channel}`,
+      description: `Recordatorio creado para canal ${newReminder.channel}`,
     }).select();
 
     // If sendImmediately, dispatch to n8n right now

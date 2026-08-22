@@ -1,7 +1,7 @@
 # 🧩 ESTADO_PROYECTO.md - Melosmile
 
 > ⚠️ **REGLA DE RAMAS**: Trabajo en rama `develop`. Nunca fusionar este archivo a `main`.
-> **Última actualización**: 2026-08-18 (PLAN 3 completado: fix autenticación n8n ↔ staging + endpoint billing/reminders)
+> **Última actualización**: 2026-08-22 (sesión completa: fix reminders + enum whatsapp + reset local en 1 paso; PENDIENTE push a cloud)
 > **Para reiniciar la conversación**: "Lee .opencode/ESTADO_PROYECTO.md y sigamos desde ahí."
 
 ---
@@ -80,12 +80,14 @@ PLAN 1 consistía en reemplazar la URL obsoleta `frontend-eight-dusky-42.vercel.
 
 ## 🚀 Próximos Pasos Pendientes
 
-1. **Limpieza reminder de prueba en cloud**: durante la verificación de `/api/billing/reminders` en staging se creó el reminder `bb5bac4c-e435-470e-bb37-8a6ccd601988` en la BD cloud (la service role key cloud no está en `.env.local`; está en Vercel env). Borrarlo con la key de Vercel o desde el dashboard Supabase.
-2. **Fix bug pre-existente**: `frontend/src/app/api/reminders/create/route.ts` usa default `channel: "whatsapp"` que NO existe en el enum `reminder_channel` (`email|telegram|web|sms`) → crear reminder sin `channel` explícito falla con 500. Cambiar default a `email`.
-3. **Decisión de diseño pendiente (preguntar al usuario)**: ¿eliminar el seed de la migración `20260722000005` para que `supabase db reset` sea limpio en 1 solo paso (sin TRUNCATE manual)?
-4. **Auditoría del reviewer** (opcional): el reviewer local (llama3.1:8b) alucinó un script inexistente en la auditoría de esta sesión; la verificación se completó manualmente con PASS. Registrar limitación en `docs/knowledge-base/domains/agent-team.md`.
-5. Considerar limpiar `n8n-workflows/melosmile/` (versiones antiguas con URL obsoleta — NO desplegadas).
-6. **Decisión de equipo (2026-08-18, resuelta)**: `mumabot-coder-local` y `mumabot-reviewer` ahora usan `ollama/llama3.1:8b` (tool calling consistente). **Pendiente: reiniciar opencode para cargar los nuevos modelos.**
+0. **🔴 APLICAR MIGRACIÓN DEL ENUM EN CLOUD (bloqueante para staging)**: `ALTER TYPE public.reminder_channel ADD VALUE IF NOT EXISTS 'whatsapp';` — local ya la tiene aplicada y verificada. Cloud NO: la CLI no está autenticada (`supabase whoami` falla, sin `SUPABASE_ACCESS_TOKEN`) y las 2 delegaciones locales fallaron (reviewer truncado, coder-local alucinó sin tocar nada). Opciones: (a) pegar el SQL en el dashboard Supabase → SQL Editor del proyecto `amhfdzfcmpastmlsosou`, o (b) ejecutar `supabase login` en este equipo y luego `supabase db push` desde la raíz.
+1. **Limpieza reminder de prueba en cloud**: durante la verificación de `/api/billing/reminders` en staging se crearon 3 reminders de prueba en la BD cloud (`cf8006ac…`, `bb5bac4c…`, `7c053a9f…`, canal email, created_by `agente_contabilidad`). Ya eliminados del `seed.sql` local y verificado que local no los tenía (0 reminders). Borrarlos en cloud con la key de Vercel o desde el dashboard Supabase.
+2. ~~**Fix bug pre-existente**: default `channel: "whatsapp"` → `"email"` en `frontend/src/app/api/reminders/create/route.ts`.~~ **RESUELTO (2026-08-22)** ✅. La parte UI quedó resuelta por la vía B elegida por el usuario: migración que AÑADE `whatsapp` al enum → el modal funciona end-to-end sin cambios (verificado por designer).
+3. ~~**Decisión de diseño pendiente**: ¿eliminar el seed de la migración `20260722000005`?~~ **RESUELTO (2026-08-22)** ✅ — usuario aprobó; seed eliminado de la migración, `supabase db reset` ahora completa limpio en 1 paso (EXIT_CODE=0), datos únicos desde `seed.sql`.
+4. ~~Registrar limitación reviewer en `docs/knowledge-base/domains/agent-team.md`.~~ **RESUELTO** ✅ + ampliada con los 2 fallos de hoy (truncado + alucinación) y la caída/restauración del proxy 11435.
+5. Considerar limpiar `n8n-workflows/melosmile/` — **DECIDIDO (2026-08-22): conservarlo** como referencia histórica.
+6. ~~Reiniciar opencode para cargar los nuevos modelos.~~ **RESUELTO**: sesión 2026-08-22 ya con llama3.1:8b.
+7. **Nota infra**: el proxy 11435 era efímero; se restauró con un puente TCP python (scratch). Si vuelve a caer tras reinicio, recrearlo o apuntar `opencode.jsonc` a 11434 nativo.
 
 ---
 
