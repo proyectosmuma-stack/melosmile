@@ -486,63 +486,66 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: true, action: "updated", count: data?.length || 0, data });
     }
 
-    // Perform update by patient + optional date
+    // Perform update by patient: ONLY allowed when the patient has exactly ONE active appointment.
+    // This guards against accidental mass-updates across multiple appointments at once.
     if (resolvedPatientId) {
-      const { data: currentPatientAppts } = await dbClient
+      const { data: activeAppointments } = await dbClient
         .from("appointments")
-        .select("id, notes, reason")
+        .select("id, appointment_date, reason, status")
         .eq("patient_id", resolvedPatientId)
-        .order("created_at", { ascending: false })
-        .limit(1);
+        .neq("status", "Cancelada")
+        .order("appointment_date", { ascending: true });
 
-      if (rawReason && currentPatientAppts && currentPatientAppts.length > 0) {
-        updates.notes = await enrichNotesWithProcedure(currentPatientAppts[0].notes, rawReason);
+      const candidates = activeAppointments || [];
+
+      if (candidates.length === 0) {
+        return NextResponse.json(
+          { success: false, message: "No se encontraron citas activas para este paciente." },
+          { status: 404 }
+        );
       }
 
-      let query = dbClient
-        .from("appointments")
-        .update(updates)
-        .eq("patient_id", resolvedPatientId);
-
-      if (rawDate && (status === "cancelled" || status === "cancelada" || status === "Cancelada")) {
-        const parsedDateStr = parseAppointmentDate(rawDate);
-        const parsedDate = new Date(parsedDateStr);
-        const startOfDay = new Date(Date.UTC(parsedDate.getUTCFullYear(), parsedDate.getUTCMonth(), parsedDate.getUTCDate(), 0, 0, 0, 0)).toISOString();
-        const endOfDay = new Date(Date.UTC(parsedDate.getUTCFullYear(), parsedDate.getUTCMonth(), parsedDate.getUTCDate(), 23, 59, 59, 999)).toISOString();
-        query = query.gte("appointment_date", startOfDay).lte("appointment_date", endOfDay);
+      if (candidates.length > 1) {
+        return NextResponse.json(
+          {
+            success: false,
+            action: "ambiguous",
+            count: candidates.length,
+            message: `Se encontraron ${candidates.length} citas activas de este paciente. Especifica la fecha/hora exacta o el appointment_id de la cita a modificar.`,
+            candidates: candidates.slice(0, 10),
+          },
+          { status: 409 }
+        );
       }
 
-      const { data, error } = await query.select();
-      if (error) throw error;
+      // Exactly ONE active appointment: safe surgical update by its id
+      const soleAppointment = candidates[0];
 
-
-      // If no rows were updated, update the most recent active appointment for that patient
-      if (!data || data.length === 0) {
-        const { data: latest } = await dbClient
+      if (rawReason && soleAppointment?.id) {
+        const { data: currentTarget } = await dbClient
           .from("appointments")
-          .select("id")
-          .eq("patient_id", resolvedPatientId)
-          .order("created_at", { ascending: false })
-          .limit(1)
+          .select("notes, reason")
+          .eq("id", soleAppointment.id)
           .maybeSingle();
 
-        if (latest) {
-          const { data: updatedLatest, error: errLatest } = await dbClient
-            .from("appointments")
-            .update(updates)
-            .eq("id", latest.id)
-            .select();
-
-          if (errLatest) throw errLatest;
-          return NextResponse.json({ success: true, action: "updated", count: updatedLatest?.length || 0, data: updatedLatest });
+        if (currentTarget) {
+          updates.notes = await enrichNotesWithProcedure(currentTarget.notes, rawReason);
         }
       }
+
+      const { data, error } = await dbClient
+        .from("appointments")
+        .update(updates)
+        .eq("id", soleAppointment.id)
+        .select();
+
+      if (error) throw error;
 
       return NextResponse.json({
         success: true,
         message: "Cita modificada exitosamente en la agenda.",
         action: "updated",
-        count: data?.length || 0,
+        count: 1,
         data
       });
     }
