@@ -37,6 +37,7 @@ const mainNavigation = [
 ];
 
 const settingsSubMenu = [
+  { name: "General", href: "/settings", icon: Settings },
   { name: "Clínicas", href: "/settings/clinics", icon: Building2 },
   { name: "Profesionales", href: "/settings/professionals", icon: Stethoscope },
   { name: "Tratamientos", href: "/settings/treatments", icon: FlaskConical },

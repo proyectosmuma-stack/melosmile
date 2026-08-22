@@ -3,7 +3,8 @@
 import React from "react";
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
-import { Building2, Stethoscope, FlaskConical, ChevronRight, Settings } from "lucide-react";
+import { Building2, Stethoscope, FlaskConical, ChevronRight, Settings, Palette } from "lucide-react";
+import { ThemeToggle } from "@/components/settings/theme-toggle";
 
 const sections = [
   {
@@ -47,6 +48,24 @@ export default function SettingsPage() {
           </p>
         </div>
       </div>
+
+      {/* Apariencia */}
+      <Card className="rounded-2xl border border-border bg-card shadow-sm">
+        <CardContent className="p-6 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <div className="h-11 w-11 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+              <Palette className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <h2 className="text-sm font-semibold tracking-tight text-foreground">Apariencia</h2>
+              <p className="text-sm text-muted-foreground mt-0.5 leading-relaxed">
+                Elige entre modo claro y oscuro
+              </p>
+            </div>
+          </div>
+          <ThemeToggle />
+        </CardContent>
+      </Card>
 
       {/* Configuration Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5">

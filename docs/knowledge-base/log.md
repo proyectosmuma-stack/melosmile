@@ -106,3 +106,4 @@ Registro cronológico (append-only) de ingestas y actualizaciones del wiki.
 - Persistencia en localStorage (`melosmile_theme`, default dark) + script inline anti-FOUC en `<head>` del layout (aplica/quita clase dark ANTES del primer paint) + `suppressHydrationWarning` en `<html>`.
 - Card "Apariencia" añadida al hub `/settings`. globals.css intacto (el sistema dual ya existía).
 - Verificado por orquestador: tsc sin errores nuevos, archivos exactos (2 M + 1 nuevo).
+- Fix UX descubierto en validación: el hub /settings era inaccesible desde el menú (el botón Ajustes solo expande). Añadida entrada "General" como primer item del submenú Ajustes.
