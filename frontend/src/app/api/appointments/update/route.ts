@@ -289,20 +289,20 @@ export async function POST(req: Request) {
     // 2. HARD DELETE OPERATION
     if (isDelete) {
       if (targetId) {
-        // Limpiar billing_records NO facturados que referencian la cita (evita FK violation)
+        // Limpiar billing_records NO facturados (status Pendiente) que referencian la cita (evita FK violation)
         const { error: cleanupBillingErr } = await dbClient
           .from("billing_records")
           .delete()
           .eq("appointment_id", targetId)
-          .is("billed_at", null);
+          .eq("status", "Pendiente");
         if (cleanupBillingErr) throw cleanupBillingErr;
 
-        // Si existen billing_records YA facturados, bloquear el borrado de la cita
+        // Si existen billing_records ya procesados (Aprobado / Facturado Odoo), bloquear el borrado de la cita
         const { data: billedRecords } = await dbClient
           .from("billing_records")
           .select("id")
           .eq("appointment_id", targetId)
-          .not("billed_at", "is", null)
+          .in("status", ["Aprobado", "Facturado Odoo"])
           .limit(1);
         if (billedRecords && billedRecords.length > 0) {
           return NextResponse.json(
