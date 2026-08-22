@@ -100,3 +100,9 @@ Registro cronológico (append-only) de ingestas y actualizaciones del wiki.
 - 3 citas con **fechas relativas a now()** (siempre vigentes tras futuros resets): Realizada hace ~35d en RyA (con billed_at → facturable), Realizada hace ~10d en Goya (billed_at NULL → caso "pendiente de facturar"), Confirmada +5 días hábiles en RyA (guard anti-fin-de-semana).
 - UUIDs fijos `00000000-0000-4000-8000-00000000000X` + ON CONFLICT DO NOTHING → idempotente (re-ejecución = INSERT 0 0, verificado).
 - Aplicadas a BD local y persistidas en seed.sql (+6 líneas). Verificación independiente del orquestador: 3/3 citas visibles con JOIN a clínicas correcto.
+
+## [2026-08-22] ui | Switch de tema claro/oscuro en Ajustes
+- Nuevo componente `frontend/src/components/settings/theme-toggle.tsx`: switch animado Sol/Luna, role="switch" accesible (aria-checked, teclado), tokens semánticos para verse bien en ambos modos.
+- Persistencia en localStorage (`melosmile_theme`, default dark) + script inline anti-FOUC en `<head>` del layout (aplica/quita clase dark ANTES del primer paint) + `suppressHydrationWarning` en `<html>`.
+- Card "Apariencia" añadida al hub `/settings`. globals.css intacto (el sistema dual ya existía).
+- Verificado por orquestador: tsc sin errores nuevos, archivos exactos (2 M + 1 nuevo).
