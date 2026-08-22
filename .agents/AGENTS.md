@@ -53,15 +53,29 @@ Cuando el usuario pida **"Borra datos"**, **"Limpia la base de datos"** o simila
 
 ### Comando: "Cierra sesión"
 Cuando el usuario diga **"Cierra sesión"** o similar:
-1. **Documentación**: Actualizar y documentar exhaustivamente todos los cambios realizados en:
-   - `context.md`
-   - `roadmap.md`
-   - `Walkthrough.md`
+1. **Documentación**: Actualizar y documentar exhaustivamente todos los cambios realizados en `context.md`, `roadmap.md` y `Walkthrough.md`.
 2. **Redundancia & Limpieza**: Ejecutar respaldo automático de datos (`npm run db:sync`), y limpiar y eliminar archivos temporales o basura generados durante la sesión.
 3. **Git y Vercel**: Preguntar al usuario si desea hacer `git commit` a la rama `develop` y verificar el estado del despliegue en Vercel.
 4. **Apagado**: Preguntar al usuario si desea apagar el servidor local (`localhost:3028`) y detener la base de datos de Supabase.
 
+### Comando: "/monitor" / "Inicia monitoreo"
+Cuando el usuario diga **/monitor**, **"Inicia monitoreo"**, **"Comienza monitorizacion"** o similar:
+1. **Verificación de Tareas**: Comprobar si ya existe un cron de monitorización con `manage_task(Action='list')`.
+2. **Programación Cron**: Invocar `schedule` con `CronExpression="*/5 * * * *"` y `IsDaemon=false` para auditar cada 5 minutos.
+3. **Estructura Obligatoria de Informe**:
+   - `👥 Confirmación de Uso de Subagentes`
+   - `💻 Diagnóstico de Recursos de Máquina` (VRAM, GPU Metal, % CPU, RAM, Docker Colima)
+   - `🔍 Calidad de Código y Salud de Servicios` (Local `:3028`, Supabase `:54321`, Vercel Staging)
+4. **Snapshot Inicial**: Emitir un reporte instantáneo al activar.
+
+### Comando: "/stop-monitor" / "Detén monitoreo"
+Cuando el usuario diga **/stop-monitor**, **"Deten monitoreo"**, **"Pausa monitoreo"** o similar:
+1. **Localización**: Encontrar el `taskId` del cron activo en `manage_task(Action='list')`.
+2. **Cancelación**: Ejecutar `manage_task(Action='kill', TaskId=...)`.
+3. **Confirmación**: Notificar la detención y emitir un resumen de 3 líneas del estado del sistema.
+
 ---
+
 
 ## ⚡ Reglas de Eficiencia de Contexto para OpenCode (Ventana 22k / qwen2.5-coder:14b)
 
@@ -80,3 +94,22 @@ Para optimizar el uso de contexto y evitar la degradación en modelos locales co
    - SIEMPRE usar `codegraph_callers` antes de modificar una función para saber quién la llama.
    - SIEMPRE usar `codegraph_structure` para entender la arquitectura de un módulo sin leer archivos completos.
    - SIEMPRE usar `codegraph_impact` antes de editar un archivo para evaluar posibles rupturas.
+
+
+## 🛑 REGLA ANTI-BUCLES DE DIAGNÓSTICO E2E (Protocolo de 3 Capas Aisladas)
+
+Queda ESTRICTAMENTE PROHIBIDO el patrón de "ensayo-error acoplado" (hacer 1 cambio menor -> lanzar E2E completo -> fallar -> repetir).
+Cuando un flujo o integración falle en pruebas E2E, se DEBE seguir obligatoriamente este orden secuencial:
+
+### CAPA 1 — Infraestructura y Transporte (Bulk Fix & Pure Plumbing)
+1. **Auditoría Exhaustiva de Nodos:** Inspeccionar TODOS los nodos y herramientas del flujo en una sola pasada (no nodo por nodo).
+2. **Bulk Configuration:** Aplicar flags obligatorios (`sendHeaders: true`, content-types, auth headers) a TODOS los nodos en un solo PUT/Update masivo.
+3. **Validación en Seco (Unit Tests / Curl):** Verificar directamente contra los endpoints HTTP con curl que devuelven `200 OK` antes de involucrar al LLM.
+
+### CAPA 2 — Orquestación y Prompts (Contratos de Delegación)
+1. **Endurecimiento de Reglas:** Prohibir explícitamente al Dispatcher o Supervisor responder con texto o JSON inventado. Forzar la invocación de la herramienta/sub-workflow.
+2. **Aislamiento de Nodos Deshabilitados:** Nunca dejar nodos deshabilitados conectados al grafo del agente LangChain (eliminarlos para evitar bucles de iteración máxima).
+
+### CAPA 3 — Certificación E2E Única y Verdad Absoluta
+1. **Un Solo Test de Integración:** Ejecutar el test E2E completo únicamente tras haber verificado el 100% de la Capa 1 y Capa 2.
+2. **Verdad Absoluta en Base de Datos:** Comprobar siempre el registro real en la base de datos (PostgreSQL / Supabase), nunca fiarse del texto de éxito devuelto por el LLM.

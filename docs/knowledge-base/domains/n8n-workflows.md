@@ -94,3 +94,24 @@ Todas las peticiones HTTP que los nodos de n8n envían hacia la API de Melosmile
 x-api-key: melosmile_internal_n8n_key_2026
 Content-Type: application/json
 ```
+
+## 4. Credenciales de IA y Modelos LLM (Gotchas Operativos)
+- **Credencial de OpenRouter en n8nv2:** ID `4nco5fDnIohG6g9f` (nombre `"OpenRouter account"`) está activa y configurada en `https://n8nv2.mumaweb.com`.
+- **Gotcha de Modelos:** Si un flujo falla en `OpenRouter_Chat_Model` con error de ejecución, comprobar el parámetro `model`. Los modelos `google/gemini-2.5-*` fueron deprecados por Google. Deben configurarse modelos vigentes (`google/gemini-3.6-flash` o `google/gemini-3.1-pro-preview`).
+
+## 5. Regla Anti-Bucles de Diagnóstico E2E (Protocolo de 3 Capas Aisladas)
+Queda estrictamente prohibido el patrón de "ensayo-error acoplado" (hacer 1 cambio menor -> lanzar E2E completo -> fallar -> repetir) en los agentes conectados a n8n.
+Cuando un flujo o integración multi-agente falle en pruebas E2E, se DEBE seguir obligatoriamente este orden secuencial (cristalizado en el grafo de RAG y las reglas maestras):
+
+### CAPA 1 — Infraestructura y Transporte (Bulk Fix & Pure Plumbing)
+1. **Auditoría Exhaustiva de Nodos:** Inspeccionar TODOS los nodos y herramientas del flujo en una sola pasada.
+2. **Bulk Configuration:** Aplicar flags obligatorios (`sendHeaders: true`, content-types, auth headers) a TODOS los nodos en un solo PUT/Update masivo.
+3. **Validación en Seco (Unit Tests / Curl):** Verificar directamente contra los endpoints HTTP que devuelven `200 OK` antes de involucrar al LLM.
+
+### CAPA 2 — Orquestación y Prompts (Contratos de Delegación)
+1. **Endurecimiento de Reglas:** Prohibir explícitamente al Dispatcher/Supervisor responder con texto o JSON inventado; forzar la invocación de la herramienta/sub-workflow.
+2. **Aislamiento de Nodos Deshabilitados:** Nunca dejar nodos deshabilitados conectados al grafo del agente LangChain (provoca bucles ciegos).
+
+### CAPA 3 — Certificación E2E Única y Verdad Absoluta
+1. **Un Solo Test de Integración:** Ejecutar el test E2E completo únicamente tras verificar la Capa 1 y Capa 2.
+2. **Verdad Absoluta en BD:** Comprobar siempre el registro real en la base de datos, nunca fiarse del texto de "éxito" devuelto por el LLM.

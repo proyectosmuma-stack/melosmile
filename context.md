@@ -62,8 +62,16 @@ ODOO_USER=gestion@melosmile.com
 | Servicio | URL / Valor |
 |---|---|
 | **Rama Git** | `develop` |
-| **Vercel Entorno** | `Preview` |
-| **App Web** | Deploy automático Vercel (URL dinámica por commit) |
+| **Proyecto Vercel** | `melosmile-staging` (separado de `melosmile-production`) |
+| **App Web (estable)** | `https://frontend-eight-dusky-42.vercel.app` |
+| **App Web (branch alias)** | `https://melosmile-staging-git-develop-proyectosmuma-stacks-projects.vercel.app` |
+| **Despliegue** | Manual vía CLI desde `frontend/` (NO hay integración Git→Vercel automática) |
+
+> ⚠️ **Política de despliegue (regla del usuario)**: por defecto SIEMPRE se despliega a staging (`develop`). Producción (`main`) solo cuando el usuario lo pida explícitamente tras aprobar el desarrollo.
+>
+> ⚠️ **Gotcha**: existen dos enlaces `.vercel` en el repo — la raíz apunta a `melosmile-production` y `frontend/.vercel` apunta a `melosmile-staging`. Para desplegar staging hay que ejecutar vercel DESDE `frontend/`; hacerlo desde la raíz desplegaría al proyecto equivocado. Detalles completos: `docs/knowledge-base/domains/infra-vercel.md`.
+>
+> 📝 PENDING: DNS de `develop.mumaweb.com` apunta al VPS IONOS (94.143.139.120) en vez de a Vercel; corregir CNAME → `cname.vercel-dns.com` en el panel DNS.
 | **Supabase Staging** | `https://amhfdzfcmpastmlsosou.supabase.co` |
 | **n8n (dev)** | `https://n8n.mumaweb.com` |
 | **Fichero env** | `frontend/.env.remote` |

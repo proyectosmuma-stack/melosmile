@@ -51,3 +51,19 @@ Durante esta sesión, tanto Antigravity como Mumabot (OpenCode) colaboraron en u
   * `mumabot-coder-cloud`: `google/gemini-3.6-flash` (desarrollo ágil de código frontend/TypeScript).
   * `mumabot-architect`: `openrouter/google/gemini-3.1-pro-preview` (diseño de sistemas y contratos de arquitectura).
 * **Liberación de Memoria:** Eliminado proceso zombie de MLX en puerto 18080 que consumía 6.6 GB (34% RAM). La memoria disponible subió a más de 8.5 GB libres.
+
+## 7. Sesión 22/08/2026 — UI, Modo Oscuro, Paridad de Citas Cloud y Despliegue en Vercel (Completada ✅)
+
+* **Resolución de Bugs de Interfaz y Facturación:**
+  * **Modo Oscuro Dual:** Activada la clase `.dark` en `html`, configurado `@theme inline` y `@custom-variant dark` para compatibilidad completa con Tailwind CSS v4.
+  * **Selectores de Sedes con Nombre Real:** Reparada la prop `items` en 13 selects de `@base-ui/react` a lo largo de 5 archivos para evitar que se muestren UUIDs planos.
+  * **Facturación Multiclínica:** Resuelto el bug en `clinic-context.tsx` y `billing/page.tsx` para listar todas las sedes correctamente y proteger la persistencia de `localStorage`.
+  * **Switch de Tema en Ajustes:** Creado `components/settings/theme-toggle.tsx` con soporte anti-FOUC y nuevo acceso **"General"** en el submenú de Ajustes del Sidebar.
+* **Sincronización de Citas Demo (Paridad Local ↔ Supabase Cloud):**
+  * `mumabot-coder-cloud` insertó 3 citas demo para Munir (PAC-001) con fechas relativas e idempotencia tanto en `seed.sql` como en **Supabase Cloud Staging** (`amhfdzfcmpastmlsosou`), logrando paridad 100% (0 FKs rotas).
+* **Despliegue Continuo en Vercel:**
+  * Configuración oficial y despliegue del proyecto `melosmile-staging` en Vercel con Turbopack.
+  * Staging URL: `https://melosmile-staging-git-develop-proyectosmuma-stacks-projects.vercel.app`.
+* **Reglas y Skills de Monitorización:**
+  * Creadas e integradas las skills `/monitor` y `/stop-monitor` tanto a nivel local como global (`~/.gemini/config/skills/`).
+  * Blindada la regla de delegación obligatoria de Base de Datos en `~/.config/opencode/agents/coding/mumabot-cloud-pro.md`.

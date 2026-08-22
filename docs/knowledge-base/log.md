@@ -2,6 +2,17 @@
 
 Registro cronológico (append-only) de ingestas y actualizaciones del wiki.
 
+## [2026-08-22] fix | Citas IA fantasma: parse form-urlencoded, timezone Madrid y cascade delete
+- **Síntoma**: Musly respondía "cita agendada con éxito" pero NUNCA se creaba la cita (reproducido 2x: petición real del usuario 14:25 UTC y E2E del orquestador).
+- **Causa raíz (API)**: los `toolHttpRequest` de n8n (`specifyBody:keypair` sin contentType explícito) envían POST **form-urlencoded**, pero las rutas API hacían `req.json().catch(()=>({}))` → body vacío → 400 → el LLM alucinaba el éxito.
+- **Fixes desplegados en staging** (commits `7f5ddf6`, `31c0b87`, `4bb0f66`):
+  1. Nuevo helper `frontend/src/lib/utils/parse-body.ts`: acepta JSON **y** urlencoded en `appointments/update`, `ai/memory/learn`, `billing/reminders`. Verificado: POST form crea cita OK.
+  2. `appointments/list`: el `.or("patients.first_name.ilike...")` sobre recurso embebido da 500 en PostgREST → resolución en 2 pasos (patients → `.in("patient_id", ids)`). Verificado: `?q=Munir` ya no falla.
+  3. `date-parser.ts`: horas naturales se interpretan en **Europe/Madrid** (13:00 Madrid → 11:00Z verano; DST-safe con doble pasada Intl). ISO con zona explícita intacto. Verificado.
+  4. Delete de citas: FK violation con `billing_records` (el alta crea registro Pendiente) → cascade delete de billing_records con `status='Pendiente'` + bloqueo 409 si hay 'Aprobado'/'Facturado Odoo'. OJO: `billed_at` es columna de `appointments`, NO de billing_records (el enum correcto es Pendiente/Aprobado/Facturado Odoo, ver migración 20260722000000). Verificado: delete OK en staging.
+- **Topología Vercel real** (ver `infra-vercel.md`): `melosmile-staging` sirve `melosmile-staging-git-develop-*.vercel.app` + `frontend-eight-dusky-42`; **`agenda.melosmile.com` = proyecto `melosmile-production`** (código ~4d atrás, SIN estos fixes; su API exige sesión, no acepta x-api-key de staging). Deploy CLI + push a develop NO actualiza el dominio git-develop automáticamente: hacer `vercel alias set <deployment-url> melosmile-staging-git-develop-proyectosmuma-stacks-projects.vercel.app` tras cada deploy.
+- **BLOQUEANTE PENDIENTE (n8n)**: los logs de runtime de staging muestran que durante una cita E2E llegan los `GET /api/appointments/list` pero el `POST /api/appointments/update` de creación **nunca llega** → el flujo vivo en `n8n.mumaweb.com` tiene URLs derivadas (las copias de n8nv2 apuntan a `agenda.melosmile.com`). Falta acceso API a esa instancia (env-writer local colgó 3x) o edición manual de nodos para unificar todas las URLs de tools al dominio git-develop de staging. La verdad-absoluta del agente (no reportar éxito si el tool devuelve error) sigue pendiente en los prompts de n8n.
+
 ## [2026-08-18] n8n | PLAN 3 completado: fix autenticación n8n ↔ Vercel staging
 - **Diagnóstico**: tras el cambio de URL (PLAN 1), los 4 sub-agentes n8n llamaban a staging Vercel **sin `x-api-key`** → todos los endpoints devolvían 401 (`{"error":"No autorizado..."}` del middleware).
 - **Causa raíz doble**:
@@ -107,3 +118,20 @@ Registro cronológico (append-only) de ingestas y actualizaciones del wiki.
 - Card "Apariencia" añadida al hub `/settings`. globals.css intacto (el sistema dual ya existía).
 - Verificado por orquestador: tsc sin errores nuevos, archivos exactos (2 M + 1 nuevo).
 - Fix UX descubierto en validación: el hub /settings era inaccesible desde el menú (el botón Ajustes solo expande). Añadida entrada "General" como primer item del submenú Ajustes.
+
+## [2026-08-22] infra | Diagnóstico y fix de despliegue Vercel staging
+- Síntoma: staging con 404s y sin cambios de local. Git OK (develop == origin/develop @ fc541b2); el problema era Vercel, no Git.
+- Causas: deploys CLI al proyecto equivocado (doble enlace .vercel: raíz→melosmile-production, frontend/→melosmile-staging), producción 24d obsoleta, DNS develop.mumaweb.com apuntando al VPS IONOS, race condition commit/deploy.
+- Fix: redespliegue desde frontend/ a melosmile-staging + alias git-develop reasignado. Verificado por marcador anti-FOUC `melosmile_theme` en HTML servido.
+- Nueva página de dominio: domains/infra-vercel.md (arquitectura real, procedimiento correcto, PENDINGs).
+- context.md actualizado: sección Staging corregida (proyecto separado, URLs estables, política "siempre staging salvo orden explícita").
+
+## [2026-08-22] infra | Sync BD local↔staging + auditoría n8n + incidente Clean Envelope CLI
+- BD sincronizadas por coder-cloud (`ses_fd5b46025ffe9WC8iJBlqKxoqO`): 3 citas demo subidas a cloud staging (upsert idempotente) + 3 reminders/3 reminder_events de prueba purgados. Verificación independiente: 3/3 · 0/0 · 0/0 · 1/1. Drift benigno ai_conversation_history (143 vs 141) intocable.
+- Auditoría n8n dev: fallbacks de código OK (dispatcher + document-cleaner → n8n.mumaweb.com). Proyecto Vercel melosmile-staging sin vars N8N_* (usa fallback). Hosts de .env.local/.env.remote aún sin verificar.
+- ⚠️ INCIDENTE PROTOCOLO: Clean Envelope vía `opencode run --agent <subagente> --auto` es INOPERANTE — los subagentes no pueden ser primary (fallback al default qwen3.7-agents:4b-q8, ctx 32k) y el prompt inflado llega con 45.651 tokens → overflow garantizado (3 timeouts). Vía alternativa válida: `task()` directo del orquestador al agente local. Además: coder-local devolvió un PLAN sin ejecutar (falso positivo #1) → exigir siempre salida cruda literal.
+
+## [2026-08-22] n8n | Auditoría de Credenciales y Modelos en n8nv2 (Gotcha OpenRouter & Gemini 2.5)
+- **Confirmación de Credenciales:** La credencial de OpenRouter (`id: "4nco5fDnIohG6g9f"`, nombre: `"OpenRouter account"`) **está 100% configurada y activa** en `https://n8nv2.mumaweb.com`.
+- **Diagnóstico del Fallo de Ejecución (741938):** El error en los nodos `OpenRouter_Chat_Model` del `[MELOSMILE] AI Dispatcher` y subagentes clínicos no es un fallo de autenticación de n8n, sino que el parámetro `model` está configurado con **`google/gemini-2.5-flash`** (modelo deprecado/retirado por Google que devuelve error en OpenRouter API).
+- **Acción requerida para el equipo:** Actualizar el nombre del modelo en los nodos `OpenRouter_Chat_Model` en n8n a `google/gemini-3.6-flash` o `google/gemini-3.1-pro-preview` vía OpenRouter.

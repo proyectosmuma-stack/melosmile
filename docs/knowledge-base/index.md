@@ -10,6 +10,7 @@
 - [Incidente 2026-08-18: subagentes vacíos](decisions/incidente-2026-08-18-subagentes-vacios.md) — causa raíz (modelos deprecados), corrección aplicada, lecciones.
 
 ### Convenciones y procesos
+- [Infraestructura Vercel](domains/infra-vercel.md) — arquitectura de despliegue (staging/producción), procedimiento CLI correcto, incidente 2026-08-22 y PENDINGs.
 - Ver `context.md` (raíz) para estado técnico completo del proyecto.
 - Ver `.agents/AGENTS.md` para reglas de negocio y comandos de sesión.
 - Ver `docs/audit-report.md` para el último informe de auditoría del reviewer.
