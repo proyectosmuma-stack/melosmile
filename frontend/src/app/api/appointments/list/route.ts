@@ -82,16 +82,38 @@ export async function GET(req: Request) {
       query = query.lte("appointment_date", endISO);
     }
 
-    // Filter by patient name at DB level (avoid post-fetch in-memory filtering)
+    // Filter by patient name at DB level via 2-step resolution.
+    // NOTE: embedded-resource or() like "patients.first_name.ilike..." is NOT
+    // supported by PostgREST and fails with 500 "failed to parse logic tree",
+    // so patient IDs are resolved first against the patients table directly
+    // (simple .or() over its own columns), then applied as .in("patient_id").
     if (patientTerm) {
       const terms = patientTerm.split(/\s+/).filter((t: string) => t.length >= 2);
-      if (terms.length > 0) {
-        const orClauses = terms.flatMap((t: string) => [
-          `patients.first_name.ilike.%${t}%`,
-          `patients.last_name.ilike.%${t}%`,
-        ]).join(",");
-        query = query.or(orClauses);
+      const matchedPatientIds = new Set<string>();
+
+      for (const term of terms) {
+        const { data: matchedPatients, error: patientsErr } = await (supabase as any)
+          .from("patients")
+          .select("id")
+          .or(`first_name.ilike.%${term}%,last_name.ilike.%${term}%,phone.ilike.%${term}%`);
+        if (patientsErr) throw patientsErr;
+        for (const p of matchedPatients || []) {
+          if (p?.id) matchedPatientIds.add(String(p.id));
+        }
       }
+
+      if (matchedPatientIds.size === 0) {
+        const summaryText = `No se encontraron citas programadas para el paciente "${patientInput}".`;
+        return NextResponse.json({
+          success: true,
+          fecha_consulta: dateLabel,
+          total_citas: 0,
+          resumen: summaryText,
+          citas: [],
+        });
+      }
+
+      query = query.in("patient_id", Array.from(matchedPatientIds));
     }
 
     const { data: rawAppointments, error } = await query;

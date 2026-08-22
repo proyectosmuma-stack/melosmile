@@ -6,6 +6,7 @@ export const runtime = "nodejs";
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/server";
 import { parseAppointmentDate } from "@/lib/utils/date-parser";
+import { parseRequestBody } from "@/lib/utils/parse-body";
 
 
 
@@ -32,7 +33,7 @@ export async function POST(req: Request) {
   try {
     const url = new URL(req.url);
     const searchParams = url.searchParams;
-    const body = await req.json().catch(() => ({}));
+    const body = await parseRequestBody(req);
     const {
       appointment_id,
       id,

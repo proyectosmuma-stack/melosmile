@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin as supabase } from "@/lib/supabase/server";
+import { parseRequestBody } from "@/lib/utils/parse-body";
 
 /**
  * POST /api/ai/memory/learn
@@ -8,7 +9,7 @@ import { supabaseAdmin as supabase } from "@/lib/supabase/server";
  */
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
+    const body = await parseRequestBody(req);
     const { expression, meaning, category = "vocabulary", notes = "" } = body;
 
     if (!expression || !expression.trim()) {

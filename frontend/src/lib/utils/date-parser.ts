@@ -43,6 +43,55 @@ export function getMadridDate(): { yyyy: number; mm: number; dd: number; isoToda
   return { yyyy, mm, dd, isoToday: parts };
 }
 
+/** Matches inputs that already carry an explicit UTC designator or numeric offset (e.g. "...Z", "...+02:00", "...-0300", "...UTC") */
+const EXPLICIT_TZ_RE = /(?:[zZ]|utc|[+-]\d{2}:?\d{2})$/;
+
+/**
+ * Converts a Europe/Madrid wall-clock date/time into the correct UTC instant.
+ * Uses a two-pass Intl offset lookup so DST transitions are handled correctly.
+ *
+ * Example: 2026-08-24 13:00 Madrid (CEST, UTC+2) -> "2026-08-24T11:00:00.000Z"
+ */
+export function madridWallTimeToUtcIso(
+  year: number,
+  monthIndex: number,
+  day: number,
+  hours: number,
+  minutes: number
+): string {
+  const guessMs = Date.UTC(year, monthIndex, day, hours, minutes, 0, 0);
+
+  const madridOffsetMinutes = (instantMs: number): number => {
+    const dtf = new Intl.DateTimeFormat("en-US", {
+      timeZone: "Europe/Madrid",
+      hourCycle: "h23",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    });
+    const parts = dtf.formatToParts(new Date(instantMs));
+    const get = (type: string): number =>
+      Number(parts.find((p) => p.type === type)?.value ?? "0");
+    const hour = get("hour") % 24; // guarda contra "24:00" en algunas versiones de ICU
+    const asUtc = Date.UTC(
+      get("year"),
+      get("month") - 1,
+      get("day"),
+      hour,
+      get("minute"),
+      get("second")
+    );
+    return Math.round((asUtc - instantMs) / 60000);
+  };
+
+  const firstPassMs = guessMs - madridOffsetMinutes(guessMs) * 60000;
+  const finalMs = guessMs - madridOffsetMinutes(firstPassMs) * 60000;
+  return new Date(finalMs).toISOString();
+}
+
 /**
  * Converts a date + optional time input string into a UTC ISO-8601 string.
  * Supports: ISO dates, relative keywords (mañana, ayer, pasado mañana),
@@ -67,6 +116,30 @@ export function parseAppointmentDate(inputDate?: string, inputTime?: string): st
   // 1. Standard ISO / parseable date
   const direct = new Date(combined);
   if (!isNaN(direct.getTime()) && (str.includes("-") || str.includes("/"))) {
+    // Input already carries an explicit timezone/offset (Z, ±HH:MM, UTC):
+    // honor it verbatim (behavior preserved).
+    if (EXPLICIT_TZ_RE.test(combined.trim())) {
+      return direct.toISOString();
+    }
+
+    // ISO-style date WITH clock time but WITHOUT explicit zone:
+    // interpret the wall-clock time in Europe/Madrid
+    // (e.g. "2026-08-24 13:00" -> "2026-08-24T11:00:00.000Z" in summer).
+    const isoParts = combined.match(
+      /^(\d{4})-(\d{2})-(\d{2})(?:[T\s](\d{1,2}):(\d{2})(?::(\d{2}))?)?/
+    );
+    if (isoParts && isoParts[4] !== undefined) {
+      return madridWallTimeToUtcIso(
+        Number(isoParts[1]),
+        Number(isoParts[2]) - 1,
+        Number(isoParts[3]),
+        Number(isoParts[4]),
+        Number(isoParts[5])
+      );
+    }
+
+    // Date-only or other parseable format without explicit zone:
+    // keep legacy UTC behavior.
     return direct.toISOString();
   }
 
@@ -138,7 +211,9 @@ export function parseAppointmentDate(inputDate?: string, inputTime?: string): st
     minutes = roundedMins;
   }
 
-  return new Date(Date.UTC(targetYear, targetMonth, targetDay, hours, minutes, 0, 0)).toISOString();
+  // Interpret the resolved wall-clock time in Europe/Madrid and store the
+  // correct UTC instant (fixes appointments saved as if Madrid time were UTC).
+  return madridWallTimeToUtcIso(targetYear, targetMonth, targetDay, hours, minutes);
 }
 
 /**
