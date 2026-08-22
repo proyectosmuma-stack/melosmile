@@ -121,6 +121,16 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
   const [editProfessionalId, setEditProfessionalId] = useState("");
   const [editReason, setEditReason] = useState("");
 
+  const statusItems = [
+    { value: "Pendiente", label: "Pendiente" },
+    { value: "Confirmada", label: "Confirmada" },
+    { value: "En Proceso", label: "En Proceso" },
+    { value: "Realizada", label: "Realizada (Completada)" },
+    { value: "Cancelada", label: "Cancelada" },
+    { value: "No Presentado", label: "No Presentado" },
+  ];
+  const guestDoctorItems = professionalsCatalog.map((p) => ({ value: p.name, label: p.name }));
+
   const handleCreateNewProfessional = async () => {
     if (!newDoctorInput.trim()) return;
     setCreatingDoctor(true);
@@ -849,7 +859,7 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
               </Button>
             </div>
 
-            <Select value={status} onValueChange={(val) => setStatus(val || "")}>
+            <Select items={statusItems} value={status} onValueChange={(val) => setStatus(val || "")}>
               <SelectTrigger className="w-[140px] bg-card border-border text-xs font-bold shadow-xs h-9">
                 <SelectValue />
               </SelectTrigger>
@@ -899,6 +909,7 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
               <div className="space-y-1">
                 <Label className="text-[11px] font-bold text-muted-foreground">Seleccionar de Profesionales en BD</Label>
                 <Select
+                  items={guestDoctorItems}
                   value={guestDoctor || ""}
                   onValueChange={(val) => setGuestDoctor(val || "")}
                 >

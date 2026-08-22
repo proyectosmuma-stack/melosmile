@@ -212,6 +212,9 @@ export default function TreatmentsSettingsPage() {
   const SERVICE_TYPES = ["Consulta", "Restauración", "Cirugía", "Ortodoncia", "Endodoncia", "Periodoncia",
     "Implantología", "Estética", "Prostodoncia", "Aparatología", "Pediátrica", "Radiología", "Higiene", "Urgencias"];
 
+  const serviceTypeItems = SERVICE_TYPES.map((s) => ({ value: s, label: s }));
+  const familyItems = [{ value: "none", label: "Sin familia" }, ...families.map((f) => ({ value: f.id, label: f.name }))];
+
   const filteredTreatments = treatments.filter(t =>
     !search ||
     t.service_name.toLowerCase().includes(search.toLowerCase()) ||
@@ -392,7 +395,7 @@ export default function TreatmentsSettingsPage() {
               </div>
               <div className="space-y-1.5">
                 <Label className="text-xs font-semibold text-foreground">Tipo / Categoría</Label>
-                <Select value={fType} onValueChange={(v) => setFType(v ?? "")}>
+                <Select items={serviceTypeItems} value={fType} onValueChange={(v) => setFType(v ?? "")}>
                   <SelectTrigger className="rounded-lg text-sm"><SelectValue placeholder="Tipo..." /></SelectTrigger>
                   <SelectContent>
                     {SERVICE_TYPES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
@@ -402,7 +405,7 @@ export default function TreatmentsSettingsPage() {
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs font-semibold text-foreground">Familia</Label>
-              <Select value={fFamilyId} onValueChange={(v) => setFFamilyId(v ?? "")}>
+              <Select items={familyItems} value={fFamilyId} onValueChange={(v) => setFFamilyId(v ?? "")}>
                 <SelectTrigger className="rounded-lg text-sm">
                   {/* Default SelectValue to fFamilyId name using rendering prop for reliable name */}
                   <SelectValue placeholder="Seleccionar familia...">

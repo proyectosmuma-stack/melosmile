@@ -75,6 +75,26 @@ export default function PatientsPage() {
   const [selectedTagFilter, setSelectedTagFilter] = useState<string>("all");
   const [sortBy, setSortBy] = useState<string>("historia-asc");
 
+  const clinicFilterItems = [{ value: "all", label: "Todas las Clínicas" }, ...clinicsCatalog.map((c) => ({ value: c.id, label: c.name }))];
+  const statusFilterItems = [
+    { value: "all", label: "Todos los Estados" },
+    { value: "active", label: "En Tratamiento" },
+    { value: "inactive", label: "Alta / Inactivos" },
+  ];
+  const sortItems = [
+    { value: "historia-asc", label: "Historia ID (Asc)" },
+    { value: "historia-desc", label: "Historia ID (Desc)" },
+    { value: "name-asc", label: "Nombre (A - Z)" },
+    { value: "name-desc", label: "Nombre (Z - A)" },
+    { value: "clinic-asc", label: "Clínica / Sede" },
+    { value: "newest", label: "Más Recientes" },
+  ];
+  const genderItems = [
+    { value: "Femenino", label: "Femenino" },
+    { value: "Masculino", label: "Masculino" },
+    { value: "Otro", label: "Otro" },
+  ];
+
   // Modal para Crear Nuevo Paciente
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [formData, setFormData] = useState({
@@ -333,6 +353,7 @@ function toTitleCase(text: string): string {
         <div className="flex items-center gap-2.5 w-full sm:w-auto justify-end flex-wrap">
           {/* Clinic Filter */}
           <Select
+            items={clinicFilterItems}
             value={clinicFilter}
             onValueChange={(val) => setClinicFilter(val || "all")}
           >
@@ -352,6 +373,7 @@ function toTitleCase(text: string): string {
 
           {/* Status Filter */}
           <Select
+            items={statusFilterItems}
             value={statusFilter}
             onValueChange={(val) => setStatusFilter((val as any) || "all")}
           >
@@ -370,6 +392,7 @@ function toTitleCase(text: string): string {
 
           {/* Sort By */}
           <Select
+            items={sortItems}
             value={sortBy}
             onValueChange={(val) => setSortBy(val || "historia-asc")}
           >
@@ -749,6 +772,7 @@ function toTitleCase(text: string): string {
                 <div className="space-y-1">
                   <Label className="text-xs text-muted-foreground">Género</Label>
                   <Select
+                    items={genderItems}
                     value={formData.gender}
                     onValueChange={(val) => val && setFormData({ ...formData, gender: val })}
                   >

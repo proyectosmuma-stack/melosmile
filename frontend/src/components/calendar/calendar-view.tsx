@@ -590,6 +590,7 @@ export function CalendarView({ selectedClinicId = "all" }: { selectedClinicId?: 
         isOpen={isDetailOpen}
         onClose={() => setIsDetailOpen(false)}
         onUpdateEvent={handleUpdateEvent}
+        clinics={clinics}
       />
     </div>
   );

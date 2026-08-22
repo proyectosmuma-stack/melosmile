@@ -56,7 +56,7 @@ const MONTH_NAMES = [
 ];
 
 export default function BillingHubPage() {
-  const { clinics: contextClinics, selectedClinicId, setSelectedClinicId } = useClinic();
+  const { selectedClinicId, setSelectedClinicId } = useClinic();
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
 
@@ -110,9 +110,6 @@ export default function BillingHubPage() {
   const approvedSessions = sessions.filter(s => s.status === "approved");
   const pendingSessions = sessions.filter(s => s.status === "draft" || s.status === "pending_review");
   const totalNetoAño = approvedSessions.reduce((acc, s) => acc + (s.total_neto || 0), 0);
-
-  // Filter clinics
-  const filteredClinics = clinics.filter(c => selectedClinicId === "all" || c.id === selectedClinicId);
 
   // Helper to find session for clinic and month
   const getSessionForMonth = (clinicId: string, month: number) => {
@@ -305,13 +302,13 @@ export default function BillingHubPage() {
           <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-success border-t-transparent mb-3"></div>
           <div>Cargando contabilidades del año {selectedYear}...</div>
         </div>
-      ) : filteredClinics.length === 0 ? (
+      ) : clinics.length === 0 ? (
         <div className="bg-card p-12 rounded-2xl border border-border text-center text-muted-foreground">
           No hay clínicas configuradas.
         </div>
       ) : (
         <div className="space-y-8">
-          {filteredClinics.map(clinic => {
+          {clinics.map(clinic => {
             const isCollapsed = collapsedClinics[clinic.id] !== false; // collapsed by default
 
             return (

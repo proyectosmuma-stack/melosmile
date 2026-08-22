@@ -70,6 +70,8 @@ export function Sidebar() {
     })),
   ];
 
+  const clinicItems = clinicOptions.map((c) => ({ value: c.id, label: c.name }));
+
   const currentClinicName =
     clinicOptions.find((c) => c.id === selectedClinicId)?.name || "Todas las Clínicas";
 
@@ -140,7 +142,7 @@ export function Sidebar() {
             <label className="text-[11px] font-semibold text-sidebar-muted-foreground uppercase tracking-wider px-2 mb-2 block">
               Sede Activa
             </label>
-            <Select value={selectedClinicId} onValueChange={(val) => val && setSelectedClinicId(val)}>
+            <Select items={clinicItems} value={selectedClinicId} onValueChange={(val) => val && setSelectedClinicId(val)}>
               <SelectTrigger className="w-full bg-sidebar-accent/90 border-sidebar-border text-sidebar-foreground hover:bg-sidebar-accent transition-colors focus:ring-primary h-11 rounded-xl">
                 <div className="flex items-center gap-2.5 overflow-hidden text-ellipsis">
                   <Building2 className="h-4 w-4 text-primary-foreground shrink-0" />

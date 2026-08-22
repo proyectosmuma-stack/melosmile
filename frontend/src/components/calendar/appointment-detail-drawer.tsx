@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
-import { AppointmentEvent, DEFAULT_CLINICS } from "@/components/calendar/calendar-view";
+import { AppointmentEvent, Clinic, DEFAULT_CLINICS } from "@/components/calendar/calendar-view";
 import { format, addMinutes } from "date-fns";
 import { es } from "date-fns/locale";
 
@@ -28,6 +28,7 @@ type AppointmentDetailDrawerProps = {
   isOpen: boolean;
   onClose: () => void;
   onUpdateEvent: (updated: AppointmentEvent) => void;
+  clinics?: Clinic[];
 };
 
 export function AppointmentDetailDrawer({
@@ -35,6 +36,7 @@ export function AppointmentDetailDrawer({
   isOpen,
   onClose,
   onUpdateEvent,
+  clinics,
 }: AppointmentDetailDrawerProps) {
   const router = useRouter();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -42,7 +44,8 @@ export function AppointmentDetailDrawer({
 
   if (!event) return null;
 
-  const clinic = DEFAULT_CLINICS.find((c) => c.id === event.clinicId) || DEFAULT_CLINICS[0];
+  const resolvedClinics = clinics && clinics.length > 0 ? clinics : DEFAULT_CLINICS;
+  const clinic = resolvedClinics.find((c) => c.id === event.clinicId) || resolvedClinics[0] || DEFAULT_CLINICS[0];
 
   // Calculate end time
   const endDate = addMinutes(event.date, event.durationMinutes || 45);

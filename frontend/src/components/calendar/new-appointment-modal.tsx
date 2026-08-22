@@ -103,6 +103,11 @@ export function NewAppointmentModalGlobal() {
   const [labCost, setLabCost] = useState<string>("0");
   const [commissionPct, setCommissionPct] = useState<string>("40");
 
+  const timeSlotItems = TIME_SLOTS.map((slot) => ({ value: slot, label: `${slot}h` }));
+  const durationItems = DURATION_OPTIONS.map((opt) => ({ value: String(opt.value), label: opt.label }));
+  const clinicItems = clinics.map((c) => ({ value: c.id, label: c.name }));
+  const professionalItems = professionals.map((p) => ({ value: p.id, label: p.name }));
+
   const loadCatalogs = useCallback(async () => {
     setCatalogsLoading(true);
     try {
@@ -312,6 +317,7 @@ export function NewAppointmentModalGlobal() {
             <div className="space-y-1.5">
               <Label className="text-xs font-semibold text-foreground">Hora de Inicio</Label>
               <Select
+                items={timeSlotItems}
                 value={selectedStartTime}
                 onValueChange={(val) => val && setSelectedStartTime(val)}
               >
@@ -332,6 +338,7 @@ export function NewAppointmentModalGlobal() {
             <div className="space-y-1.5">
               <Label className="text-xs font-semibold text-foreground">Duración</Label>
               <Select
+                items={durationItems}
                 value={String(durationMinutes)}
                 onValueChange={(val) => val && setDurationMinutes(parseInt(val))}
               >
@@ -375,6 +382,7 @@ export function NewAppointmentModalGlobal() {
             <div className="space-y-1.5">
               <Label className="text-xs font-semibold text-foreground">Clínica / Sede</Label>
               <Select
+                items={clinicItems}
                 value={selectedClinicId}
                 onValueChange={(val) => val && setSelectedClinicId(val)}
                 disabled={catalogsLoading}
@@ -402,6 +410,7 @@ export function NewAppointmentModalGlobal() {
             <div className="space-y-1.5">
               <Label className="text-xs font-semibold text-foreground">Profesional</Label>
               <Select
+                items={professionalItems}
                 value={selectedProfessionalId}
                 onValueChange={(val) => val && setSelectedProfessionalId(val)}
                 disabled={catalogsLoading}
