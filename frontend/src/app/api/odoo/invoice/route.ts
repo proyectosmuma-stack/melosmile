@@ -50,16 +50,18 @@ export async function POST(req: Request) {
     } else if (billingRecordIds && Array.isArray(billingRecordIds) && billingRecordIds.length > 0) {
       recordIdsToUpdate = billingRecordIds;
       // Fetch details from DB
+      // El motivo del tratamiento llega por join anidado (billing_records no tiene
+      // appointment_reason ni total_amount; el importe real es calculated_total).
       const { data: records } = await (supabase as any)
         .from("billing_records")
-        .select("id, appointment_reason, custom_price, total_amount")
+        .select("id, custom_price, calculated_total, appointments(reason)")
         .in("id", billingRecordIds);
 
       if (records && records.length > 0) {
         invoiceLines = records.map((r: any) => ({
-          name: r.appointment_reason || "Servicio Odontológico",
+          name: r.appointments?.reason || "Servicio Odontológico",
           quantity: 1,
-          price_unit: parseFloat(r.custom_price || r.total_amount || 0),
+          price_unit: parseFloat(r.custom_price || r.calculated_total || 0),
         }));
       }
       refText += ` - ${billingRecordIds.length} cobros`;

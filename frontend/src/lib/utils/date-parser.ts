@@ -259,6 +259,24 @@ export function getDateRange(dateStr: string): DateRange {
     return { ...r, dateLabel: `esta semana (${r.dateLabel})` };
   }
 
+  // Bare Spanish month name -> full calendar month range (e.g. "agosto", "el mes de septiembre").
+  // Skipped when the input already pairs a day with a month (e.g. "26 de agosto"),
+  // so the single-day resolution below keeps handling those cases as before.
+  const dayMonthRef = clean.match(/(\d{1,2})\s*(?:de|\/|-)?\s*([a-záéíóú]+)/i);
+  const hasDayWithMonth = !!(dayMonthRef && SPANISH_MONTHS[dayMonthRef[2].toLowerCase()] !== undefined);
+  if (!hasDayWithMonth) {
+    for (const [mName, mIdx] of Object.entries(SPANISH_MONTHS)) {
+      if (new RegExp(`\\b${mName}\\b`).test(clean)) {
+        const year = mIdx >= madrid.mm - 1 ? madrid.yyyy : madrid.yyyy + 1;
+        const first = new Date(year, mIdx, 1);
+        const last = new Date(year, mIdx + 1, 0);
+        const s = isoDay(first.getFullYear(), first.getMonth() + 1, first.getDate());
+        const e = isoDay(last.getFullYear(), last.getMonth() + 1, last.getDate());
+        return { startISO: `${s}T00:00:00.000Z`, endISO: `${e}T23:59:59.999Z`, dateLabel: `${mName} (${s} al ${e})` };
+      }
+    }
+  }
+
   if (clean.includes("mes pasado") || clean.includes("last month")) {
     const first = new Date(madrid.yyyy, madrid.mm - 2, 1);
     const last = new Date(madrid.yyyy, madrid.mm - 1, 0);
@@ -279,6 +297,15 @@ export function getDateRange(dateStr: string): DateRange {
     const s = isoDay(first.getFullYear(), first.getMonth() + 1, first.getDate());
     const e = isoDay(last.getFullYear(), last.getMonth() + 1, last.getDate());
     return { startISO: `${s}T00:00:00.000Z`, endISO: `${e}T23:59:59.999Z`, dateLabel: `este mes (${s} al ${e})` };
+  }
+
+  // Explicit range "YYYY-MM-DD/YYYY-MM-DD" (built by the n8n agent).
+  // Must be checked before the single-day ISO match below.
+  const rangeMatch = clean.match(/^(\d{4}-\d{2}-\d{2})\s*\/\s*(\d{4}-\d{2}-\d{2})$/);
+  if (rangeMatch) {
+    const s = rangeMatch[1];
+    const e = rangeMatch[2];
+    return { startISO: `${s}T00:00:00.000Z`, endISO: `${e}T23:59:59.999Z`, dateLabel: `${s} al ${e}` };
   }
 
   // Single-day resolution

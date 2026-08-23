@@ -29,7 +29,9 @@ export async function GET() {
       (supabase as any).from("treatments").select("id, service_name, abbreviation, service_type, default_price, lab_cost, typical_lab_cost, family_id, is_active").eq("is_active", true),
       (supabase as any).from("clinic_commission_rules").select("id, clinic_id, family_id, commission_pct, lab_discount_pct"),
       (supabase as any).from("clinic_treatments").select("clinic_id, treatment_id, price"),
-      (supabase as any).from("billing_records").select("id, patient_id, appointment_reason, total_amount, custom_price, status, odoo_invoice_id, odoo_invoice_number, payment_method, created_at").order("created_at", { ascending: false }).limit(100),
+      // billing_records no tiene patient_id/appointment_reason/total_amount:
+      // se resuelven con join anidado a appointments y calculated_total.
+      (supabase as any).from("billing_records").select("id, custom_price, calculated_total, status, odoo_invoice_id, odoo_invoice_number, payment_method, created_at, appointments(patient_id, reason)").order("created_at", { ascending: false }).limit(100),
     ]);
 
     // Build enriched treatments with family names
@@ -74,12 +76,12 @@ export async function GET() {
 
     (billingRecords || []).forEach((rec: any) => {
       const isFacturado = !!rec.odoo_invoice_id || rec.status === "Facturado Odoo" || !!rec.odoo_invoice_number;
-      const amt = Number(rec.custom_price || rec.total_amount || 0);
+      const amt = Number((rec.calculated_total ?? rec.custom_price) || 0);
 
       const recordItem = {
         id: rec.id,
-        patient_id: rec.patient_id,
-        concept: rec.appointment_reason || "Servicio Dental",
+        patient_id: rec.appointments?.patient_id ?? null,
+        concept: rec.appointments?.reason || "Servicio Dental",
         amount: amt,
         payment_method: rec.payment_method || "No especificado",
         status: rec.status,

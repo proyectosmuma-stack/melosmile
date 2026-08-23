@@ -1,47 +1,56 @@
 // frontend/src/lib/billing/utils.test.ts
-import { validateBillingEligibility } from './utils';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { validateBillingEligibilityAsync } from './utils';
 import { Appointment } from './types/appointment';
-import { jest } from 'vitest';
 
-// Mock Supabase client
-jest.mock('../../supabase/client', () => {
+// Resultado configurable que devolverá .single() en cada consulta.
+// utils.ts encadena .eq("id", ...).single() igual para patients y clinics,
+// por lo que un único resultado configurable sirve para ambas llamadas.
+const { singleResult, setSingleResult } = vi.hoisted(() => {
+  type SingleResult = { data: unknown; error: unknown };
+  let current: SingleResult = { data: null, error: null };
   return {
-    createClient: jest.fn(() => ({
-      from: (table: string) => ({
-        select: (columns: string) => ({
-          eq: (key: string, value: string) => ({
-            single: jest.fn((cb: any) => cb({ data: { id: 'p123', is_active: true } }))
-          }),
+    setSingleResult: (result: SingleResult) => {
+      current = result;
+    },
+    singleResult: async (): Promise<SingleResult> => current,
+  };
+});
+
+vi.mock('@/lib/supabase/client', () => ({
+  supabase: {
+    from: () => ({
+      select: () => ({
+        eq: () => ({
+          single: singleResult,
         }),
       }),
-    })
-  });
+    }),
+  },
+}));
+
+const buildAppointment = (): Appointment => ({
+  id: '123',
+  patientId: 'p123',
+  clinicId: 'c456',
+  treatmentId: 't789',
+  date: '2026-08-16',
+  status: 'pending',
+  treatmentPrice: 150.0,
 });
 
 describe('validateBillingEligibilityAsync', () => {
-  it('should return true when patient and clinic are active', async () => {
-    const appointment: Appointment = {
-      id: '123',
-      patientId: 'p123',
-      clinicId: 'c456',
-      treatmentId: 't789',
-      date: '2026-08-16',
-      status: 'pending',
-      treatmentPrice: 150.0
-    };
-    expect(await validateBillingEligibilityAsync(appointment)).toBe(true);
+  beforeEach(() => {
+    setSingleResult({ data: null, error: null });
   });
 
-  it('should return false when patient or clinic is not active', async () => {
-    const appointment: Appointment = {
-      id: '456',
-      patientId: 'p789',
-      clinicId: 'c101',
-      treatmentId: 't303',
-      date: '2026-08-16',
-      status: 'pending',
-      treatmentPrice: 150.0
-    };
-    expect(await validateBillingEligibilityAsync(appointment)).toBe(false);
+  it('should return true when patient and clinic are active', async () => {
+    setSingleResult({ data: { id: 'p123', is_active: true }, error: null });
+    expect(await validateBillingEligibilityAsync(buildAppointment())).toBe(true);
+  });
+
+  it('should return false when the query fails', async () => {
+    setSingleResult({ data: null, error: { message: 'db unavailable' } });
+    expect(await validateBillingEligibilityAsync(buildAppointment())).toBe(false);
   });
 });
