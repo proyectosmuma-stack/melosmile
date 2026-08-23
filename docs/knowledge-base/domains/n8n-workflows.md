@@ -42,16 +42,12 @@ flowchart TD
 
 ---
 
-### `02_MELOSMILE_SubAgent_Agendamiento`
-* **ID en n8n:** `jTWHg9bHaNOdzL13`
-* **Rol:** Gestión del ciclo de vida de citas y disponibilidad.
-* **Endpoints de Melosmile Vinculados:**
-  * `POST /api/appointments` (Crear cita)
-  * `GET /api/appointments?date={date}&clinic_id={clinic_id}` (Consultar agenda)
-  * `PATCH /api/appointments/{id}` (Reprogramar/Cancelar)
-* **Reglas Clínicas Aplicadas:**
-  * Respeta el diccionario de tratamientos (RC = Reconstrucción, Rev = Control).
-  * Regla de agrupación: Mismo paciente a la misma hora se unifica en una sola cita sumando importes.
+### `02_MELOSMILE_SubAgent_Agendamiento` (v2)
+* **ID en n8n:** `vg2HrtIQpvDrcUOC` (el antiguo `jTWHg9bHaNOdzL13` está obsoleto)
+* **Rol:** Gestión del ciclo de vida de citas y disponibilidad + alta/consulta de pacientes.
+* **Tools internas:** `Tool_List_Appointments`, `Tool_Appointment_Manager` (crear → helper `BTJZSpohjoxeY5Ru`), `Tool_Update_Appointment` (modificar/cancelar → helper `MlrysSNd3N8tDjVh`), `Tool_Create_Patient`, `Tool_Search_Patients`.
+* **Semántica de estados obligatoria:** anular/cancelar ⇒ `{"appointment_id","status":"Cancelada"}` (soft-delete). El borrado físico (`delete_appointment:true`) solo si el usuario lo pide literalmente — de lo contrario se pierden las citas y sus `billing_records` asociados.
+* **Jerarquía de fechas:** el subagente inyecta su propio `$now` (Europe/Madrid) en el prompt y prevalece sobre cualquier fecha que el dispatcher le pase; fechas relativas ("el viernes") siempre hacia adelante desde HOY real.
 
 ---
 
@@ -67,11 +63,29 @@ flowchart TD
 
 ### `04_MELOSMILE_SubAgent_Contabilidad`
 * **ID en n8n:** `XSLNwq6ihH1SHPRl`
-* **Rol:** Registro de cobros, métodos de pago y presupuestos.
-* **Endpoints de Melosmile Vinculados:**
-  * `GET /api/billing`
-  * `POST /api/billing/sessions`
-  * `POST /api/billing/payments`
+* **Rol:** Consulta de cobros pendientes (Odoo deshabilitado por decisión del usuario hasta certificar el sistema básico).
+* **Tools internas:** `Tool_Consultar_Cobros` → helper determinista `[MELOSMILE] Helper - Billing Query` (`AzGmCQ5rd7gvEQ3w`: busca paciente + consulta `/api/billing/pending` y devuelve `{found, paciente, num_pendientes, pendientes[{concepto,importe,estado}], total_pendiente}`), `Tool_Search_Patients`, `Tool_Reminders_Dispatcher`.
+* **Patrón clave:** las cadenas multi-paso (buscar UUID + consultar) se encapsulan en helpers deterministas de un solo tool-call; el LLM nunca encadena dos llamadas HTTP (gemini-flash saltaba el segundo paso ~50% de las veces).
+* **Contrato API:** `/api/billing/pending?patient_id={uuid}` devuelve registros con `appointment_reason` y `total_amount` (mapeados desde `billing_records.calculated_total ?? custom_price` vía join `appointments!inner`). `billing_records` NO tiene columnas patient_id/total_amount.
+
+### Helpers atómicos (patrón Execute_Workflow_Trigger → Parse → HTTP → Format)
+| Helper | ID | Función |
+|---|---|---|
+| Helper - Patient Search | `ungEfZO2qzDQvuVC` | Búsqueda fuzzy de pacientes |
+| Helper - Appointment Create | `BTJZSpohjoxeY5Ru` | Alta de cita |
+| Helper - Appointment Modify | `MlrysSNd3N8tDjVh` | Update/cancel (forward JSON puro) |
+| Helper - Billing Query | `AzGmCQ5rd7gvEQ3w` | Cobros pendientes combinados |
+
+---
+
+## 3bis. Patrones Técnicos Obligatorios (lecciones certificadas 2026-08-23)
+1. **Conexiones ai_tool:** el formato nativo correcto va del TOOL al AGENTE: `connections["Tool_X"].ai_tool=[[{"node":"Agent_X","type":"ai_tool","index":0}]]`. Escribirlo invertido (agente→tools) lo acepta la API pero el runtime lo ignora silenciosamente.
+2. **toolHttpRequest tv1.1 binding:** los argumentos del modelo se bindean con expresiones inline `{{ $fromAI('param','descripción') }}` en url/jsonBody. El estilo `{placeholder}`+`placeholderDefinitions` NUNCA bindea. Además `sendHeaders:true` es obligatorio o los headers no se envían (401 silencioso).
+3. **toolWorkflow:** usar SIEMPRE `typeVersion:1`, `"source":"database"` y `workflowId` como STRING plano (no objeto `__rl`). tv1.2 rompe el bindeo de argumentos.
+4. **Forense de ejecución:** si `runData` no contiene nodos `Tool_*`, la herramienta nunca se ejecutó (aunque el LLM responda con confianza). El runData del agente NO persiste definiciones de tools.
+5. **Publicación segura:** deactivate → sleep(2) → PUT → activate → GET-verify. Un PUT sin ciclo puede dejar stale defs activas.
+6. **Dispatcher:** PROHIBIDO que resuelva fechas relativas (aritmética errónea de flash); pasa texto verbatim, el subagente usa su `$now`.
+7. **Modelo en n8n producción:** `google/gemini-2.5-flash` vía OpenRouter es el único validado E2E en esta instancia (los 3.x no están disponibles ahí).
 
 ---
 

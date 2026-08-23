@@ -6,8 +6,8 @@
 
 | Entorno | Proyecto Vercel | Rama | URL estable | Dominios asignados |
 |---|---|---|---|---|
-| Staging (desarrollo) | `melosmile-staging` | `develop` | `frontend-eight-dusky-42.vercel.app` | `develop.mumaweb.com` (DNS roto, ver PENDING) + branch alias `...staging-git-develop...vercel.app` |
-| Producción | `melosmile-production` | `main` | `melosmile-production-proyectosmuma-stacks-projects.vercel.app` | `agenda.melosmile.com`, `frontend-kohl-ten-59.vercel.app` |
+| Staging | `melosmile-staging` | `develop` | `https://staging.melosmile.com` | `staging.melosmile.com`, `frontend-eight-dusky-42.vercel.app` |
+| Producción | `melosmile-production` | `main` | `https://agenda.melosmile.com` | `agenda.melosmile.com`, `frontend-kohl-ten-59.vercel.app` |
 
 **Claves:**
 - NO existe integración GitHub → Vercel automática en ninguno de los dos proyectos. Todos los deploys son manuales vía CLI (`meta: null` en los deployments).
@@ -51,7 +51,8 @@ cd frontend && vercel --prod=false --yes
 
 ## PENDING
 
-- [ ] Corregir DNS `develop.mumaweb.com` → CNAME `cname.vercel-dns.com` (panel DNS de mumaweb.com) y añadir el dominio al proyecto `melosmile-staging` en Vercel.
 - [ ] Decidir si se conecta integración Git→Vercel para automatizar deploys por rama (evitaría race conditions manuales).
-- [ ] Actualizar producción (`agenda.melosmile.com`) cuando el usuario lo apruebe explícitamente.
-- [ ] Limpieza opcional: alias antiguos `melosmile-production-git-develop...` que apuntan a previews protegidos/huérfanos.
+- [ ] Actualizar producción (`agenda.melosmile.com`) fusionando `develop` a `main` cuando el usuario lo apruebe explícitamente.
+
+## UPDATE (2026-08-23)
+- Se ha registrado exitosamente el dominio `staging.melosmile.com` en el proyecto `melosmile-production` y atado directamente a la rama `develop` usando la API de Vercel. Ionos gestiona el CNAME apuntando a `cname.vercel-dns.com`. A partir de ahora, staging se puede acceder y probar en una URL predecible.

@@ -135,3 +135,19 @@ Registro cronológico (append-only) de ingestas y actualizaciones del wiki.
 - **Confirmación de Credenciales:** La credencial de OpenRouter (`id: "4nco5fDnIohG6g9f"`, nombre: `"OpenRouter account"`) **está 100% configurada y activa** en `https://n8nv2.mumaweb.com`.
 - **Diagnóstico del Fallo de Ejecución (741938):** El error en los nodos `OpenRouter_Chat_Model` del `[MELOSMILE] AI Dispatcher` y subagentes clínicos no es un fallo de autenticación de n8n, sino que el parámetro `model` está configurado con **`google/gemini-2.5-flash`** (modelo deprecado/retirado por Google que devuelve error en OpenRouter API).
 - **Acción requerida para el equipo:** Actualizar el nombre del modelo en los nodos `OpenRouter_Chat_Model` en n8n a `google/gemini-3.6-flash` o `google/gemini-3.1-pro-preview` vía OpenRouter.
+
+## [2026-08-23] fix | Cadena de cobros determinista + certificación del sistema básico
+- **Cobros E2E OK**: creado helper `[MELOSMILE] Helper - Billing Query` (`AzGmCQ5rd7gvEQ3w`, busca paciente + `/api/billing/pending` en una sola tool-call) tras confirmar que gemini-saltaba el 2º paso ~50%. Verificado contra BD: Munir 4 registros/72€, Laura 1/36€, Sonia 0.
+- **API corregida por coder-cloud** (`ses_fd3d52c64ffe8xYHq0UsOjt05h`, desplegada): `billing/pending/route.ts` con join `appointments!inner` (schema real de billing_records no tiene patient_id); `ai-context/route.ts` igual; deploy con `vercel --prod --yes`.
+- **Bugs n8n corregidos y documentados** (ver sección 3bis de domains/n8n-workflows.md): conexiones ai_tool invertidas (formato correcto per-tool→agente), toolWorkflow tv1.2→tv1 + workflowId string plano, placeholderDefinitions→$fromAI inline, sendHeaders faltante (401), Tool_Odoo_Invoice eliminado (Odoo bloqueado por decisión del usuario).
+- **Fechas relativas**: dispatcher pasaba fecha calculada errónea (2026-08-21 para "el viernes"); ahora pasa texto verbatim y el subagente usa su $now propio. Regla añadida en ambas capas.
+- **Cancelación soft**: "anular" borraba físicamente la cita (perdiendo billing_records); Tool_Update_Appointment ahora exige status=Cancelada salvo orden literal de borrado. Verificado: cita queda como `Cancelada` en BD.
+- **Rango ISO fechas**: date-parser acepta `YYYY-MM-DD/YYYY-MM-DD` (+tests, coder-cloud ses_fd3efb72effecj1w2W02ieCV1C, en prod). Baterías A(7/7)/B/C certificadas vía Musly.
+- ⚠️ CONTRADICCIÓN RESUELTA CON EVIDENCIA: la entrada del 22/08 decía que gemini-2.5-flash estaba deprecado; las ejecuciones E2E de HOY en n8n.mumaweb.com lo confirman OPERATIVO (todas las baterías corrieron sobre él). La nota de sustitución a 3.x aplicaba a n8nv2, no a producción. PENDING escalar al humano si procede unificar modelos entre instancias.
+- Limitación conocida: sin memoria conversacional multi-turno (sub-workflows stateless); follow-ups anafóricos fallan. Pendiente: limpieza de datos sim (service-role, delegación local), config ODOO_* (bloqueada por usuario), test interpretación Excel + calculadora.
+
+## [2026-08-23] feature | Memoria conversacional multi-turno dispatcher→subagentes
+- Descubierto: los 3 subagentes YA aceptaban `history` en su input (`$json.body?.history || $json.history`) pero el dispatcher nunca lo transmitía (hueco anafórico N11b).
+- Fix: regla `TRANSFERENCIA DE CONTEXTO MULTITURNO` en el SM del Dispatcher (`Yv9X1EGUvQg8qErW`): toda invocación a Tool_SubAgent_* debe anteponer bloque `[CONTEXTO PREVIO: <hechos relevantes>]` al parámetro message cuando exista historial.
+- Verificado E2E con historial real de cliente: (1) "Cancela LA DE las 11 de la mañana" tras listar citas → canceló la correcta (09:00Z=11:00 España, Tartrectomía) dejando intacta la de 10:30Z; (2) "Y en total cuanto suma?" tras consulta de cobros → resolvió a Laura Gimenez 36€ sin nombrarla.
+- Nota test: el widget debe enviar `history:[{role,content},...]` en el body del webhook (ya lo hace el frontend); curl de pruebas ahora lo simula.
