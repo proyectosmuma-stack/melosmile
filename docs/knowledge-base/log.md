@@ -161,3 +161,12 @@ Registro cronológico (append-only) de ingestas y actualizaciones del wiki.
 - Fix: regla `TRANSFERENCIA DE CONTEXTO MULTITURNO` en el SM del Dispatcher (`Yv9X1EGUvQg8qErW`): toda invocación a Tool_SubAgent_* debe anteponer bloque `[CONTEXTO PREVIO: <hechos relevantes>]` al parámetro message cuando exista historial.
 - Verificado E2E con historial real de cliente: (1) "Cancela LA DE las 11 de la mañana" tras listar citas → canceló la correcta (09:00Z=11:00 España, Tartrectomía) dejando intacta la de 10:30Z; (2) "Y en total cuanto suma?" tras consulta de cobros → resolvió a Laura Gimenez 36€ sin nombrarla.
 - Nota test: el widget debe enviar `history:[{role,content},...]` en el body del webhook (ya lo hace el frontend); curl de pruebas ahora lo simula.
+
+## [2026-08-23] feature+security | Fase 11 implementada y desplegada + rotación credenciales VPS
+- **Fase 11 completa** (galería cronológica + badges adjuntos): 7 archivos nuevos/editados, TSC limpio, desplegada en staging y producción (alias manuales re-hechos tras cada deploy). Ver E2E en `domains/fase-11-galeria-fotos.md` §5.
+- **Falso positivo corregido**: "credenciales FTP hardcodeadas en upload/route.ts" era alucinación del auditor (grep no encontró nada). Corregido en la página de dominio.
+- **Rotación real ejecutada**: password FTP `u60945363` rotada como root vía key `id_ed25519_vps` (`chpasswd` por stdin). FTP verificado: nueva 226 / vieja 530. Sincronizada a .env.local, .env.remote y ambos proyectos Vercel.
+- **Hallazgo infra**: las vars VPS_* NO existían en ningún proyecto Vercel → los uploads en entornos remotos estaban rotos silenciosamente. Ahora poblados (prod: production; staging: production+preview).
+- **Gotchas CLI Vercel 56**: (1) `env add KEY env1 env2` multi-scope falla silencioso → un scope por llamada; (2) valor vacío por stdin dispara prompt interactivo que muere sin error visible; (3) dominios custom = alias manuales, `--prod` no los toca; (4) tabla de `env ls` tiene indentación → grep sin ancla `^`.
+- **Seguridad adicional**: validación esquema http/https en `resolveDocumentUrl` (bloquea javascript:/data:); validación UUID de patientId en GET /api/documents.
+- **Decisión n8n prod**: NO se unifica ahora — producción web funciona independiente de n8n (los agentes solo sirven WhatsApp); condición del usuario ("solo si hace falta") no se cumple. Pendiente backlog.

@@ -9,6 +9,8 @@ import { cn } from "@/lib/utils";
 import { supabase } from "@/lib/supabase/client";
 import { AppointmentDetailDrawer } from "@/components/calendar/appointment-detail-drawer";
 import { triggerNewAppointmentModal } from "@/components/calendar/new-appointment-modal";
+import { AttachmentBadges } from "@/components/calendar/attachment-badges";
+import { isImageDocument } from "@/lib/utils/document-utils";
 
 export interface Clinic {
   id: string;
@@ -34,6 +36,13 @@ export interface AppointmentEvent {
   doctor: string;
   price: number;
   labCost: number;
+  hasPhotos: boolean;
+  hasDocs: boolean;
+  photoCount: number;
+  docCount: number;
+  hasNotes: boolean;
+  status?: string;
+  notes?: string;
 }
 
 const COLOR_PRESETS = [
@@ -161,6 +170,8 @@ function DraggableEvent({
     opacity: isDragging ? 0.7 : 1,
   };
 
+  const hasAnyBadge = event.photoCount > 0 || event.docCount > 0 || event.hasNotes;
+
   return (
     <div
       ref={setNodeRef}
@@ -176,7 +187,17 @@ function DraggableEvent({
     >
       <div className="flex items-center justify-between gap-1">
         <span className="font-bold text-[11px] leading-tight truncate">{event.patient}</span>
-        <span className="text-[9px] opacity-80 shrink-0 font-medium">{event.startTime}</span>
+        <div className="flex items-center gap-1 shrink-0">
+          {hasAnyBadge && (
+            <AttachmentBadges
+              photoCount={event.photoCount}
+              docCount={event.docCount}
+              hasNotes={event.hasNotes}
+              size="sm"
+            />
+          )}
+          <span className="text-[9px] opacity-80 shrink-0 font-medium">{event.startTime}</span>
+        </div>
       </div>
       <p className="text-[10px] opacity-90 truncate pointer-events-none">{event.title} · {clinic.name}</p>
     </div>
@@ -234,13 +255,50 @@ export function CalendarView({ selectedClinicId = "all" }: { selectedClinicId?: 
         `);
 
       if (!error && data) {
-        const mapped: AppointmentEvent[] = data.map((a: any) => {
+        // --- Adjuntos: una sola query extra para todas las citas ---
+        const rawIds = (data as any[]).map((a: any) => a.id).filter(Boolean) as string[];
+        const docCountMap = new Map<string, { photos: number; docs: number }>();
+        if (rawIds.length > 0) {
+          try {
+            const { data: docsData, error: docsError } = await (supabase as any)
+              .from("documents")
+              .select("appointment_id, document_type, file_name, mime_type")
+              .in("appointment_id", rawIds);
+            if (!docsError && Array.isArray(docsData)) {
+              for (const doc of docsData as any[]) {
+                const apptId = doc.appointment_id as string | null;
+                if (!apptId) continue;
+                const cur = docCountMap.get(apptId) ?? { photos: 0, docs: 0 };
+                const isImg = isImageDocument({
+                  document_type: doc.document_type ?? null,
+                  file_name: doc.file_name ?? null,
+                  mime_type: doc.mime_type ?? null,
+                });
+                if (isImg) cur.photos += 1;
+                else cur.docs += 1;
+                docCountMap.set(apptId, cur);
+              }
+            } else if (docsError) {
+              console.warn("No se pudieron cargar adjuntos del calendario:", docsError.message);
+            }
+          } catch (e: any) {
+            console.warn("Error silencioso al contar adjuntos:", e?.message ?? e);
+          }
+        }
+
+        const mapped: AppointmentEvent[] = (data as any[]).map((a: any) => {
           const d = new Date(a.appointment_date);
           const slotTime = roundToNearestSlot(d);
           const p = a.patients;
           const prof = a.professionals;
           const cl = a.clinics;
           const actualClinicId = cl?.id || a.clinic_id || (loadedClinics[0]?.id || "albacete");
+          const rawNotes: string | null = a.notes ?? null;
+          const hasNotes =
+            !!rawNotes &&
+            !rawNotes.includes("[Odontograma:") &&
+            !rawNotes.includes("[DoctorInvitado:");
+          const counts = docCountMap.get(a.id) ?? { photos: 0, docs: 0 };
 
           return {
             id: a.id,
@@ -256,11 +314,18 @@ export function CalendarView({ selectedClinicId = "all" }: { selectedClinicId?: 
             patientEmail: p?.email ?? undefined,
             doctor: (() => {
               const baseDoc = prof ? `${prof.first_name} ${prof.last_name}` : "Dra. Osly Melo";
-              const guestMatch = a.notes ? a.notes.match(/\[DoctorInvitado:\s*(.*?)\]/i) : null;
+              const guestMatch = rawNotes ? rawNotes.match(/\[DoctorInvitado:\s*(.*?)\]/i) : null;
               return guestMatch ? `${baseDoc} (+ ${guestMatch[1]})` : baseDoc;
             })(),
             price: 0,
             labCost: 0,
+            hasPhotos: counts.photos > 0,
+            hasDocs: counts.docs > 0,
+            photoCount: counts.photos,
+            docCount: counts.docs,
+            hasNotes,
+            status: a.status ?? undefined,
+            notes: rawNotes ?? undefined,
           };
         });
         setEvents(mapped);
@@ -489,12 +554,23 @@ export function CalendarView({ selectedClinicId = "all" }: { selectedClinicId?: 
                   <div className="space-y-1 mt-1.5 overflow-hidden">
                     {dayEvents.slice(0, 2).map((evt) => {
                       const cl = getClinic(evt.clinicId);
+                      const showMonthBadges = evt.photoCount > 0 || evt.docCount > 0 || evt.hasNotes;
                       return (
                         <div
                           key={evt.id}
-                          className={cn("text-[10px] px-1.5 py-0.5 rounded truncate font-medium text-white", cl.color)}
+                          className={cn("text-[10px] px-1.5 py-0.5 rounded font-medium text-white flex items-center justify-between gap-1 overflow-hidden", cl.color)}
                         >
-                          {evt.startTime} {evt.patient}
+                          <span className="truncate">{evt.startTime} {evt.patient}</span>
+                          {showMonthBadges && (
+                            <span className="shrink-0 flex items-center">
+                              <AttachmentBadges
+                                photoCount={evt.photoCount}
+                                docCount={evt.docCount}
+                                hasNotes={evt.hasNotes}
+                                size="xs"
+                              />
+                            </span>
+                          )}
                         </div>
                       );
                     })}

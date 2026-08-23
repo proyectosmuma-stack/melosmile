@@ -7,7 +7,7 @@ import {
   Stethoscope, ArrowLeft, Clock, MapPin, Loader2, Building2, Edit3,
   Bell, Plus, Receipt, ChevronRight, X, UserCheck, Baby,
   BadgeCheck, Sparkles, ExternalLink, Tag as TagIcon, Save, Smile, MessageSquare,
-  Trash2, CheckSquare, Square
+  Trash2, CheckSquare, Square, Image as ImageIcon, Camera
 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -22,6 +22,8 @@ import { Odontogram, OdontogramData } from "@/components/appointments/odontogram
 import { NewReminderModal } from "@/components/reminders/new-reminder-modal";
 import { addSystemNotification } from "@/components/layout/notification-center";
 import { Send as SendIcon } from "lucide-react";
+import { PhotoGallery } from "@/components/patients/photo-gallery";
+import { isImageDocument } from "@/lib/utils/document-utils";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -101,6 +103,10 @@ type Document = {
   created_at: string;
   description: string | null;
   file_url: string | null;
+  file_path?: string | null;
+  file_size_bytes?: number | null;
+  mime_type?: string | null;
+  appointment_id?: string | null;
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -236,7 +242,7 @@ function DocumentDropZone({ patientId, onUpload }: { patientId: string; onUpload
 
 // ─── Main Page ─────────────────────────────────────────────────────────────────
 
-type ActiveTab = "historial" | "recordatorios" | "facturacion";
+type ActiveTab = "historial" | "recordatorios" | "facturacion" | "galeria";
 
 export default function PatientProfilePage({ params }: { params: Promise<{ id: string }> | { id: string } }) {
   const resolvedParams = React.use(params as any) as { id: string };
@@ -564,10 +570,10 @@ function toTitleCase(text: string): string {
 
       if (remindersData) setReminders(remindersData as unknown as Reminder[]);
 
-      // 6. Documents
+      // 6. Documents (incluye campos para galeria: appointment_id, file_path, size, mime)
       const { data: docsData } = await (supabase as any)
         .from("documents")
-        .select("id, file_name, document_type, created_at, description, file_url")
+        .select("id, file_name, document_type, created_at, description, file_url, file_path, file_size_bytes, mime_type, appointment_id")
         .eq("patient_id", p.id)
         .order("created_at", { ascending: false });
 
@@ -622,6 +628,7 @@ function toTitleCase(text: string): string {
 
   const totalPaid = billing.filter(b => b.status !== "Pendiente").reduce((s, b) => s + b.custom_price, 0);
   const totalPending = billing.filter(b => b.status === "Pendiente").reduce((s, b) => s + b.custom_price, 0);
+  const photoCount = documents.filter((d) => isImageDocument({ file_name: d.file_name, document_type: d.document_type, mime_type: d.mime_type ?? null })).length;
 
   // Clinics this patient visited but isn't linked to
   const linkedClinicIds = new Set(patientClinics.map(c => c.clinic_id));
@@ -1129,6 +1136,7 @@ function toTitleCase(text: string): string {
         <div className="flex border-b border-border/60 overflow-x-auto">
           {([
             { id: "historial", label: `Historial de Citas${appointments.length > 0 ? ` (${appointments.length})` : ""}`, icon: CalendarIcon },
+            { id: "galeria", label: `Fotografías${photoCount > 0 ? ` (${photoCount})` : ""}`, icon: ImageIcon },
             { id: "facturacion", label: `Facturación y Pagos${billing.length > 0 ? ` (${billing.length})` : ""}`, icon: Receipt },
             { id: "recordatorios", label: `Recordatorios${reminders.length > 0 ? ` (${reminders.length})` : ""}`, icon: Bell },
           ] as const).map(tab => (
@@ -1652,6 +1660,13 @@ function toTitleCase(text: string): string {
             )}
           </div>
         )}
+
+        {/* GALERIA */}
+        {activeTab === "galeria" && (
+          <div className="p-0">
+            <PhotoGallery patientId={patient.id} />
+          </div>
+        )}
       </div>
 
       {/* New Reminder Modal */}
@@ -1674,18 +1689,23 @@ function toTitleCase(text: string): string {
           <div className="flex items-center gap-2">
             <FileText className="h-5 w-5 text-primary" />
             <h2 className="text-base font-bold text-foreground">Documentos y Consentimientos</h2>
-            {documents.length > 0 && (
-              <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-muted text-muted-foreground">{documents.length}</span>
-            )}
+            {(() => {
+              const nonImg = documents.filter((d) => !isImageDocument({ file_name: d.file_name, document_type: d.document_type, mime_type: d.mime_type ?? null }));
+              return nonImg.length > 0 ? (
+                <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-muted text-muted-foreground">{nonImg.length}</span>
+              ) : null;
+            })()}
           </div>
         </div>
 
         <div className="p-6 space-y-5">
           <DocumentDropZone patientId={patient.id} onUpload={fetchAll} />
 
-          {documents.length > 0 && (
+          {(() => {
+            const nonImageDocs = documents.filter((d) => !isImageDocument({ file_name: d.file_name, document_type: d.document_type, mime_type: d.mime_type ?? null }));
+            return nonImageDocs.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              {documents.map((doc) => {
+              {nonImageDocs.map((doc) => {
                 const d = formatDate(doc.created_at);
                 return (
                   <div key={doc.id} className="flex items-center gap-3 p-3 rounded-xl border border-border/60 hover:border-primary/30 hover:bg-primary/10 transition-all cursor-pointer group">
@@ -1705,7 +1725,8 @@ function toTitleCase(text: string): string {
                 );
               })}
             </div>
-          )}
+            ) : null;
+          })()}
         </div>
       </div>
       {/* Payment Registration Modal */}

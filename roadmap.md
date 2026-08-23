@@ -17,11 +17,11 @@ Este documento establece el plan de desarrollo y próximas tareas activas para l
 
 ## 🚀 Fase 11: Gestión Visual de Fotografías Clínicas y Trazabilidad de Citas
 
-- [ ] **Galería Cronológica de Fotografías por Paciente:**
+- [x] **Galería Cronológica de Fotografías por Paciente:** *(Implementada 2026-08-23: `photo-gallery.tsx` + `photo-lightbox.tsx` + tab "Fotografías" en ficha + GET `/api/documents`)*
   - Crear una vista general / pestaña de fotografías clínicas en la ficha de cada paciente (`/patients/[id]`).
   - Organizar las fotos cronológicamente por la fecha de la consulta/cita a la que pertenecen.
   - Soporte para previsualización en alta resolución (Lightbox / modal de zoom), descarga y metadatos de evolución.
-- [ ] **Indicador Visual de Adjuntos e Información en Citas (Agenda):**
+- [x] **Indicador Visual de Adjuntos e Información en Citas (Agenda):** *(Implementado 2026-08-23: `attachment-badges.tsx` en `calendar-view.tsx` + sección Adjuntos con Lightbox en `appointment-detail-drawer.tsx`, estado real de cita incluido)*
   - Añadir un badge o icono distintivo (ej. 📎 / 📷) en las tarjetas de citas del Calendario y vista diaria/semanal cuando la cita contenga fotografías, documentos o notas clínicas adjuntas.
   - Permitir al profesional identificar al instante qué citas disponen de registro fotográfico o documentación previa sin abrir cada cita manualmente.
   - Previsualización rápida de adjuntos desde el drawer de detalle de cita (`AppointmentDetailDrawer`).

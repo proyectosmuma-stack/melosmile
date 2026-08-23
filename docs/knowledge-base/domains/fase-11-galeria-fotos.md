@@ -62,7 +62,23 @@ Toda la galería depende de resolver URLs server-side desde `file_path` (VPS) o 
 - Índices posicionales en billing_session_lines (`appointment_id_procedure_index`): append al FINAL es seguro; reordenar desplaza índices y corrompe ediciones manuales preservadas.
 - Dedup serviceName+toothRef (permitir 2 empastes legítimos distinguiendo pieza).
 
-## 4. Seguridad detectada durante la auditoría (CRÍTICO)
+## 4. Seguridad detectada durante la auditoría (ACTUALIZADO 2026-08-23)
 
-- 🔴 **Credenciales FTP hardcodeadas como fallbacks** en `frontend/src/app/api/documents/upload/route.ts` (~L45-48): host/user/password reales en el código fuente (van también al bundle de Vercel). ACCIÓN: rotar credenciales en el VPS, eliminar fallbacks, dejar solo process.env (delegación env-writer).
-- 🟠 RLS de `documents` = ALLOW ALL + URLs legacy públicas de bucket Storage → fotos clínicas potencialmente accesibles sin auth (RGPD). Antes de publicar la galería: proxy autenticado `/api/documents/file/[id]` o signed URLs.
+- ⚪ **[FALSO POSITIVO CORREGIDO]** El hallazgo original de "credenciales FTP hardcodeadas en `upload/route.ts` ~L45-48" era una **alucinación del auditor**: verificación grep exhaustiva confirmó que el código fuente NUNCA contuvo las credenciales (el route ya leía `process.env.VPS_SSH_*` con validación y error 500 limpio). Lección: verificar con grep antes de reportar fugas.
+- ✅ **ROTACIÓN EJECUTADA (2026-08-23)**: password FTP del usuario `u60945363` rotada vía root SSH (`chpasswd` con key `~/.ssh/id_ed25519_vps`). Verificación por FTP: nueva=226 OK, vieja=530 muerta. Toda exposición histórica queda neutralizada. Nuevo valor sincronizado en `.env.local`, `.env.remote`, Vercel `melosmile-production` (production) y `melosmile-staging` (production+preview). Nota: el usuario FTP NO tiene shell real (Plesk) — SSH interactivo cierra tras auth; solo accesible como root por key.
+- 🟠 RLS de `documents` = ALLOW ALL + URLs legacy públicas de bucket Storage → fotos clínicas potencialmente accesibles sin auth (RGPD). Mitigación parcial aplicada: `resolveDocumentUrl` solo acepta esquemas http/https. PENDIENTE: proxy autenticado `/api/documents/file/[id]` o signed URLs antes de exponer la galería a producción real.
+- ✅ Variables VPS_* + NEXT_PUBLIC_VPS_FILES_BASE verificadas y presentes en ambos proyectos Vercel (antes NO existían → uploads remotos estaban rotos sin saberlo).
+
+## 5. Implementación (COMPLETADA 2026-08-23, desplegada en staging y producción)
+
+| Pieza | Archivo | Notas |
+|---|---|---|
+| Utilidades compartidas | `frontend/src/lib/utils/document-utils.ts` | `isImageDocument`, `formatBytes`, `DOC_TYPE_LABELS`, `resolveDocumentUrl` (valida esquema http/https) |
+| API GET documentos | `frontend/src/app/api/documents/route.ts` | patientId UUID requerido (400 si no), limit≤500, embed appointments, `resolved_url`, total+hasMore |
+| Lightbox | `frontend/src/components/patients/photo-lightbox.tsx` | Zoom 1-5x rueda/botones, pan con drag, teclado ←/→/Esc, descarga |
+| Galería | `frontend/src/components/patients/photo-gallery.tsx` | Agrupa por cita (o "Sin cita asociada"), grupos colapsables, lazy loading, paginación "Cargar más" |
+| Tab ficha paciente | `frontend/src/app/(dashboard)/patients/[id]/page.tsx` | Tab "Fotografías (N)", select ampliado, sección Documentos filtra no-imágenes |
+| Badges calendario | `frontend/src/components/calendar/attachment-badges.tsx` + `calendar-view.tsx` | 1 query batched `.in()` (sin N+1), chips xs en mes / sm en semana-día, filtro marcadores estructurales en notes |
+| Drawer adjuntos | `appointment-detail-drawer.tsx` | Sección Adjuntos con thumbnails→Lightbox, estado real de cita (fix del hardcode "Confirmada") |
+
+Gotchas de despliegue documentados: los dominios `staging.melosmile.com` y `agenda.melosmile.com` son **alias manuales** (`vercel alias set URL domain`) — `vercel --prod` NO actualiza el dominio; siempre re-aliasear tras deploy.
