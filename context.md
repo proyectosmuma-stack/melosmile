@@ -119,14 +119,23 @@ AUTH_USERNAME=clinica / AUTH_PASSWORD=melosmile2024
 
 ### 🤖 n8n — Flujos por Entorno
 
+> IDs verificados contra las APIs REST de ambas instancias el 2026-08-23. Detalle completo y patrones certificados: `docs/knowledge-base/domains/n8n-workflows.md`.
+
 | Flujo | ID Dev (`n8n.mumaweb.com`) | ID Prod (`n8nv2.mumaweb.com`) |
 |---|---|---|
-| `[MELOSMILE] AI Dispatcher` | `OG4Yy4N7qALXojTa` (aprox) | `QgNoVFr9TBXGbdOl` |
-| `[MELOSMILE] Sub-Agent: Agendamiento` | dev | `E59OoSRNJ4skt43W` |
-| `[MELOSMILE] Sub-Agent: Clinico` | dev | `cQQGecziVfareNtI` |
-| `[MELOSMILE] Sub-Agent: Contabilidad` | dev | `4Z7PdsGK2wAIi2iE` |
-| `[MELOSMILE] Sub-Agent: General` | dev | `9scMTKJwP7TKFSJV` |
-| `[MELOSMILE] Agent Document Cleaner` | dev | `IrLOC3fSQZCxvvBz` |
+| `[MELOSMILE] AI Dispatcher` | `Yv9X1EGUvQg8qErW` | `QgNoVFr9TBXGbdOl` |
+| `[MELOSMILE] Sub-Agent: Agendamiento` | `vg2HrtIQpvDrcUOC` | `E59OoSRNJ4skt43W` |
+| `[MELOSMILE] Sub-Agent: Clinico` | `Q7oxrbUuohca81Gn` | `cQQGecziVfareNtI` |
+| `[MELOSMILE] Sub-Agent: Contabilidad` | `XSLNwq6ihH1SHPRl` | `4Z7PdsGK2wAIi2iE` |
+| `[MELOSMILE] Sub-Agent: General` | `MIok0ruU7JhpTxWv` | `9scMTKJwP7TKFSJV` |
+| `[MELOSMILE] Agent Document Cleaner` | `OG4Yy4N7qALXojTa` | `IrLOC3fSQZCxvvBz` |
+| Helper - Appointment Write | `BTJZSpohjoxeY5Ru` | — |
+| Helper - Appointment Modify | `MlrysSNd3N8tDjVh` | — |
+| Helper - Patient Create | `AwZXnNEdTjVaPXsE` | — |
+| Helper - Patient Search | `ungEfZO2qzDQvuVC` | — |
+| Helper - Billing Query | `AzGmCQ5rd7gvEQ3w` | — |
+
+⚠️ **Divergencia activa dev↔prod (2026-08-23)**: la arquitectura de helpers deterministas, memoria multiturno del dispatcher y fixes de fechas/cancelación soft existen SOLO en dev. Los flujos Melosmile de producción llevan sin actualizarse desde 2026-07-29 y su OpenRouter usa `google/gemini-2.5-flash`. Unificar cuando se apruebe.
 
 > Todos los flujos de producción tienen tag `Melosmile` y apuntan a `https://agenda.melosmile.com`.
 
@@ -139,7 +148,7 @@ AUTH_USERNAME=clinica / AUTH_PASSWORD=melosmile2024
 | **Host FTP/SSH** | `94.143.139.120` (`melosmile.com`) |
 | **Usuario FTP** | `u60945363` |
 | **Puerto FTP** | `21` (FTP pasivo con librería `basic-ftp`) |
-| **Contraseña** | `Mum@sly1983` (usar `VPS_SSH_PASSWORD` en env) |
+| **Contraseña** | Configurada en variable `VPS_SSH_PASSWORD` (`.env.remote`) |
 | **Directorio Raíz Domain** | `melosmile.com/` |
 
 **Estructura de directorios en VPS:**
@@ -167,7 +176,7 @@ melosmile.com/
 VPS_SSH_HOST=94.143.139.120
 VPS_FTP_PORT=21
 VPS_SSH_USER=u60945363
-VPS_SSH_PASSWORD=Mum@sly1983
+VPS_SSH_PASSWORD=<CONFIGURADO_EN_ENV_REMOTE>
 VPS_DOMAIN_FOLDER=melosmile.com
 ```
 

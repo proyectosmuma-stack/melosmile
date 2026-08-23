@@ -12,8 +12,8 @@ En el archivo `frontend/.env.local` se deben definir los siguientes valores:
 ODOO_URL=https://melosmile.odoo.com
 ODOO_DB=melosmile
 ODOO_USER=gestion@melosmile.com
-ODOO_PASSWORD=@oslyMelo1983
-ODOO_API_KEY=6807cede082f06fc522f840c71040c0a30d68d40
+ODOO_PASSWORD=<CONFIGURADO_EN_ENV_REMOTE>
+ODOO_API_KEY=<CONFIGURADO_EN_ENV_REMOTE>
 ```
 
 ---

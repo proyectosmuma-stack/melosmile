@@ -11,6 +11,7 @@
 
 ### Convenciones y procesos
 - [Infraestructura Vercel](domains/infra-vercel.md) — arquitectura de despliegue (staging/producción), procedimiento CLI correcto, incidente 2026-08-22 y PENDINGs.
+- [Auditoría Fase 11 + Append de procedimientos](domains/fase-11-galeria-fotos.md) — estado real del código, planes de implementación, riesgos y hallazgos de seguridad (2026-08-23).
 - Ver `context.md` (raíz) para estado técnico completo del proyecto.
 - Ver `.agents/AGENTS.md` para reglas de negocio y comandos de sesión.
 - Ver `docs/audit-report.md` para el último informe de auditoría del reviewer.

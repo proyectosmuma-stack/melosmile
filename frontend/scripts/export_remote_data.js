@@ -1,6 +1,8 @@
 const fs = require('fs');
 const path = require('path');
 const dns = require('dns');
+require('dotenv').config({ path: path.join(__dirname, '../.env.remote') });
+require('dotenv').config({ path: path.join(__dirname, '../.env.local') });
 const { createClient } = require('@supabase/supabase-js');
 
 // Configuración de resolución DNS para entornos donde libc dns cachea fallos temporales
@@ -17,8 +19,13 @@ dns.lookup = (hostname, options, callback) => {
   return origLookup(hostname, options, callback);
 };
 
-const SUPABASE_URL = 'https://amhfdzfcmpastmlsosou.supabase.co';
-const SUPABASE_SERVICE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFtaGZkemZjbXBhc3RtbHNvc291Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4NDczNTM3NCwiZXhwIjoyMTAwMzExMzc0fQ.yPLQaV1xbfnuJJcNktxqbneP9Yb5UGlWfXA1tKYx6ZM';
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://amhfdzfcmpastmlsosou.supabase.co';
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY || '';
+
+if (!SUPABASE_SERVICE_KEY) {
+  console.error('❌ Error: SUPABASE_SERVICE_ROLE_KEY no está definida en las variables de entorno (.env.remote / .env.local)');
+  process.exit(1);
+}
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 

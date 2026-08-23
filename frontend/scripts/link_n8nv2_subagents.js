@@ -1,5 +1,9 @@
-const N8N_URL = 'https://n8nv2.mumaweb.com';
-const N8N_API_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJlNzc3OGRmNi04Zjc3LTRjMTYtYTAxOS1hODZhZDU2YjlmNDIiLCJpc3MiOiJuOG4iLCJhdWQiOiJwdWJsaWMtYXBpIiwianRpIjoiZmI0Y2JjODQtNTQyZS00MWRhLWE3YzEtOTQ1MmI4OTc1YjE4IiwiaWF0IjoxNzg1MzQzNjI3fQ.E3Z7u0mbPVfIkH7I555RbV7i2N4QFPnMKbIB233hZ64';
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '../.env.remote') });
+require('dotenv').config({ path: path.join(__dirname, '../.env.local') });
+
+const N8N_URL = process.env.N8N_WEBHOOK_BASE_URL || 'https://n8nv2.mumaweb.com';
+const N8N_API_KEY = process.env.N8N_API_KEY || '';
 
 async function updateDispatcher() {
   const dispatcherId = 'QgNoVFr9TBXGbdOl';

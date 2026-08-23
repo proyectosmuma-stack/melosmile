@@ -1,12 +1,19 @@
+require("dotenv").config({ path: "./.env.remote" });
 require("dotenv").config({ path: "./.env.local" });
 const { Client } = require("pg");
 
+const dbPassword = process.env.SUPABASE_DB_PASSWORD;
+if (!dbPassword) {
+  console.error("❌ Error: SUPABASE_DB_PASSWORD no está definida en las variables de entorno");
+  process.exit(1);
+}
+
 const client = new Client({
-  host: "aws-0-eu-west-3.pooler.supabase.com",
-  port: 6543,
-  user: "postgres.amhfdzfcmpastmlsosou",
-  password: process.env.SUPABASE_DB_PASSWORD || "Mum@sly1983!",
-  database: "postgres",
+  host: process.env.SUPABASE_DB_HOST || "aws-0-eu-west-3.pooler.supabase.com",
+  port: Number(process.env.SUPABASE_DB_PORT) || 6543,
+  user: process.env.SUPABASE_DB_USER || "postgres.amhfdzfcmpastmlsosou",
+  password: dbPassword,
+  database: process.env.SUPABASE_DB_NAME || "postgres",
   ssl: { rejectUnauthorized: false }
 });
 

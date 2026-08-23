@@ -43,3 +43,4 @@ excel/
 .venv/
 configuracion_agentes_respaldo/
 .codegraph/
+supabase/seed.cloud.sql

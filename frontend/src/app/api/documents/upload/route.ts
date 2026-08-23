@@ -40,12 +40,23 @@ export async function POST(req: Request) {
     const safeFileName = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9_.-]/g, "_")}`;
     const fullPath = `/${fullRemoteDir}/${safeFileName}`;
 
+    const vpsHost = process.env.VPS_SSH_HOST;
+    const vpsUser = process.env.VPS_SSH_USER;
+    const vpsPassword = process.env.VPS_SSH_PASSWORD;
+
+    if (!vpsHost || !vpsUser || !vpsPassword) {
+      return NextResponse.json(
+        { success: false, error: "Configuración de almacenamiento VPS incompleta en el servidor." },
+        { status: 500 }
+      );
+    }
+
     // Connect to IONOS VPS via FTP
     await client.access({
-      host: process.env.VPS_SSH_HOST || "94.143.139.120",
+      host: vpsHost,
       port: parseInt(process.env.VPS_FTP_PORT || "21", 10),
-      user: process.env.VPS_SSH_USER || "u60945363",
-      password: process.env.VPS_SSH_PASSWORD || "Mum@sly1983",
+      user: vpsUser,
+      password: vpsPassword,
       secure: false,
     });
 

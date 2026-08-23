@@ -2,6 +2,16 @@
 
 Registro cronológico (append-only) de ingestas y actualizaciones del wiki.
 
+## [2026-08-23] audit | Revisión integral Fase 11 + Backlog + Infraestructura (equipo completo)
+- **Fase 11 auditada por coder-cloud** → nueva página [fase-11-galeria-fotos.md](domains/fase-11-galeria-fotos.md): la FK documents→appointments YA existe (sin migración); NO hay endpoint GET /api/documents; brecha bloqueante = file_url NULL en todo lo subido por FTP (2 backends conviviendo). Plan A galería 10–14h, Plan B badges+drawer 8–12h.
+- **Backlog append auditado**: el punto de pérdida es create/route.ts:337-348 (unificación reescribe notes completas) y update/route.ts:370; `enrichNotesWithProcedure` ya hace append correcto → formalizar contrato `action:"add_procedures"` en update (helper n8n hace forward JSON puro). Detectado bug: billing_records mutado sin filtrar status al unificar.
+- 🔴 **CRÍTICO de seguridad detectado**: credenciales FTP reales hardcodeadas como fallbacks en `api/documents/upload/route.ts` (~L45-48) + RLS documents ALLOW ALL. Pendiente rotación + limpieza + decisión proxy/signed-URLs antes de publicar galería.
+- **Infra verificada contra realidad**: producción y staging SIRVEN BUILDS FRESCOS (marcador melosmile_theme presente, /settings 200 ambos). PENDING "actualizar producción" de infra-vercel.md cerrado (hecho 2026-08-23).
+- **DNS**: develop.mumaweb.com SIGUE apuntando a IONOS (94.143.139.120); staging.melosmile.com y agenda.melosmile.com correctos vía Vercel.
+- **n8n comparado API vs docs**: context.md tenía IDs dev erróneos (Dispatcher era OG4Yy4N7qALXojTa=Document Cleaner; real Yv9X1EGUvQg8qErW) y sin IDs de subagentes/helpers → corregido con los 5 helpers atómicos. Divergencia activa registrada: flujos Melosmile de n8nv2 sin actualizar desde 2026-07-29 (sin helpers ni memoria multiturno, modelo gemini-2.5-flash).
+- Git limpio: develop == origin/develop, working tree sin cambios pendientes.
+
+
 ## [2026-08-22] fix | Citas IA fantasma: parse form-urlencoded, timezone Madrid y cascade delete
 - **Síntoma**: Musly respondía "cita agendada con éxito" pero NUNCA se creaba la cita (reproducido 2x: petición real del usuario 14:25 UTC y E2E del orquestador).
 - **Causa raíz (API)**: los `toolHttpRequest` de n8n (`specifyBody:keypair` sin contentType explícito) envían POST **form-urlencoded**, pero las rutas API hacían `req.json().catch(()=>({}))` → body vacío → 400 → el LLM alucinaba el éxito.

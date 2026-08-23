@@ -72,8 +72,9 @@ flowchart TD
 | Helper | ID | Función |
 |---|---|---|
 | Helper - Patient Search | `ungEfZO2qzDQvuVC` | Búsqueda fuzzy de pacientes |
-| Helper - Appointment Create | `BTJZSpohjoxeY5Ru` | Alta de cita |
+| Helper - Appointment Write | `BTJZSpohjoxeY5Ru` | Alta de cita |
 | Helper - Appointment Modify | `MlrysSNd3N8tDjVh` | Update/cancel (forward JSON puro) |
+| Helper - Patient Create | `AwZXnNEdTjVaPXsE` | Alta de paciente |
 | Helper - Billing Query | `AzGmCQ5rd7gvEQ3w` | Cobros pendientes combinados |
 
 ---

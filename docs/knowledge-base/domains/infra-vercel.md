@@ -52,7 +52,7 @@ cd frontend && vercel --prod=false --yes
 ## PENDING
 
 - [ ] Decidir si se conecta integración Git→Vercel para automatizar deploys por rama (evitaría race conditions manuales).
-- [ ] Actualizar producción (`agenda.melosmile.com`) fusionando `develop` a `main` cuando el usuario lo apruebe explícitamente.
+- [x] ~~Actualizar producción (`agenda.melosmile.com`)~~ → **HECHO 2026-08-23**: fusión `develop`→`main` desplegada con migración de datos reales (66 pacientes, 81 citas). Verificado hoy por marcador `melosmile_theme` presente y `/settings` → 200 en ambos entornos.
 
 ## UPDATE (2026-08-23)
 - Se ha registrado exitosamente el dominio `staging.melosmile.com` en el proyecto `melosmile-production` y atado directamente a la rama `develop` usando la API de Vercel. Ionos gestiona el CNAME apuntando a `cname.vercel-dns.com`. A partir de ahora, staging se puede acceder y probar en una URL predecible.
