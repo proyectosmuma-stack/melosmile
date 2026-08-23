@@ -42,3 +42,4 @@ next-env.d.ts
 excel/
 .venv/
 configuracion_agentes_respaldo/
+.codegraph/
