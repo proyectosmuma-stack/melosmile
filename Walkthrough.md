@@ -67,3 +67,25 @@ Durante esta sesión, tanto Antigravity como Mumabot (OpenCode) colaboraron en u
 * **Reglas y Skills de Monitorización:**
   * Creadas e integradas las skills `/monitor` y `/stop-monitor` tanto a nivel local como global (`~/.gemini/config/skills/`).
   * Blindada la regla de delegación obligatoria de Base de Datos en `~/.config/opencode/agents/coding/mumabot-cloud-pro.md`.
+
+## 8. Sesión 24/08/2026 — Revival Musly Prod, Migración al Bridge y Endurecimiento RGPD (Completada ✅)
+
+### A. Revival de Musly en Producción (`n8nv2`) + Migración Arquitectónica
+* **Causa raíz del apagón**: el dispatcher prod apuntaba a una credencial OpenRouter inexistente → crash en 35ms por mensaje. Reparada con credencial válida extraída del flujo Hungrys GPB.
+* **Bug estructural descubierto**: el patrón `toolHttpRequest`+$fromAI en n8nv2 genera esquemas degenerados ("did not match expected schema" con path vacío) — los subagentes NUNCA habían funcionado en prod.
+* **Solución**: migración completa de Dispatcher + 4 subagentes a `toolWorkflow` → nuevo flujo "[MELOSMILE] API Bridge (Prod)" con Switch de 11 rutas hacia la staging API (header `x-api-key`). System Message del dispatcher sincronizado verbatim con dev (REGLA DE ORO DE RUTEO, PROHIBIDO-SIN-DELEGAR, TRANSFERENCIA MULTITURNO).
+* **Certificación E2E**: lectura y escritura (crear/reagendar/cancelar) verificadas contra verdad absoluta en BD con limpieza forense posterior.
+
+### B. Endurecimiento RGPD de Fotografías Clínicas
+* **Riesgo cerrado**: 88 fotos clínicas reales eran accesibles por URL pública permanente + tabla `documents` con 4 políticas RLS públicas (incluida ALL anónimo).
+* **Código** (typecheck limpio): helper `signDocumentUrl()` en `frontend/src/lib/server/storage.ts` (TTL 3600s, defensa path-traversal) + `GET /api/documents` sirve firmas con fallback legacy. Contrato API intacto; cero cambios en componentes frontend.
+* **Migración RLS** `20260824000000_secure_documents_rls.sql`: aplicada a CLOUD vía `supabase db query --linked --file` (la CLI 56 no tiene `db execute`; RPC exec_sql no existe en cloud→404) y a LOCAL vía docker psql. Verificado: 0 políticas restantes en ambos.
+* **Despliegue cero-ventana-rota** (orden crítico): deploy staging → verificación FIRMADA → deploy producción desde raíz (alias automático a agenda.melosmile.com) → verificación FIRMADA → **entonces** flip del bucket a privado.
+* **Verificación final**: URL pública legacy → **400 RECHAZADA** · signed URLs en prod y staging → **200 OK**.
+
+### C. Lecciones Aprendidas (esta sesión)
+1. **Storage API**: la actualización de buckets es `PUT /storage/v1/bucket/{id}`, no PATCH (PATCH devuelve 404).
+2. **Supabase CLI 56**: no existe `db execute`; usar `db query --linked --file <sql>` para aplicar SQL al proyecto vinculado vía Management API.
+3. **Free tier gemini-3.6-flash**: límite ~20 req/día agotable → ante fallo ×3 del subagente cloud, aplicar Regla Anti-Bucle e implementar directo con auditoría compensatoria documentada.
+4. **Agentes locales Qwen hoy**: devolvieron meta-respuestas sin ejecutar herramientas (falso-positivos detectados por regla anti-falso-positivo). Verificar siempre evidencia literal antes de dar por bueno un task "completed".
+5. **Orden de seguridad en producción**: código nuevo primero → verificar contra datos reales → recién entonces endurecer infraestructura (flip privado), para eliminar ventanas de servicio roto.

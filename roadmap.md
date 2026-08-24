@@ -12,6 +12,8 @@ Este documento establece el plan de desarrollo y próximas tareas activas para l
 - ✅ **Fusión a Producción y Migración de Datos Reales (2026-08-23):** Fusión de `develop` a `main` con despliegue en Vercel Producción (`https://agenda.melosmile.com`). Migración completa de Notion a Supabase Cloud de 66 pacientes reales (`PAC-001` a `PAC-066`), 81 citas históricas, 28 registros de facturación y 88 fotografías clínicas almacenadas en Supabase Storage (`patient-documents`).
 - ✅ **Sincronización Supabase Local ← Cloud:** Local y Cloud 100% sincronizados con esquema y datos reales.
 - ✅ **Infraestructura Staging:** Dominio `https://staging.melosmile.com` asignado a `melosmile-staging` en rama `develop`.
+- ✅ **Revival de Musly en Producción n8nv2 (2026-08-24):** Causa raíz del apagón = credencial OpenRouter inexistente en el dispatcher. Reparada y migrados los 4 subagentes + Bridge API al patrón toolWorkflow (eliminando el bug estructural `toolHttpRequest`+$fromAI). Lectura Y escritura certificadas E2E contra BD. Detalle: `docs/knowledge-base/log.md`.
+- ✅ **Endurecimiento RGPD de Fotografías Clínicas (2026-08-24):** Bucket `patient-documents` en PRIVADO, RLS `documents` sin políticas públicas (local+cloud), signed URLs TTL 3600s servidas por `/api/documents`. Despliegue cero-ventana-rota: staging → verificación → producción (`agenda.melosmile.com`) → verificación → flip del bucket. Verificación final: URL pública→400 · firmadas prod/staging→200.
 
 ---
 
@@ -31,4 +33,8 @@ Este documento establece el plan de desarrollo y próximas tareas activas para l
 ## 🔧 Pendiente (Backlog)
 
 - [ ] Añadir soporte para que el agente pueda añadir procedimientos adicionales a una cita ya existente sin sobrescribir los procedimientos anteriores (Mejora pendiente detectada previamente).
+- [ ] **E2E Document Cleaner**: certificar el flujo reparado (`IrLOC3fSQZCxvvBz` prod) con foto de agenda manuscrita o Excel real del usuario. Al hacerlo, consumir signed URLs o base64 (nunca URLs públicas).
+- [ ] **Timezone UX**: `/api/appointments/list` devuelve horas en UTC crudo; normalizar a hora España en endpoint o enriquecer contexto del agente.
+- [ ] **Odoo end-to-end**: configurar `ODOO_*` en Vercel y probar facturación (la ruta `odoinvoice` ya existe en el Bridge).
+- [ ] **Paridad storage dev-local** (opcional): sincronizar objetos/buckets al Supabase local o apuntar env dev a cloud para que la galería local no muestre rotas.
 

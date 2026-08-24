@@ -182,6 +182,19 @@ VPS_DOMAIN_FOLDER=melosmile.com
 
 ✅ **Compatibilidad**: Funciona tanto en desarrollo local (`localhost:3028`) como en `develop` (staging) y `main` (producción Vercel Serverless), ya que la conexión FTP se establece de forma remota por red.
 
+---
+
+### 🔐 Seguridad de Fotos Clínicas en Supabase Storage (RGPD — endurecido 2026-08-24)
+
+Las 88 fotografías clínicas reales (migración Notion) viven en el bucket `patient-documents` de Supabase Cloud (`amhfdzfcmpastmlsosou`). Estado de seguridad:
+
+| Capa | Medida | Detalle |
+|---|---|---|
+| **Storage** | Bucket PRIVADO | `PUT /storage/v1/bucket/patient-documents {public:false}` (gotcha: PATCH devuelve 404). Las URLs `/object/public/...` devuelven 400 |
+| **Base de datos** | RLS `documents` endurecida | Migración `20260824000000_secure_documents_rls.sql` elimina las 4 políticas públicas ("Allow all authenticated", "Allow anon read", "Allow public all", "Allow anon and authenticated all"). Aplicada a local Y cloud (0 políticas restantes). El backend opera vía service_role que bypasa RLS |
+| **Servicio** | Signed URLs server-side | Helper `frontend/src/lib/server/storage.ts` → `signDocumentUrl()` (`createSignedUrl`, TTL 3600s, rechaza paths con `..` o URLs externas). `GET /api/documents` firma cada documento con fallback legacy si la firma falla → contrato API intacto, componentes frontend SIN cambios |
+
+> ⚠️ **Deuda conocida**: la galería en DEV LOCAL muestra imágenes rotas (el Supabase local no tiene buckets ni objetos). No afecta a staging ni producción. Cuando se certifique el Document Cleaner de n8n, deberá consumir signed URLs o base64 (nunca URLs públicas).
 
 ---
 

@@ -7,7 +7,7 @@
 ### Estado actual
 - Esquema `documents` (migración `20260722000002_extended_schema.sql:90-112`): `id, patient_id NOT NULL FK→patients, appointment_id NULL FK→appointments (SET NULL), document_type enum(foto_clinica|radiografia|...), file_name, file_path, file_url NULL, file_size_bytes, mime_type, description, created_at`.
 - **La relación documents→appointments YA EXISTE**: agrupar fotos por cita NO requiere migración.
-- RLS vigente: policy "Allow public all" (`20260722000004_fix_rls_policies.sql`) — abierta del todo.
+- RLS vigente (2026-08-24): **0 políticas públicas** en `documents` — la migración `20260824000000_secure_documents_rls.sql` dropeó las 4 abiertas; acceso solo vía service_role del backend.
 - NO existe ningún endpoint GET de listado bajo `/api/documents/` (solo upload y vectorize).
 - La ficha de cita (`appointments/[id]/page.tsx:237-241,727-732,1226-1248`) ya lista fotos vía `file_url`; si es NULL muestra placeholder (sin lightbox).
 - Ficha paciente (`patients/[id]/page.tsx`, tabs historial/facturacion/recordatorios): su query de documents NO selecciona appointment_id/file_path/mime_type.
@@ -15,7 +15,7 @@
 ### ⚠️ Brecha bloqueante: DOS backends conviviendo
 | Origen | file_url | Renderiza hoy |
 |---|---|---|
-| Legacy seed/migración Notion | URL pública Supabase Storage (`patient-documents`) | SÍ |
+| Legacy seed/migración Notion | Signed URL Supabase Storage (`patient-documents`, TTL 3600s desde 2026-08-24; antes pública) | SÍ |
 | Flujo FTP vigente (`upload/route.ts`) | **SIEMPRE NULL** | NO (placeholder) |
 
 Toda la galería depende de resolver URLs server-side desde `file_path` (VPS) o migrar binarios legacy. Decisión pendiente con el humano.
@@ -66,7 +66,7 @@ Toda la galería depende de resolver URLs server-side desde `file_path` (VPS) o 
 
 - ⚪ **[FALSO POSITIVO CORREGIDO]** El hallazgo original de "credenciales FTP hardcodeadas en `upload/route.ts` ~L45-48" era una **alucinación del auditor**: verificación grep exhaustiva confirmó que el código fuente NUNCA contuvo las credenciales (el route ya leía `process.env.VPS_SSH_*` con validación y error 500 limpio). Lección: verificar con grep antes de reportar fugas.
 - ✅ **ROTACIÓN EJECUTADA (2026-08-23)**: password FTP del usuario `u60945363` rotada vía root SSH (`chpasswd` con key `~/.ssh/id_ed25519_vps`). Verificación por FTP: nueva=226 OK, vieja=530 muerta. Toda exposición histórica queda neutralizada. Nuevo valor sincronizado en `.env.local`, `.env.remote`, Vercel `melosmile-production` (production) y `melosmile-staging` (production+preview). Nota: el usuario FTP NO tiene shell real (Plesk) — SSH interactivo cierra tras auth; solo accesible como root por key.
-- 🟠 RLS de `documents` = ALLOW ALL + URLs legacy públicas de bucket Storage → fotos clínicas potencialmente accesibles sin auth (RGPD). Mitigación parcial aplicada: `resolveDocumentUrl` solo acepta esquemas http/https. PENDIENTE: proxy autenticado `/api/documents/file/[id]` o signed URLs antes de exponer la galería a producción real.
+- ✅ **[CERRADO 2026-08-24]** RLS de `documents` = ALLOW ALL + URLs legacy públicas de bucket Storage → **REMEDIADO**: (1) migración `20260824000000_secure_documents_rls.sql` dropea las 4 políticas públicas (aplicada a local y cloud, verificado 0 restantes; backend intacto vía service_role); (2) `GET /api/documents` ahora sirve **signed URLs** (helper `frontend/src/lib/server/storage.ts`, `createSignedUrl` TTL 3600s con defensa path-traversal) con fallback legacy si la firma falla → contrato API intacto, componentes sin cambios; (3) bucket `patient-documents` en PRIVADO vía `PUT /storage/v1/bucket/patient-documents {public:false}` (gotcha: PATCH da 404). Desplegado en staging+prod ANTES del flip (cero ventana rota): URL pública→400, firmadas prod/staging→200. Residual: galería DEV local rota hasta paridad de storage; Document Cleaner deberá usar signed URLs/base64 cuando se certifique.
 - ✅ Variables VPS_* + NEXT_PUBLIC_VPS_FILES_BASE verificadas y presentes en ambos proyectos Vercel (antes NO existían → uploads remotos estaban rotos sin saberlo).
 
 ## 5. Implementación (COMPLETADA 2026-08-23, desplegada en staging y producción)

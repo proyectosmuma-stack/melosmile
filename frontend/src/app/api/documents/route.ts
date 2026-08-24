@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin as supabase } from "@/lib/supabase/server";
 import { resolveDocumentUrl } from "@/lib/utils/document-utils";
+import { signDocumentUrl } from "@/lib/server/storage";
 
 /** Límite por defecto de documentos por petición. */
 const DEFAULT_LIMIT = 200;
@@ -150,25 +151,44 @@ export async function GET(req: Request) {
     const rows = (data ?? []) as unknown as RawDocumentRow[];
     const total = count ?? 0;
 
-    const documents: ApiDocument[] = rows.map((row) => {
-      const aptInfo = extractAppointmentInfo(row.appointments);
-      return {
-        id: row.id,
-        appointment_id: row.appointment_id,
-        appointment_date: aptInfo.appointment_date,
-        reason_cita: aptInfo.reason_cita,
-        document_type: row.document_type,
-        file_name: row.file_name,
-        file_size_bytes: row.file_size_bytes,
-        mime_type: row.mime_type,
-        description: row.description,
-        created_at: row.created_at,
-        resolved_url: resolveDocumentUrl(
-          { file_url: row.file_url, file_path: row.file_path },
-          process.env.NEXT_PUBLIC_VPS_FILES_BASE || undefined
-        ),
-      };
-    });
+    const documents: ApiDocument[] = await Promise.all(
+      rows.map(async (row) => {
+        const aptInfo = extractAppointmentInfo(row.appointments);
+
+        let signedUrl: string | null = null;
+        const filePath = row.file_path?.trim();
+
+        if (
+          filePath &&
+          !filePath.toLowerCase().startsWith("http") &&
+          !filePath.toLowerCase().startsWith("ftp") &&
+          !filePath.includes("..")
+        ) {
+          signedUrl = await signDocumentUrl(filePath);
+        }
+
+        const resolved_url =
+          signedUrl ??
+          resolveDocumentUrl(
+            { file_url: row.file_url, file_path: row.file_path },
+            process.env.NEXT_PUBLIC_VPS_FILES_BASE || undefined
+          );
+
+        return {
+          id: row.id,
+          appointment_id: row.appointment_id,
+          appointment_date: aptInfo.appointment_date,
+          reason_cita: aptInfo.reason_cita,
+          document_type: row.document_type,
+          file_name: row.file_name,
+          file_size_bytes: row.file_size_bytes,
+          mime_type: row.mime_type,
+          description: row.description,
+          created_at: row.created_at,
+          resolved_url,
+        };
+      })
+    );
 
     return NextResponse.json({
       documents,
