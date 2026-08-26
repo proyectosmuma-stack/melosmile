@@ -89,3 +89,23 @@ Durante esta sesión, tanto Antigravity como Mumabot (OpenCode) colaboraron en u
 3. **Free tier gemini-3.6-flash**: límite ~20 req/día agotable → ante fallo ×3 del subagente cloud, aplicar Regla Anti-Bucle e implementar directo con auditoría compensatoria documentada.
 4. **Agentes locales Qwen hoy**: devolvieron meta-respuestas sin ejecutar herramientas (falso-positivos detectados por regla anti-falso-positivo). Verificar siempre evidencia literal antes de dar por bueno un task "completed".
 5. **Orden de seguridad en producción**: código nuevo primero → verificar contra datos reales → recién entonces endurecer infraestructura (flip privado), para eliminar ventanas de servicio roto.
+
+## 9. Sesión 26/08/2026 — Separación de Entornos de BD y Certificación E2E Odoo (Completada ✅)
+
+### A. Clarificación y Separación de Entornos de Supabase
+* **Problema:** Había confusión entre los agentes sobre cuál era la base de datos de producción real. Los volcados de datos recientes y el entorno Vercel de producción estaban apuntando a la base de datos de staging (`melosmile_db`). El proyecto de producción original (`melosmile-production`) estaba pausado por inactividad.
+* **Solución (DevOps):**
+  1. Se reactivó `melosmile-production` (ID: `xylqytpudbdcsbuuwqpi`).
+  2. Se vinculó el proyecto vía CLI y se aplicó un `db reset --linked` para inyectar todas las 21 migraciones y el seed data de pruebas de Munir, ya que estaba completamente vacía.
+  3. Se extrajeron las API Keys reales de `melosmile-production` y se sobreescribieron en las variables de entorno de Vercel Production.
+  4. Se desplegó un nuevo build en Vercel a `agenda.melosmile.com` para forzar la adopción de la nueva base de datos.
+* **Resultado:** Entornos 100% aislados. Staging (`melosmile_db`) para pruebas de agentes, y Producción (`melosmile-production`) para tráfico real. Documentado explícitamente en `context.md`.
+
+### B. Corrección de Inyección de Variables Odoo en Staging
+* **Problema:** El subagente reportó `Failed to parse URL from undefined/web/session/authenticate` al probar la facturación en Staging. Vercel no estaba inyectando `ODOO_URL` en la rama `develop` a pesar de haberlas configurado horas antes.
+* **Solución:** Se forzó un redespliegue de la rama `develop` mediante un commit vacío (`chore: trigger vercel preview deploy`), provocando que Vercel Preview inyectase las credenciales actualizadas.
+
+### C. Certificación E2E del Flujo de Facturación Odoo
+* **Ejecución:** Se creó el script `scratch/test_billing_flow6.ts` para simular el cierre de la cita de Munir (29-12-2025) y su envío a Odoo directamente desde el entorno Staging de Vercel (llamando a `https://melosmile-staging-o54y7wdx8-proyectosmuma-stacks-projects.vercel.app/api/odoo/invoice`).
+* **Verificación:** Respuesta exitosa `{ "success": true, "invoiceId": 2, "invoiceNumber": "INV/ODOO/2" }`.
+* **Conclusión:** El puente Odoo Vercel ↔ Odoo Test está plenamente validado y certificado en la nube, operando a la perfección con la seguridad de `x-api-key`.

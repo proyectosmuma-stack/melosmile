@@ -1,7 +1,7 @@
 # Equipo MumaBot Cloud Pro
 
 > Página de dominio — wiki Karpathy. Fuente de verdad del equipo de agentes OpenCode para Melosmile.
-> Última actualización: 2026-08-18.
+> Última actualización: 2026-08-24.
 
 ## Resumen
 
@@ -12,7 +12,7 @@ Equipo mixto (cloud + local) orquestado por **MumaBot Cloud Pro**. El orquestado
 | Agente | Modelo | Modo | Especialidad |
 |--------|--------|------|--------------|
 | `mumabot-cloud-pro` | `opencode/deepseek-v4-flash-free` | primary | Orquestador: plan, delegación, validación |
-| `mumabot-architect` | `openrouter/google/gemini-3.1-pro-preview` | subagent | Arquitectura, ERD, contratos API |
+| `mumabot-architect` | `openrouter/deepseek/deepseek-v4-pro-0813` | subagent | Arquitectura, ERD, contratos API |
 | `mumabot-coder-cloud` | `google/gemini-3.6-flash` | subagent | Código público, algoritmos, tests |
 | `mumabot-designer` | `google/gemini-3.6-flash` | subagent | UI/UX premium, CSS, HTML, animaciones |
 | `mumabot-coder-local` | `ollama/qwen3.5:9b` | subagent | 🔒 .env, API keys, secretos (100% offline) |
@@ -33,7 +33,8 @@ Equipo mixto (cloud + local) orquestado por **MumaBot Cloud Pro**. El orquestado
 |--------|--------|-----|
 | `google/gemini-2.5-pro` / `gemini-2.5-flash` | ❌ DEPRECADOS (ago 2026) | NUNCA usar — causa del incidente |
 | `google/gemini-3.6-flash` | ✅ Free tier OK | coder-cloud, designer |
-| `openrouter/google/gemini-3.1-pro-preview` | ✅ vía OpenRouter | architect (NO en free tier de Google, quota 0) |
+| `openrouter/google/gemini-3.1-pro-preview` | ⚠️ Cuota free tier = 0 (Google directo) | Solo si OpenRouter lo ruta correctamente; verificar |
+| `openrouter/deepseek/deepseek-v4-pro-0813` | ✅ OpenRouter (128k ctx, razonamiento profundo) | **architect** — migrado 2026-08-24, test PASS |
 | `ollama/llama3.1:8b` | ✅ Local | coder-local + reviewer (tool calling nativo CONSISTENTE) |
 | `ollama/mistral-nemo:12b` | ❌ INCONSISTENTE (1/5 tool calls) | NO usar — a veces JSON en texto o alucina |
 | `ollama/qwen3.7-agents:4b-q8` | ⚠️ Retirado (falló 2x en deploy) | sustituido por llama3.1:8b |

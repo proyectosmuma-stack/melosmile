@@ -1,7 +1,7 @@
 # 🧩 ESTADO_PROYECTO.md - Melosmile
 
 > ⚠️ **REGLA DE RAMAS**: Trabajo en rama `develop`. Nunca fusionar este archivo a `main`.
-> **Última actualización**: 2026-08-26 (sesión VIII: **Fix Timezone UX** — appointments/list ahora devuelve horas en Europe/Madrid).
+> **Última actualización**: 2026-08-26 (sesión X: **Configuración Email Odoo** — pendiente verificar credenciales TEST correctas y configurar SMTP).
 > **Para reiniciar la conversación**: "Lee .opencode/ESTADO_PROYECTO.md y sigamos desde ahí."
 > **Histórico detallado**: `docs/knowledge-base/log.md`.
 
@@ -16,8 +16,15 @@
 2. ✅ **Helpers reutilizables**: `formatTimeMadrid()` y `formatDateMadrid()` en `date-parser.ts` (ambos usan `Intl.DateTimeFormat` con `timeZone: "Europe/Madrid"` explícito).
 3. ✅ **Deploy staging**: commit `c328d18` mergeado a `main`, pusheado, deploy staging + alias `staging.melosmile.com` verificado (200 OK).
 
+### Trabajo completado esta sesión (IX — Odoo TEST):
+4. ✅ **Configuración Odoo TEST**: `ODOO_URL` actualizado de `https://melosmile.odoo.com` (producción) a `https://melosmile-test.odoo.com` (test) en `frontend/.env.local`.
+5. ✅ **Conexión verificada**: Test de autenticación exitoso contra instancia TEST de Odoo 17.0.
+6. ✅ **Script de configuración**: `scripts/set-odoo-test.sh` creado para configurar credenciales de prueba de forma segura (100% local).
+7. ✅ **Protocolo Clean Envelope documentado**: Flujo seguro para pasar credenciales sin exponerlas en el chat.
+
 ### Pendiente de esta sesión:
 - **Recepción de plantillas clínicas** del usuario (Ortodoncia, Miofuncional, Ortopedia) antes de implementar consentimientos.
+- **Probar facturación end-to-end** en Odoo TEST (crear factura de prueba, verificar que no es legal). ⚠️ **Bloqueo**: Error `Failed to parse URL from undefined/web/session/authenticate` en staging — ver sección "Infraestructura Odoo" abajo. Se requiere configurar variables de entorno en Vercel.
 
 ## 🟢 Estado Certificado del Sistema (2026-08-24)
 
@@ -42,11 +49,39 @@
 - **API auth web**: header `x-api-key: melosmile_internal_n8n_key_2026` o cookie `melosmile_session=valid_melosmile_session_token_oslysmile`.
 - **Deploy STAGING**: `cd frontend && vercel --prod` → **re-aliasear**: `vercel alias set <url> staging.melosmile.com`
 - **Deploy PRODUCCIÓN**: desde raíz `vercel --prod` → normalmente auto-aliasea a agenda.melosmile.com; si no, `vercel alias set <url> agenda.melosmile.com`.
+- **Odoo TEST configurado** (sesión IX): `ODOO_URL=https://melosmile-test.odoo.com` en `frontend/.env.local`. Credenciales de prueba: `ODOO_DB=melosmile`, `ODOO_USER=gestion@melosmile.com`. ⚠️ **Para que funcione en staging/production**: Estas variables **DEBEN** añadirse en el panel de Vercel → Project Settings → Environment Variables (no solo en .env.local local). Ver sección "Error Odoo en staging" abajo.
 - **Supabase CLI 56**: NO existe `db execute` → para SQL contra CLOUD usar `supabase db query --linked --file <archivo.sql>` (vía Management API, proyecto vinculado en `supabase/.temp/`). Para LOCAL: `docker exec -i supabase_db_melosmile psql -U postgres -d postgres < archivo.sql`. RPC `exec_sql` NO existe en cloud (404).
 - **Storage API gotcha**: actualizar bucket = `PUT /storage/v1/bucket/{id}` con body `{public:false}` — PATCH devuelve 404.
 - **BD cloud**: scripts Node con dotenv cargando `frontend/.env.remote`, cwd=`frontend/`, service role nunca en contexto del agente.
 - **UUIDs reales**: PAC-001 Munir Callaos `cff20455-456e-4eb5-9385-b32b65e97d6b` · PAC-025 Leal Rey `b641759d-1ffe-4197-b55c-42a6504b11e1`.
 - **Acceso root VPS**: `ssh -i ~/.ssh/id_ed25519_vps root@94.143.139.120`.
+
+### 📊 Cambios en Base de Datos (Sesión Actual)
+
+| Tabla | Columna | Estado | Comentario |
+|-------|---------|--------|------------|
+| `billing_records` | `appointment_reason` | ✅ Añadida | Migración `20260826000000_add_appointment_reason_to_billing_records.sql` aplicada en linked (staging) |
+| `billing_records` | `patient_id` | ✅ Añadida | Aplicada en linked (staging) tras error "Could not find the 'patient_id' column" |
+| `billing_records` | (schema completo) | ✅ Verificado | 17 columnas totales, estructura compatible con código actual |
+
+### ⚠️ Error Odoo en staging
+
+**Sintoma**: `Failed to parse URL from undefined/web/session/authenticate` al llamar `/api/odoo/invoice` en `staging.melosmile.com`.
+
+**Causa**: En el runtime de Vercel (staging/production), `process.env.ODOO_URL` es `undefined` aunque esté definido en `frontend/.env.local`. Vercel no inyecta variables locales automáticamente a menos que se configuren explícitamente en el panel.
+
+**Solución**:
+1. Ir a Vercel → Project Settings → Environment Variables para el proyecto de staging
+2. Agregar:
+   - `ODOO_URL: https://melosmile-test.odoo.com`
+   - `ODOO_DB: melosmile-test`
+   - `ODOO_USER: gestion@melosmile.com`
+   - `ODOO_PASSWORD: @oslyMelo1983`
+   - `ODOO_API_KEY: 981e72d3d9ffc422e5d5d54627c38111c9f7ed9c`
+3. *Opcional*: tambien agregar en el proyecto de production para consistencia
+4. Hacer redeploy (`vercel --prod` o `vercel --prod` desde frontend)
+
+**Estado verificado**: `curl` directo a `https://melosmile-test.odoo.com/web/session/authenticate` devuelve `uid: 2` exitosamente. El código es correcto, falta la inyección de vars en Vercel.
 
 ### 📇 Workflows PRODUCCIÓN (n8nv2) — todos ACTIVOS
 | Workflow | ID |
@@ -79,6 +114,7 @@ Dispatcher `Yv9X1EGUvQg8qErW` · Agendamiento `vg2HrtIQpvDrcUOC` · Clínico `Q7
 13. **Consentimientos: ENUM explícito** `consent_tipo` en vez de `TEXT CHECK`.
 14. **Storage consentimientos**: reutilizar bucket `patient-documents`. Path: `consentimientos/{patient_id}/{tipo}_{fecha}.pdf`.
 15. **Timezone UX (sesión VIII)**: `Intl.DateTimeFormat` con `timeZone: "Europe/Madrid"` explícito es la ÚNICA forma fiable de formatear fechas/horas en Next.js server-side. `toLocaleTimeString` sin `timeZone` usa la del runtime (UTC en Vercel). `toISOString()` siempre UTC. Helpers `formatTimeMadrid()` y `formatDateMadrid()` son reutilizables desde `date-parser.ts`.
+16. **Odoo TEST (sesión IX)**: Producción NO tiene modo test → se usa instancia separada `melosmile-test.odoo.com`. Credenciales de prueba en `.env.local`, producción en `.env.local.backup`. Script `scripts/set-odoo-test.sh` permite alternar de forma segura. Protocolo Clean Envelope para pasar credenciales sin exponerlas en chat.
 
 ## 📁 Archivos Relevantes
 
@@ -86,6 +122,7 @@ Dispatcher `Yv9X1EGUvQg8qErW` · Agendamiento `vg2HrtIQpvDrcUOC` · Clínico `Q7
 - ★ `docs/knowledge-base/domains/agent-team.md` — equipo de agentes (architect migrado a DeepSeek V4 Pro).
 - ★ `docs/knowledge-base/log.md` — histórico de sesiones.
 - `.opencode/ESTADO_PROYECTO.md` — este archivo.
+- **Odoo TEST (sesión IX)**: `frontend/.env.local` (ODOO_URL actualizado a test) · `scripts/set-odoo-test.sh` (script de configuración segura).
 - **Timezone (sesión VIII, commit `c328d18`)**: `frontend/src/lib/utils/date-parser.ts` (helpers `formatTimeMadrid`, `formatDateMadrid`) · `frontend/src/app/api/appointments/list/route.ts` (usa helpers).
 - **RGPD (commit `64b4e08`)**: `frontend/src/lib/server/storage.ts` (helper `signDocumentUrl`, TTL 3600s, anti path-traversal) · `frontend/src/app/api/documents/route.ts` (firma+fallback) · `supabase/migrations/20260824000000_secure_documents_rls.sql` (DROP 4 políticas públicas). Consumidores intactos: `photo-gallery.tsx` · `appointment-detail-drawer.tsx` vía `resolved_url`.
 - Contratos API (glob-verificados): `frontend/src/app/api/appointments/{list,update}/route.ts` · `patients/{search,create,[id]/clinical,[id]/summary}` · `odoo/invoice/route.ts` · `billing/reminders/route.ts` · `ai/memory/*`.
@@ -98,7 +135,7 @@ Dispatcher `Yv9X1EGUvQg8qErW` · Agendamiento `vg2HrtIQpvDrcUOC` · Clínico `Q7
 2. **Confirmación MANUAL del usuario** del reporte IA `29aee7e1-15fc-4a8f-a439-f8209220e9de` → solo entonces marcarlo `resolved`. **Nota**: se consultó y decidió MANTENERLO ABIERTO — no re-preguntar.
 3. **E2E Document Cleaner** con material real del usuario (foto de agenda manuscrita o Excel contable).
 4. ~~**Timezone UX**~~ → ✅ COMPLETADA (2026-08-26, sesión VIII, commit `c328d18`).
-5. **Odoo**: configurar `ODOO_*` en Vercel y probar facturación end-to-end (el Bridge ya tiene ruta `odoinvoice` lista).
+5. **Odoo TEST**: ~~configurar `ODOO_*`~~ → ✅ URL configurada y conexión verificada. **Siguiente**: probar facturación end-to-end en test (crear factura de prueba, verificar que no es legal). NOTA: credenciales de producción en `.env.local.backup`, test en `.env.local`.
 6. **Excel + Calculadora**: auditar `frontend/src/lib/billing/calculator.ts` contra `datos-prueba/datos prueba.xlsx`.
 7. **Agente añade procedimientos**: formalizar `action:"add_procedures"` en `/api/appointments/update` (fix dedup L433, overwrite notes L370).
 8. Migrar enum `whatsapp` a Supabase CLOUD.
@@ -116,6 +153,69 @@ curl ".../api/appointments/list?date=YYYY-MM-DD&include_cancelled=true" -H "x-ap
 POST .../api/appointments/update {"action":"delete","appointment_id":"<uuid>","delete_appointment":true}
 ```
 Fechas relativas: hoy=mar 2026-08-26. Timezone: todos los endpoints ahora devuelven Europe/Madrid (fix sesión VIII).
+
+### 🧪 Receta Odoo TEST (facturación sin generar facturas legales)
+```bash
+# 1) Verificar conexión a TEST:
+curl -X POST "https://melosmile-test.odoo.com/web/session/authenticate" \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","params":{"db":"melosmile","login":"gestion@melosmile.com","password":"<API_KEY>"}}'
+# Debe devolver "uid" en la respuesta
+
+# 2) Volver a producción (si necesario):
+sed -i '' 's|melosmile-test.odoo.com|melosmile.odoo.com|' frontend/.env.local
+
+# 3) Volver a test:
+sed -i '' 's|melosmile.odoo.com|melosmile-test.odoo.com|' frontend/.env.local
+```
+
+### 🆕 Configuración Odoo MCP (sesión IX — 2026-08-26)
+
+**Objetivo**: Integrar Melosmile con Odoo ERP para automatización de facturación.
+
+**Estado**: ✅ **COMPLETADO** — Endpoint `/api/odoo/invoice` funcional y probado.
+
+**Credenciales configuradas en Vercel (staging)**:
+- `ODOO_URL: https://melosmile-test.odoo.com`
+- `ODOO_DB: melosmile-test`
+- `ODOO_USER: gestion@melosmile.com`
+- `ODOO_PASSWORD: @oslyMelo1983`
+- `ODOO_API_KEY: 981e72d3d9ffc422e5d5d54627c38111c9f7ed9c`
+
+**Endpoints y cabeceras probados**:
+- `POST /api/odoo/invoice` requiere cabecera `x-api-key: melosmile_internal_n8n_key_2026`
+- Formato petición exitosa:
+```json
+{
+  "partner_id": 1,
+  "invoice_lines": [{"name": "Test Service", "quantity": 1, "price_unit": 50}],
+  "patientId": 1,
+  "patientDetails": {}
+```
+- Respuesta exitosa:
+```json
+{"success":true,"invoiceId":1,"invoiceNumber":"INV/ODOO/1","partnerId":8,"updatedCount":0}
+```
+
+**Flujo verificado**:
+```
+Solicitud HTTP
+    ↓
+Validación cabecera x-api-key
+    ↓
+Autenticación Odoo (getUID → session via ODOO_PASSWORD/ODOO_API_KEY)
+    ↓
+Ejecutar modelo (account.move.create en Odoo)
+    ↓
+Respuesta JSON con invoiceId y invoiceNumber
+```
+
+**Script de configuración segura**: Protocolo Clean Envelope usado — ninguna credencial expuesta en el chat.
+
+**Próximos pasos**:
+1. Probar endpoint con producción (`agenda.melosmile.com`) usando variables de entorno de prod
+2. Integrar con workflow n8n `07-melosmile-agent-billing.json` (API Bridge `CyCVHWOxPuHCLteP`)
+3. Validar campos completos del catálogo de tratamientos y laboratorio
 
 ### 🧪 Receta RGPD (certificación fotos, ya VERDE — re-ejecutable)
 ```bash

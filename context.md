@@ -98,7 +98,7 @@ ODOO_URL=https://melosmile.odoo.com / ODOO_DB=melosmile / ODOO_USER=gestion@melo
 | **Vercel Entorno** | `Production` |
 | **App Web** | `https://agenda.melosmile.com` |
 | **Supabase Producción** | `https://xylqytpudbdcsbuuwqpi.supabase.co` |
-| **Org Supabase** | `melosmile` → Proyecto `melosmile-production` |
+| **Org Supabase** | `melosmile org` → Proyecto `melosmile-production` (Única y exclusiva BD de producción real) |
 | **n8n (prod)** | `https://n8nv2.mumaweb.com` |
 | **API Key n8n prod** | `Antigravity-melosmile` (JWT en `mcp_config.json`) |
 | **Fichero env** | Variables en Vercel `Production` (encriptadas) |

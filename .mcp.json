@@ -1,12 +1,13 @@
 {
   "mcpServers": {
     "codegraph": {
-      "args": [
-        "serve"
-      ],
-      "command": "/Users/munircallaos/.local/bin/codegraph",
+      "command": "/Users/munircallaos/.local/bin/codegraph-mcp",
+      "args": [],
       "env": {
-        "CODEGRAPH_DB": ".codegraph/codegraph.db"
+        "PATH": "/Users/munircallaos/.local/bin:/usr/local/bin:/usr/bin:/bin:/opt/homebrew/bin",
+        "RUST_LOG": "off",
+        "NO_COLOR": "1",
+        "RUST_LOG_STYLE": "never"
       },
       "serverInstructions": "ALWAYS prefer CodeGraph tools over Grep/Glob/Explore for code search, dependency analysis, and symbol lookup. The pre-built AST index provides instant results across 32 languages."
     }

@@ -30,11 +30,27 @@ Este documento establece el plan de desarrollo y próximas tareas activas para l
 
 ---
 
+## 📋 Fase 12: Consentimientos Informados (Pendiente — Esperando documentación clínica)
+
+> **Estado**: Requisito capturado (2026-08-24). Pendiente de recepción de plantillas/documentación clínica del usuario para definir campos dinámicos exactos.
+
+- [ ] **Módulo de Consentimientos Informados**: Generación de consentimientos con datos autocompletados del paciente y la clínica.
+  - **Tipos de consentimiento**: Ortodoncia, Miofuncional, Ortopedia (extensible).
+  - **Plantilla base**: PDF subido o HTML con zona estática (texto legal) + zona dinámica (campos del paciente, clínica, profesional, fecha).
+  - **Autocompletado**: Ficha del paciente (nombre, DNI, fecha nacimiento, diagnóstico) + selección de clínica activa + profesional responsable.
+  - **Modal de edición**: Antes de generar, permitir ajustar cualquier dato puntual (ej. cambiar clínica, corregir nombre).
+  - **Almacenamiento**: Copia firmada (PDF generada) almacenada en Supabase Storage (bucket privado `patient-documents` o nuevo bucket `consentimientos`), vinculada al paciente y a la cita si aplica.
+  - **Consulta**: Listado de consentimientos en la ficha del paciente con descarga y previsualización.
+  - **Firma**: Opcional — campo de firma manuscrita o acceptación digital con timestamp.
+  - **RGPD**: Signed URLs, RLS por paciente, audit log de generación/consulta.
+
+---
+
 ## 🔧 Pendiente (Backlog)
 
 - [ ] Añadir soporte para que el agente pueda añadir procedimientos adicionales a una cita ya existente sin sobrescribir los procedimientos anteriores (Mejora pendiente detectada previamente).
 - [ ] **E2E Document Cleaner**: certificar el flujo reparado (`IrLOC3fSQZCxvvBz` prod) con foto de agenda manuscrita o Excel real del usuario. Al hacerlo, consumir signed URLs o base64 (nunca URLs públicas).
 - [ ] **Timezone UX**: `/api/appointments/list` devuelve horas en UTC crudo; normalizar a hora España en endpoint o enriquecer contexto del agente.
-- [ ] **Odoo end-to-end**: configurar `ODOO_*` en Vercel y probar facturación (la ruta `odoinvoice` ya existe en el Bridge).
+- [x] **Odoo end-to-end**: configurar `ODOO_*` en Vercel y probar facturación (la ruta `odoinvoice` ya existe en el Bridge).
 - [ ] **Paridad storage dev-local** (opcional): sincronizar objetos/buckets al Supabase local o apuntar env dev a cloud para que la galería local no muestre rotas.
 

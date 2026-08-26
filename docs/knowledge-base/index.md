@@ -9,6 +9,9 @@
 - [Equipo MumaBot Cloud Pro](domains/agent-team.md) — orquestador + 5 subagentes: modelos, especialidades, rutado, reglas de seguridad.
 - [Incidente 2026-08-18: subagentes vacíos](decisions/incidente-2026-08-18-subagentes-vacios.md) — causa raíz (modelos deprecados), corrección aplicada, lecciones.
 
+### Módulos funcionales
+- [Consentimientos Informados](domains/consentimientos-informados.md) — Arquitectura preliminar del módulo de consentimientos (ortodoncia, miofuncional, ortopedia). Fase 12, pendiente documentación clínica.
+
 ### Convenciones y procesos
 - [Infraestructura Vercel](domains/infra-vercel.md) — arquitectura de despliegue (staging/producción), procedimiento CLI correcto, incidente 2026-08-22 y PENDINGs.
 - [Auditoría Fase 11 + Append de procedimientos](domains/fase-11-galeria-fotos.md) — estado real del código, planes de implementación, riesgos y hallazgos de seguridad (2026-08-23).

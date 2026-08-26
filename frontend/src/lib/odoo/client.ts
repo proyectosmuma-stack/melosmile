@@ -9,6 +9,7 @@ const ODOO_USER = process.env.ODOO_USER!;
 const ODOO_API_KEY = process.env.ODOO_API_KEY!; // API key acts as password
 
 let _uid: number | null = null;
+let _sessionId: string | null = null;
 
 async function odooCall(path: string, method: string, args: unknown[]) {
   const res = await fetch(`${ODOO_URL}${path}`, {
@@ -44,6 +45,8 @@ async function getUID(): Promise<number> {
     cache: 'no-store',
   });
   let data = await result.json();
+  let cookie = result.headers.get('set-cookie');
+  if (cookie) _sessionId = cookie.split(';')[0];
 
   if (!data.result?.uid && ODOO_API_KEY) {
     result = await fetch(`${ODOO_URL}/web/session/authenticate`, {
@@ -58,6 +61,8 @@ async function getUID(): Promise<number> {
       cache: 'no-store',
     });
     data = await result.json();
+    cookie = result.headers.get('set-cookie');
+    if (cookie) _sessionId = cookie.split(';')[0];
   }
 
   if (!data.result?.uid) throw new Error('Odoo authentication failed');
@@ -70,7 +75,10 @@ async function odooExecute(model: string, method: string, args: unknown[], kwarg
     const uid = await getUID();
     const res = await fetch(`${ODOO_URL}/web/dataset/call_kw`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        ...(_sessionId ? { 'Cookie': _sessionId } : {})
+      },
       body: JSON.stringify({
         jsonrpc: '2.0',
         method: 'call',

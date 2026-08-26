@@ -209,6 +209,30 @@ El endpoint `/api/ai-context` incluye ahora el desglose de cobros agrupados por 
 ```
 
 Esto permite al **Agente IA** (n8n + Gemini) responder preguntas del tipo:
-- *"¿Qué cobros de Francisco están pendientes de facturar?"*
-- *"¿Cuánto se ha facturado en Odoo este trimestre?"*
 - *"¿Qué pagos hay que incluir en la próxima factura?"*
+
+---
+
+## 7. Solución de Problemas y Consideraciones de Autenticación
+
+### Autenticación en Endpoints (Next.js Middleware)
+Todos los endpoints en `/api/odoo/*` están protegidos por `src/middleware.ts`. Si un agente externo (como n8n o un MCP) intenta hacer peticiones a estos endpoints sin una sesión válida de Supabase, recibirá un error `401 Unauthorized` (`{"error": "No autorizado. Inicie sesión para continuar."}`).
+Para autenticar estas peticiones de servidor a servidor, es **obligatorio enviar la cabecera `x-api-key`** con el valor de la variable de entorno `N8N_API_KEY` (ej. `melosmile_internal_n8n_key_2026`).
+
+**Ejemplo de petición correcta desde un Agente externo:**
+```bash
+curl -X POST "https://agenda.melosmile.com/api/odoo/invoice" \
+  -H "Content-Type: application/json" \
+  -H "x-api-key: melosmile_internal_n8n_key_2026" \
+  -d '{"partner_id": 1, "invoice_lines": []}'
+```
+
+### Protocolo JSON-RPC y Session Cookie (client.ts)
+A diferencia de XML-RPC, el protocolo JSON-RPC de Odoo requiere que todas las llamadas a `/web/dataset/call_kw` incluyan la cookie `session_id` que se genera al autenticarse en `/web/session/authenticate`. 
+Dado que `fetch` en Next.js **no** preserva cookies entre peticiones, el cliente `src/lib/odoo/client.ts` extrae manualmente la cabecera `set-cookie` de la respuesta de autenticación y la inyecta en la cabecera `Cookie` de las siguientes peticiones. Sin esto, Odoo rechaza todas las consultas con el error *"User is not connected"*.
+
+### Separación de Entornos (Staging vs Producción)
+Las variables en Vercel deben reflejar correctamente los endpoints y bases de datos según el entorno:
+- **Producción:** `ODOO_URL=https://melosmile.odoo.com` | `ODOO_DB=melosmile`
+- **Staging / Test:** `ODOO_URL=https://melosmile-test.odoo.com` | `ODOO_DB=melosmile-test`
+ *(Usar la base de datos de producción en el servidor de test devolverá un error "Database does not exist").*

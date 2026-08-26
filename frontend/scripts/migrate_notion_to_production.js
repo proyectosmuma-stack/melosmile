@@ -179,6 +179,7 @@ async function main() {
   const clinicRyA        = clinics.find(c => c.name.includes('RyA'));
   const clinicBustamante = clinics.find(c => c.name.includes('Bustamante') || c.name.includes('Albacete'));
   const clinicRozas      = clinics.find(c => c.name.includes('Rozas'));
+  const clinicMontano    = clinics.find(c => c.name.includes('Montaño') || c.name.includes('Getafe'));
 
   const profOsly    = professionals.find(p => p.first_name.toLowerCase().includes('osly'));
   const profNorelys = professionals.find(p => p.first_name.toLowerCase().includes('norelys'));
@@ -402,7 +403,14 @@ async function main() {
       p.historia_id = historiaId;
       createdPatients.push(savedPatient);
 
-      const targetClinic = p.isAlbacete ? (clinicBustamante || clinicRyA) : (clinicGoya || clinicRozas);
+      let targetClinic = clinicGoya || clinicRozas;
+      if (p.isAlbacete) {
+        targetClinic = clinicBustamante || clinicRyA;
+      } else if (p.clinicRef && /getafe/i.test(p.clinicRef)) {
+        targetClinic = clinicMontano || clinicGoya;
+      } else if (p.clinicRef && /rya/i.test(p.clinicRef)) {
+        targetClinic = clinicRyA || clinicGoya;
+      }
       if (targetClinic) {
         await supabase
           .from('patient_clinics')
