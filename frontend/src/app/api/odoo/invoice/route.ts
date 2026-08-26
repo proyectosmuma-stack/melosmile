@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { upsertOdooPartner, createOdooInvoice } from "@/lib/odoo/client";
+import { upsertOdooPartner, createOdooInvoice, confirmOdooInvoice, getOdooInvoice, registerOdooPayment } from "@/lib/odoo/client";
 import { supabase } from "@/lib/supabase/client";
 
 export async function POST(req: Request) {
@@ -81,9 +81,27 @@ export async function POST(req: Request) {
       invoice_lines: invoiceLines,
     });
 
-    const odooInvoiceNumber = `INV/ODOO/${invoiceId}`;
+    // 4. Confirm the invoice to generate a real invoice number
+    await confirmOdooInvoice(invoiceId);
+    
+    // 5. Fetch the confirmed invoice details
+    const odooInv = await getOdooInvoice(invoiceId);
+    const odooInvoiceNumber = odooInv?.name || `INV/ODOO/${invoiceId}`;
 
-    // 4. Update Supabase billing record(s) & patient with Odoo references
+    // 6. Check if billing record is "Pagado" or "Aconto" to register payment
+    if (billingRecordId) {
+      const { data: bRec } = await (supabase as any)
+        .from("billing_records")
+        .select("status")
+        .eq("id", billingRecordId)
+        .single();
+        
+      if (bRec && (bRec.status === "Pagado" || bRec.status === "Aconto")) {
+        await registerOdooPayment(invoiceId);
+      }
+    }
+
+    // 7. Update Supabase billing record(s) & patient with Odoo references
     if (recordIdsToUpdate.length > 0) {
       const { error: billingErr } = await (supabase as any)
         .from("billing_records")
