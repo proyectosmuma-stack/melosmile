@@ -2,6 +2,31 @@
 
 Registro cronológico (append-only) de ingestas y actualizaciones del wiki.
 
+## [2026-08-26] fix | Timezone UX — appointments/list ahora devuelve Europe/Madrid
+- **Problema**: `/api/appointments/list` devolvía horas/fechas en UTC porque Vercel ejecuta en UTC y `toLocaleTimeString` sin `timeZone` usa la del runtime.
+- **Solución**: Helpers `formatTimeMadrid()` y `formatDateMadrid()` en `date-parser.ts` con `Intl.DateTimeFormat` + `timeZone: "Europe/Madrid"` explícito. Route.ts usa los helpers.
+- **Commit**: `c328d18` (develop) → merge fast-forward a `main` → deploy staging + alias `staging.melosmile.com`.
+- **Verificación**: curl staging 200 OK, TypeScript compila sin errores.
+
+## [2026-08-24] migration | Architect migrado a DeepSeek V4 Pro 0813 (OpenRouter)
+- **Cambio**: `mumabot-architect` migrado de `openrouter/google/gemini-3.1-pro-preview` a `openrouter/deepseek/deepseek-v4-pro-0813`.
+- **Motivo**: gemini-3.1-pro free tier quota = 0 (causaba fallo 100% en architect). DeepSeek V4 Pro 0813 (128k ctx, razonamiento profundo) test PASS.
+- **Archivos modificados**: `~/.config/opencode/agents/coding/mumabot-architect.md` (línea 4: model), `~/.config/opencode/opencode.jsonc` (provider openrouter: nuevo modelo, eliminado gemini-3.1-pro de provider google).
+- **KB actualizada**: `domains/agent-team.md` (tabla composición + reglas de modelos).
+
+## [2026-08-24] update | Consentimientos Informados — Arquitectura revisada por auditor
+- **Arquitecto**: DeepSeek V4 Pro 0813 (test + diseño completado).
+- **Revisor**: mumabot-reviewer identificó 7 checks (3 WARN, 4 PASS): RLS policies (service_role, no auth.uid()), soft delete para docs legales, ENUM vs TEXT CHECK.
+- **Storage**: confirmado patrón híbrido VPS FTP + Supabase Storage signed URLs (mismo que documents existente).
+- **KB**: `domains/consentimientos-informados.md` actualizada con hallazgos del auditor y DDL revisado.
+- **Pendiente**: recepción de plantillas clínicas del usuario antes de implementar.
+
+## [2026-08-24] feature | Módulo de Consentimientos Informados — Requisito capturado (Fase 12)
+- **Solicitud del usuario**: sistema de consentimientos informados para Ortodoncia, Miofuncional y Ortopedia.
+- **Alcance**: generación de documentos con datos autocompletados del paciente + clínica, almacenamiento en servidor (bucket privado Supabase), consulta desde ficha del paciente.
+- **Estado**: requisito registrado en roadmap.md (Fase 12) y nueva página de dominio `domains/consentimientos-informados.md` con arquitectura preliminar (tablas, componentes, API, flujo).
+- **Pendiente**: recepción de documentación clínica del usuario (plantillas, campos dinámicos, firmas) antes de iniciar implementación.
+
 ## [2026-08-24] audit | Causa raíz reporte producción 23-08: frontend prod apunta a n8nv2 (flujo obsoleto)
 - Reporte cloud `29aee7e1` (23-08 22:21 UTC): "cita a munir mañana a las 16:00 en goya para revision" → "Sin respuesta del servidor" en 1.9s.
 - Cadena verificada: Vercel producción (`x-vercel-id cdg1`) POSTea a `n8nv2.mumaweb.com/webhook/melosmile-dispatcher` (Dispatcher obsoleto `QgNoVFr9TBXGbdOl`, sin actualizar desde 07-29) → ejecución 746865 falla en 35ms: `Credential "4nco5fDnIohG6g9f" does not exist for type openRouterApi` + modelo `google/gemini-2.5-flash` deprecado → n8n devuelve 200 vacío → `api/dispatcher/route.ts:8` genera el fallback.
