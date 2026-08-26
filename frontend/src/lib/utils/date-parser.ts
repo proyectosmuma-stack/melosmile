@@ -43,6 +43,25 @@ export function getMadridDate(): { yyyy: number; mm: number; dd: number; isoToda
   return { yyyy, mm, dd, isoToday: parts };
 }
 
+/** Format a Date as time string in Europe/Madrid timezone (HH:MM) */
+export function formatTimeMadrid(date: Date): string {
+  return date.toLocaleTimeString("es-ES", {
+    timeZone: "Europe/Madrid",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+/** Format a Date as date string in Europe/Madrid timezone (YYYY-MM-DD) */
+export function formatDateMadrid(date: Date): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Europe/Madrid",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(date);
+}
+
 /** Matches inputs that already carry an explicit UTC designator or numeric offset (e.g. "...Z", "...+02:00", "...-0300", "...UTC") */
 const EXPLICIT_TZ_RE = /(?:[zZ]|utc|[+-]\d{2}:?\d{2})$/;
 

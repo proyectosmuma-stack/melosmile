@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin as supabase } from "@/lib/supabase/server";
-import { isDateKeyword, getDateRange, getMadridDate } from "@/lib/utils/date-parser";
+import { isDateKeyword, getDateRange, getMadridDate, formatTimeMadrid, formatDateMadrid } from "@/lib/utils/date-parser";
 
 function cleanPatientName(term: string): string {
   if (!term) return "";
@@ -121,8 +121,8 @@ export async function GET(req: Request) {
 
     let results = (rawAppointments || []).map((apt: any) => {
       const dateObj = new Date(apt.appointment_date);
-      const timeStr = dateObj.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" });
-      const fechaStr = dateObj.toISOString().split("T")[0];
+      const timeStr = formatTimeMadrid(dateObj);
+      const fechaStr = formatDateMadrid(dateObj);
       const patientName = apt.patients
         ? `${apt.patients.first_name} ${apt.patients.last_name}`.trim()
         : "Paciente Sin Nombre";
