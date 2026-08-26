@@ -308,3 +308,15 @@ export async function getOdooInvoice(invoiceId: number) {
 export async function confirmOdooInvoice(invoiceId: number) {
   return odooExecute('account.move', 'action_post', [[invoiceId]]);
 }
+
+/**
+ * Get PDF bytes for an invoice
+ */
+export async function getOdooInvoicePdf(invoiceId: number) {
+  const result = await odooExecute('ir.actions.report', '_render_qweb_pdf', ['account.report_invoice', [invoiceId]]);
+  // result is typically [base64_pdf_content, 'pdf']
+  if (Array.isArray(result) && result.length > 0) {
+    return result[0] as string;
+  }
+  return null;
+}

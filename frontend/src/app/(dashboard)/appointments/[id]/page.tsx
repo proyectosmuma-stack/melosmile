@@ -641,6 +641,10 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
 
   const handleOdooInvoice = async () => {
     if (!appt) return;
+    if (!appt.billingId) {
+      alert("Debes 'Guardar' la ficha de la cita al menos una vez antes de generar la factura.");
+      return;
+    }
     setSyncingOdoo(true);
     try {
       const res = await fetch("/api/odoo/invoice", {
@@ -1389,19 +1393,29 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
                   </Button>
 
                   {appt.odooInvoiceNumber ? (
-                    <div className="p-3 rounded-xl bg-purple-950/80 border border-purple-800 text-center">
-                      <p className="text-xs font-bold text-purple-300 flex items-center justify-center gap-1.5">
-                        <Receipt className="h-4 w-4" /> Factura Odoo: {appt.odooInvoiceNumber}
-                      </p>
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 p-3 rounded-xl bg-purple-950/80 border border-purple-800 text-center">
+                        <p className="text-xs font-bold text-purple-300 flex items-center justify-center gap-1.5">
+                          <Receipt className="h-4 w-4" /> Factura: {appt.odooInvoiceNumber}
+                        </p>
+                      </div>
+                      <Button
+                        onClick={() => window.open(`/api/odoo/invoice/pdf?invoiceId=${appt.odooInvoiceId}`, '_blank')}
+                        className="bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs h-[46px] px-3 rounded-xl shadow-md cursor-pointer"
+                        title="Descargar PDF de Odoo"
+                      >
+                        Descargar PDF
+                      </Button>
                     </div>
                   ) : (
                     <Button
                       onClick={handleOdooInvoice}
-                      disabled={syncingOdoo}
+                      disabled={syncingOdoo || !appt.billingId}
                       className="w-full bg-purple-600 hover:bg-purple-700 text-white border-0 gap-2 font-bold text-xs h-10 rounded-xl shadow-md shadow-purple-600/20 cursor-pointer"
+                      title={!appt.billingId ? "Guarda la ficha primero para activar este botón" : ""}
                     >
                       {syncingOdoo ? <Loader2 className="h-4 w-4 animate-spin" /> : <Receipt className="h-4 w-4" />}
-                      Generar Factura en Odoo
+                      {appt.billingId ? "Generar Factura en Odoo" : "Guardar Ficha para Facturar"}
                     </Button>
                   )}
                 </div>

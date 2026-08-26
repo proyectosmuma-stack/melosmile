@@ -90,7 +90,7 @@ export function PaymentRegistrationModal({
       const payload: Record<string, unknown> = {
         patient_id: patientId,
         appointment_id: appointmentId || null,
-        total_amount: numAmount,
+        calculated_total: numAmount,
         custom_price: numAmount,
         payment_method: paymentMethod,
         status: status,
