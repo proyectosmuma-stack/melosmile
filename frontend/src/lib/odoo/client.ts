@@ -313,10 +313,21 @@ export async function confirmOdooInvoice(invoiceId: number) {
  * Get PDF bytes for an invoice
  */
 export async function getOdooInvoicePdf(invoiceId: number) {
-  const result = await odooExecute('ir.actions.report', '_render_qweb_pdf', ['account.report_invoice', [invoiceId]]);
-  // result is typically [base64_pdf_content, 'pdf']
-  if (Array.isArray(result) && result.length > 0) {
-    return result[0] as string;
+  // Ensure session is initialized
+  await getUID();
+
+  const res = await fetch(`${ODOO_URL}/report/pdf/account.report_invoice/${invoiceId}`, {
+    method: 'GET',
+    headers: {
+      ...(_sessionId ? { 'Cookie': _sessionId } : {})
+    },
+    cache: 'no-store',
+  });
+
+  if (!res.ok) {
+    throw new Error(`Failed to fetch PDF from Odoo: ${res.statusText}`);
   }
-  return null;
+
+  const arrayBuffer = await res.arrayBuffer();
+  return Buffer.from(arrayBuffer).toString('base64');
 }
