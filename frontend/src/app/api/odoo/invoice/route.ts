@@ -22,6 +22,13 @@ export async function POST(req: Request) {
       );
     }
 
+    if (!patientDetails.nifCif || !patientDetails.billingAddress) {
+      return NextResponse.json(
+        { success: false, error: "Faltan datos fiscales obligatorios (NIF/CIF o Dirección). Por favor, actualiza la ficha del paciente para poder facturar en Odoo." },
+        { status: 400 }
+      );
+    }
+
     // 1. Upsert Partner in Odoo
     const partnerId = await upsertOdooPartner({
       full_name: (patientDetails.firstName || "") + " " + (patientDetails.lastName || ""),
@@ -86,17 +93,21 @@ export async function POST(req: Request) {
     
     // 5. Fetch the confirmed invoice details
     const odooInv = await getOdooInvoice(invoiceId);
-    const odooInvoiceNumber = odooInv?.name || `INV/ODOO/${invoiceId}`;
+    
+    if (!odooInv || odooInv.state !== 'posted') {
+      throw new Error("Odoo no pudo confirmar la factura. Verifica que los datos fiscales en Odoo estén correctos.");
+    }
+    const odooInvoiceNumber = odooInv.name;
 
-    // 6. Check if billing record is "Pagado" or "Aconto" to register payment
-    if (billingRecordId) {
-      const { data: bRec } = await (supabase as any)
+    // 6. Check if billing records are "Pagado" or "Aconto" to register payment
+    if (recordIdsToUpdate.length > 0) {
+      const { data: bRecs } = await (supabase as any)
         .from("billing_records")
         .select("status")
-        .eq("id", billingRecordId)
-        .single();
+        .in("id", recordIdsToUpdate);
         
-      if (bRec && (bRec.status === "Pagado" || bRec.status === "Aconto")) {
+      const hasPaid = bRecs && bRecs.some((b: any) => b.status === "Pagado" || b.status === "Aconto");
+      if (hasPaid) {
         await registerOdooPayment(invoiceId);
       }
     }

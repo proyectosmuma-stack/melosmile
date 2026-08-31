@@ -11,6 +11,7 @@
 
 ### Módulos funcionales
 - [Consentimientos Informados](domains/consentimientos-informados.md) — Arquitectura preliminar del módulo de consentimientos (ortodoncia, miofuncional, ortopedia). Fase 12, pendiente documentación clínica.
+- [Integración de Facturas Odoo](domains/odoo-invoice-integration.md) — Catálogo completo de campos `account.move`, cómo Odoo almacena datos de clientes, comportamiento ante cambios de facturación y patrón de integración desde Melosmile.
 
 ### Convenciones y procesos
 - [Infraestructura Vercel](domains/infra-vercel.md) — arquitectura de despliegue (staging/producción), procedimiento CLI correcto, incidente 2026-08-22 y PENDINGs.

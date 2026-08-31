@@ -58,6 +58,7 @@ export async function POST(req: Request) {
     let rawClinic = (clinic_id || body.clinic || body.sede || body.clinic_name || "").trim() || undefined;
     let rawReason = (reason || body.reason || body.treatment || body.motivo || "").trim() || undefined;
     let rawDoctor = (professional_id || body.doctor || body.professional || "").trim() || undefined;
+    let rawProcedures = (body.procedures || body.add_procedures || "").trim() || undefined;
 
     const findFirstNonEmpty = (...vals: (any)[]) => {
       for (const v of vals) {
@@ -76,6 +77,11 @@ export async function POST(req: Request) {
       body.create === true ||
       rawAction.toLowerCase().includes("crea") ||
       rawAction.toLowerCase().includes("agendar");
+
+    const isAddProcedures =
+      rawAction === "add_procedures" ||
+      body.action === "add_procedures" ||
+      rawAction.toLowerCase().includes("add_procedures");
 
     const isDelete =
       rawAction === "delete" ||
@@ -349,7 +355,45 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: true, action: "deleted", count: data?.length || 0, data });
     }
 
-    // 3. UPDATE / CANCEL OPERATION
+    
+
+    // 3. ADD PROCEDURES OPERATION (action: "add_procedures")
+    if (isAddProcedures && targetId) {
+      const { data: currentTarget } = await dbClient
+        .from("appointments")
+        .select("notes")
+        .eq("id", targetId)
+        .maybeSingle();
+
+      if (currentTarget && currentTarget.notes) {
+        const updatedNotes = await enrichNotesWithProcedure(currentTarget.notes, rawReason || "Procedimiento");
+        const { data: updatedAppt, error: updErr } = await dbClient
+          .from("appointments")
+          .update({ notes: updatedNotes })
+          .eq("id", targetId)
+          .select();
+
+        if (updErr) throw updErr;
+        return NextResponse.json({ success: true, action: "add_procedures", count: 1, data: [updatedAppt] });
+      } else if (currentTarget) {
+        // No existing notes, create minimal ones with procedure
+        const minimalNotes = `[Procedimientos: [${rawReason ? `{serviceName: "${rawReason}", treatmentId: ""}` : ""}]];`
+        const { data: updatedAppt, error: updErr } = await dbClient
+          .from("appointments")
+          .update({ notes: minimalNotes })
+          .eq("id", targetId)
+          .select();
+
+        if (updErr) throw updErr;
+        return NextResponse.json({ success: true, action: "add_procedures", count: 1, data: [updatedAppt] });
+      } else {
+        return NextResponse.json(
+          { error: "Cita no encontrada" },
+          { status: 404 }
+        );
+      }
+    }
+
     const updates: Record<string, any> = {};
     if (rawDate && status !== "cancelled" && status !== "cancelada" && status !== "Cancelada") {
       updates.appointment_date = parseAppointmentDate(rawDate);

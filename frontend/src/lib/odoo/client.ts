@@ -70,7 +70,7 @@ async function getUID(): Promise<number> {
   return _uid!;
 }
 
-async function odooExecute(model: string, method: string, args: unknown[], kwargs: Record<string, unknown> = {}, retry = true): Promise<any> {
+export async function odooExecute(model: string, method: string, args: unknown[], kwargs: Record<string, unknown> = {}, retry = true): Promise<any> {
   try {
     const uid = await getUID();
     const res = await fetch(`${ODOO_URL}/web/dataset/call_kw`, {
@@ -330,4 +330,22 @@ export async function getOdooInvoicePdf(invoiceId: number) {
 
   const arrayBuffer = await res.arrayBuffer();
   return Buffer.from(arrayBuffer).toString('base64');
+}
+
+/**
+ * Register full payment for an invoice
+ */
+export async function registerOdooPayment(invoiceId: number) {
+  const wizardId = await odooExecute('account.payment.register', 'create', [{}], {
+    context: { active_model: 'account.move', active_ids: [invoiceId] }
+  });
+  await odooExecute('account.payment.register', 'action_create_payments', [[wizardId]]);
+}
+
+/**
+ * Send invoice by email using Odoo's native action
+ */
+export async function sendOdooInvoiceEmail(invoiceId: number) {
+  // Call the native action to send the invoice email
+  return odooExecute('account.move', 'action_invoice_sent', [[invoiceId]]);
 }

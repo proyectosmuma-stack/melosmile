@@ -225,6 +225,13 @@ Registro cronológico (append-only) de ingestas y actualizaciones del wiki.
 - **Hallazgo UX para backlog**: `/api/appointments/list` devuelve horas en UTC crudo (14:00) mientras usuarios hablan hora España (16:00) → el subagente detectó el mismatch y pidió confirmación en vez de cancelar a ciegas (defensa correcta, pero fricción real). PENDING: normalizar timezone en el endpoint o enriquecer contexto del agente.
 - **Estado final Musly prod**: dispatcher + 4 subagentes + Bridge 100% sobre toolWorkflow/credencial válida; lectura Y escritura certificadas contra verdad absoluta en BD. Reporte IA `29aee7e1` sigue `resolved=false` esperando confirmación manual del usuario (protocolo inmutable).
 
+## [2026-08-27] ingest | Integración de Facturas Odoo v17
+- **Acción**: creada página `docs/knowledge-base/domains/odoo-invoice-integration.md` con documentación completa de todos los campos `account.move`, comportamiento de almacenamiento de datos de cliente, reglas de retroactividad, patrones de integración y cheat‑sheet.
+- **ADR**: registrado en `codebase-memory` (modo update) vinculando contexto, decisión y consecuencias para uso futuro por los agentes MumaBot.
+- **Índice**: añadida referencia en `docs/knowledge-base/index.md` (sección Módulos funcionales).
+- **Propósito**: proporcionar fuente de verdad para configuraciones de integración Odoo‑Melosmile, evitar decisiones ad‑hoc y garantizar consistencia en el manejo de socios, direcciones y montos.
+- **Validación**: contenido revisado por orquestador (revision manual de campos, tipos, selecciones) y formateo Markdown conforme convención Karpathy.
+
 ## [2026-08-24] security | RGPD: bucket patient-documents privado + RLS documents endurecida + signed URLs en toda la cadena
 - **Riesgo cerrado**: 88 fotos clínicas de pacientes REALES (migración Notion 23/08) accesibles por URL pública permanente (`/object/public/patient-documents/...`) + tabla `documents` con 4 políticas RLS públicas (incluida ALL anónimo). Hallazgos previos de sesión V confirmados con evidencia.
 - **Código** (`develop`, typecheck limpio): nuevo helper `frontend/src/lib/server/storage.ts` (`signDocumentUrl`: createSignedUrl TTL 3600s, rechaza paths con `..` o http externo, nunca lanza); `GET /api/documents` firma cada doc y cae a `resolveDocumentUrl()` legacy si la firma falla → contrato API intacto, componentes frontend SIN cambios (consumen `resolved_url`).

@@ -262,6 +262,7 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [selectedBillingIds, setSelectedBillingIds] = useState<string[]>([]);
   const [generatingInvoice, setGeneratingInvoice] = useState(false);
+  const [sendingInvoiceEmailId, setSendingInvoiceEmailId] = useState<string | null>(null);
   const [generatingAiSummary, setGeneratingAiSummary] = useState(false);
 
   // Bulk appointment selection
@@ -1519,9 +1520,39 @@ function toTitleCase(text: string): string {
                             <div className="flex items-center gap-2">
                               <p className="font-bold text-foreground text-sm capitalize">{b.appointment_reason}</p>
                               {isFacturado ? (
-                                <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full font-bold bg-violet-100 text-violet-800 border border-violet-200">
-                                  <Receipt className="h-3 w-3 text-violet-600" /> Facturada ({invoiceRef})
-                                </span>
+                                <div className="flex items-center gap-2">
+                                  <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full font-bold bg-violet-100 text-violet-800 border border-violet-200">
+                                    <Receipt className="h-3 w-3 text-violet-600" /> Facturada ({invoiceRef})
+                                  </span>
+                                  {b.odoo_invoice_id && (
+                                    <button
+                                      onClick={async () => {
+                                        try {
+                                          setSendingInvoiceEmailId(b.id);
+                                          const res = await fetch('/api/odoo/invoice/email', {
+                                            method: 'POST',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify({ invoiceId: b.odoo_invoice_id })
+                                          });
+                                          const json = await res.json();
+                                          if (json.success) {
+                                            alert("Email programado para enviarse al paciente desde Odoo");
+                                          } else {
+                                            throw new Error(json.error || "Error al enviar email");
+                                          }
+                                        } catch (e: any) {
+                                          alert(`Error: ${e.message}`);
+                                        } finally {
+                                          setSendingInvoiceEmailId(null);
+                                        }
+                                      }}
+                                      disabled={sendingInvoiceEmailId === b.id}
+                                      className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full font-bold bg-blue-100 text-blue-800 border border-blue-200 hover:bg-blue-200 transition-colors disabled:opacity-50"
+                                    >
+                                      {sendingInvoiceEmailId === b.id ? <Loader2 className="h-3 w-3 animate-spin text-blue-600" /> : <Mail className="h-3 w-3 text-blue-600" />} Email
+                                    </button>
+                                  )}
+                                </div>
                               ) : (
                                 <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full font-bold bg-warning/10 text-warning border border-warning/30">
                                   Por Facturar
