@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { Tables } from '@/lib/supabase/types';
-import { upsertOdooPartner } from '@/lib/odoo/client';
+
 
 // Form state type - separate from DB type to avoid conflicts
 type PatientForm = {
@@ -357,7 +357,16 @@ export default function EditPatientPage({ params }: { params: Promise<{ id: stri
 
       if (changed) {
         try {
-          await upsertOdooPartner(newValues);
+          const odooRes = await fetch('/api/odoo/partner', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(newValues),
+          });
+          
+          if (!odooRes.ok) {
+            const errData = await odooRes.json();
+            throw new Error(errData.error || `HTTP error ${odooRes.status}`);
+          }
           alert("Sincronización Odoo exitosa: Los datos de facturación del paciente se han sincronizado con Odoo.");
         } catch (odooError: any) {
           console.error("Error sincronizando con Odoo:", odooError);
