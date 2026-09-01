@@ -260,6 +260,8 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
 
   // Payment & Invoicing states
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
+  const [editingBillingRecord, setEditingBillingRecord] = useState<BillingRecord | null>(null);
+  const [isEditingPaymentModalOpen, setIsEditingPaymentModalOpen] = useState(false);
   const [selectedBillingIds, setSelectedBillingIds] = useState<string[]>([]);
   const [generatingInvoice, setGeneratingInvoice] = useState(false);
   const [sendingInvoiceEmailId, setSendingInvoiceEmailId] = useState<string | null>(null);
@@ -1568,9 +1570,24 @@ function toTitleCase(text: string): string {
 
                         <div className="text-right flex flex-col items-end gap-1">
                           <p className="font-black text-foreground text-sm">{b.custom_price.toFixed(2)} €</p>
-                          <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold border ${getStatusBadge(b.status)}`}>
-                            {b.status}
-                          </span>
+                          <div className="flex items-center gap-2">
+                            <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold border ${getStatusBadge(b.status)}`}>
+                              {b.status}
+                            </span>
+                            {!isFacturado && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => {
+                                  setEditingBillingRecord(b);
+                                  setIsEditingPaymentModalOpen(true);
+                                }}
+                                className="h-7 px-2 text-[11px] font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 border-blue-200 rounded-lg gap-1 cursor-pointer"
+                              >
+                                <Edit3 className="h-3 w-3" /> Modificar
+                              </Button>
+                            )}
+                          </div>
                         </div>
                       </div>
                     );
@@ -1763,8 +1780,16 @@ function toTitleCase(text: string): string {
       {/* Payment Registration Modal */}
       {patient && (
         <PaymentRegistrationModal
-          open={paymentModalOpen}
-          onOpenChange={setPaymentModalOpen}
+          open={paymentModalOpen || isEditingPaymentModalOpen}
+          onOpenChange={(open) => {
+            if (!open) {
+              setPaymentModalOpen(false);
+              setIsEditingPaymentModalOpen(false);
+              setEditingBillingRecord(null);
+            } else {
+              setPaymentModalOpen(true);
+            }
+          }}
           patientId={patient.id}
           patientName={`${patient.firstName} ${patient.lastName}`}
           appointments={appointments.map((a) => ({
@@ -1772,7 +1797,20 @@ function toTitleCase(text: string): string {
             reason: a.reason,
             appointment_date: a.appointment_date,
           }))}
+          editingRecord={(editingBillingRecord as any) || undefined}
           onSuccess={fetchAll}
+          patientDetails={{
+            id: patient.historiaId, // historiaId for Odoo reference
+            first_name: patient.firstName,
+            last_name: patient.lastName,
+            email: patient.email,
+            phone: patient.phone,
+            street: patient.billingAddress || patient.address, // billing address preferred
+            city: patient.billingCity,
+            zip_code: patient.billingPostalCode,
+            vat: patient.nifCif, // NIF/CIF for Odoo
+            billing_name: patient.billingName || undefined, // Separate billing name if different from contact
+          }}
         />
       )}
 

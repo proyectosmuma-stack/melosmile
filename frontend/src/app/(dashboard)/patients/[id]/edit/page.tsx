@@ -1,10 +1,48 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { Tables } from '@/lib/supabase/types';
+import { upsertOdooPartner } from '@/lib/odoo/client';
+
+// Form state type - separate from DB type to avoid conflicts
+type PatientForm = {
+  first_name: string;
+  last_name: string;
+  dni_nie: string;
+  dob: string;
+  gender: string;
+  phone: string;
+  email: string;
+  address: string;
+  // New contact address fields
+  address_2: string;
+  postal_code: string;
+  city: string;
+  province: string;
+  country: string;
+  allergies: string;
+  important_diseases: string;
+  previous_operations: string;
+  current_medication: string;
+  treatment_plan: string;
+  in_treatment: string; // "true" | "false"
+  // Billing
+  nif_cif: string;
+  billing_name: string;
+  billing_address: string;
+  billing_address_2: string;
+  billing_city: string;
+  billing_postal_code: string;
+  billing_province: string;
+  billing_country: string;
+  // Checkbox unificación
+  billing_same_as_contact: boolean;
+  full_name: string;
+};
 import {
   ArrowLeft, Save, Loader2, User, Phone, Mail, MapPin, FileText,
   Stethoscope, AlertCircle, Pill, Activity, Building2, Baby,
-  CreditCard, Plus, X, BadgeCheck, Tag as TagIcon
+  Plus, X, BadgeCheck, Tag as TagIcon
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -13,19 +51,22 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/lib/supabase/client";
 import { TagInput, TagItem } from "@/components/patients/tag-input";
 
+const billingFields = ['nif_cif', 'billing_name', 'billing_address', 'billing_address_2', 'billing_city', 'billing_postal_code', 'billing_province', 'billing_country', 'email', 'phone'];
+
+
 type Clinic = { id: string; name: string };
 
-function Field({ label, name, value, onChange, type = "text", placeholder = "", required = false }: {
+function Field({ label, name, value, onChange, type = "text", placeholder = "", required = false, disabled = false }: {
   label: string; name: string; value: string; onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => void;
-  type?: string; placeholder?: string; required?: boolean;
+  type?: string; placeholder?: string; required?: boolean; disabled?: boolean;
 }) {
   return (
     <div className="space-y-1.5">
       <label className="text-xs font-bold text-muted-foreground uppercase tracking-wide">{label}{required && <span className="text-primary ml-1">*</span>}</label>
       <input
-        type={type} name={name} value={value} onChange={onChange} required={required}
+        type={type} name={name} value={value} onChange={onChange} required={required} disabled={disabled}
         placeholder={placeholder}
-        className="w-full rounded-xl border border-border bg-muted px-3.5 py-2.5 text-sm text-foreground font-medium placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/60 focus:border-primary/40 transition-all"
+        className="w-full rounded-xl border border-border bg-muted px-3.5 py-2.5 text-sm text-foreground font-medium placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/60 focus:border-primary/40 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
       />
     </div>
   );
@@ -70,15 +111,24 @@ export default function EditPatientPage({ params }: { params: Promise<{ id: stri
   const [selectedTags, setSelectedTags] = useState<TagItem[]>([]);
   const [isMinor, setIsMinor] = useState(false);
 
-  const [form, setForm] = useState({
+// const { toast } = useToast();
+  const [form, setForm] = useState<PatientForm>({
     first_name: "", last_name: "", dni_nie: "", dob: "", gender: "",
     phone: "", email: "", address: "",
+    // Nuevos campos dirección estructurada (contacto)
+    address_2: "", postal_code: "", city: "", province: "", country: "España",
     allergies: "", important_diseases: "", previous_operations: "", current_medication: "", treatment_plan: "",
     in_treatment: "true",
     // Billing
-    nif_cif: "", billing_name: "", billing_address: "", billing_city: "",
-    billing_postal_code: "", billing_country: "España",
+    nif_cif: "", billing_name: "", billing_address: "", billing_address_2: "", billing_city: "",
+    billing_postal_code: "", billing_province: "", billing_country: "España",
+    // Checkbox unificación
+    billing_same_as_contact: true,
+    full_name: "",
   });
+
+  const [oldBillingValues, setOldBillingValues] = useState<Partial<PatientForm>>({});
+  const [showBillingSection, setShowBillingSection] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -92,6 +142,26 @@ export default function EditPatientPage({ params }: { params: Promise<{ id: stri
       if (today.getMonth() < birth.getMonth() || (today.getMonth() === birth.getMonth() && today.getDate() < birth.getDate())) years--;
       setIsMinor(years < 18);
     }
+  };
+
+  // Handler para checkbox "Datos de facturación diferentes"
+  const handleBillingSameAsContactChange = (checked: boolean) => {
+    setForm(prev => {
+      const next = { ...prev, billing_same_as_contact: !checked }; // checked = true -> different = false
+      if (!checked) {
+        // Son iguales: autollenar facturación desde contacto
+        next.billing_name = `${prev.first_name} ${prev.last_name}`.trim();
+        next.nif_cif = prev.dni_nie;
+        next.billing_address = prev.address;
+        next.billing_address_2 = prev.address_2;
+        next.billing_city = prev.city;
+        next.billing_postal_code = prev.postal_code;
+        next.billing_province = prev.province;
+        next.billing_country = prev.country;
+      }
+      return next;
+    });
+    setShowBillingSection(checked); // checked = true -> mostrar sección facturación
   };
 
   const handleRepChange = (index: number, field: keyof RepForm, value: string | boolean) => {
@@ -125,21 +195,47 @@ export default function EditPatientPage({ params }: { params: Promise<{ id: stri
       let { data: pData } = await query.limit(1);
       let p = pData?.[0];
       if (p) {
-        const dob = p.dob ? p.dob.split("T")[0] : "";
+        const patient = p as any;
+        const dob = patient.dob ? patient.dob.split("T")[0] : "";
+        const sameAsContact = patient.billing_same_as_contact ?? true;
         setForm({
-          first_name: p.first_name ?? "", last_name: p.last_name ?? "",
-          dni_nie: p.dni_nie ?? "", dob, gender: p.gender ?? "",
-          phone: p.phone ?? "", email: p.email ?? "", address: p.address ?? "",
-          allergies: p.allergies ?? "", important_diseases: p.important_diseases ?? "",
-          previous_operations: p.previous_operations ?? "",
-          current_medication: p.current_medication ?? "",
-          treatment_plan: p.treatment_plan ?? "",
-          in_treatment: p.in_treatment ? "true" : "false",
-          nif_cif: (p as any).nif_cif ?? "", billing_name: (p as any).billing_name ?? "",
-          billing_address: (p as any).billing_address ?? "", billing_city: (p as any).billing_city ?? "",
-          billing_postal_code: (p as any).billing_postal_code ?? "",
-          billing_country: (p as any).billing_country ?? "España",
+          first_name: patient.first_name ?? "", last_name: patient.last_name ?? "",
+          dni_nie: patient.dni_nie ?? "", dob, gender: patient.gender ?? "",
+          phone: patient.phone ?? "", email: patient.email ?? "", address: patient.address ?? "",
+          // Nuevos campos contacto
+          address_2: patient.address_2 ?? "", postal_code: patient.postal_code ?? "",
+          city: patient.city ?? "", province: patient.province ?? "", country: patient.country ?? "España",
+          allergies: patient.allergies ?? "", important_diseases: patient.important_diseases ?? "",
+          previous_operations: patient.previous_operations ?? "",
+          current_medication: patient.current_medication ?? "",
+          treatment_plan: patient.treatment_plan ?? "",
+          in_treatment: patient.in_treatment ? "true" : "false",
+          // Billing
+          nif_cif: patient.nif_cif ?? "", billing_name: patient.billing_name ?? "",
+          billing_address: patient.billing_address ?? "", billing_city: patient.billing_city ?? "",
+          billing_postal_code: patient.billing_postal_code ?? "",
+          billing_country: patient.billing_country ?? "España",
+          billing_address_2: patient.billing_address_2 ?? "",
+          billing_province: patient.billing_province ?? "",
+          // Checkbox
+          billing_same_as_contact: sameAsContact,
+          full_name: `${patient.first_name} ${patient.last_name}`,
         });
+        setShowBillingSection(!sameAsContact); // mostrar si son diferentes
+
+        setOldBillingValues({
+          nif_cif: patient.nif_cif,
+          billing_name: patient.billing_name,
+          billing_address: patient.billing_address,
+          billing_address_2: patient.billing_address_2,
+          billing_city: patient.billing_city,
+          billing_postal_code: patient.billing_postal_code,
+          billing_province: patient.billing_province,
+          billing_country: patient.billing_country,
+          email: patient.email,
+          phone: patient.phone,
+        });
+
 
         if (dob) {
           const birth = new Date(dob);
@@ -208,26 +304,65 @@ export default function EditPatientPage({ params }: { params: Promise<{ id: stri
       let { data: pData } = await query.limit(1);
       let patientId = pData?.[0]?.id ?? targetId;
 
+      // Capture old billing values before update
+      const oldPatient = await supabase.from("patients").select("*").eq("id", patientId).single();
+      const oldValues = (oldPatient.data as unknown as Partial<PatientForm> || {});
+
       // Update patient
+      // Si billing_same_as_contact = true, sincronizar facturación con contacto antes de guardar
+      const formToSave = { ...form };
+      if (form.billing_same_as_contact) {
+        formToSave.billing_name = `${form.first_name} ${form.last_name}`.trim();
+        formToSave.nif_cif = form.dni_nie;
+        formToSave.billing_address = form.address;
+        formToSave.billing_address_2 = form.address_2;
+        formToSave.billing_city = form.city;
+        formToSave.billing_postal_code = form.postal_code;
+        formToSave.billing_province = form.province;
+        formToSave.billing_country = form.country;
+      }
+
       const { error: updateErr } = await (supabase as any).from("patients").update({
-        first_name: form.first_name, last_name: form.last_name,
-        dni_nie: form.dni_nie || null, dob: form.dob || null,
-        gender: form.gender || null, phone: form.phone || null,
-        email: form.email || null, address: form.address || null,
-        allergies: form.allergies || null, important_diseases: form.important_diseases || null,
-        previous_operations: form.previous_operations || null,
-        current_medication: form.current_medication || null,
-        treatment_plan: form.treatment_plan || null,
-        in_treatment: form.in_treatment === "true",
-        nif_cif: form.nif_cif || null, billing_name: form.billing_name || null,
-        billing_address: form.billing_address || null, billing_city: form.billing_city || null,
-        billing_postal_code: form.billing_postal_code || null, billing_country: form.billing_country,
+        first_name: formToSave.first_name, last_name: formToSave.last_name,
+        dni_nie: formToSave.dni_nie || null, dob: formToSave.dob || null,
+        gender: formToSave.gender || null, phone: formToSave.phone || null,
+        email: formToSave.email || null, address: formToSave.address || null,
+        // Nuevos campos contacto
+        address_2: formToSave.address_2 || null, postal_code: formToSave.postal_code || null,
+        city: formToSave.city || null, province: formToSave.province || null, country: formToSave.country || null,
+        allergies: formToSave.allergies || null, important_diseases: formToSave.important_diseases || null,
+        previous_operations: formToSave.previous_operations || null,
+        current_medication: formToSave.current_medication || null,
+        treatment_plan: formToSave.treatment_plan || null,
+        in_treatment: formToSave.in_treatment === "true",
+        nif_cif: formToSave.nif_cif || null, billing_name: formToSave.billing_name || null,
+        billing_address: formToSave.billing_address || null, billing_address_2: formToSave.billing_address_2 || null, billing_city: formToSave.billing_city || null,
+        billing_postal_code: formToSave.billing_postal_code || null, billing_province: formToSave.billing_province || null, billing_country: formToSave.billing_country,
+        billing_same_as_contact: formToSave.billing_same_as_contact,
       }).eq("id", patientId);
 
       if (updateErr) {
         console.error("Error actualizando paciente:", updateErr);
         alert(`Error al guardar datos: ${updateErr.message}`);
         return;
+      }
+
+      // After successful Supabase update, check for billing changes
+      const newValues: PatientForm = {
+        ...form,
+        full_name: `${form.first_name} ${form.last_name}`,
+      };
+
+      const changed = billingFields.some((f) => (oldValues as any)[f] !== (newValues as any)[f]);
+
+      if (changed) {
+        try {
+          await upsertOdooPartner(newValues);
+          alert("Sincronización Odoo exitosa: Los datos de facturación del paciente se han sincronizado con Odoo.");
+        } catch (odooError: any) {
+          console.error("Error sincronizando con Odoo:", odooError);
+          alert(`Datos guardados en Melosmile, pero falló la sincronización con Odoo: ${odooError.message || odooError}`);
+        }
       }
 
       // Update patient_clinics
@@ -375,23 +510,75 @@ export default function EditPatientPage({ params }: { params: Promise<{ id: stri
           </CardContent>
         </Card>
 
-        {/* ── Contacto ─────────────────────────────────────────── */}
+        {/* ── Contacto y Facturación ───────────────────────────────────── */}
         <Card className="border-0 shadow-sm rounded-2xl bg-card">
           <CardHeader className="pb-3 border-b border-border/60">
             <CardTitle className="text-sm font-bold text-foreground flex items-center gap-2">
-              <Phone className="h-4 w-4 text-primary" /> Contacto
+              <Phone className="h-4 w-4 text-primary" /> Contacto y Facturación
             </CardTitle>
           </CardHeader>
-          <CardContent className="pt-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Field label="Teléfono" name="phone" value={form.phone} onChange={handleChange} type="tel" placeholder="+34 600 000 000" />
-            <Field label="Email" name="email" value={form.email} onChange={handleChange} type="email" placeholder="correo@ejemplo.com" />
-            <div className="sm:col-span-2">
-              <Field label="Dirección" name="address" value={form.address} onChange={handleChange} placeholder="Calle, número, ciudad..." />
+          <CardContent className="pt-5 space-y-6">
+
+            {/* Checkbox unificación */}
+            <div className="flex items-start gap-3 p-4 rounded-xl bg-muted/50 border border-border/60">
+              <input
+                type="checkbox"
+                id="billing-different"
+                checked={!form.billing_same_as_contact}
+                onChange={(e) => handleBillingSameAsContactChange(e.target.checked)}
+                className="mt-1 h-4 w-4 accent-primary cursor-pointer shrink-0"
+              />
+              <label htmlFor="billing-different" className="text-sm font-medium text-foreground cursor-pointer leading-relaxed">
+                <span className="font-semibold">Los datos de facturación son diferentes a los de contacto</span>
+                <br />
+                <span className="text-xs text-muted-foreground">Desmarcado = se usan los mismos datos (se autollenan desde contacto)</span>
+              </label>
             </div>
+
+            {/* SECCIÓN CONTACTO (siempre visible) */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <Field label="Teléfono" name="phone" value={form.phone} onChange={handleChange} type="tel" placeholder="+34 600 000 000" />
+              <Field label="Email" name="email" value={form.email} onChange={handleChange} type="email" placeholder="correo@ejemplo.com" />
+              <Field label="Dirección (Calle)" name="address" value={form.address} onChange={handleChange} placeholder="Calle, número..." />
+              <Field label="Dirección 2 (opcional)" name="address_2" value={form.address_2} onChange={handleChange} placeholder="Piso, puerta, urbanización..." />
+              <Field label="C.P." name="postal_code" value={form.postal_code} onChange={handleChange} placeholder="28001" />
+              <Field label="Ciudad" name="city" value={form.city} onChange={handleChange} placeholder="Madrid" />
+              <Field label="Provincia" name="province" value={form.province} onChange={handleChange} placeholder="Madrid" />
+              <Field label="País" name="country" value={form.country} onChange={handleChange} placeholder="España" />
+            </div>
+
+            {/* SECCIÓN FACTURACIÓN (condicional - slide animation) */}
+            <div
+              id="billing-section"
+              className={`overflow-hidden transition-all duration-300 ease-in-out ${
+                showBillingSection
+                  ? "max-h-[800px] opacity-100 mt-4 pt-4 border-t border-border/60"
+                  : "max-h-0 opacity-0 -mt-4"
+              }`}
+              role="region"
+              aria-labelledby="billing-different"
+            >
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Field label="NIF / CIF" name="nif_cif" value={form.nif_cif} onChange={handleChange} placeholder="12345678A" disabled={form.billing_same_as_contact} />
+                <Field label="Nombre / Razón Social" name="billing_name" value={form.billing_name} onChange={handleChange} placeholder="Nombre o empresa para factura" disabled={form.billing_same_as_contact} />
+                <div className="sm:col-span-2">
+                  <Field label="Dirección Fiscal" name="billing_address" value={form.billing_address} onChange={handleChange} placeholder="Calle, número, piso..." disabled={form.billing_same_as_contact} />
+                </div>
+                <Field label="Dirección Fiscal 2 (opcional)" name="billing_address_2" value={form.billing_address_2} onChange={handleChange} placeholder="Piso, puerta, etc." disabled={form.billing_same_as_contact} />
+                <Field label="Ciudad" name="billing_city" value={form.billing_city} onChange={handleChange} placeholder="Madrid" disabled={form.billing_same_as_contact} />
+                <Field label="Código Postal" name="billing_postal_code" value={form.billing_postal_code} onChange={handleChange} placeholder="28001" disabled={form.billing_same_as_contact} />
+                <Field label="Provincia" name="billing_province" value={form.billing_province} onChange={handleChange} placeholder="Madrid" disabled={form.billing_same_as_contact} />
+                <Field label="País" name="billing_country" value={form.billing_country} onChange={handleChange} placeholder="España" disabled={form.billing_same_as_contact} />
+              </div>
+              {form.billing_same_as_contact && (
+                <p className="text-xs text-muted-foreground italic">
+                  Los campos de facturación se autollenan desde los datos de contacto. Marca la casilla arriba para editarlos independientemente.
+                </p>
+              )}
+            </div>
+
           </CardContent>
         </Card>
-
-        {/* ── Clínicas Vinculadas ───────────────────────────────── */}
         <Card className="border-0 shadow-sm rounded-2xl bg-card">
           <CardHeader className="pb-3 border-b border-border/60">
             <CardTitle className="text-sm font-bold text-foreground flex items-center gap-2">
@@ -476,7 +663,7 @@ export default function EditPatientPage({ params }: { params: Promise<{ id: stri
         <Card className="border-0 shadow-sm rounded-2xl bg-card">
           <CardHeader className="pb-3 border-b border-border/60">
             <CardTitle className="text-sm font-bold text-foreground flex items-center gap-2">
-              <ShieldAlertIcon className="h-4 w-4 text-primary" /> Anamnesis Médica
+              <AlertCircle className="h-4 w-4 text-primary" /> Anamnesis Médica
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -487,25 +674,6 @@ export default function EditPatientPage({ params }: { params: Promise<{ id: stri
             <div className="sm:col-span-2">
               <TextArea label="Plan de tratamiento" name="treatment_plan" value={form.treatment_plan} onChange={handleChange} rows={4} placeholder="Descripción del plan de tratamiento en curso..." />
             </div>
-          </CardContent>
-        </Card>
-
-        {/* ── Datos de Facturación (para Odoo) ─────────────────── */}
-        <Card className="border-0 shadow-sm rounded-2xl bg-card">
-          <CardHeader className="pb-3 border-b border-border/60">
-            <CardTitle className="text-sm font-bold text-foreground flex items-center gap-2">
-              <CreditCard className="h-4 w-4 text-primary" /> Datos de Facturación (Odoo)
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pt-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Field label="NIF / CIF" name="nif_cif" value={form.nif_cif} onChange={handleChange} placeholder="12345678A" />
-            <Field label="Nombre / Razón Social" name="billing_name" value={form.billing_name} onChange={handleChange} placeholder="Nombre o empresa para factura" />
-            <div className="sm:col-span-2">
-              <Field label="Dirección Fiscal" name="billing_address" value={form.billing_address} onChange={handleChange} placeholder="Calle, número, piso..." />
-            </div>
-            <Field label="Ciudad" name="billing_city" value={form.billing_city} onChange={handleChange} placeholder="Madrid" />
-            <Field label="Código Postal" name="billing_postal_code" value={form.billing_postal_code} onChange={handleChange} placeholder="28001" />
-            <Field label="País" name="billing_country" value={form.billing_country} onChange={handleChange} placeholder="España" />
           </CardContent>
         </Card>
 
@@ -525,12 +693,3 @@ export default function EditPatientPage({ params }: { params: Promise<{ id: stri
 }
 
 // inline icon stub (avoids import collision)
-function ShieldAlertIcon(props: { className?: string }) {
-  return (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={props.className}>
-      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-      <line x1="12" y1="8" x2="12" y2="12"/>
-      <line x1="12" y1="16" x2="12.01" y2="16"/>
-    </svg>
-  );
-}

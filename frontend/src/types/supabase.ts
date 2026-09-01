@@ -40,6 +40,9 @@ export type Database = {
           created_at: string | null
           id: string
           participating_agents: Json | null
+          resolution_notes: string | null
+          resolved: boolean | null
+          resolved_at: string | null
           session_id: string | null
           user_comment: string
         }
@@ -48,6 +51,9 @@ export type Database = {
           created_at?: string | null
           id?: string
           participating_agents?: Json | null
+          resolution_notes?: string | null
+          resolved?: boolean | null
+          resolved_at?: string | null
           session_id?: string | null
           user_comment: string
         }
@@ -56,6 +62,9 @@ export type Database = {
           created_at?: string | null
           id?: string
           participating_agents?: Json | null
+          resolution_notes?: string | null
+          resolved?: boolean | null
+          resolved_at?: string | null
           session_id?: string | null
           user_comment?: string
         }
@@ -171,6 +180,7 @@ export type Database = {
           applied_commission_rate: number | null
           applied_lab_discount_rate: number | null
           appointment_id: string
+          appointment_reason: string | null
           billing_month: string
           calculated_total: number | null
           created_at: string | null
@@ -181,6 +191,7 @@ export type Database = {
           odoo_invoice_number: string | null
           odoo_invoice_state: string | null
           odoo_synced_at: string | null
+          patient_id: string | null
           payment_method: string | null
           profitability_status: string | null
           status: Database["public"]["Enums"]["billing_status"] | null
@@ -190,6 +201,7 @@ export type Database = {
           applied_commission_rate?: number | null
           applied_lab_discount_rate?: number | null
           appointment_id: string
+          appointment_reason?: string | null
           billing_month: string
           calculated_total?: number | null
           created_at?: string | null
@@ -200,6 +212,7 @@ export type Database = {
           odoo_invoice_number?: string | null
           odoo_invoice_state?: string | null
           odoo_synced_at?: string | null
+          patient_id?: string | null
           payment_method?: string | null
           profitability_status?: string | null
           status?: Database["public"]["Enums"]["billing_status"] | null
@@ -209,6 +222,7 @@ export type Database = {
           applied_commission_rate?: number | null
           applied_lab_discount_rate?: number | null
           appointment_id?: string
+          appointment_reason?: string | null
           billing_month?: string
           calculated_total?: number | null
           created_at?: string | null
@@ -219,6 +233,7 @@ export type Database = {
           odoo_invoice_number?: string | null
           odoo_invoice_state?: string | null
           odoo_synced_at?: string | null
+          patient_id?: string | null
           payment_method?: string | null
           profitability_status?: string | null
           status?: Database["public"]["Enums"]["billing_status"] | null
@@ -229,6 +244,13 @@ export type Database = {
             columns: ["appointment_id"]
             isOneToOne: true
             referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "billing_records_patient_id_fkey"
+            columns: ["patient_id"]
+            isOneToOne: false
+            referencedRelation: "patients"
             referencedColumns: ["id"]
           },
         ]
@@ -581,6 +603,7 @@ export type Database = {
           created_at: string | null
           email: string | null
           id: string
+          is_active: boolean | null
           lab_discount_pct: number | null
           lab_expense_discount_percentage: number | null
           name: string
@@ -596,6 +619,7 @@ export type Database = {
           created_at?: string | null
           email?: string | null
           id?: string
+          is_active?: boolean | null
           lab_discount_pct?: number | null
           lab_expense_discount_percentage?: number | null
           name: string
@@ -611,6 +635,7 @@ export type Database = {
           created_at?: string | null
           email?: string | null
           id?: string
+          is_active?: boolean | null
           lab_discount_pct?: number | null
           lab_expense_discount_percentage?: number | null
           name?: string
@@ -797,14 +822,20 @@ export type Database = {
       patients: {
         Row: {
           address: string | null
+          address_2: string | null
           ai_summary: string | null
           ai_summary_updated_at: string | null
           allergies: string | null
           billing_address: string | null
+          billing_address_2: string | null
           billing_city: string | null
           billing_country: string | null
           billing_name: string | null
           billing_postal_code: string | null
+          billing_province: string | null
+          billing_same_as_contact: boolean | null
+          city: string | null
+          country: string | null
           created_at: string | null
           current_medication: string | null
           dni_nie: string | null
@@ -816,23 +847,32 @@ export type Database = {
           id: string
           important_diseases: string | null
           in_treatment: boolean | null
+          is_active: boolean | null
           last_name: string
           nif_cif: string | null
           odoo_partner_id: number | null
           phone: string | null
+          postal_code: string | null
           previous_operations: string | null
+          province: string | null
           treatment_plan: string | null
         }
         Insert: {
           address?: string | null
+          address_2?: string | null
           ai_summary?: string | null
           ai_summary_updated_at?: string | null
           allergies?: string | null
           billing_address?: string | null
+          billing_address_2?: string | null
           billing_city?: string | null
           billing_country?: string | null
           billing_name?: string | null
           billing_postal_code?: string | null
+          billing_province?: string | null
+          billing_same_as_contact?: boolean | null
+          city?: string | null
+          country?: string | null
           created_at?: string | null
           current_medication?: string | null
           dni_nie?: string | null
@@ -844,23 +884,32 @@ export type Database = {
           id?: string
           important_diseases?: string | null
           in_treatment?: boolean | null
+          is_active?: boolean | null
           last_name: string
           nif_cif?: string | null
           odoo_partner_id?: number | null
           phone?: string | null
+          postal_code?: string | null
           previous_operations?: string | null
+          province?: string | null
           treatment_plan?: string | null
         }
         Update: {
           address?: string | null
+          address_2?: string | null
           ai_summary?: string | null
           ai_summary_updated_at?: string | null
           allergies?: string | null
           billing_address?: string | null
+          billing_address_2?: string | null
           billing_city?: string | null
           billing_country?: string | null
           billing_name?: string | null
           billing_postal_code?: string | null
+          billing_province?: string | null
+          billing_same_as_contact?: boolean | null
+          city?: string | null
+          country?: string | null
           created_at?: string | null
           current_medication?: string | null
           dni_nie?: string | null
@@ -872,11 +921,14 @@ export type Database = {
           id?: string
           important_diseases?: string | null
           in_treatment?: boolean | null
+          is_active?: boolean | null
           last_name?: string
           nif_cif?: string | null
           odoo_partner_id?: number | null
           phone?: string | null
+          postal_code?: string | null
           previous_operations?: string | null
+          province?: string | null
           treatment_plan?: string | null
         }
         Relationships: []
@@ -1295,7 +1347,12 @@ export type Database = {
     }
     Enums: {
       appointment_status: "Pendiente" | "Confirmada" | "Realizada" | "Cancelada"
-      billing_status: "Pendiente" | "Aprobado" | "Facturado Odoo"
+      billing_status:
+        | "Pendiente"
+        | "Aprobado"
+        | "Facturado Odoo"
+        | "Pagado"
+        | "Aconto"
       document_type:
         | "consentimiento"
         | "radiografia"
@@ -1305,7 +1362,7 @@ export type Database = {
         | "informe"
         | "otro"
       installment_status: "pendiente" | "pagado" | "vencido" | "cancelado"
-      reminder_channel: "email" | "telegram" | "web" | "sms"
+      reminder_channel: "email" | "telegram" | "web" | "sms" | "whatsapp"
       reminder_status: "pendiente" | "enviado" | "error" | "leido" | "cancelado"
       reminder_type:
         | "cambio_alineador"
@@ -1445,7 +1502,13 @@ export const Constants = {
   public: {
     Enums: {
       appointment_status: ["Pendiente", "Confirmada", "Realizada", "Cancelada"],
-      billing_status: ["Pendiente", "Aprobado", "Facturado Odoo"],
+      billing_status: [
+        "Pendiente",
+        "Aprobado",
+        "Facturado Odoo",
+        "Pagado",
+        "Aconto",
+      ],
       document_type: [
         "consentimiento",
         "radiografia",
@@ -1456,7 +1519,7 @@ export const Constants = {
         "otro",
       ],
       installment_status: ["pendiente", "pagado", "vencido", "cancelado"],
-      reminder_channel: ["email", "telegram", "web", "sms"],
+      reminder_channel: ["email", "telegram", "web", "sms", "whatsapp"],
       reminder_status: ["pendiente", "enviado", "error", "leido", "cancelado"],
       reminder_type: [
         "cambio_alineador",

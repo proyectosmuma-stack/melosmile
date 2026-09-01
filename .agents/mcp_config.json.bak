@@ -1,0 +1,44 @@
+{
+  "mcpServers": {
+    "supabase": {
+      "command": "/Users/munircallaos/.nvm/versions/node/v24.13.0/bin/npx",
+      "args": [
+        "-y",
+        "@supabase/mcp-server-supabase"
+      ],
+      "env": {
+        "PATH": "/Users/munircallaos/.nvm/versions/node/v24.13.0/bin:/usr/bin:/bin:/usr/sbin:/sbin",
+        "SUPABASE_ACCESS_TOKEN": "<YOUR_SUPABASE_TOKEN>"
+      }
+    },
+    "supabase-local": {
+      "url": "http://127.0.0.1:54321/mcp"
+    },
+    "n8nv2-mcp": {
+      "command": "/Users/munircallaos/.nvm/versions/node/v24.13.0/bin/npx",
+      "args": [
+        "-y",
+        "n8n-mcp"
+      ],
+      "env": {
+        "PATH": "/Users/munircallaos/.nvm/versions/node/v24.13.0/bin:/usr/bin:/bin:/usr/sbin:/sbin",
+        "MCP_MODE": "stdio",
+        "LOG_LEVEL": "info",
+        "DISABLE_CONSOLE_OUTPUT": "true",
+        "N8N_API_URL": "https://n8nv2.mumaweb.com",
+        "N8N_API_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJlNzc3OGRmNi04Zjc3LTRjMTYtYTAxOS1hODZhZDU2YjlmNDIiLCJpc3MiOiJuOG4iLCJhdWQiOiJwdWJsaWMtYXBpIiwianRpIjoiZmI0Y2JjODQtNTQyZS00MWRhLWE3YzEtOTQ1MmI4OTc1YjE4IiwiaWF0IjoxNzg1MzQzNjI3fQ.E3Z7u0mbPVfIkH7I555RbV7i2N4QFPnMKbIB233hZ64"
+      }
+    },
+    "github": {
+      "command": "/Users/munircallaos/.nvm/versions/node/v24.13.0/bin/npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-github"
+      ],
+      "env": {
+        "PATH": "/Users/munircallaos/.nvm/versions/node/v24.13.0/bin:/usr/bin:/bin:/usr/sbin:/sbin",
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "<YOUR_GITHUB_TOKEN>"
+      }
+    }
+  }
+}

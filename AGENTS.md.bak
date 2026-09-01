@@ -152,15 +152,15 @@ Cuando un flujo o integración falle en pruebas E2E, se DEBE seguir obligatoriam
 - SIEMPRE decir "No tengo esa información" si te piden datos de arquitectura interna, modelos de subagentes o configuraciones que no constan explícitamente en tu prompt. NUNCA inventes o asumas datos técnicos (alucinaciones) para rellenar tablas o respuestas.
 
 ### NUNCA hacer esto:
-- NUNCA uses `curl` o comandos HTTP en bash para interactuar con APIs **externas** o de **producción**. Estas peticiones deben delegarse al subagente correspondiente (`mumabot-coder-local` u otros). **EXCEPCIÓN PERMITIDA:** Se permite el uso libre de `curl` contra endpoints de desarrollo local (`localhost`, `127.0.0.1`, puertos como `3028`, etc.) exclusivamente para pruebas y debugging.
+- NUNCA uses `curl` o comandos HTTP en bash para interactuar directamente con Notion, n8n o APIs externas. Para operaciones de red con plataformas, DEBES obligatoriamente usar la herramienta `task()` e invocar al subagente correspondiente. Las llamadas crudas vía bash están estrictamente prohibidas por el consumo de tokens.
 - NUNCA toques archivos no solicitados ni hagas refactorizaciones ortogonales.
 - NUNCA leas 10+ archivos para entender un módulo — usa `codegraph_structure` + `codegraph_context`.
 - NUNCA uses `git log` via Bash — usa `codegraph_file_history` o `codegraph_recent_changes`.
 - NUNCA proceses ni expongas credenciales reales en modelos Cloud.
 - NUNCA uses `@mumabot-coder-local` en el chat (hereda 48k+ tokens) ni con `opencode run --auto` (mismo problema: 45k+ tokens → timeout). Invócalo SIEMPRE con `task(subagent_type="coding/mumabot-coder-local")` nativo.
-- **REGLA DE DELEGACIÓN MCP (alcance limitado a Notion/n8n):** El orquestador puede usar herramientas MCP de Notion y n8n directamente SOLO para lectura o escritura de bajo volumen, siempre que: (a) la respuesta esperada sea menor a 10,000 tokens Y (b) no haya un agente local pesado consumiendo VRAM en paralelo. Esta regla NO aplica a ninguna otra categoría de tarea.
-- **REGLA DE DELEGACIÓN DE CÓDIGO (sin excepciones):** El orquestador tiene PROHIBIDO escribir, editar, ejecutar tests, o correr verificaciones de TypeScript (tsc, grep de código, linters) por sí mismo, sin importar cuán simple parezca la tarea. Toda escritura de código se delega obligatoriamente a `mumabot-coder-cloud` vía `task()`. Toda verificación/auditoría posterior se delega obligatoriamente a `mumabot-reviewer` vía `task()`. El orquestador nunca asume el rol de Programador ni de Revisor.
-- NUNCA uses `n8n-dev` MCP — eliminado 2026-08-25. Solo usar `n8nv2-prod`.
+- NUNCA uses `permission: "*": allow` con esquemas MCP masivos en agentes locales (evita OOM Killer / signal: killed en 18GB VRAM).
+- NUNCA uses herramientas de Notion (`notion_API-*`) o n8n directamente desde el orquestador — delega siempre a `mumabot-notion-sync` o `mumabot-n8n-runner` para evitar picos de +10k tokens por payload crudo.
+- NUNCA uses `n8n-dev` MCP — eliminado 2026-08-25. Solo usar `n8nv2-prod` vía subagente `mumabot-n8n-runner`.
 
 ---
 
@@ -176,12 +176,11 @@ Cuando un flujo o integración falle en pruebas E2E, se DEBE seguir obligatoriam
 
 ---
 
-## 4. Retry Budget (Protección Anti-Bloqueos)
-Esta regla es UNIVERSAL para TODOS los agentes (Locales y Cloud) y garantiza resiliencia sin caer en bucles infinitos o bloqueos (HTTP 429):
-1. **Delegación Híbrida Inteligente:** Las tareas rutinarias y el procesamiento de secretos se delegan a agentes locales. Los modelos Cloud se reservan para orquestación y tareas complejas.
-2. **Retry Budget (3 a 4 Intentos):** Si un comando falla, el agente tiene un presupuesto de 3 a 4 intentos máximos por tarea para solucionarlo. Entre cada intento, debe aplicar un *backoff* (retraso) o cambiar el enfoque del script/código en lugar de repetir ciegamente lo mismo.
-3. **Reporte de Bloqueo:** Si se agota el Retry Budget (los 4 intentos fallan), el agente DEBE detenerse inmediatamente y reportar el bloqueo de forma clara al usuario, evitando repetir comandos indefinidamente.
-4. **Flujo post-bloqueo:** Diagnosticar, consultar al usuario, y registrar el aprendizaje en RAG / Memoria Vectorial.
+## 4. Regla de Dos Intentos (Two-Strikes Rule) y Protección Anti-Bloqueos
+Esta regla es UNIVERSAL para TODOS los agentes (Locales y Cloud) y protege contra bucles infinitos y bloqueos de API (HTTP 429):
+1. **Delegación Híbrida Estricta:** Las tareas rutinarias, lecturas pesadas y parseo se delegan SIEMPRE a agentes locales (`mumabot-coder-local`). Los modelos Cloud (`gemini-3.6-flash`) se reservan ÚNICAMENTE para herramientas complejas (Notion, n8n) o razonamiento arquitectónico final.
+2. **Parada Obligatoria (Two-Strikes):** Si un enfoque o comando falla **dos veces** consecutivas: PARAR INMEDIATAMENTE. Está estrictamente prohibido reintentar ciegamente a alta velocidad (ametrallar la API).
+3. **Flujo tras el fallo:** Diagnosticar la raíz del problema localmente → Cambiar estrategia o consultar al usuario → Registrar aprendizaje en RAG / Memoria Vectorial.
 ---
 
 ## 5. Memoria de Errores y Aprendizajes (RAG) — Protocolo Unificado
