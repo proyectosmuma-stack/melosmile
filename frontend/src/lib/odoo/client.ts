@@ -238,6 +238,27 @@ export async function upsertOdooPartner(patient: {
     ]);
   }
 
+  // Fallback to email if VAT not found
+  if (existingIds.length === 0 && patient.email) {
+    existingIds = await odooExecute('res.partner', 'search', [
+      [['email', '=', patient.email]],
+    ]);
+  }
+
+  // Fallback to exact name match if email also not found
+  if (existingIds.length === 0) {
+    existingIds = await odooExecute('res.partner', 'search', [
+      [['name', 'ilike', name]],
+    ]);
+  }
+
+  // Fallback to full_name if billing_name didn't match
+  if (existingIds.length === 0 && patient.full_name !== name) {
+    existingIds = await odooExecute('res.partner', 'search', [
+      [['name', 'ilike', patient.full_name]],
+    ]);
+  }
+
   const vals: Record<string, unknown> = {
     name,
     vat: patient.nif_cif || false,
@@ -253,7 +274,7 @@ export async function upsertOdooPartner(patient: {
   };
 
   if (existingIds.length > 0) {
-    await odooExecute('res.partner', 'write', [existingIds, vals]);
+    await odooExecute('res.partner', 'write', [[existingIds[0]], vals]);
     return existingIds[0];
   } else {
     return odooExecute('res.partner', 'create', [vals]);
