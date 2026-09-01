@@ -182,6 +182,7 @@ Esta regla es UNIVERSAL para TODOS los agentes (Locales y Cloud) y garantiza res
 2. **Retry Budget (3 a 4 Intentos):** Si un comando falla, el agente tiene un presupuesto de 3 a 4 intentos máximos por tarea para solucionarlo. Entre cada intento, debe aplicar un *backoff* (retraso) o cambiar el enfoque del script/código en lugar de repetir ciegamente lo mismo.
 3. **Reporte de Bloqueo:** Si se agota el Retry Budget (los 4 intentos fallan), el agente DEBE detenerse inmediatamente y reportar el bloqueo de forma clara al usuario, evitando repetir comandos indefinidamente.
 4. **Flujo post-bloqueo:** Diagnosticar, consultar al usuario, y registrar el aprendizaje en RAG / Memoria Vectorial.
+5. **Prohibición de Fallback de Orquestador:** Si una herramienta de delegación obligatoria (MCP local, subagente) falla, el orquestador NUNCA debe responder con su propio conocimiento como sustituto. Debe aplicar el Retry Budget y, si se agota, reportar el bloqueo explícitamente sin completar la tarea por su cuenta.
 ---
 
 ## 5. Memoria de Errores y Aprendizajes (RAG) — Protocolo Unificado
