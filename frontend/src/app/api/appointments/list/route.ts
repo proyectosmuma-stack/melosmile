@@ -40,6 +40,7 @@ export async function GET(req: Request) {
     const patientTerm = cleanPatientName(patientInput);
 
     const isRecentQuery = /reciente|últim|ultim/i.test(dateInput) && !/semana|mes|año/i.test(dateInput);
+    const isUpcomingQuery = /proxim|próxim|futur|siguiente|agendada|programada/i.test(dateInput) && !/semana|mes|año/i.test(dateInput);
 
     let startISO: string;
     let endISO: string | null;
@@ -49,6 +50,11 @@ export async function GET(req: Request) {
       dateLabel = "citas más recientes";
       startISO = "1970-01-01T00:00:00.000Z";
       endISO = new Date().toISOString();
+    } else if (isUpcomingQuery) {
+      const madridToday = getMadridDate().isoToday;
+      dateLabel = "próximas citas agendadas";
+      startISO = `${madridToday}T00:00:00.000Z`;
+      endISO = null;
     } else if (dateInput) {
       // Filter by specific date (natural language or ISO)
       ({ startISO, endISO, dateLabel } = getDateRange(dateInput));
@@ -81,6 +87,8 @@ export async function GET(req: Request) {
 
     if (isRecentQuery) {
       query = query.lte("appointment_date", endISO).limit(10);
+    } else if (isUpcomingQuery) {
+      query = query.gte("appointment_date", startISO).limit(10);
     } else {
       query = query.gte("appointment_date", startISO);
       if (endISO) {

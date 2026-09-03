@@ -148,6 +148,7 @@ REGLA CRÍTICA DE CONSULTA Y LISTADO DE CITAS (OBLIGATORIA):
 - SIEMPRE que el usuario pregunte por citas, agenda, disponibilidad o historial (ej: "citas más recientes", "agenda de la semana pasada", "citas de hoy", "citas de mañana", "agenda de este mes", "citas del mes pasado", "citas de Munir", etc.), TIENES LA OBLIGACIÓN ESTRICTA DE EJECUTAR la herramienta 'Tool_List_Appointments'.
 - PROHIBICIÓN ABSOLUTA: Queda terminantemente PROHIBIDO responder "No tengo acceso", "No puedo consultar" o excusas similares sin haber llamado previamente a 'Tool_List_Appointments'. Tienes acceso total a la agenda de Melosmile.
 - Mapeo de parámetros para 'Tool_List_Appointments':
+  * Si pide próximas citas / citas agendadas / siguientes citas / qué citas hay: pasa date_range = "próximas".
   * Si pide citas recientes / últimas citas: pasa date_range = "recientes".
   * Si pide semana pasada: pasa date_range = "semana pasada".
   * Si pide esta semana: pasa date_range = "esta semana".
@@ -176,14 +177,14 @@ REGLA DE CONTEXTO TEMPORAL:
   const promptBody = filteredHistory.length
     ? 'FECHA Y HORA ACTUAL EN ESPAÑA: ' + now + '\\n\\nHISTORIAL PREVIO DE LA CONVERSACIÓN:\\n' + filteredHistory.map(h => (h.role === 'user' ? 'Usuario' : 'Musly') + ': ' + h.content).join('\\n') + '\\n\\nSOLICITUD ACTUAL DEL USUARIO:\\n' + currentMessage
     : 'FECHA Y HORA ACTUAL EN ESPAÑA: ' + now + '\\n\\nSOLICITUD ACTUAL DEL USUARIO:\\n' + currentMessage;
-  return promptBody + '\\n\\nINSTRUCCIÓN CRÍTICA: Si el usuario consulta citas pasadas, recientes, semana pasada o cualquier período, DEBES EJECUTAR Tool_List_Appointments pasando date_range. Si pide reagendar o cambiar fecha/tratamiento, DEBES EJECUTAR Tool_Update_Appointment. Prohibido responder que no tienes acceso.';
+  return promptBody + '\\n\\nINSTRUCCIÓN CRÍTICA: Si el usuario consulta citas (próximas, agendadas, pasadas, recientes, semana pasada o cualquier período), TIENES LA OBLIGACIÓN ESTRICTA DE EJECUTAR Tool_List_Appointments pasando date_range. Prohibido responder que no hay citas o que no tienes acceso sin consultar la herramienta.';
 })() }}`;
   }
 
   // Update Tool_List_Appointments parameter description
   const listApptsNode = schedWf.nodes.find(n => n.name === 'Tool_List_Appointments');
   if (listApptsNode) {
-    listApptsNode.parameters.url = "https://melosmile-staging-git-develop-proyectosmuma-stacks-projects.vercel.app/api/appointments/list?date={{ $fromAI('date_range', 'Período o término a consultar: recientes, semana pasada, esta semana, próxima semana, hoy, mañana, este mes, o nombre de paciente') }}&clinic={{ $fromAI('clinic', 'Nombre de la clínica si fue mencionada, ej: Goya') }}";
+    listApptsNode.parameters.url = "https://melosmile-staging-git-develop-proyectosmuma-stacks-projects.vercel.app/api/appointments/list?date={{ $fromAI('date_range', 'Período o término a consultar: próximas, recientes, semana pasada, esta semana, próxima semana, hoy, mañana, este mes, o nombre de paciente') }}&clinic={{ $fromAI('clinic', 'Nombre de la clínica si fue mencionada, ej: Goya') }}";
   }
 
   await updateWorkflow('d74hAW8IkmmCqoh5', schedWf);

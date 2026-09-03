@@ -394,6 +394,8 @@ export const DATE_KEYWORDS = [
   "mañana", "manana", "tomorrow", "pasado mañana",
   "hoy", "today", "ayer", "yesterday", "semana", "mes",
   "reciente", "recientes", "última", "últimas", "ultima", "ultimas", "agenda",
+  "próxima", "proxima", "próximas", "proximas", "futura", "futuras", "futuro", "futuros",
+  "siguiente", "siguientes", "agendada", "agendadas", "programada", "programadas",
   "enero", "febrero", "marzo", "abril", "mayo", "junio",
   "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre",
 ];

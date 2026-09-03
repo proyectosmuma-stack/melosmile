@@ -24,6 +24,8 @@ import {
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import { computeDynamicSuggestions, trackUserAction } from "@/lib/ai/dynamic-suggestions";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -372,19 +374,26 @@ function UserBubble({ msg }: { msg: Message }) {
   );
 }
 
-// ─── Preset suggestions ───────────────────────────────────────────────────────
-
-const PRESETS = [
-  "revisa las citas de mañana",
-  "Cita a Munir mañana a las 14:00 para revisión en Goya",
-  "Registra paciente Manuel Cardama (+34690123456)",
-  "¿Cobros pendientes de esta semana?",
-];
-
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export function AIAgentBar({ fullHeight = false }: { fullHeight?: boolean }) {
   const [prompt, setPrompt] = useState("");
+  const [suggestions, setSuggestions] = useState<Array<{ text: string; isLearned?: boolean }>>([]);
+
+  useEffect(() => {
+    // 1. Initial compute with local and temporal defaults
+    setSuggestions(computeDynamicSuggestions());
+
+    // 2. Fetch global clinic trends asynchronously
+    fetch("/api/ai/suggestions")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data?.success && Array.isArray(data.suggestions)) {
+          setSuggestions(computeDynamicSuggestions(data.suggestions));
+        }
+      })
+      .catch(() => {});
+  }, []);
   const [messages, setMessages] = useState<Message[]>([
     {
       id: uid(),
@@ -552,6 +561,10 @@ export function AIAgentBar({ fullHeight = false }: { fullHeight?: boolean }) {
             : m
         )
       );
+
+      // Learn from this user prompt to adapt dynamic suggestions
+      trackUserAction(trimmed, payload.intent);
+      setSuggestions(computeDynamicSuggestions());
     } catch {
       setMessages((prev) =>
         prev.map((m) =>
@@ -616,18 +629,34 @@ export function AIAgentBar({ fullHeight = false }: { fullHeight?: boolean }) {
       </div>
 
       {/* ── Preset suggestions ── */}
-      <div className="px-5 pb-2.5 flex gap-2 flex-wrap shrink-0 border-t border-sidebar-border/60 pt-3">
-        {PRESETS.map((p) => (
-          <button
-            key={p}
-            type="button"
-            onClick={() => sendMessage(p)}
-            disabled={isProcessing}
-            className="text-xs px-3 py-1.5 rounded-xl bg-sidebar-accent/80 hover:bg-sidebar-muted text-sidebar-muted-foreground hover:text-white border border-sidebar-border transition-colors disabled:opacity-40 disabled:cursor-not-allowed font-medium"
-          >
-            {p}
-          </button>
-        ))}
+      <div className="px-5 pb-2.5 flex flex-col gap-1.5 shrink-0 border-t border-sidebar-border/60 pt-3">
+        <div className="flex items-center justify-between text-[10px] uppercase font-bold text-sidebar-muted-foreground/70 tracking-wider">
+          <span className="flex items-center gap-1.5">
+            <Sparkles className="h-3 w-3 text-violet-400" />
+            Acciones frecuentes y sugeridas
+          </span>
+          <span className="text-[9px] lowercase font-normal opacity-60">se adapta a tu uso</span>
+        </div>
+        <div className="flex gap-2 flex-wrap">
+          {suggestions.map((item) => (
+            <button
+              key={item.text}
+              type="button"
+              onClick={() => sendMessage(item.text)}
+              disabled={isProcessing}
+              className={cn(
+                "text-xs px-3 py-1.5 rounded-xl border transition-all disabled:opacity-40 disabled:cursor-not-allowed font-medium flex items-center gap-1.5 cursor-pointer",
+                item.isLearned
+                  ? "bg-violet-500/10 hover:bg-violet-500/20 text-violet-300 border-violet-500/30 hover:border-violet-500/50 shadow-sm"
+                  : "bg-sidebar-accent/80 hover:bg-sidebar-muted text-sidebar-muted-foreground hover:text-white border-sidebar-border"
+              )}
+              title={item.isLearned ? "Acción frecuente según tu uso" : "Acción contextual recomendada"}
+            >
+              {item.isLearned && <Sparkles className="h-3 w-3 text-violet-400 shrink-0" />}
+              <span>{item.text}</span>
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* ── Input Bar ── */}
