@@ -1,13 +1,14 @@
 /**
  * Dynamic Action Suggestions for Musly AI
- * Learns from the professional's frequent prompts, time of day, and clinic history.
+ * Persisted in the Melosmile Knowledge Base (`agent_learnings` table in Supabase).
+ * Adapts to professional usage, frequency, and time of day.
  */
 
 export interface LearnedAction {
   text: string;
   count: number;
-  lastUsed: number;
-  intent?: string;
+  lastUsed?: number;
+  isLearned?: boolean;
 }
 
 const STORAGE_KEY = "melosmile_learned_actions_v1";
@@ -53,7 +54,7 @@ export function getContextualDefaults(): string[] {
 }
 
 /**
- * Loads learned actions from localStorage.
+ * Loads learned actions from localStorage (fast client-side cache).
  */
 export function getStoredLearnedActions(): LearnedAction[] {
   if (typeof window === "undefined") return [];
@@ -65,61 +66,56 @@ export function getStoredLearnedActions(): LearnedAction[] {
       return parsed;
     }
   } catch (e) {
-    console.warn("[DynamicSuggestions] Error loading from storage", e);
+    console.warn("[DynamicSuggestions] Error loading cache", e);
   }
   return [];
 }
 
 /**
- * Records a user prompt so Musly learns the professional's favorite actions.
+ * Saves a prompt to the persistent Knowledge Base (`agent_learnings` in Supabase)
+ * and updates client cache.
  */
-export function trackUserAction(promptText: string, intent?: string): void {
-  if (typeof window === "undefined") return;
+export async function trackUserAction(promptText: string, intent?: string): Promise<void> {
   const clean = promptText.trim();
-  // Filter out greetings or super short/long texts
-  if (clean.length < 5 || clean.length > 80) return;
-  if (/^(hola|buenas|adios|chao|si|no|ok|gracias|prueba)$/i.test(clean)) return;
+  if (clean.length < 6 || clean.length > 80) return;
+  if (/^(hola|buenas|adios|chao|si|no|ok|gracias|prueba|test)$/i.test(clean)) return;
 
+  // 1. Update localStorage cache immediately for zero latency
+  if (typeof window !== "undefined") {
+    try {
+      const current = getStoredLearnedActions();
+      const idx = current.findIndex((a) => a.text.toLowerCase() === clean.toLowerCase());
+      if (idx >= 0) {
+        current[idx].count += 1;
+        current[idx].lastUsed = Date.now();
+      } else {
+        current.push({ text: clean, count: 1, lastUsed: Date.now(), isLearned: true });
+      }
+      current.sort((a, b) => b.count - a.count);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(current.slice(0, 20)));
+    } catch (_) {}
+  }
+
+  // 2. Persist to Supabase Cloud Knowledge Base (agent_learnings)
   try {
-    const current = getStoredLearnedActions();
-    const existingIndex = current.findIndex(
-      (a) => a.text.toLowerCase() === clean.toLowerCase()
-    );
-
-    if (existingIndex >= 0) {
-      current[existingIndex].count += 1;
-      current[existingIndex].lastUsed = Date.now();
-      if (intent) current[existingIndex].intent = intent;
-    } else {
-      current.push({
-        text: clean,
-        count: 1,
-        lastUsed: Date.now(),
-        intent,
-      });
-    }
-
-    // Keep top 20 actions sorted by frequency and recency
-    current.sort((a, b) => {
-      const scoreA = a.count * 2 + (Date.now() - a.lastUsed < 86400000 ? 3 : 0);
-      const scoreB = b.count * 2 + (Date.now() - b.lastUsed < 86400000 ? 3 : 0);
-      return scoreB - scoreA;
+    await fetch("/api/ai/suggestions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt: clean, intent }),
     });
-
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(current.slice(0, 20)));
-  } catch (e) {
-    console.warn("[DynamicSuggestions] Error saving action", e);
+  } catch (err) {
+    console.warn("[DynamicSuggestions] Could not persist to knowledge base:", err);
   }
 }
 
 /**
  * Computes dynamic suggestions by blending:
- * 1. Frequent/recent learned actions by this professional
- * 2. Real clinic trends from backend (if provided)
+ * 1. Persistent learned actions from the Knowledge Base (agent_learnings)
+ * 2. Recent client-side cache
  * 3. Contextual time-of-day defaults
  */
 export function computeDynamicSuggestions(
-  apiTrends: string[] = []
+  dbLearnings: Array<{ text: string; count?: number; isLearned?: boolean }> = []
 ): Array<{ text: string; isLearned?: boolean }> {
   const result: Array<{ text: string; isLearned?: boolean }> = [];
   const seen = new Set<string>();
@@ -132,20 +128,22 @@ export function computeDynamicSuggestions(
     }
   };
 
-  // 1. Top learned actions from localStorage (used at least once)
-  const learned = getStoredLearnedActions();
-  for (const item of learned) {
-    if (result.length >= 2) break; // Leave room for contextual/trending actions
+  // 1. Actions from Supabase Knowledge Base
+  if (Array.isArray(dbLearnings) && dbLearnings.length > 0) {
+    for (const item of dbLearnings) {
+      if (result.length >= 3) break;
+      add(item.text, true);
+    }
+  }
+
+  // 2. Top actions from local cache (if not already added)
+  const cached = getStoredLearnedActions();
+  for (const item of cached) {
+    if (result.length >= 3) break;
     add(item.text, true);
   }
 
-  // 2. Add API trends from clinic conversation history
-  for (const trend of apiTrends) {
-    if (result.length >= 3) break;
-    add(trend, true);
-  }
-
-  // 3. Fill remaining slots with contextual defaults
+  // 3. Complete with contextual defaults
   const defaults = getContextualDefaults();
   for (const def of defaults) {
     add(def, false);
