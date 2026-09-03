@@ -15,8 +15,12 @@ function cleanSearchTerm(term: string): string {
 }
 
 function scorePatientMatch(patient: any, targetQuery: string): number {
-  const fullName = `${patient.first_name || ""} ${patient.last_name || ""}`.toLowerCase().trim();
   const target = targetQuery.toLowerCase().trim();
+  
+  if (patient.historia_id && patient.historia_id.toLowerCase().includes(target)) return 100;
+  if (patient.phone && patient.phone.toLowerCase().includes(target)) return 100;
+
+  const fullName = `${patient.first_name || ""} ${patient.last_name || ""}`.toLowerCase().trim();
 
   if (fullName === target) return 100;
   if (fullName.startsWith(target)) return 90;

@@ -113,7 +113,7 @@ export async function GET(req: Request) {
         const { data: matchedPatients, error: patientsErr } = await (supabase as any)
           .from("patients")
           .select("id")
-          .or(`first_name.ilike.%${term}%,last_name.ilike.%${term}%,phone.ilike.%${term}%`);
+          .or(`first_name.ilike.%${term}%,last_name.ilike.%${term}%,phone.ilike.%${term}%,historia_id.ilike.%${term}%`);
         if (patientsErr) throw patientsErr;
         for (const p of matchedPatients || []) {
           if (p?.id) matchedPatientIds.add(String(p.id));
