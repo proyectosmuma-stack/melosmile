@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin as supabase } from "@/lib/supabase/server";
 
-const N8N_BASE = process.env.N8N_WEBHOOK_BASE_URL ?? "https://n8n.mumaweb.com";
+const N8N_BASE = process.env.N8N_WEBHOOK_BASE_URL ?? "https://n8nv2.mumaweb.com";
 const DISPATCHER_PATH = "/webhook/melosmile-dispatcher";
 
 function extractCleanText(raw: any): { intent: string; entities: any; summary: string } {

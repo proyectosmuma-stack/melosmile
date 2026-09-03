@@ -66,6 +66,13 @@ Certificación End-to-End (E2E) completa de todos los flujos del sistema Musly/M
 
 6. **n8n Production**: Actualizado a 2.28.5 (Docker, rollback seguro con rename). Backup config guardado.
 
+7. **Error 404 en Musly Staging / Vercel (Sesión `8g38tqfbmhue4b3diqc3tp`)**:
+   - **Diagnóstico**: Al probar en Staging (`dime las citas de la semana pasada`), Musly devolvió `404`. El endpoint `/api/dispatcher` hacía fetch a `N8N_BASE` que, al no estar definido en Vercel, caía en el fallback por defecto a la instancia antigua inactiva (`https://n8n.mumaweb.com/webhook/melosmile-dispatcher`).
+   - **Solución y Blindaje**:
+     - Se inyectaron mediante script (`scripts/sync_vercel_env.js`) todas las variables de entorno (`N8N_WEBHOOK_BASE_URL`, `N8N_WEBHOOK_URL`, `N8N_VECTORIZER_WEBHOOK_URL`, `N8N_API_KEY`, `VPS_SSH_HOST`, `VPS_SSH_USER`, `VPS_SSH_PASSWORD`, `VPS_FTP_PORT`, `VPS_DOMAIN_FOLDER`, `NEXT_PUBLIC_VPS_FILES_BASE`, `VPS_DOCS_BASE_PATH`) en los tres entornos de Vercel: **Preview (Staging)**, **Production** y **Development**.
+     - Se actualizaron los fallbacks en el código de `frontend/src/app/api/dispatcher/route.ts` y `frontend/src/app/api/billing/document-cleaner/route.ts` para que apunten directamente a `https://n8nv2.mumaweb.com`.
+     - Se actualizó el reporte en la tabla `ai_agent_reports` marcándolo como `resolved: true` con detalle técnico.
+
 ## 🎯 Próximos Pasos Pendientes
 
 | Prioridad | Tarea | Estado |

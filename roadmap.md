@@ -18,6 +18,7 @@ Este documento establece el plan de desarrollo y próximas tareas activas para l
   - Parcheado el bug de LangChain `$fromAI` en el core de n8n.
   - Bugfixes desplegados en Vercel Staging (RLS, fallbacks, base64 images).
   - Todo el sistema de Inteligencia Artificial (Scheduling, Clínico, Billing, General, Document Cleaner) validado end-to-end con bases de datos en la nube.
+  - Blindaje multi-entorno Vercel: Sincronizadas las 11 variables de entorno de `n8nv2` y VPS en los 3 entornos de Vercel (`preview`, `production`, `development`) y fallbacks en código actualizados para eliminar cualquier referencia al dominio inactivo legacy.
 - ✅ **Endurecimiento RGPD de Fotografías Clínicas (2026-08-24):** Bucket `patient-documents` en PRIVADO, RLS `documents` sin políticas públicas (local+cloud), signed URLs TTL 3600s servidas por `/api/documents`. Despliegue cero-ventana-rota: staging → verificación → producción (`agenda.melosmile.com`) → verificación → flip del bucket. Verificación final: URL pública→400 · firmadas prod/staging→200.
 
 ---

@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import * as xlsx from 'xlsx';
 import { supabaseAdmin } from '@/lib/supabase/server';
 
-const N8N_WEBHOOK_URL = process.env.N8N_WEBHOOK_URL || 'https://n8n.mumaweb.com/webhook/document-cleaner';
+const N8N_WEBHOOK_URL = process.env.N8N_WEBHOOK_URL || 'https://n8nv2.mumaweb.com/webhook/document-cleaner';
 
 const INTERNAL_BASE_URL = process.env.NEXT_PUBLIC_APP_URL
   ? (process.env.NEXT_PUBLIC_APP_URL.startsWith('http') ? process.env.NEXT_PUBLIC_APP_URL : `https://${process.env.NEXT_PUBLIC_APP_URL}`)
