@@ -73,6 +73,21 @@ Certificación End-to-End (E2E) completa de todos los flujos del sistema Musly/M
      - Se actualizaron los fallbacks en el código de `frontend/src/app/api/dispatcher/route.ts` y `frontend/src/app/api/billing/document-cleaner/route.ts` para que apunten directamente a `https://n8nv2.mumaweb.com`.
      - Se actualizó el reporte en la tabla `ai_agent_reports` marcándolo como `resolved: true` con detalle técnico.
 
+8. **Optimización Sub-Agente Clínico y Agendamiento (Reportes `gwu45w4k...` y `57podebe...`)**:
+   - **Incidencias**:
+     1. Usuario consultó citas recientes / semana pasada y el agente respondió que no tenía acceso.
+     2. Usuario consultó "telefono de Munir callaos" y "que tratamiento tiene Munir" y el agente clínico respondió que su función se limitaba a datos clínicos o devolvió texto vacío.
+   - **Causa Raíz**:
+     - Sub-Agente Clínico (`WNViucEUuhzigYtE`) usaba `google/gemini-2.5-flash` en OpenRouter que fallaba silente devolviendo output vacío, carecía del nodo `Tool_Search_Patients`, y su systemMessage restringía responder datos de contacto.
+     - Endpoint `/api/patients/[id]/clinical` no incluía teléfono/email y exigía UUID estricto (fallando si se pasaba nombre o PAC-###).
+     - Sub-Agente Agendamiento (`d74hAW8IkmmCqoh5`) tenía un prompt restrictivo ("solo 'agenda de esta semana'") y `/api/appointments/list` no tenía modo para "recientes".
+   - **Solución Implementada**:
+     - Sub-agentes Clínico, Contabilidad y General migrados a `openai/gpt-4o-mini` (temperature 0).
+     - Sub-Agente Clínico equipado con `Tool_Search_Patients` y prompt de "mano derecha" para responder teléfonos, emails, contacto y fichas completas.
+     - `/api/patients/[id]/clinical` y `/api/patients/[id]/summary` actualizados con resolución flexible por nombre, código PAC-### o UUID, usando `supabaseAdmin` e incluyendo teléfono, email, DNI, dirección y nacimiento.
+     - Sub-Agente Agendamiento blindado para forzar `Tool_List_Appointments` ante cualquier consulta de citas (recientes, semana pasada, hoy, etc.) con prohibición expresa de responder "no tengo acceso".
+     - `/api/appointments/list` soporta consultas recientes (`isRecentQuery` con orden DESC limit 10).
+
 ## 🎯 Próximos Pasos Pendientes
 
 | Prioridad | Tarea | Estado |

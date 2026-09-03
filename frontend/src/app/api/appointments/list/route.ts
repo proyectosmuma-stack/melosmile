@@ -39,11 +39,17 @@ export async function GET(req: Request) {
 
     const patientTerm = cleanPatientName(patientInput);
 
+    const isRecentQuery = /reciente|últim|ultim/i.test(dateInput) && !/semana|mes|año/i.test(dateInput);
+
     let startISO: string;
     let endISO: string | null;
     let dateLabel: string;
 
-    if (dateInput) {
+    if (isRecentQuery) {
+      dateLabel = "citas más recientes";
+      startISO = "1970-01-01T00:00:00.000Z";
+      endISO = new Date().toISOString();
+    } else if (dateInput) {
       // Filter by specific date (natural language or ISO)
       ({ startISO, endISO, dateLabel } = getDateRange(dateInput));
     } else if (patientTerm) {
@@ -71,15 +77,19 @@ export async function GET(req: Request) {
         clinics ( id, name ),
         professionals ( id, first_name, last_name )
       `)
-      .gte("appointment_date", startISO)
-      .order("appointment_date", { ascending: true });
+      .order("appointment_date", { ascending: !isRecentQuery });
+
+    if (isRecentQuery) {
+      query = query.lte("appointment_date", endISO).limit(10);
+    } else {
+      query = query.gte("appointment_date", startISO);
+      if (endISO) {
+        query = query.lte("appointment_date", endISO);
+      }
+    }
 
     if (!includeCancelled) {
       query = query.neq("status", "Cancelada");
-    }
-
-    if (endISO) {
-      query = query.lte("appointment_date", endISO);
     }
 
     // Filter by patient name at DB level via 2-step resolution.
@@ -150,9 +160,11 @@ export async function GET(req: Request) {
     if (results.length === 0) {
       summaryText = patientTerm
         ? `No se encontraron citas programadas para el paciente "${patientInput}".`
+        : isRecentQuery
+        ? "No se encontraron citas registradas en el historial de la clínica."
         : `No hay ninguna cita programada para ${dateLabel === "próximas citas" ? "próximas fechas" : `la fecha ${dateLabel}`}.`;
     } else {
-      summaryText = `Citas encontradas para ${dateLabel} (${results.length} en total):\n` +
+      summaryText = `${isRecentQuery ? "Citas más recientes registradas" : `Citas encontradas para ${dateLabel}`} (${results.length} en total):\n` +
         results
           .map((c: any, i: number) =>
             `${i + 1}. ${c.fecha} a las ${c.hora} - ${c.paciente} (${c.motivo}, ${c.clinica}, ${c.estado})`

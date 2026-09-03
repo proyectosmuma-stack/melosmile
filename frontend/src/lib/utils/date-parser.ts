@@ -392,7 +392,8 @@ export function getDateRange(dateStr: string): DateRange {
 /** Date keywords that signal a date context (not a patient name) */
 export const DATE_KEYWORDS = [
   "mañana", "manana", "tomorrow", "pasado mañana",
-  "hoy", "today", "ayer", "yesterday", "semana",
+  "hoy", "today", "ayer", "yesterday", "semana", "mes",
+  "reciente", "recientes", "última", "últimas", "ultima", "ultimas", "agenda",
   "enero", "febrero", "marzo", "abril", "mayo", "junio",
   "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre",
 ];
