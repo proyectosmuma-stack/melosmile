@@ -73,7 +73,7 @@ ODOO_USER=gestion@melosmile.com
 >
 > 📝 PENDING: DNS de `develop.mumaweb.com` apunta al VPS IONOS (94.143.139.120) en vez de a Vercel; corregir CNAME → `cname.vercel-dns.com` en el panel DNS.
 | **Supabase Staging** | `https://amhfdzfcmpastmlsosou.supabase.co` |
-| **n8n (dev)** | `https://n8n.mumaweb.com` |
+| **n8n (prod/staging)** | `https://n8nv2.mumaweb.com` |
 | **Fichero env** | `frontend/.env.remote` |
 | **Sincronizar datos** | `npm --prefix frontend run db:sync` |
 
@@ -82,8 +82,9 @@ ODOO_USER=gestion@melosmile.com
 NEXT_PUBLIC_SUPABASE_URL=https://amhfdzfcmpastmlsosou.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_kN-3hlqUxOni9onF1CDmhg_03EOCXG6
 SUPABASE_SERVICE_ROLE_KEY=eyJ...ref:amhfdzfcmpastmlsosou...service_role
-N8N_WEBHOOK_BASE_URL=https://n8n.mumaweb.com
-N8N_WEBHOOK_URL=https://n8n.mumaweb.com/webhook/document-cleaner
+N8N_WEBHOOK_BASE_URL=https://n8nv2.mumaweb.com
+N8N_WEBHOOK_URL=https://n8nv2.mumaweb.com/webhook/document-cleaner
+N8N_VECTORIZER_WEBHOOK_URL=https://n8nv2.mumaweb.com/webhook/melosmile-knowledge-processor
 NEXT_PUBLIC_APP_URL=https://melosmile-develop.vercel.app
 ODOO_URL=https://melosmile.odoo.com / ODOO_DB=melosmile / ODOO_USER=gestion@melosmile.com
 ```

@@ -109,3 +109,36 @@ Durante esta sesión, tanto Antigravity como Mumabot (OpenCode) colaboraron en u
 * **Ejecución:** Se creó el script `scratch/test_billing_flow6.ts` para simular el cierre de la cita de Munir (29-12-2025) y su envío a Odoo directamente desde el entorno Staging de Vercel (llamando a `https://melosmile-staging-o54y7wdx8-proyectosmuma-stacks-projects.vercel.app/api/odoo/invoice`).
 * **Verificación:** Respuesta exitosa `{ "success": true, "invoiceId": 2, "invoiceNumber": "INV/ODOO/2" }`.
 * **Conclusión:** El puente Odoo Vercel ↔ Odoo Test está plenamente validado y certificado en la nube, operando a la perfección con la seguridad de `x-api-key`.
+
+## 10. Sesión 03/09/2026 — Estabilización E2E de Musly en n8nv2, Vercel Multi-Env y Optimización de Subagentes (Completada ✅)
+
+### A. Diagnóstico y Resolución del Error 404 en Vercel Staging
+* **Incidencia**: Al consultar a Musly desde Staging (`https://staging.melosmile.com`), el backend devolvía error HTTP 404 (`El servicio respondió con un error (404)`).
+* **Causa Raíz**: En Vercel Staging no estaban configuradas las variables de entorno de n8n (`N8N_WEBHOOK_BASE_URL`), provocando que `/api/dispatcher` cayera en el fallback residual a la instancia antigua inactiva (`https://n8n.mumaweb.com`).
+* **Solución y Blindaje**:
+  * Se creó y ejecutó el script `scripts/sync_vercel_env.js` inyectando las 11 variables de entorno de `n8nv2` y VPS en los 3 entornos de Vercel: **Preview (Staging)**, **Production** y **Development**.
+  * Se actualizaron los fallbacks de código en `frontend/src/app/api/dispatcher/route.ts` y `frontend/src/app/api/billing/document-cleaner/route.ts` apuntando a `https://n8nv2.mumaweb.com`.
+
+### B. Optimización del Sub-Agente Clínico y Resolución Flexible en Backend
+* **Incidencia**: El usuario consultó *"telefono de Munir callaos"* y el agente respondió que *"su función se limitaba a datos clínicos"*. Al consultar *"que tratamiento tiene Munir"*, el modelo devolvió una respuesta vacía.
+* **Causa Raíz**:
+  1. El sub-agente clínico (`WNViucEUuhzigYtE`) no tenía conectada la herramienta `Tool_Search_Patients`.
+  2. Su modelo (`gemini-2.5-flash` en OpenRouter) fallaba silente en la invocación de herramientas devolviendo `output: ""`.
+  3. Los endpoints `/api/patients/[id]/clinical` y `summary` exigían UUID estricto (fallando si se pasaba nombre o código PAC) y no incluían teléfono ni email.
+* **Solución**:
+  * Sub-agente clínico migrado a `openai/gpt-4o-mini` (temperatura 0), equipado con `Tool_Search_Patients` y reescrito su systemMessage para actuar como la **mano derecha del doctor para pacientes y fichas**, con la obligación estricta de entregar teléfonos y datos de contacto de inmediato.
+  * `/api/patients/[id]/clinical` y `/api/patients/[id]/summary` actualizados para resolver automáticamente por **Nombre**, código **`PAC-###`** o **UUID**, incluyendo teléfono, email, DNI, dirección y nacimiento bajo `supabaseAdmin`.
+
+### C. Blindaje del Sub-Agente de Agendamiento y Soporte de Citas Recientes
+* **Incidencia**: Al pedir *"cuales han sido las citas mas recientes?"* o *"la agenda de la semana pasada"*, el agente respondía que no tenía acceso.
+* **Causa Raíz**: El prompt de `Agent_Scheduling` restringía la consulta a *"agenda de esta semana"*, y `/api/appointments/list` no procesaba consultas de citas pasadas/recientes.
+* **Solución**:
+  * Prompt de `Agent_Scheduling` blindado con la obligación estricta de llamar a `Tool_List_Appointments` ante cualquier período temporal (recientes, semana pasada, hoy, etc.) con prohibición de excusarse con "no tengo acceso".
+  * `/api/appointments/list` y `date-parser.ts` actualizados con soporte nativo para `isRecentQuery` (devolviendo el historial ordenado de las últimas 10 citas registradas).
+
+### D. Estandarización de Modelos en n8nv2 y Certificación
+* Se migraron también los sub-agentes de **Contabilidad** (`inakl5N4ROrmmrFh`) y **General** (`T5FvJ4PMcHKp1gBa`) a `openai/gpt-4o-mini` para evitar fallos silentes de OpenRouter.
+* Se actualizaron y cerraron con notas técnicas los 4 reportes en la tabla `ai_agent_reports` de Supabase Cloud.
+* Se desplegó con éxito en Vercel Staging (despliegue `pmfn2b4up` en estado **● Ready**).
+* Se registraron 3 lecciones de aprendizaje en el RAG vectorial centralizado (`knowledge-sync.ts smart-save-lesson`) y se guardó la sesión (`memory-bridge.ts save-session`).
+
