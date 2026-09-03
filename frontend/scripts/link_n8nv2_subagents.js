@@ -6,13 +6,13 @@ const N8N_URL = process.env.N8N_WEBHOOK_BASE_URL || 'https://n8nv2.mumaweb.com';
 const N8N_API_KEY = process.env.N8N_API_KEY || '';
 
 async function updateDispatcher() {
-  const dispatcherId = 'QgNoVFr9TBXGbdOl';
+  const dispatcherId = '5xjgNTJ86tMQ09rP';
 
   const subAgentMap = {
-    'Tool_SubAgent_Scheduling': 'E59OoSRNJ4skt43W',
-    'Tool_SubAgent_Clinical': 'cQQGecziVfareNtI',
-    'Tool_SubAgent_Billing': '4Z7PdsGK2wAIi2iE',
-    'Tool_SubAgent_General': '9scMTKJwP7TKFSJV'
+    'Tool_SubAgent_Scheduling': 'd74hAW8IkmmCqoh5',
+    'Tool_SubAgent_Clinical': 'WNViucEUuhzigYtE',
+    'Tool_SubAgent_Billing': 'inakl5N4ROrmmrFh',
+    'Tool_SubAgent_General': 'T5FvJ4PMcHKp1gBa'
   };
 
   const getRes = await fetch(`${N8N_URL}/api/v1/workflows/${dispatcherId}`, {

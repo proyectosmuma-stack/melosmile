@@ -1,0 +1,25 @@
+Failed to compile.
+
+./src/app/(dashboard)/patients/[id]/edit/page.tsx:142:15
+Type error: Type 'BillingRecord | undefined' is not assignable to type 'BillingRecord | null'.
+  Type 'undefined' is not assignable to type 'BillingRecord | null'.
+
+  140 |       isOpen={isModalOpen}
+  141 |       onClose={() => setIsModalOpen(false)}
+> 142 |       editingRecord={editingRecord}
+      |               ^
+  143 |       patientDetails={patientDetails}
+  144 |     />
+
+./src/components/billing/payment-registration-modal.tsx:45:3
+Type error: Property 'odoo_invoice_id' does not exist on type 'Omit<BillingRecord, "id" | "created_at">'.
+
+  43 |     const payload = {
+  44 |       ...baseRecord,
+> 45 |       odoo_invoice_id: invoiceId || null,
+     |       ^
+  46 |       status: invoiceId ? "Facturado Odoo" : "Pagado"
+  47 |     }
+
+info  - Need to disable some ESLint rules? Learn more here: https://nextjs.org/docs/basic-features/eslint#disabling-rules
+Error: Command "npm run build" exited with 1

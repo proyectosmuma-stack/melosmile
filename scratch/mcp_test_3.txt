@@ -1,0 +1,8 @@
+[0m
+> build · qwen3.7-agents:4b-q8
+[0m
+[0m→ [0mRead scratch/mock_error.log
+[0m⚙ [0mmcp-ollama-local_resumir_log {"texto":"<response-from-read>"}
+[0m
+<error>Texto o registro de entrada no proporcionado. No se puede generar un resumen sin contenido específico.</error>
+[0m

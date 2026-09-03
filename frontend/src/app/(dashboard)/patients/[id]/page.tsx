@@ -257,6 +257,7 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
   const [reminders, setReminders] = useState<Reminder[]>([]);
   const [documents, setDocuments] = useState<Document[]>([]);
   const [tags, setTags] = useState<TagItem[]>([]);
+  const [representatives, setRepresentatives] = useState<any[]>([]);
 
   // Payment & Invoicing states
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
@@ -562,6 +563,16 @@ function toTitleCase(text: string): string {
           clinic_name: c.clinics?.name ?? "Clínica",
           is_primary: c.is_primary,
         })));
+      }
+
+      // 4.5 Representatives
+      const { data: repsData } = await (supabase as any)
+        .from("patient_representatives")
+        .select("*")
+        .eq("patient_id", p.id);
+      
+      if (repsData) {
+        setRepresentatives(repsData);
       }
 
       // 5. Reminders
@@ -1811,6 +1822,7 @@ function toTitleCase(text: string): string {
             vat: patient.nifCif, // NIF/CIF for Odoo
             billing_name: patient.billingName || undefined, // Separate billing name if different from contact
           }}
+          representatives={representatives}
         />
       )}
 

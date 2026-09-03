@@ -357,17 +357,24 @@ export default function EditPatientPage({ params }: { params: Promise<{ id: stri
 
       if (changed) {
         try {
-          const odooRes = await fetch('/api/odoo/partner', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(newValues),
-          });
+          const { data: pData } = await supabase.from('patients').select('odoo_partner_id').eq('id', patientId).single();
           
-          if (!odooRes.ok) {
-            const errData = await odooRes.json();
-            throw new Error(errData.error || `HTTP error ${odooRes.status}`);
+          if (!pData?.odoo_partner_id) {
+            // No ha sido facturado nunca, solo guardar en local
+            console.log("Datos de facturación guardados en Melosmile. Se sincronizarán con Odoo al registrar la primera factura.");
+          } else {
+            const odooRes = await fetch('/api/odoo/partner', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(newValues),
+            });
+            
+            if (!odooRes.ok) {
+              const errData = await odooRes.json();
+              throw new Error(errData.error || `HTTP error ${odooRes.status}`);
+            }
+            alert("Sincronización Odoo exitosa: Los datos de facturación del paciente se han sincronizado con Odoo.");
           }
-          alert("Sincronización Odoo exitosa: Los datos de facturación del paciente se han sincronizado con Odoo.");
         } catch (odooError: any) {
           console.error("Error sincronizando con Odoo:", odooError);
           alert(`Datos guardados en Melosmile, pero falló la sincronización con Odoo: ${odooError.message || odooError}`);

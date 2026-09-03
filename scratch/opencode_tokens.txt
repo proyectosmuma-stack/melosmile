@@ -1,0 +1,5 @@
+[93m[1m! [0m agent "mumabot-reviewer" not found. Falling back to default agent
+[0m
+> build · qwen3.7-agents:4b-q8
+[0m
+^D

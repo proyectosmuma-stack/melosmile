@@ -65,6 +65,7 @@ type PaymentRegistrationModalProps = {
   editingRecord?: BillingRecord; // New prop for editing
   onSuccess?: () => void;
   patientDetails?: PatientDetails; // Optional: for Odoo invoice generation
+  representatives?: { id?: string; full_name: string; dni_nie: string | null; email: string | null; phone: string | null; }[];
 };
 
 export const PAYMENT_METHODS = [
@@ -106,6 +107,7 @@ export function PaymentRegistrationModal({
   editingRecord: initialEditingRecord, // Renamed to avoid reassigning prop
   onSuccess,
   patientDetails, // Desestructured patientDetails
+  representatives = [],
 }: PaymentRegistrationModalProps) {
   const [saving, setSaving] = useState(false);
   const [currentBillingRecord, setCurrentBillingRecord] = useState<BillingRecord | undefined>(initialEditingRecord);
@@ -116,6 +118,8 @@ export function PaymentRegistrationModal({
   const [status, setStatus] = useState(currentBillingRecord?.status || "Pagado");
   const [notes, setNotes] = useState(currentBillingRecord?.notes || "");
   const [paymentDate, setPaymentDate] = useState(currentBillingRecord?.billing_month ? new Date(currentBillingRecord.billing_month).toISOString().substring(0, 10) : new Date().toISOString().substring(0, 10));
+
+  const [selectedRepId, setSelectedRepId] = useState<string>("");
 
   // Determine if the form should be blocked
   const isBlocked = !!currentBillingRecord && (!!currentBillingRecord.odoo_invoice_id || currentBillingRecord.status === "Facturado Odoo");
@@ -139,6 +143,7 @@ export function PaymentRegistrationModal({
         setStatus("Pagado");
         setNotes("");
         setPaymentDate(new Date().toISOString().substring(0, 10));
+        setSelectedRepId("");
       }
     }
   }, [open, initialEditingRecord, defaultAppointmentId, defaultAmount]);
@@ -198,17 +203,18 @@ export function PaymentRegistrationModal({
 
       if (shouldGenerateOdooInvoice && !hasOdooInvoice) {
         try {
+          const selectedRep = representatives.find(r => r.id === selectedRepId);
           const odooPatientDetails: OdooPatientDetails = {
-            firstName: patientDetails.first_name,
-            lastName: patientDetails.last_name,
+            firstName: selectedRep ? selectedRep.full_name : patientDetails.first_name,
+            lastName: selectedRep ? "" : patientDetails.last_name,
             historiaId: patientDetails.id,
-            nifCif: patientDetails.vat,
-            billingName: patientDetails.billing_name || `${patientDetails.first_name} ${patientDetails.last_name}`,
-            billingAddress: patientDetails.street,
+            nifCif: selectedRep ? selectedRep.dni_nie : patientDetails.vat,
+            billingName: selectedRep ? selectedRep.full_name : (patientDetails.billing_name || `${patientDetails.first_name} ${patientDetails.last_name}`),
+            billingAddress: patientDetails.street, // Usar dirección del menor
             billingCity: patientDetails.city,
             billingPostalCode: patientDetails.zip_code,
-            email: patientDetails.email,
-            phone: patientDetails.phone,
+            email: selectedRep ? selectedRep.email : patientDetails.email,
+            phone: selectedRep ? selectedRep.phone : patientDetails.phone,
           };
 
           const invoicePayload = {
@@ -271,6 +277,24 @@ export function PaymentRegistrationModal({
           <Badge variant="destructive" className="justify-center">
             Este pago ya tiene factura Odoo generada o está facturado en Odoo, no se puede modificar.
           </Badge>
+        )}
+
+        {representatives && representatives.length > 0 && !isBlocked && (status === "Pagado" || status === "Aconto") && (
+          <div className="bg-primary/5 border border-primary/20 p-3 rounded-lg space-y-2 mt-2">
+            <Label className="text-xs font-semibold text-primary">Facturar a nombre de representante</Label>
+            <select
+              value={selectedRepId}
+              onChange={(e) => setSelectedRepId(e.target.value)}
+              className="w-full h-9 rounded-lg border border-border bg-card px-3 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-primary"
+            >
+              <option value="">-- Facturar a nombre del paciente ({patientName}) --</option>
+              {representatives.map((r, idx) => (
+                <option key={r.id || idx} value={r.id || String(idx)}>
+                  {r.full_name} {r.dni_nie ? `(${r.dni_nie})` : ""}
+                </option>
+              ))}
+            </select>
+          </div>
         )}
 
         <div className="space-y-4 py-2">

@@ -1,0 +1,7 @@
+[0m
+> build · qwen3.7-agents:4b-q8
+[0m
+[0m⚙ [0mmcp-ollama-local_resumir_log {"texto":"Hola, dime en una línea cuáles son las leyes de MumaBot dictadas en AGENTS.md."}
+[0m
+The tool returned: "El texto proporcionado es una consulta sobre las leyes de MumaBot en AGENTS.md, pero no contiene contenido o errores para resumir. No hay información específica en el log para analizar puntos clave o críticas."
+[0m

@@ -205,10 +205,16 @@ Base vectorial central en Supabase local (`http://localhost:54321`). Accesible d
 ---
 
 ## 6. Contexto de Arranque Rápido
+
+> **REGLA DE ORO — Estado del proyecto vs RAG (no confundir nunca):**
+> - **"¿Qué estamos trabajando en ESTE proyecto?"** → SIEMPRE `.opencode/ESTADO_PROYECTO.md` con ruta RELATIVA al directorio activo (`read` directo — nunca glob `**/`, que no resuelve en zsh; nunca ruta fija de otro proyecto). Fallback si no existe: `context.md`. Es la ÚNICA fuente de verdad del estado actual.
+> - **El RAG (`search antigravity`) NO es el estado del proyecto.** Es memoria histórica GLOBAL de lecciones/bugs de TODOS los clientes — úsalo solo para resolver dudas técnicas puntuales, nunca para responder "en qué fase estamos" o "qué falta por hacer".
+
+0. **Estado del proyecto activo:** `read .opencode/ESTADO_PROYECTO.md` (o `context.md` si no existe) — PRIMERO y SIEMPRE, antes de cualquier otro paso.
 1. `codegraph stats` → verificar índice AST del proyecto actual.
 2. `codegraph query "<símbolo>"` → búsqueda semántica dirigida.
 3. `knowledge-sync.ts report` → estado del RAG (tablas, tamaños, proyectos indexados).
-4. `memory-bridge.ts search antigravity "<tarea>"` → recuperar contexto histórico relevante.
+4. `memory-bridge.ts search antigravity "<tarea>"` → recuperar lecciones/bugs conocidos cross-sesión (NO es el estado del proyecto actual).
 5. `servidores-status.sh` → verificar estado de GPU y proxy PM2.
 
 ---

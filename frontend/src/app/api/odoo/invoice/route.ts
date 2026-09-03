@@ -22,9 +22,9 @@ export async function POST(req: Request) {
       );
     }
 
-    if (!patientDetails.nifCif || !patientDetails.billingAddress) {
+    if (!patientDetails.nifCif) {
       return NextResponse.json(
-        { success: false, error: "Faltan datos fiscales obligatorios (NIF/CIF o Dirección). Por favor, actualiza la ficha del paciente para poder facturar en Odoo." },
+        { success: false, error: "Faltan datos fiscales obligatorios (NIF/CIF). Por favor, actualiza la ficha del paciente o usa los datos de un representante para poder facturar en Odoo." },
         { status: 400 }
       );
     }
