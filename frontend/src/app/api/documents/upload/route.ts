@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { supabase } from "@/lib/supabase/client";
+import { supabaseAdmin as supabase } from "@/lib/supabase/server";
 import * as ftp from "basic-ftp";
 import { Readable } from "stream";
 

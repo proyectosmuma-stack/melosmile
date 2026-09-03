@@ -34,6 +34,12 @@ export async function POST(req: Request) {
     const url = new URL(req.url);
     const searchParams = url.searchParams;
     const body = await parseRequestBody(req);
+    // Fallback: merge query-string params (binding GET de toolHttpRequest n8n)
+    for (const [k, v] of searchParams.entries()) {
+      if (body[k] === undefined || body[k] === null || body[k] === "") {
+        body[k] = v;
+      }
+    }
     const {
       appointment_id,
       id,
