@@ -55,6 +55,8 @@ async function cleanCloudDatabase() {
   await supabase.from('patient_tags').delete().neq('patient_id', munirId);
   await supabase.from('patient_clinics').delete().neq('patient_id', munirId);
   await supabase.from('patient_representatives').delete().neq('patient_id', munirId);
+  await supabase.from('documents').delete().neq('patient_id', munirId);
+  await supabase.from('reminders').delete().neq('patient_id', munirId);
 
   // 7. Delete all patients EXCEPT Munir
   const { error: errPatients } = await supabase.from('patients').delete().neq('id', munirId);

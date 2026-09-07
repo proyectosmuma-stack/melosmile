@@ -142,3 +142,29 @@ Durante esta sesión, tanto Antigravity como Mumabot (OpenCode) colaboraron en u
 * Se desplegó con éxito en Vercel Staging (despliegue `pmfn2b4up` en estado **● Ready**).
 * Se registraron 3 lecciones de aprendizaje en el RAG vectorial centralizado (`knowledge-sync.ts smart-save-lesson`) y se guardó la sesión (`memory-bridge.ts save-session`).
 
+## 11. Sesión 08/09/2026 — Reactivación de Producción, Sincronización de Pacientes Reales y Sistema Anti-Pausa (Completada ✅)
+
+### A. Diagnóstico y Reactivación de `melosmile-production`
+* **Incidencia**: La app de producción (`agenda.melosmile.com`) no mostraba pacientes y las variables en Vercel Production estaban vacías. El proyecto de producción en Supabase (`xylqytpudbdcsbuuwqpi`) se encontraba en estado `INACTIVE` (pausado por inactividad).
+* **Solución**:
+  * Se reactivó `melosmile-production` a estado `ACTIVE_HEALTHY` desde el dashboard de Supabase.
+  * Se extrajeron las credenciales de producción (`anon` y `service_role`) y se sincronizaron en las variables de entorno de **Vercel Production**.
+
+### B. Importación Íntegra de Datos Reales y Paridad Absoluta
+* **Ejecución**: Se desarrolló y ejecutó el script de sincronización `sync_staging_to_production.mjs` para transferir todos los datos reales acumulados en Staging hacia Producción con integridad referencial 100% (0 FK rotas).
+* **Paridad Certificada**:
+  * `patients`: 67 pacientes reales importados en Producción.
+  * `appointments`: 85 citas importadas.
+  * `billing_records`: 33 registros de facturación importados.
+  * `documents`: 88 documentos clínicos importados.
+  * `treatments`, `clinics`, `professionals`: 100% sincronizados.
+
+### C. Limpieza Estricta de Staging
+* Siguiendo el protocolo de `AGENTS.md`, se ejecutó `clean_remote_db.js` sobre Staging (`melosmile_db`, `amhfdzfcmpastmlsosou`).
+* Se purgaron todas las citas de prueba y pacientes secundarios, dejando como **único paciente en Staging** a **Munir Mauel Callaos Cardama (PAC-001)**.
+
+### D. Sistema Anti-Desactivación / Anti-Pausa Redundante
+* **n8nv2 (`n8nv2.mumaweb.com`)**: Creado y activado el workflow `[MELOSMILE] Keep-Alive Supabase Databases & App` (ID `suXh01RfJ190FEd4`) con `Schedule Trigger` cada 1 hora (`0 * * * *`). Realiza consultas SQL reales a las API REST de Supabase Staging, Supabase Producción y al endpoint de Vercel.
+* **Vercel Crons**: Añadido el bloque `crons` a `vercel.json` (raíz y `frontend/`) para ejecutar `/api/cron/keepalive` cada 4 horas (`0 */4 * * *`).
+
+

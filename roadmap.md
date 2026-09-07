@@ -94,7 +94,16 @@ Este documento establece el plan de desarrollo y próximas tareas activas para l
 - [ ] **Mejorar accuracy** de enrutamiento para consultas médicas complejas
 - [ ] **Expandir vocabulario clínico** reconocido por el agente
 
-### **Mejora 13.3: Expansión de Funcionalidades Conversacionales**
+### **Mejora 13.4: Corrección Configuración Multi-Clínica en Flujos N8N**
+- [ ] **Auditar todos los flujos** para referencias a múltiples clínicas
+- [ ] **Unificar como mono-clínica**: Solo "Clínica Dra. Osly Melo"
+- [ ] **Corregir systemMessage** en todos los sub-agentes
+- [ ] **Eliminar parámetros `clinic`** innecesarios o fijar valor único
+- [ ] **Validar coherencia** en toda la experiencia conversacional
+
+**Ticket:** `MELO-N8N-001` (registrado en `scratch/TICKET_MULTI_CLINICA_N8N.md`)
+
+### **Mejora 13.5: Expansión de Funcionalidades Conversacionales**
 - [ ] **Consultas financieras básicas** (estado de facturación, pagos pendientes)
 - [ ] **Recordatorios automáticos** de citas próximas
 - [ ] **Integración con calendario externo** (Google Calendar, Outlook)

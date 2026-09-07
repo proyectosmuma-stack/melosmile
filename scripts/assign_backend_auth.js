@@ -14,12 +14,12 @@ const os = require('os');
 
 const isDev = process.argv.includes('--dev');
 const BASE = process.env.N8N_URL || (isDev ? 'https://n8n.mumaweb.com' : 'https://n8nv2.mumaweb.com');
-const KEY = fs
+const KEY = process.env.N8N_RAW_KEY || fs
   .readFileSync(process.env.N8N_KEY || `${os.homedir()}/.config/opencode/secrets/${isDev ? 'n8n-dev.jwt' : 'n8n.jwt'}`, 'utf8')
   .trim();
 
 // Prod: q89OrBKkoecwqBNi | Dev: u1IDo2GbaYfStbE3
-const CRED_ID = process.env.CRED_ID || (isDev ? 'u1IDo2GbaYfStbE3' : 'q89OrBKkoecwqBNi');
+const CRED_ID = 'q89OrBKkoecwqBNi';
 const CRED_NAME = 'Melosmile Backend x-api-key';
 
 // Sub-agentes con tools que apuntan al backend MeloSmile
