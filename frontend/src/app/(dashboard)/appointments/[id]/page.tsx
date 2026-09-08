@@ -18,6 +18,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/lib/supabase/client";
 import { PaymentRegistrationModal } from "@/components/billing/payment-registration-modal";
 import { Odontogram, OdontogramData } from "@/components/appointments/odontogram";
+import { resolveDocumentUrl } from "@/lib/utils/document-utils";
 
 type AppointmentData = {
   id: string;
@@ -1233,21 +1234,24 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
                     <span className="text-[10px] bg-muted text-muted-foreground px-2 py-0.5 rounded-full">{images.length} foto(s)</span>
                   </div>
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                    {images.map((img) => (
-                      <div key={img.id} className="relative group rounded-xl border border-border overflow-hidden bg-muted aspect-square flex items-center justify-center">
-                        {img.file_url ? (
-                          <img src={img.file_url} alt={img.file_name} className="w-full h-full object-cover" />
-                        ) : (
-                          <div className="flex flex-col items-center p-2 text-center text-muted-foreground">
-                            <ImageIcon className="h-6 w-6 text-muted-foreground mb-1" />
-                            <span className="text-[10px] font-bold truncate max-w-[100px]">{img.file_name}</span>
+                    {images.map((img) => {
+                      const imgUrl = img.file_url || resolveDocumentUrl({ file_url: img.file_url, file_path: img.file_path });
+                      return (
+                        <div key={img.id} className="relative group rounded-xl border border-border overflow-hidden bg-muted aspect-square flex items-center justify-center">
+                          {imgUrl ? (
+                            <img src={imgUrl} alt={img.file_name} className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="flex flex-col items-center p-2 text-center text-muted-foreground">
+                              <ImageIcon className="h-6 w-6 text-muted-foreground mb-1" />
+                              <span className="text-[10px] font-bold truncate max-w-[100px]">{img.file_name}</span>
+                            </div>
+                          )}
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center p-2">
+                            <span className="text-[10px] text-white font-bold truncate text-center">{img.file_name}</span>
                           </div>
-                        )}
-                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center p-2">
-                          <span className="text-[10px] text-white font-bold truncate text-center">{img.file_name}</span>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               )}
