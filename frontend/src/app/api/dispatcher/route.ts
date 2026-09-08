@@ -48,7 +48,8 @@ export async function POST(req: NextRequest) {
         await (supabase as any).from("ai_conversation_history").insert({
           session_id,
           role: "user",
-          content: message
+          content: message,
+          is_test: String(session_id || "").startsWith("test-")
         }).select();
       } catch (err: any) {
         console.warn("User conversation history log warning:", err?.message);
@@ -97,7 +98,8 @@ export async function POST(req: NextRequest) {
           role: "assistant",
           content: cleaned.summary,
           intent: cleaned.intent,
-          entities: cleaned.entities
+          entities: cleaned.entities,
+          is_test: String(session_id || "").startsWith("test-")
         }).select();
       } catch (err: any) {
         console.warn("Assistant conversation history log warning:", err?.message);

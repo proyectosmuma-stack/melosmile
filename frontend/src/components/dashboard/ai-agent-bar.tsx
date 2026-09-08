@@ -380,7 +380,79 @@ export function AIAgentBar({ fullHeight = false }: { fullHeight?: boolean }) {
   const [prompt, setPrompt] = useState("");
   const [suggestions, setSuggestions] = useState<Array<{ text: string; isLearned?: boolean }>>([]);
 
+  const [sessionId, setSessionId] = useState<string>("");
+
   useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+    const KEY = "musly_active_session";
+    const existing = localStorage.getItem(KEY);
+    if (existing) {
+      setSessionId(existing);
+    } else {
+      const fresh = uid() + uid();
+      localStorage.setItem(KEY, fresh);
+      setSessionId(fresh);
+    }
+  }, []);
+
+  const [messages, setMessages] = useState<Message[]>([]);
+  const bottomRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    const fetchHistory = async () => {
+      if (!sessionId) return;
+      try {
+        const res = await fetch(`/api/ai/history?session_id=${sessionId}`);
+        const data = await res.json();
+        if (data.success && Array.isArray(data.history) && data.history.length > 0) {
+          const loadedMessages: Message[] = data.history.map((msg: any) => ({
+            id: uid(),
+            role: msg.role,
+            text: msg.content,
+            timestamp: new Date(msg.created_at),
+            payload: {
+              intent: msg.intent || "general_query",
+              summary: msg.content,
+            },
+          }));
+          setMessages(loadedMessages);
+        } else {
+          setMessages([
+            {
+              id: uid(),
+              role: "assistant",
+              text: "Hola 👋 Soy Musly, tu asistente IA. Puedo agendar citas, consultar la agenda del día, gestionar pacientes y facturación. ¿En qué te ayudo hoy?",
+              timestamp: new Date(),
+              payload: {
+                intent: "general_query",
+                summary:
+                  "Hola 👋 Soy Musly, tu asistente IA. Puedo agendar citas, consultar la agenda del día, gestionar pacientes y facturación. ¿En qué te ayudo hoy?",
+              },
+            },
+          ]);
+        }
+      } catch (error) {
+        console.error("Error loading conversation history:", error);
+        setMessages([
+          {
+            id: uid(),
+            role: "assistant",
+            text: "Hola 👋 Soy Musly, tu asistente IA. Hubo un error cargando el historial, pero estoy listo para ayudarte. ¿En qué te ayudo hoy?",
+            timestamp: new Date(),
+            payload: {
+              intent: "general_query",
+              summary:
+                "Hola 👋 Soy Musly, tu asistente IA. Hubo un error cargando el historial, pero estoy listo para ayudarte. ¿En qué te ayudo hoy?",
+            },
+          },
+        ]);
+      }
+    };
+
+    fetchHistory();
     // 1. Initial compute with local and temporal defaults
     setSuggestions(computeDynamicSuggestions());
 
@@ -393,23 +465,7 @@ export function AIAgentBar({ fullHeight = false }: { fullHeight?: boolean }) {
         }
       })
       .catch(() => {});
-  }, []);
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: uid(),
-      role: "assistant",
-      text: "Hola 👋 Soy Musly, tu asistente IA. Puedo agendar citas, consultar la agenda del día, gestionar pacientes y facturación. ¿En qué te ayudo hoy?",
-      timestamp: new Date(),
-      payload: {
-        intent: "general_query",
-        summary:
-          "Hola 👋 Soy Musly, tu asistente IA. Puedo agendar citas, consultar la agenda del día, gestionar pacientes y facturación. ¿En qué te ayudo hoy?",
-      },
-    },
-  ]);
-  const bottomRef = useRef<HTMLDivElement>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const sessionId = useRef(uid() + uid());
+  }, [sessionId]);
 
   // Report error modal state
   const [reportModalOpen, setReportModalOpen] = useState(false);
@@ -456,7 +512,7 @@ export function AIAgentBar({ fullHeight = false }: { fullHeight?: boolean }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           user_comment: reportComment,
-          session_id: sessionId.current,
+          session_id: sessionId,
           conversation_history: historySnapshot,
           participating_agents: participatingAgents,
           timestamp: new Date().toISOString(),
@@ -507,20 +563,32 @@ export function AIAgentBar({ fullHeight = false }: { fullHeight?: boolean }) {
 
     try {
       // Build conversation history (last 10 real messages, excluding loading & static welcome greeting)
-      const historySnapshot = messages
+      const memoryHistory = messages
         .filter((m) => !m.isLoading && !(m.role === "assistant" && m.text.includes("Hola 👋 Soy Musly")))
-        .slice(-10)
-        .map((m) => ({
+        .slice(-10);
+
+      const historySnapshot = memoryHistory.map((m) => ({
+        role: m.role,
+        content: m.payload?.summary ?? m.text,
+      }));
+
+      // If memory history is sparse but we have a loaded history, use that as fallback
+      if (memoryHistory.length < 3 && messages.length > 1) {
+        const dbHistory = messages
+          .filter((m) => !(m.role === "assistant" && m.text.includes("Hola 👋 Soy Musly")))
+          .slice(-10);
+        historySnapshot.splice(0, historySnapshot.length, ...dbHistory.map((m) => ({
           role: m.role,
           content: m.payload?.summary ?? m.text,
-        }));
+        })));
+      }
 
       const response = await fetch("/api/dispatcher", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           message: trimmed,
-          session_id: sessionId.current,
+          session_id: sessionId,
           history: historySnapshot,
         }),
       });
