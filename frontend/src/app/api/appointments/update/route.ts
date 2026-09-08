@@ -29,6 +29,35 @@ function scorePatientMatch(patient: any, targetQuery: string): number {
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+async function deleteAppointmentAndBilling(dbClient: any, appointmentId: string) {
+  // Limpiar billing_records NO facturados (status Pendiente) que referencian la cita (evita FK violation)
+  const { error: cleanupBillingErr } = await dbClient
+    .from("billing_records")
+    .delete()
+    .eq("appointment_id", appointmentId)
+    .eq("status", "Pendiente");
+  if (cleanupBillingErr) throw cleanupBillingErr;
+
+  // Si existen billing_records ya procesados (Aprobado / Facturado Odoo), bloquear el borrado de la cita
+  const { data: billedRecords } = await dbClient
+    .from("billing_records")
+    .select("id")
+    .eq("appointment_id", appointmentId)
+    .in("status", ["Aprobado", "Facturado Odoo"])
+    .limit(1);
+  if (billedRecords && billedRecords.length > 0) {
+    throw new Error("No se puede eliminar la cita porque tiene registros de facturación emitidos. Cámbiala a estado Cancelada.");
+  }
+
+  const { data, error } = await dbClient
+    .from("appointments")
+    .delete()
+    .eq("id", appointmentId)
+    .select();
+  if (error) throw error;
+  return { success: true, action: "deleted", count: data?.length || 0, data };
+}
+
 export async function POST(req: Request) {
   try {
     const url = new URL(req.url);
@@ -95,6 +124,11 @@ export async function POST(req: Request) {
       rawAction.toLowerCase().includes("delete") ||
       rawAction.toLowerCase().includes("borrar") ||
       rawAction.toLowerCase().includes("eliminar") ||
+      rawAction.toLowerCase().includes("cancel") ||
+      rawAction.toLowerCase().includes("cancelar") ||
+      rawAction.toLowerCase().includes("cancela") ||
+      rawAction.toLowerCase().includes("cancelación") ||
+      rawAction.toLowerCase().includes("cancelacion") ||
       String(status).toLowerCase().includes("delete") ||
       String(status).toLowerCase().includes("borrar") ||
       String(status).toLowerCase().includes("eliminar");
@@ -298,67 +332,75 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: true, action: "created", data: [newAppt] });
     }
 
-    // 2. HARD DELETE OPERATION
     if (isDelete) {
       if (targetId) {
-        // Limpiar billing_records NO facturados (status Pendiente) que referencian la cita (evita FK violation)
-        const { error: cleanupBillingErr } = await dbClient
-          .from("billing_records")
-          .delete()
-          .eq("appointment_id", targetId)
-          .eq("status", "Pendiente");
-        if (cleanupBillingErr) throw cleanupBillingErr;
+        try {
+          const result = await deleteAppointmentAndBilling(dbClient, targetId);
+          return NextResponse.json(result);
+        } catch (error: any) {
+          return NextResponse.json(
+            { success: false, error: error.message },
+            { status: 409 }
+          );
+        }
+      }
 
-        // Si existen billing_records ya procesados (Aprobado / Facturado Odoo), bloquear el borrado de la cita
-        const { data: billedRecords } = await dbClient
-          .from("billing_records")
-          .select("id")
-          .eq("appointment_id", targetId)
-          .in("status", ["Aprobado", "Facturado Odoo"])
-          .limit(1);
-        if (billedRecords && billedRecords.length > 0) {
+      // If no targetId, we need to resolve the appointment(s) by patient_id and optionally date
+      if (resolvedPatientId) {
+        let query = dbClient
+          .from("appointments")
+          .select("id, appointment_date, reason, status")
+          .eq("patient_id", resolvedPatientId)
+          .neq("status", "Cancelada"); // Only consider active appointments for deletion
+
+        if (rawDate) {
+          const parsedDateStr = parseAppointmentDate(rawDate);
+          const parsedDate = new Date(parsedDateStr);
+          const startOfDay = new Date(Date.UTC(parsedDate.getUTCFullYear(), parsedDate.getUTCMonth(), parsedDate.getUTCDate(), 0, 0, 0, 0)).toISOString();
+          const endOfDay = new Date(Date.UTC(parsedDate.getUTCFullYear(), parsedDate.getUTCMonth(), parsedDate.getUTCDate(), 23, 59, 59, 999)).toISOString();
+          query = query.gte("appointment_date", startOfDay).lte("appointment_date", endOfDay);
+        }
+
+        const { data: candidateAppointments, error: fetchErr } = await query.order("appointment_date", { ascending: true });
+        if (fetchErr) throw fetchErr;
+
+        if (!candidateAppointments || candidateAppointments.length === 0) {
+          return NextResponse.json(
+            { success: false, message: "No se encontraron citas activas para este paciente con los criterios proporcionados." },
+            { status: 404 }
+          );
+        }
+
+        if (candidateAppointments.length > 1) {
           return NextResponse.json(
             {
               success: false,
-              error: "No se puede eliminar la cita porque tiene registros de facturación emitidos. Cámbiala a estado Cancelada."
+              action: "ambiguous",
+              count: candidateAppointments.length,
+              message: `Se encontraron ${candidateAppointments.length} citas activas. Especifica la fecha/hora exacta o el appointment_id de la cita a eliminar.`,
+              candidates: candidateAppointments.slice(0, 10),
             },
             { status: 409 }
           );
         }
 
-        const { data, error } = await dbClient
-          .from("appointments")
-          .delete()
-          .eq("id", targetId)
-          .select();
-        if (error) throw error;
-        return NextResponse.json({ success: true, action: "deleted", count: data?.length || 0, data });
+        // Exactly one candidate: proceed with deletion
+        try {
+          const result = await deleteAppointmentAndBilling(dbClient, candidateAppointments[0].id);
+          return NextResponse.json(result);
+        } catch (error: any) {
+          return NextResponse.json(
+            { success: false, error: error.message },
+            { status: 409 }
+          );
+        }
       }
 
-      let deleteQuery = dbClient.from("appointments").delete();
-
-      if (resolvedPatientId) {
-        deleteQuery = deleteQuery.eq("patient_id", resolvedPatientId);
-      }
-
-      if (rawDate) {
-        const parsedDateStr = parseAppointmentDate(rawDate);
-        const parsedDate = new Date(parsedDateStr);
-        const startOfDay = new Date(Date.UTC(parsedDate.getUTCFullYear(), parsedDate.getUTCMonth(), parsedDate.getUTCDate(), 0, 0, 0, 0)).toISOString();
-        const endOfDay = new Date(Date.UTC(parsedDate.getUTCFullYear(), parsedDate.getUTCMonth(), parsedDate.getUTCDate(), 23, 59, 59, 999)).toISOString();
-        deleteQuery = deleteQuery.gte("appointment_date", startOfDay).lte("appointment_date", endOfDay);
-      }
-
-      if (!resolvedPatientId && !rawDate && !targetId) {
-        return NextResponse.json(
-          { error: "Se requiere appointment_id, patient_name o fecha para eliminar citas." },
-          { status: 400 }
-        );
-      }
-
-      const { data, error } = await deleteQuery.select();
-      if (error) throw error;
-      return NextResponse.json({ success: true, action: "deleted", count: data?.length || 0, data });
+      // Fallback for cases where no targetId, no resolvedPatientId or no rawDate provided for deletion
+      return NextResponse.json(
+        { error: "Se requiere appointment_id, patient_name o fecha para eliminar citas." },
+        { status: 400 }
+      );
     }
 
     
@@ -546,11 +588,23 @@ export async function POST(req: Request) {
         .neq("status", "Cancelada")
         .order("appointment_date", { ascending: true });
 
-      const candidates = activeAppointments || [];
+      let candidates = activeAppointments || [];
+
+      if (rawDate) {
+        const parsedDateStr = parseAppointmentDate(rawDate);
+        const parsedDate = new Date(parsedDateStr);
+        const startOfDay = new Date(Date.UTC(parsedDate.getUTCFullYear(), parsedDate.getUTCMonth(), parsedDate.getUTCDate(), 0, 0, 0, 0)).toISOString();
+        const endOfDay = new Date(Date.UTC(parsedDate.getUTCFullYear(), parsedDate.getUTCMonth(), parsedDate.getUTCDate(), 23, 59, 59, 999)).toISOString();
+
+        candidates = candidates.filter((appt: any) => {
+          const apptDate = appt.appointment_date;
+          return apptDate >= startOfDay && apptDate <= endOfDay;
+        });
+      }
 
       if (candidates.length === 0) {
         return NextResponse.json(
-          { success: false, message: "No se encontraron citas activas para este paciente." },
+          { success: false, message: "No se encontraron citas activas para este paciente con los criterios proporcionados." },
           { status: 404 }
         );
       }
@@ -568,8 +622,21 @@ export async function POST(req: Request) {
         );
       }
 
-      // Exactly ONE active appointment: safe surgical update by its id
+      // Exactly ONE active appointment (or one filtered by date): safe surgical update by its id
       const soleAppointment = candidates[0];
+
+      // Check if this is a deletion (status 'Cancelada' or action 'delete')
+      if (isDelete) { // isDelete has been extended to include cancel
+        try {
+          const result = await deleteAppointmentAndBilling(dbClient, soleAppointment.id);
+          return NextResponse.json(result);
+        } catch (error: any) {
+          return NextResponse.json(
+            { success: false, error: error.message },
+            { status: 409 }
+          );
+        }
+      }
 
       if (rawReason && soleAppointment?.id) {
         const { data: currentTarget } = await dbClient
