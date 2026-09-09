@@ -84,7 +84,7 @@ for (let totalMins = 9 * 60 + 30; totalMins <= 20 * 60 + 30; totalMins += 15) {
   TIME_SLOTS.push(`${hh}:${mm}`);
 }
 
-const today = new Date();
+
 
 /**
  * Rounds any arbitrary minute/second time to the nearest 15-minute slot
@@ -206,7 +206,7 @@ function DraggableEvent({
 
 export function CalendarView({ selectedClinicId = "all" }: { selectedClinicId?: string }) {
   const [viewMode, setViewMode] = useState<ViewMode>("week");
-  const [currentDate, setCurrentDate] = useState<Date>(today);
+  const [currentDate, setCurrentDate] = useState<Date>(new Date());
   const [events, setEvents] = useState<AppointmentEvent[]>([]);
   const [clinics, setClinics] = useState<Clinic[]>(DEFAULT_CLINICS);
 
@@ -527,7 +527,7 @@ export function CalendarView({ selectedClinicId = "all" }: { selectedClinicId?: 
             }).map((day) => {
               const dayEvents = displayEvents.filter((e) => isSameDay(e.date, day));
               const isCurrentMonth = isSameMonth(day, currentDate);
-              const isToday = isSameDay(day, today);
+              const isToday = isSameDay(day, new Date());
               return (
                 <div
                   key={day.toISOString()}
@@ -599,13 +599,13 @@ export function CalendarView({ selectedClinicId = "all" }: { selectedClinicId?: 
                   key={day.toISOString()}
                   className={cn(
                     "sticky top-0 z-10 bg-card border-b border-border/60 h-14 flex flex-col items-center justify-center gap-0.5",
-                    isSameDay(day, today) && "bg-primary/10"
+                    isSameDay(day, new Date()) && "bg-primary/10"
                   )}
                 >
                   <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
                     {format(day, "EEEE", { locale: es })}
                   </span>
-                  <span className={cn("text-base font-bold leading-none", isSameDay(day, today) ? "text-primary" : "text-foreground")}>
+                  <span className={cn("text-base font-bold leading-none", isSameDay(day, new Date()) ? "text-primary" : "text-foreground")}>
                     {format(day, "d MMM")}
                   </span>
                 </div>
@@ -623,7 +623,7 @@ export function CalendarView({ selectedClinicId = "all" }: { selectedClinicId?: 
                     const slotEvents = displayEvents.filter(
                       (e) => isSameDay(e.date, day) && e.startTime === slot
                     );
-                    const isToday = isSameDay(day, today);
+const isToday = isSameDay(day, new Date());
                     const cellId = `${format(day, "yyyy-MM-dd")}|${slot}`;
                     return (
                       <DroppableCell
