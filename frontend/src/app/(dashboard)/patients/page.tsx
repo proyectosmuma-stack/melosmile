@@ -127,9 +127,25 @@ export default function PatientsPage() {
         const { data: clinicsData } = await (supabase as any).from("clinics").select("id, name").order("name", { ascending: true });
         if (clinicsData) setClinicsCatalog(clinicsData);
 
-        // 3. Fetch Appointments to map patients to clinics
-        const { data: apptsData } = await (supabase as any).from("appointments").select("patient_id, clinic_id, clinics(id, name)");
+        // 3. Fetch Patient Clinics to map patients to clinics (Primary Source of Truth)
         const patientClinicsMap: Record<string, { ids: Set<string>; names: Set<string> }> = {};
+        
+        const { data: pcData } = await (supabase as any)
+          .from("patient_clinics")
+          .select("patient_id, clinic_id, clinics(id, name)");
+        if (pcData) {
+          for (const pc of pcData) {
+            if (!pc.patient_id) continue;
+            if (!patientClinicsMap[pc.patient_id]) {
+              patientClinicsMap[pc.patient_id] = { ids: new Set(), names: new Set() };
+            }
+            if (pc.clinic_id) patientClinicsMap[pc.patient_id].ids.add(pc.clinic_id);
+            if (pc.clinics?.name) patientClinicsMap[pc.patient_id].names.add(pc.clinics.name);
+          }
+        }
+
+        // Secondary: Also add any clinic where the patient has attended an appointment
+        const { data: apptsData } = await (supabase as any).from("appointments").select("patient_id, clinic_id, clinics(id, name)");
         if (apptsData) {
           for (const appt of apptsData) {
             if (!appt.patient_id) continue;
@@ -539,11 +555,11 @@ function toTitleCase(text: string): string {
                 <div className="space-y-1.5 pt-2 border-t border-border/60 text-xs text-muted-foreground">
                   <div className="flex items-center gap-2">
                     <Phone className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                    <span>{patient.phone}</span>
+                    <span>{patient.phone || <span className="italic text-muted-foreground/60">Sin teléfono</span>}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Mail className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                    <span className="truncate">{patient.email}</span>
+                    <span className="truncate">{patient.email || <span className="italic text-muted-foreground/60">Sin email</span>}</span>
                   </div>
                 </div>
 
@@ -646,9 +662,6 @@ function toTitleCase(text: string): string {
                         </div>
                         <span className="text-[10px] text-muted-foreground">{patient.gender} · {patient.address}</span>
                       </td>
-                      <td className="py-3.5 px-4 font-mono font-semibold text-foreground">
-                        {patient.dniNie}
-                      </td>
                       <td className="py-3.5 px-4 font-medium">
                         {patient.clinicNames && patient.clinicNames.length > 0 ? (
                           <div className="flex flex-wrap items-center gap-1">
@@ -663,13 +676,28 @@ function toTitleCase(text: string): string {
                           <span className="text-muted-foreground text-[11px] italic">Sin sede</span>
                         )}
                       </td>
+                      <td className="py-3.5 px-4 font-mono font-semibold text-foreground">
+                        {patient.dniNie || <span className="text-muted-foreground text-[11px] font-normal italic">Sin DNI</span>}
+                      </td>
                       <td className="py-3.5 px-4 space-y-0.5">
-                        <div className="flex items-center gap-1.5 text-foreground">
-                          <Phone className="h-3 w-3 text-muted-foreground" /> {patient.phone}
-                        </div>
-                        <div className="flex items-center gap-1.5 text-muted-foreground">
-                          <Mail className="h-3 w-3 text-muted-foreground" /> {patient.email}
-                        </div>
+                        {patient.phone ? (
+                          <div className="flex items-center gap-1.5 text-foreground">
+                            <Phone className="h-3 w-3 text-muted-foreground shrink-0" /> {patient.phone}
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-1.5 text-muted-foreground/60 italic text-[11px]">
+                            <Phone className="h-3 w-3 shrink-0" /> Sin teléfono
+                          </div>
+                        )}
+                        {patient.email ? (
+                          <div className="flex items-center gap-1.5 text-muted-foreground">
+                            <Mail className="h-3 w-3 text-muted-foreground shrink-0" /> <span className="truncate max-w-[170px]">{patient.email}</span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-1.5 text-muted-foreground/60 italic text-[11px]">
+                            <Mail className="h-3 w-3 shrink-0" /> Sin email
+                          </div>
+                        )}
                       </td>
                       <td className="py-3.5 px-4">
                         <Badge
