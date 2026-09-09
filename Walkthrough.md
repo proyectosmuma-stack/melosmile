@@ -215,4 +215,24 @@ Durante esta sesión, tanto Antigravity como Mumabot (OpenCode) colaboraron en u
   * Campanita abierta en el navegador: muestra indicador rojo y despliega las 4 notificaciones con sus links directos a las fichas.
   * Módulo contable `/billing` accesible y operativo con las 5 sedes clínicas activas.
 
+### F. Normalización 1 a 1 de Pacientes y Etiquetas Notion (`Henryschein`/`Familiar`) (09/09/2026 ✅)
+* **Auditoría 1 a 1 Notion vs Supabase**:
+  * Cruzados los 27 pacientes principales y 27 de Albacete contra la tabla `patients`.
+  * Identificado que `patient_tags` tenía **0 registros**, provocando que el filtro "Henryschein" y las demás etiquetas del frontend estuvieran completamente vacíos.
+  * Carlos Pujol (`PAC-030`) aparecía como *Sin sede* en el listado debido a que `/patients` mapeaba clínicas exclusivamente desde `appointments` (de las que Carlos no tiene citas aún). Además, en la vista tabla, las columnas "Clínica / Sede" y "DNI / NIE" estaban invertidas.
+* **Acciones Ejecutadas**:
+  1. **Asignación de Etiquetas en `patient_tags`**:
+     * **`Henryschein` (8 pacientes)**: Laura Romero (`PAC-027`), Francisco Javier Leal Rey (`PAC-025`), Begoña Fernández (`PAC-024`), Candela Fernández (`PAC-019`), Diego Martínez (`PAC-018`), Raquel Calviches (`PAC-011`), Sara Rubio (`PAC-004`), Gabriel Cañizales (`PAC-005`).
+     * **`Familiar` (4 pacientes)**: Munir Mauel Callaos (`PAC-001`), Oscar Enrique Melo Cupido (`PAC-035`), Claire Ulmer (`PAC-028`), Kamila Alejandra Hultzsch (`PAC-022`).
+     * **`Referido` (1 paciente)**: Ainur Kozhabek (`PAC-020`).
+  2. **Sincronización y Sanitización de Contacto**:
+     * Actualizados los 11 teléfonos de Notion que faltaban en la base de datos (incluyendo Carlos Pujol: `+34 661 902 521`).
+     * Sanitizados caracteres invisibles UTF-8 (`\u202A`, etc.) en números de teléfono.
+     * Sincronizado `in_treatment = false` para los 8 pacientes dados de alta en Notion (Ángel Da Silva, Carlos Pujol, Estefania Maccanin, Claire Ulmer, Laura Romero, Noelia Vega, Ainur Kozhabek, Raquel Calviches).
+  3. **Frontend y Despliegue**:
+     * Reescrito el mapeo de clínicas en `patients/page.tsx` para consultar `patient_clinics` como fuente canónica primaria.
+     * Corregido el orden de las columnas en la vista listado.
+     * Desplegado a producción en Vercel y verificado visualmente en `https://agenda.melosmile.com/patients`.
+
+
 
