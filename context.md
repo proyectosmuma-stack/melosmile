@@ -337,3 +337,24 @@ El test de verificación reveló que **`google/gemini-3.1-pro-preview` tiene quo
   - Contenido: Sandbox de pruebas limpio (solo ficha `Munir Mauel Callaos Cardama PAC-001`).
   - Variables Vercel: `NEXT_PUBLIC_SUPABASE_URL=https://amhfdzfcmpastmlsosou.supabase.co`, `NEXT_PUBLIC_APP_URL=https://staging.melosmile.com`.
 
+---
+
+## 🏷️ Normalización 1 a 1 de Pacientes y Etiquetas Notion (`patient_tags`) (2026-09-09)
+
+1. **Población y Normalización de Etiquetas (`patient_tags`)**:
+   - Se crearon y asignaron 13 etiquetas en producción basadas en el contacto de Notion:
+     - **`Henryschein` (8 pacientes)**: `PAC-027` (Laura Romero), `PAC-025` (Francisco Javier Leal Rey), `PAC-024` (Begoña Fernández HS), `PAC-019` (Candela Fernández HS), `PAC-018` (Diego Martínez HS), `PAC-011` (Raquel Calviches), `PAC-004` (Sara Rubio), `PAC-005` (Gabriel Cañizales Rubio).
+     - **`Familiar` (4 pacientes)**: `PAC-001` (Munir Callaos), `PAC-035` (Oscar Melo), `PAC-028` (Claire Ulmer), `PAC-022` (Kamila Hultzsch).
+     - **`Referido` (1 paciente)**: `PAC-020` (Ainur Kozhabek, referida de Claire).
+2. **Sincronización de Teléfonos y Sanitización Unicode**:
+   - 11 números de teléfono recuperados de Notion e insertados en producción (Carlos Pujol, Ángel Da Silva, Carlos Moreno, Emma Mora, Richard Enciso, Estefania Maccanin, Claire Ulmer, Javier Alberto Rosales, Francisco Javier Leal Rey, Ricardo De Freitas, Diego Martínez García).
+   - Sanitizados caracteres invisibles UTF-8 (`\u202A`, `\u202C`).
+3. **Estado de Tratamiento / Altas**:
+   - Sincronizados 8 pacientes a `in_treatment = false` reflejando su estado de Alta médica en Notion.
+4. **Corrección Frontend ([patients/page.tsx](file:///Users/munircallaos/Antigravity%20Projects/melosmile/frontend/src/app/(dashboard)/patients/page.tsx))**:
+   - Sede/Clínica primaria ahora se consulta desde `patient_clinics` (relación `clinics(id, name)`), manteniendo citas como fallback secundario. Esto resuelve que pacientes dados de alta o sin citas (como Carlos Pujol) no mostrasen su sede asignada.
+   - Corregido el orden invertido de columnas en vista tabla (`Clínica / Sede` vs `DNI / NIE`).
+   - Añadidos textos de fallback claros (`Sin teléfono`, `Sin email`, `Sin DNI`).
+   - Desplegado y verificado en producción `https://agenda.melosmile.com/patients`.
+
+

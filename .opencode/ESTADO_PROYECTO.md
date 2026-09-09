@@ -1,17 +1,22 @@
-# 🏆 ESTADO DEL PROYECTO MELOSMILE — PAGOS VINCULADOS + CAMPANITA COMPLETADA (09/09/2026)
+# 🏆 ESTADO DEL PROYECTO MELOSMILE — NORMALIZACIÓN PACIENTES + ETIQUETAS + FILTROS COMPLETADO (09/09/2026)
 
 ## 🎯 OBJETIVO ACTUAL
-**Sesión de hoy (09/09/2026):** ✅ COMPLETADO — Vincular los pagos registrados en las fichas Notion de los pacientes a las citas del sistema (`billing_records` en Supabase producción) + anotar pendientes en fichas + crear alertas en la campanita del frontend.
+**Sesión de hoy (09/09/2026 - Sesión 4):** ✅ COMPLETADO — Normalización 1 a 1 de datos de pacientes Notion vs Supabase Producción (`xylqytpudbdcsbuuwqpi`), población de `patient_tags` (`Henryschein`, `Familiar`, `Referido`), resolución de clínicas asignadas en `/patients` (`patient_clinics`) y despliegue en producción.
 
 **Situación actual:**
-- ✅ **22 billing_records** creados/vinculados en Supabase producción (6 pacientes, total 6.248€) + verificación final OK
-- ✅ Cita CONTROL 5 de Leal Rey (2026-09-08) creada en agenda + pago 120€ confirmado
-- ✅ Código de campanita persistente implementado (`/api/notifications` + componente) — build OK
-- ✅ **CAMPANITA Y NOTAS COMPLETADAS EN PRODUCCIÓN:** Tabla `system_notifications` creada, 4 alertas insertadas y 4 fichas clínicas anotadas con "PENDIENTE DE REVISIÓN" vía script determinista.
-- ✅ **TABLA APLICADA EN STAGING:** `system_notifications` creada con éxito en Supabase Staging (`amhfdzfcmpastmlsosou`).
-- ✅ **TODO EN PRODUCCIÓN:** Migración aplicada, alertas insertadas, fichas anotadas — verificación exitosa.
-- 📌 **REGISTRO PARA LOCAL:** La migración `supabase/migrations/20260909000000_create_system_notifications.sql` está en el repo y se aplicará automáticamente en Supabase Local cuando se levante Colima.
-- ⚠️ Previo completado: contexto largo Musly validado en prod + backup n8n (commit `ec50adf`/`214aaee`)
+- ✅ **13 asignaciones en `patient_tags` creadas en Prod:** Henryschein (8 pacientes), Familiar (4 pacientes), Referido (1 paciente).
+- ✅ **11 teléfonos sincronizados y sanitizados de Unicode:** Carlos Pujol, Leal Rey, Diego Martínez, Claire Ulmer, Ángel Da Silva, etc.
+- ✅ **8 pacientes normalizados a `in_treatment = false`:** Reflejando altas médicas de Notion.
+- ✅ **Frontend `patients/page.tsx` corregido:** `patient_clinics` como fuente primaria para clínica/sede (Carlos Pujol ahora muestra "Clínica Goya" en `/patients`), orden de columnas en tabla arreglado, fallbacks `Sin teléfono`/`Sin email`.
+- ✅ **Commits en `develop` y `main` (`754dda9`, `8ccb968`):** Desplegado en producción `https://agenda.melosmile.com` y verificado en navegador activo.
+- ✅ **Sesión y lección guardadas en RAG:** `knowledge-sync.ts` (lección de arquitectura) y `memory-bridge.ts save-session` exitosos.
+- 📌 Previo completado (Sesión 3): 22 billing_records vinculados (6.248€) + campanita persistente (`system_notifications`).
+
+## 📁 ARCHIVOS MODIFICADOS/RELEVANTES (SESIÓN 4 — 09/09/2026)
+1. **`frontend/src/app/(dashboard)/patients/page.tsx`** (MODIFICADO) — Consulta `patient_clinics(clinics(id, name))` como fuente primaria de sedes; corrige orden de columnas (`Clínica / Sede` vs `DNI / NIE`); fallbacks limpios.
+2. **`context.md`** (MODIFICADO) — Documentada la normalización 1 a 1 y etiquetas.
+3. **`Walkthrough.md`** (MODIFICADO) — Resumen técnico detallado de la auditoría y correcciones.
+
 
 ## 📁 ARCHIVOS MODIFICADOS/RELEVANTES (SESIÓN 3 — 09/09/2026)
 
