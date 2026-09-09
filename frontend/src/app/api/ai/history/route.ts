@@ -15,7 +15,7 @@ export async function GET(req: NextRequest) {
       .select("role, content, intent, created_at")
       .eq("session_id", session_id)
       .order("created_at", { ascending: true })
-      .limit(20);
+      .limit(30);
 
     if (error) {
       console.error("Error fetching conversation history:", error);
