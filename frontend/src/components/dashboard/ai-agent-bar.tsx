@@ -398,6 +398,7 @@ export function AIAgentBar({ fullHeight = false }: { fullHeight?: boolean }) {
   }, []);
 
   const [messages, setMessages] = useState<Message[]>([]);
+  const [dbLoadedHistory, setDbLoadedHistory] = useState<Message[]>([]);
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -419,6 +420,7 @@ export function AIAgentBar({ fullHeight = false }: { fullHeight?: boolean }) {
             },
           }));
           setMessages(loadedMessages);
+          setDbLoadedHistory(loadedMessages);
         } else {
           setMessages([
             {
@@ -573,11 +575,12 @@ export function AIAgentBar({ fullHeight = false }: { fullHeight?: boolean }) {
       }));
 
       // If memory history is sparse but we have a loaded history, use that as fallback
-      if (memoryHistory.length < 3 && messages.length > 1) {
-        const dbHistory = messages
+      if (memoryHistory.length < 3 && dbLoadedHistory.length > 0) {
+        // Use the loaded DB history directly if memory is sparse
+        const dbFallbackHistory = dbLoadedHistory
           .filter((m) => !(m.role === "assistant" && m.text.includes("Hola 👋 Soy Musly")))
-          .slice(-10);
-        historySnapshot.splice(0, historySnapshot.length, ...dbHistory.map((m) => ({
+          .slice(-10); // Still respect the 10-message limit
+        historySnapshot.splice(0, historySnapshot.length, ...dbFallbackHistory.map((m) => ({
           role: m.role,
           content: m.payload?.summary ?? m.text,
         })));

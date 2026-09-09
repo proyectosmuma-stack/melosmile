@@ -6,3 +6,13 @@ CREATE INDEX IF NOT EXISTS idx_conv_history_session ON public.ai_conversation_hi
 
 -- Índice parcial para purgar tests viejos
 CREATE INDEX IF NOT EXISTS idx_conv_history_test_created ON public.ai_conversation_history (is_test, created_at) WHERE is_test = TRUE;
+
+CREATE INDEX IF NOT EXISTS idx_conv_history_user ON public.ai_conversation_history (user_id);
+
+-- Purga de mensajes de test antiguos (> 7 días)
+CREATE OR REPLACE FUNCTION public.purge_old_test_conversations() RETURNS void AS $$
+BEGIN
+  DELETE FROM public.ai_conversation_history
+  WHERE is_test = TRUE AND created_at < NOW() - INTERVAL '7 days';
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
