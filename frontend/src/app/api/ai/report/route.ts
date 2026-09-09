@@ -4,7 +4,7 @@ import path from "path";
 import { supabase } from "@/lib/supabase/client";
 import { createClient } from "@supabase/supabase-js";
 
-const _reportUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://amhfdzfcmpastmlsosou.supabase.co";
+const _reportUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://xylqytpudbdcsbuuwqpi.supabase.co";
 const _reportKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 if (!_reportKey) throw new Error("Missing Supabase key env var");
 const supabaseAdmin = createClient(_reportUrl, _reportKey);

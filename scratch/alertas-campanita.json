@@ -1,0 +1,44 @@
+{
+  "descripcion": "Alerts para campanita (system_notifications) - Supabase prod Melosmile. Aplicar via agente local con service role key. No exponer en chat cloud.",
+  "target": "supabase",
+  "base_url": "https://xylqytpudbdcsbuuwqpi.supabase.co/rest/v1",
+  "secret_file": "/tmp/sb_prod_service_role.txt",
+  "tabla": "system_notifications",
+  "created_by": "MumaBot Executive",
+  "alertas": [
+    {
+      "title": "PENDIENTE DE REVISION - Billing Tartrectomia",
+      "message": "Billing 60 EUR pendiente de validacion (creado 03/09). Revisar cobro de Tartrectomia/Limpieza en la ficha del paciente.",
+      "type": "warning",
+      "link": "/patients/f0be2929-4436-4014-aa02-c87476f02a5a",
+      "read": false
+    },
+    {
+      "title": "PENDIENTE DE REVISION - Billing Control 4 Motion",
+      "message": "Billing pendiente (0 EUR) creado 09/09 y cita 'Control 4 Motion / Retirada' sin confirmar. Revisar importe real en la ficha del paciente.",
+      "type": "warning",
+      "link": "/patients/52b1d22b-975f-4eab-a0c6-b9d3d75c31e5",
+      "read": false
+    },
+    {
+      "title": "PENDIENTE DE REVISION - Factura Myobrace 700 EUR",
+      "message": "Factura de inicio de tratamiento Myobrace (700 EUR) pendiente de decidir/emitir segun ficha Notion. Revisar y vincular a cita si procede.",
+      "type": "warning",
+      "link": "/patients/933bc479-2d82-4784-9096-628d656cb923",
+      "read": false
+    },
+    {
+      "title": "PENDIENTE DE REVISION - Registro pagos sin importes",
+      "message": "La ficha Notion tiene cabecera 'Control de Pagos:' sin importes registrados. Completar registro de pagos para poder vincularlos.",
+      "type": "warning",
+      "link": "/patients/5f01d39d-8c4e-474c-9b4f-7adb69f85db6",
+      "read": false
+    }
+  ],
+  "instrucciones": [
+    "1. Leer service role key desde /tmp/sb_prod_service_role.txt (NO imprimirla).",
+    "2. POST /system_notifications (header Prefer: return=minimal) con cada alerta del campo 'alertas'.",
+    "3. Comprobar que no exista ya una alerta con el mismo title (GET /system_notifications?select=title).",
+    "4. Si ya existe, saltar. Reportar SOLO: titulos insertados/saltados. NO volcar contenido completo."
+  ]
+}
