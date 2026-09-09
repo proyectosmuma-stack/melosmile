@@ -1,0 +1,328 @@
+{
+  "_export": {
+    "source": "n8n API backup",
+    "instance": "https://n8n.mumaweb.com",
+    "date": "2026-09-09T10:16:55.485Z",
+    "workflow_id": "iUf37Vm8iT6ZqWZG",
+    "active": false
+  },
+  "id": "iUf37Vm8iT6ZqWZG",
+  "name": "[MELOSMILE] Step 3 - Content Production",
+  "active": false,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "melosmile-step3-receive-idea",
+        "options": {}
+      },
+      "name": "Webhook: Receive Idea Data",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "id": "1",
+      "position": [
+        340,
+        240
+      ],
+      "webhookId": "66030ca6-b488-4086-bc3b-a36a5a21d9f2"
+    },
+    {
+      "parameters": {},
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "id": "2",
+      "position": [
+        340,
+        360
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "operation": "getAll",
+        "databaseId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "d1fb6518-1657-8363-9903-01981cd61cf5"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "key": "Cuenta|relation",
+              "condition": "contains",
+              "relationValue": "db7b6518-1657-823f-8262-81d244bd3d48"
+            }
+          ]
+        },
+        "returnAll": true,
+        "filterType": "manual",
+        "matchType": "allFilters"
+      },
+      "name": "Notion Query: Approved/Ideation Posts",
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 1,
+      "id": "3",
+      "position": [
+        560,
+        300
+      ],
+      "credentials": {
+        "notionApi": {
+          "id": "x6pQtdjvUiW5DKLA",
+          "name": "notion_account_muma"
+        }
+      }
+    },
+    {
+      "id": "code-prepare-1788397015652",
+      "name": "Code: Prepare Prompt Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        650,
+        300
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const items = $input.all();\nconst clientName = 'MELOSMILE';\nconst niche = 'salud bucal y estética dental';\n\n// Extract content from Notion pages\nconst posts = items.map(item => {\n  const props = item.json.properties || {};\n  const title = props.Title?.title?.[0]?.plain_text || props.Name?.title?.[0]?.plain_text || 'Sin título';\n  const content = props.Content?.rich_text?.[0]?.plain_text || props.Description?.rich_text?.[0]?.plain_text || '';\n  const platform = props.Platform?.select?.name || '';\n  const format = props.Meta_Format?.select?.name || '';\n  return { title, content, platform, format };\n}).filter(p => p.content.length > 0);\n\nconst postsText = posts.map((p, i) => `${i+1}. [${p.platform}/${p.format}] ${p.title}: ${p.content.substring(0, 300)}`).join('\\n\\n');\n\nconst prompt = `Basado en los siguientes posts recientes de ${clientName} (${niche}), investiga y detecta las 3-5 tendencias más relevantes en el nicho. La respuesta debe ser un array JSON con objetos: { \"title\": \"Nombre tendencia\", \"description\": \"Descripción\", \"relevance\": \"Alta/Media/Baja\", \"angles\": [\"ángulo1\", \"ángulo2\"] }.\n\nPosts recientes:\\n${postsText}`;\n\nreturn [{ json: { prompt, clientName: 'MELOSMILE', niche: 'salud bucal y estética dental', postsCount: posts.length } }];"
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://openrouter.ai/api/v1/chat/completions",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpHeaderAuth",
+        "jsonBody": "={{ JSON.stringify({ model: 'anthropic/claude-3-haiku', messages: [{ role: 'user', content: $json.prompt }], temperature: 0.7, max_tokens: 2000 }) }}",
+        "sendBody": true,
+        "sendHeaders": true,
+        "specifyBody": "json"
+      },
+      "name": "OpenRouter Agent: Copywriter",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "id": "4",
+      "position": [
+        780,
+        240
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "8s9UK3yBbRrhXrZV",
+          "name": "OpenRouter HTTP Header Auth v2"
+        }
+      },
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://openrouter.ai/api/v1/chat/completions",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpHeaderAuth",
+        "jsonBody": "={{ JSON.stringify({ model: 'anthropic/claude-3-haiku', messages: [{ role: 'user', content: $json.prompt }], temperature: 0.7, max_tokens: 2000 }) }}",
+        "sendBody": true,
+        "sendHeaders": true,
+        "specifyBody": "json"
+      },
+      "name": "OpenRouter Agent: Visual Prompter",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "id": "5",
+      "position": [
+        780,
+        360
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "8s9UK3yBbRrhXrZV",
+          "name": "OpenRouter HTTP Header Auth v2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "\n// MOCK TEMPORAL del Asset Generator - pendiente de definir servicio de imagenes real\n// Toma el output del Copywriter/Visual Prompter y prepara el shape para Notion Update + Step 4\nconst items = $input.all();\nreturn items.map(item => {\n  const j = item.json || {};\n  // Extraer copy del response de OpenRouter si existe\n  let copy = j.copy_data || j.copy || '';\n  if (!copy && j.choices && j.choices[0] && j.choices[0].message) {\n    copy = j.choices[0].message.content || '';\n  }\n  const notionId = j.notionId || j.page_id || j.id || '';\n  return {\n    json: {\n      ...j,\n      notionId,\n      copy_data: copy,\n      asset_urls: 'MOCK_ASSET_PENDING_SERVICE',\n      title: j.title || ''\n    }\n  };\n});\n"
+      },
+      "name": "Code: Mock Assets Generator",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "id": "6",
+      "position": [
+        1000,
+        300
+      ],
+      "credentials": {}
+    },
+    {
+      "parameters": {
+        "resource": "page",
+        "operation": "update",
+        "id": "{{ $json.notionId }}",
+        "options": {
+          "ignoreError": true
+        },
+        "propertiesUi": {
+          "propertyValues": [
+            {
+              "key": "Status|select",
+              "value": "ready"
+            },
+            {
+              "key": "Content|rich_text",
+              "value": "{{ $json.copy_data }}"
+            },
+            {
+              "key": "Media_URLs|rich_text",
+              "value": "{{ $json.asset_urls }}"
+            }
+          ]
+        }
+      },
+      "name": "Notion Update: Content Ready",
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 1,
+      "id": "7",
+      "position": [
+        1220,
+        300
+      ],
+      "credentials": {
+        "notionApi": {
+          "id": "x6pQtdjvUiW5DKLA",
+          "name": "notion_account_muma"
+        }
+      },
+      "onError": "continueRegularOutput",
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://n8n.mumaweb.com/webhook/melosmile-step4-receive-ready",
+        "authentication": "none",
+        "options": {},
+        "bodyContentType": "json",
+        "jsonParameters": true,
+        "body": {}
+      },
+      "name": "HTTP Request: Call Step 4",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "id": "8",
+      "position": [
+        1440,
+        300
+      ],
+      "credentials": {}
+    }
+  ],
+  "connections": {
+    "Webhook: Receive Idea Data": {
+      "main": [
+        [
+          {
+            "node": "Notion Query: Approved/Ideation Posts",
+            "index": 0,
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Notion Query: Approved/Ideation Posts",
+            "index": 0,
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Notion Query: Approved/Ideation Posts": {
+      "main": [
+        [
+          {
+            "node": "Code: Prepare Prompt Data",
+            "index": 0,
+            "type": "main"
+          }
+        ],
+        [
+          {
+            "node": "OpenRouter Agent: Visual Prompter",
+            "index": 0,
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "OpenRouter Agent: Copywriter": {
+      "main": [
+        [
+          {
+            "node": "Code: Mock Assets Generator",
+            "index": 0,
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "OpenRouter Agent: Visual Prompter": {
+      "main": [
+        [
+          {
+            "node": "Code: Mock Assets Generator",
+            "index": 0,
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Notion Update: Content Ready": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request: Call Step 4",
+            "index": 0,
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Code: Prepare Prompt Data": {
+      "main": [
+        [
+          {
+            "node": "OpenRouter Agent: Copywriter",
+            "index": 0,
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Code: Mock Assets Generator": {
+      "main": [
+        [
+          {
+            "node": "Notion Update: Content Ready",
+            "index": 0,
+            "type": "main"
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Europe/Madrid",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "saveManualExecutions": true,
+    "saveExecutionProgress": true,
+    "callerPolicy": "workflowsFromSameOwner"
+  }
+}

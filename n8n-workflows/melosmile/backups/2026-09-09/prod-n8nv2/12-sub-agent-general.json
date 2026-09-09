@@ -1,0 +1,234 @@
+{
+  "_export": {
+    "source": "n8n API backup",
+    "instance": "https://n8nv2.mumaweb.com",
+    "date": "2026-09-09T10:16:56.562Z",
+    "workflow_id": "T5FvJ4PMcHKp1gBa",
+    "active": true
+  },
+  "id": "T5FvJ4PMcHKp1gBa",
+  "name": "[MELOSMILE] Sub-Agent: General",
+  "active": true,
+  "nodes": [
+    {
+      "id": "trigger-1",
+      "name": "Execute_Workflow_Trigger",
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "position": [
+        250,
+        300
+      ],
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1
+    },
+    {
+      "credentials": {
+        "openRouterApi": {
+          "id": "gUxVRtGMJgLk9JTl",
+          "name": "OpenRouter account"
+        }
+      },
+      "id": "2",
+      "name": "OpenRouter_Chat_Model",
+      "parameters": {
+        "model": "openai/gpt-4o-mini",
+        "options": {
+          "temperature": 0
+        }
+      },
+      "position": [
+        450,
+        450
+      ],
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1
+    },
+    {
+      "id": "3",
+      "name": "Agent_General",
+      "parameters": {
+        "options": {
+          "systemMessage": "Role: Eres Musly, el Sub-agente Especialista en Información General de la clínica dental Melosmile.\nObjetivo: Responder preguntas frecuentes sobre la clínica: horarios de atención, ubicación de las sedes (Goya, Albacete, Las Rozas), servicios y especialidades ofrecidas, precios generales orientativos, aparcamiento y contacto.\n\nREGLAS DE RESPUESTA:\n- Responde siempre de forma amable, clara y profesional en español.\n- Sedes y Horarios:\n  * Clínica Goya (Madrid): Calle de Goya 45. Lunes a Viernes de 09:00 a 20:00, Sábados de 09:00 a 14:00.\n  * Clínica Albacete: Calle Mayor 12. Lunes a Viernes de 09:00 a 20:00.\n  * Clínica Las Rozas: Av. de la Constitución 8. Lunes a Viernes de 09:00 a 20:00.\n- Si no conoces un dato específico, indícalo educadamente e invita al usuario a consultar con recepción."
+        },
+        "promptType": "define",
+        "text": "={{ ($json.body?.history || $json.history) ? \"FECHA Y HORA ACTUAL EN ESPAÑA: \" + $now.setZone('Europe/Madrid').format('cccc, d [de] MMMM [de] yyyy, HH:mm') + \"\\n\\nHISTORIAL DE CONVERSACIÓN PREVIA:\\n\" + ($json.body?.history || $json.history).map(h => (h.role == \"user\" ? \"Usuario\" : \"Musly\") + \": \" + h.content).join(\"\\n\") + \"\\n\\nSOLICITUD ACTUAL DEL USUARIO:\\n\" + ($json.body?.message || $json.message || $json.query || \"\") : \"FECHA Y HORA ACTUAL EN ESPAÑA: \" + $now.setZone('Europe/Madrid').format('cccc, d [de] MMMM [de] yyyy, HH:mm') + \"\\n\\nSOLICITUD:\\n\" + ($json.body?.message || $json.message || $json.query || JSON.stringify($json)) }}"
+      },
+      "position": [
+        450,
+        300
+      ],
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7
+    },
+    {
+      "id": "4",
+      "name": "Tool_Search_Memory",
+      "parameters": {
+        "description": "Consulta el diccionario de aprendizaje dinámico y modismos guardados del profesional.",
+        "method": "GET",
+        "url": "https://agenda.melosmile.com/api/ai/memory/search",
+        "headerParametersUi": {
+          "parameter": [
+            {
+              "name": "x-api-key",
+              "value": "[REDACTED]"
+            }
+          ]
+        },
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "specifyQuery": "keypair",
+        "parametersQuery": {
+          "values": [
+            {
+              "name": "query",
+              "valueProvider": "modelRequired"
+            }
+          ]
+        }
+      },
+      "position": [
+        700,
+        300
+      ],
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "hhO2D8waUEyApE47",
+          "name": "Melosmile Backend JWT x-api-key"
+        }
+      }
+    },
+    {
+      "id": "5",
+      "name": "Tool_Save_Learning",
+      "parameters": {
+        "description": "Guarda o aprende una nueva regla de vocabulario o preferencia enseñada por el usuario.",
+        "jsonBody": "={\\n  \"expression\": \"{{ $fromAI('expression', 'La expresión o modismo del usuario') }}\",\\n  \"meaning\": \"{{ $fromAI('meaning', 'El significado técnico o acción asociada') }}\",\\n  \"category\": \"vocabulary\"\\n}",
+        "method": "POST",
+        "sendBody": true,
+        "specifyBody": "json",
+        "url": "https://agenda.melosmile.com/api/ai/memory/learn",
+        "headerParametersUi": {
+          "parameter": [
+            {
+              "name": "x-api-key",
+              "value": "[REDACTED]"
+            }
+          ]
+        },
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth"
+      },
+      "position": [
+        700,
+        500
+      ],
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "hhO2D8waUEyApE47",
+          "name": "Melosmile Backend JWT x-api-key"
+        }
+      }
+    },
+    {
+      "id": "Tool_Search_Patients_Node_ID_1788475166329",
+      "name": "Tool_Search_Patients",
+      "parameters": {
+        "description": "Busca pacientes por nombre, apellido, código de historia (PAC-###) o teléfono en Melosmile",
+        "method": "GET",
+        "url": "https://agenda.melosmile.com/api/patients/search",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "specifyQuery": "keypair",
+        "parametersQuery": {
+          "values": [
+            {
+              "name": "q",
+              "valueProvider": "modelRequired"
+            }
+          ]
+        }
+      },
+      "position": [
+        800,
+        300
+      ],
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "hhO2D8waUEyApE47",
+          "name": "Melosmile Backend JWT x-api-key"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Execute_Workflow_Trigger": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Agent_General",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "OpenRouter_Chat_Model": {
+      "ai_languageModel": [
+        [
+          {
+            "index": 0,
+            "node": "Agent_General",
+            "type": "ai_languageModel"
+          }
+        ]
+      ]
+    },
+    "Tool_Save_Learning": {
+      "ai_tool": [
+        [
+          {
+            "index": 0,
+            "node": "Agent_General",
+            "type": "ai_tool"
+          }
+        ]
+      ]
+    },
+    "Tool_Search_Memory": {
+      "ai_tool": [
+        [
+          {
+            "index": 0,
+            "node": "Agent_General",
+            "type": "ai_tool"
+          }
+        ]
+      ]
+    },
+    "Tool_Search_Patients": {
+      "ai_tool": [
+        [
+          {
+            "index": 0,
+            "node": "Agent_General",
+            "type": "ai_tool"
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

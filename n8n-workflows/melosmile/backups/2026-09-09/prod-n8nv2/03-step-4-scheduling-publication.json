@@ -1,0 +1,350 @@
+{
+  "_export": {
+    "source": "n8n API backup",
+    "instance": "https://n8nv2.mumaweb.com",
+    "date": "2026-09-09T10:16:55.995Z",
+    "workflow_id": "aNlyjAhXjucsetWN",
+    "active": true
+  },
+  "id": "aNlyjAhXjucsetWN",
+  "name": "[MELOSMILE] Step 4 - Scheduling & Publication",
+  "active": true,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "melosmile-step4-receive-ready",
+        "options": {}
+      },
+      "name": "Webhook: Receive Ready Post",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "id": "1",
+      "position": [
+        340,
+        240
+      ],
+      "webhookId": "fa7b9d0a-c201-4e7a-8d68-11f7d8b59cef"
+    },
+    {
+      "parameters": {},
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "id": "2",
+      "position": [
+        340,
+        360
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "operation": "getAll",
+        "databaseId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "d1fb6518-1657-8363-9903-01981cd61cf5"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "key": "Cuenta|relation",
+              "condition": "contains",
+              "relationValue": "db7b6518-1657-823f-8262-81d244bd3d48"
+            }
+          ]
+        },
+        "returnAll": true,
+        "filterType": "manual",
+        "matchType": "allFilters"
+      },
+      "name": "Notion Query: Ready Posts",
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 1,
+      "id": "3",
+      "position": [
+        560,
+        300
+      ],
+      "credentials": {
+        "notionApi": {
+          "id": "CycFjSXnednwQIOC",
+          "name": "notion_account_muma"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": [
+          {
+            "value": "{{ $json.platform === \"Instagram\" }}",
+            "name": "Instagram"
+          },
+          {
+            "value": "{{ $json.platform === \"Facebook\" }}",
+            "name": "Facebook"
+          },
+          {
+            "value": "{{ $json.platform === \"TikTok\" }}",
+            "name": "TikTok"
+          },
+          {
+            "value": "{{ $json.platform === \"GBP\" }}",
+            "name": "Google Business Profile"
+          }
+        ]
+      },
+      "name": "Switch: Platform",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 1,
+      "id": "4",
+      "position": [
+        780,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "new RegExp('', '') Lógica de publicación para Instagram\nnew RegExp('', '') Extraer medios de bloques Notion, normalizar, publicar\nreturn { json: { success: true, platform: \"Instagram\" } };",
+        "options": {}
+      },
+      "name": "Code: Publish Instagram",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "id": "5",
+      "position": [
+        1000,
+        180
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "new RegExp('', '') Lógica de publicación para Facebook\nnew RegExp('', '') Extraer medios de bloques Notion, normalizar, publicar\nreturn { json: { success: true, platform: \"Facebook\" } };",
+        "options": {}
+      },
+      "name": "Code: Publish Facebook",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "id": "6",
+      "position": [
+        1000,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "new RegExp('', '') Lógica de publicación para TikTok\nnew RegExp('', '') Extraer medios de bloques Notion, normalizar, publicar\nreturn { json: { success: true, platform: \"TikTok\" } };",
+        "options": {}
+      },
+      "name": "Code: Publish TikTok",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "id": "7",
+      "position": [
+        1000,
+        420
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "new RegExp('', '') Lógica de publicación para Google Business Profile\nnew RegExp('', '') Extraer medios de bloques Notion, normalizar, publicar\nreturn { json: { success: true, platform: \"GBP\" } };",
+        "options": {}
+      },
+      "name": "Code: Publish GBP",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "id": "8",
+      "position": [
+        1000,
+        540
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "page",
+        "operation": "update",
+        "id": "{{ $json.notionId }}",
+        "properties": {
+          "property": [
+            {
+              "name": "Status",
+              "value": "published"
+            },
+            {
+              "name": "Ultima_Publicacion",
+              "value": "{{ new Date().toISOString() }}"
+            },
+            {
+              "name": "Error_Message",
+              "value": "{{ $json.error || \"\" }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Notion Update: Publication Status",
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 1,
+      "id": "9",
+      "position": [
+        1220,
+        300
+      ],
+      "credentials": {
+        "notionApi": {
+          "id": "CycFjSXnednwQIOC",
+          "name": "notion_account_muma"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "{{ process.env.TELEGRAM_CHAT_ID_MELOSMILE }}",
+        "text": "Publicación de MELOSMILE en {{ $json.platform }} {{ $json.success ? \"EXITOSA\" : \"FALLIDA\" }}. Post: {{ $json.postTitle }}",
+        "options": {}
+      },
+      "name": "Telegram: Notify Publication",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "id": "10",
+      "position": [
+        1440,
+        300
+      ],
+      "credentials": {
+        "telegramApi": {
+          "id": "IJqEAQmPHSB3cdaC",
+          "name": "Telegram-n8n_mumaec_bot"
+        }
+      },
+      "webhookId": "99daade3-44d3-491c-a5e7-9fc07adb4d9f"
+    }
+  ],
+  "connections": {
+    "Webhook: Receive Ready Post": {
+      "main": [
+        [
+          {
+            "node": "Notion Query: Ready Posts",
+            "index": 0,
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Notion Query: Ready Posts",
+            "index": 0,
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Notion Query: Ready Posts": {
+      "main": [
+        [
+          {
+            "node": "Switch: Platform",
+            "index": 0,
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Switch: Platform": {
+      "main": [
+        [
+          {
+            "node": "Code: Publish Instagram",
+            "index": 0,
+            "type": "main"
+          }
+        ],
+        [
+          {
+            "node": "Code: Publish Facebook",
+            "index": 0,
+            "type": "main"
+          }
+        ],
+        [
+          {
+            "node": "Code: Publish TikTok",
+            "index": 0,
+            "type": "main"
+          }
+        ],
+        [
+          {
+            "node": "Code: Publish GBP",
+            "index": 0,
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Code: Publish Instagram": {
+      "main": [
+        [
+          {
+            "node": "Notion Update: Publication Status",
+            "index": 0,
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Code: Publish Facebook": {
+      "main": [
+        [
+          {
+            "node": "Notion Update: Publication Status",
+            "index": 0,
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Code: Publish TikTok": {
+      "main": [
+        [
+          {
+            "node": "Notion Update: Publication Status",
+            "index": 0,
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Code: Publish GBP": {
+      "main": [
+        [
+          {
+            "node": "Notion Update: Publication Status",
+            "index": 0,
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Notion Update: Publication Status": {
+      "main": [
+        [
+          {
+            "node": "Telegram: Notify Publication",
+            "index": 0,
+            "type": "main"
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Europe/Madrid"
+  }
+}
