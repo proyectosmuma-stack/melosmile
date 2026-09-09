@@ -67,7 +67,7 @@ export default function PatientsPage() {
   const [allTags, setAllTags] = useState<TagItem[]>([]);
   const [clinicsCatalog, setClinicsCatalog] = useState<{ id: string; name: string }[]>([]);
   const [loading, setLoading] = useState(true);
-  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [viewMode, setViewMode] = useState<"grid" | "list">("list");
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
   const clinicFilter = selectedClinicId;
@@ -517,9 +517,11 @@ function toTitleCase(text: string): string {
                       {patient.lastName[0]}
                     </div>
                     <div>
-                      <h3 className="font-bold text-foreground text-base leading-snug group-hover:text-primary transition-colors">
-                        {patient.firstName} {patient.lastName}
-                      </h3>
+                      <Link href={`/patients/${patient.id}`} className="block">
+                        <h3 className="font-bold text-foreground text-base leading-snug group-hover:text-primary transition-colors">
+                          {patient.firstName} {patient.lastName}
+                        </h3>
+                      </Link>
                       <div className="flex items-center gap-2 mt-0.5">
                         <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-muted text-foreground">
                           {patient.historiaId}
@@ -656,12 +658,14 @@ function toTitleCase(text: string): string {
                           {patient.historiaId}
                         </span>
                       </td>
-                      <td className="py-3.5 px-4">
-                        <div className="font-bold text-foreground text-sm">
-                          {patient.firstName} {patient.lastName}
-                        </div>
-                        <span className="text-[10px] text-muted-foreground">{patient.gender} · {patient.address}</span>
-                      </td>
+                       <td className="py-3.5 px-4">
+                         <div className="font-bold text-foreground text-sm">
+                           <Link href={`/patients/${patient.id}`} className="hover:text-primary transition-colors">
+                             {patient.firstName} {patient.lastName}
+                           </Link>
+                         </div>
+                         <span className="text-[10px] text-muted-foreground">{patient.gender} · {patient.address}</span>
+                       </td>
                       <td className="py-3.5 px-4 font-medium">
                         {patient.clinicNames && patient.clinicNames.length > 0 ? (
                           <div className="flex flex-wrap items-center gap-1">
