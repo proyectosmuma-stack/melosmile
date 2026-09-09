@@ -167,4 +167,33 @@ Durante esta sesión, tanto Antigravity como Mumabot (OpenCode) colaboraron en u
 * **n8nv2 (`n8nv2.mumaweb.com`)**: Creado y activado el workflow `[MELOSMILE] Keep-Alive Supabase Databases & App` (ID `suXh01RfJ190FEd4`) con `Schedule Trigger` cada 1 hora (`0 * * * *`). Realiza consultas SQL reales a las API REST de Supabase Staging, Supabase Producción y al endpoint de Vercel.
 * **Vercel Crons**: Añadido el bloque `crons` a `vercel.json` (raíz y `frontend/`) para ejecutar `/api/cron/keepalive` cada 4 horas (`0 */4 * * *`).
 
+## 12. Sesión 08/09/2026 — Auditoría de Pacientes contra Notion, Enriquecimiento de Citas y Migración de Fotos a VPS (Completada ✅)
+
+### A. Auditoría Minuciosa de Pacientes y Clínicas vs Notion
+* **Problema Identificado**: Existían discrepancias en la asignación de sedes clínicas para varios pacientes, y un paciente (`PAC-6535 Lucas Pérez`) carecía de asignación de clínica en `patient_clinics`.
+* **Auditoría Exhaustiva contra Notion (`Pacientes` y `Pacientes Albacete`)**:
+  * **Clínica Montaño (Getafe)**: Verificada como la sede real de `Ricardo De Freitas (PAC-023)`, `Rafael Requeijo (PAC-012)`, `Erika Alvarado (PAC-013)`, `Ana Gabriela De Nigris (PAC-014)`, `Alexis Morales (PAC-015)`, `Genesis Duque (PAC-016)`, `Greicee Rodriguez (PAC-017)`, `Angelo (PAC-002)`, `Luis Gil (PAC-003)`, `Alejandro Delgado (PAC-006)` y `Brenda (PAC-007)`. Se aseguró `is_primary = true` en Getafe.
+  * **Clínica Goya**: Fijada como primaria para `Oscar Enrique Melo Cupido (PAC-035)` y los 22 pacientes asignados a Goya (`PAC-004` a `PAC-034`).
+  * **Clínica Daniel Bustamante (Albacete)**: Asignada a todos los pacientes de Albacete (`PAC-036` a `PAC-066`, correspondientes a `ALB-1` a `ALB-33` de Notion / Clínica Roldán) y a `Lucas Pérez (PAC-6535)`.
+
+### B. Enriquecimiento de Citas y Anotaciones Clínicas
+* De las 85 citas existentes en Producción, se auditaron estados y observaciones.
+* Se normalizaron y enriquecieron las 4 citas que no contaban con notas clínicas descriptivas (toma de registros fotográficos de Ángel Da Silva, control Myobrace de Emma Mora, limpieza y fotos de Diego Martinez, y control de Richard Enciso).
+* Balance final de citas en Producción: 78 Realizadas, 4 Pendientes, 3 Canceladas.
+
+### C. Migración de 88 Fotografías Clínicas al Servidor VPS
+* **Protocolo de Transferencia FTPS (`basic-ftp`)**:
+  * Conexión directa al servidor VPS de producción (`94.143.139.120`, puerto 21).
+
+### D. Resolución de Incidencia de Variables de Entorno en Vercel Producción (09/09/2026 ✅)
+* **Diagnóstico de Alerta**:
+  * La base de datos de Supabase Producción (`xylqytpudbdcsbuuwqpi`) estuvo en todo momento 100% intacta (67 pacientes, 119 citas, 88 documentos/fotos, 53 planes/tratamientos y 4 notificaciones de sistema).
+  * En Vercel (`proyectosmuma-stacks-projects/melosmile-production`), las variables `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` y `SUPABASE_SERVICE_ROLE_KEY` estaban configuradas vacías (0 bytes) como sensibles, provocando que el cliente de Next.js (`@/lib/supabase/client`) compilara cadenas vacías y no cargara datos en el navegador.
+  * Los endpoints `api/treatment-plans` y `api/ai/report` tenían un fallback residual a la BD de staging (`amhfdzfcmpastmlsosou`).
+* **Acciones Ejecutadas**:
+  * Sincronizadas y encriptadas las credenciales de Supabase Producción en el proyecto `melosmile-production` de Vercel.
+  * Sincronizadas las credenciales de Supabase Staging en `melosmile-staging`.
+  * Corregidos los fallbacks en `frontend/src/app/api/treatment-plans/route.ts` y `frontend/src/app/api/ai/report/route.ts`.
+  * Redespliegue de producción ejecutado con éxito en Vercel (`dpl_bHSyqDAgVcSgz2DY94w14B719xUA`) y vinculado a `agenda.melosmile.com`.
+  * Verificación visual en navegador: Ficha de Ronald Alejandro Delgado (`d1ca0793-3164-4b0d-b01f-e4d763a84416` / `PAC-008`), citas, historial, odontograma y lista completa de pacientes cargando al 100%.
 

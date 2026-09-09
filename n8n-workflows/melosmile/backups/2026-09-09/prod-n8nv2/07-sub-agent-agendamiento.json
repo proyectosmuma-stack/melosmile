@@ -1,0 +1,389 @@
+{
+  "_export": {
+    "source": "n8n API backup",
+    "instance": "https://n8nv2.mumaweb.com",
+    "date": "2026-09-09T10:16:56.206Z",
+    "workflow_id": "d74hAW8IkmmCqoh5",
+    "active": true
+  },
+  "id": "d74hAW8IkmmCqoh5",
+  "name": "[MELOSMILE] Sub-Agent: Agendamiento",
+  "active": true,
+  "nodes": [
+    {
+      "id": "trigger-1",
+      "name": "Execute_Workflow_Trigger",
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "position": [
+        256,
+        304
+      ],
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1
+    },
+    {
+      "credentials": {
+        "openRouterApi": {
+          "id": "gUxVRtGMJgLk9JTl",
+          "name": "OpenRouter account"
+        }
+      },
+      "id": "2",
+      "name": "OpenRouter_Chat_Model",
+      "parameters": {
+        "model": "openai/gpt-4o-mini",
+        "options": {
+          "temperature": 0
+        }
+      },
+      "position": [
+        80,
+        544
+      ],
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1
+    },
+    {
+      "id": "3",
+      "name": "Agent_Scheduling",
+      "parameters": {
+        "options": {
+          "systemMessage": "Role: Eres el Sub-agente Especialista en Agendamiento de la clínica dental Melosmile. Eres la mano derecha en la gestión de citas y agenda.\n\nObjetivo: Consultar la agenda de la clínica, verificar citas pasadas y futuras, comprobar citas recientes, franjas horarias disponibles, crear, modificar o cancelar citas.\n\nREGLA CRÍTICA DE CONSULTA Y LISTADO DE CITAS (OBLIGATORIA):\n- SIEMPRE que el usuario pregunte por citas, agenda, disponibilidad o historial (ej: \"citas más recientes\", \"agenda de la semana pasada\", \"citas de hoy\", \"citas de mañana\", \"agenda de este mes\", \"citas del mes pasado\", \"citas de Munir\", etc.), TIENES LA OBLIGACIÓN ESTRICTA DE EJECUTAR la herramienta 'Tool_List_Appointments'.\n- PROHIBICIÓN ABSOLUTA: Queda terminantemente PROHIBIDO responder \"No tengo acceso\", \"No puedo consultar\" o excusas similares sin haber llamado previamente a 'Tool_List_Appointments'. Tienes acceso total a la agenda de Melosmile.\n- Mapeo de parámetros para 'Tool_List_Appointments':\n  * Si pide próximas citas / citas agendadas / siguientes citas / qué citas hay: pasa date_range = \"próximas\".\n  * Si pide citas recientes / últimas citas: pasa date_range = \"recientes\".\n  * Si pide semana pasada: pasa date_range = \"semana pasada\".\n  * Si pide esta semana: pasa date_range = \"esta semana\".\n  * Si pide próxima semana / semana que viene: pasa date_range = \"próxima semana\".\n  * Si pide hoy / mañana / ayer: pasa date_range = \"hoy\" / \"mañana\" / \"ayer\".\n  * Si pide un mes concreto o general (ej: \"este mes\", \"mes pasado\", \"julio\"): pasa date_range con ese período.\n  * Si pide las citas de un paciente: pasa date_range con el nombre del paciente o combínalo con 'Tool_Search_Patients'.\n\nREGLAS DE REAGENDAMIENTO Y MODIFICACIÓN:\n- Si el usuario pide reagendar, cambiar de fecha/hora, cambiar motivo o agregar/modificar tratamientos de una cita existente (ej: \"reagendala para el sábado\", \"cámbiala al sábado\", \"agrégale blanqueamiento\"), DEBES EJECUTAR INMEDIATAMENTE la herramienta 'Tool_Update_Appointment' pasando action = \"update\", patient_name = Nombre del paciente, appointment_date = Nueva fecha y hora completa, reason = Tratamiento/motivo.\n\nREGLAS DE CREACIÓN:\n- Para agendar una nueva cita desde cero, ejecuta SIEMPRE 'Tool_Appointment_Manager' pasando action = \"create\", patient_name = Nombre completo del paciente, appointment_date = Fecha y hora de la cita, reason = Tratamiento o motivo solicitado, clinic = Nombre de la clínica.\n\nREGLA DE CONTEXTO TEMPORAL:\n- Tienes la FECHA Y HORA ACTUAL EN ESPAÑA en el encabezado de tu prompt. Úsala como referencia temporal.\n\nREGLAS DE CANCELACIÓN (OBLIGATORIO):\n- Si el usuario pide CANCELAR, ELIMINAR, BORRAR o ANULAR una cita (ej: \"cancela la cita\", \"elimina la cita de mañana\", \"borra la cita de Juan\"), DEBES EJECUTAR INMEDIATAMENTE la herramienta 'Tool_Update_Appointment' pasando action = \"cancel\" (NO \"update\"), patient_name = Nombre del paciente y appointment_date = Fecha de la cita a cancelar. \n- PROHIBIDO usar action = \"update\" o cambiar el motivo a \"Cancelación\" cuando el usuario pide cancelar/eliminar. La cancelación real se hace con action = \"cancel\"."
+        },
+        "promptType": "define",
+        "text": "={{ (() => {\n  const rawHistory = $json.body?.history || $json.history || [];\n  const filteredHistory = rawHistory.filter(h => {\n    const content = (h.content || '').trim();\n    return !(h.role !== 'user' && (content.includes('Hola 👋 Soy Musly') || content.includes('Puedo agendar citas')));\n  });\n  const currentMessage = $json.body?.message || $json.message || $json.query || '';\n  const now = $now.setZone('Europe/Madrid').format('cccc, d [de] MMMM [de] yyyy, HH:mm');\n  const promptBody = filteredHistory.length\n    ? 'FECHA Y HORA ACTUAL EN ESPAÑA: ' + now + '\\n\\nHISTORIAL PREVIO DE LA CONVERSACIÓN:\\n' + filteredHistory.map(h => (h.role === 'user' ? 'Usuario' : 'Musly') + ': ' + h.content).join('\\n') + '\\n\\nSOLICITUD ACTUAL DEL USUARIO:\\n' + currentMessage\n    : 'FECHA Y HORA ACTUAL EN ESPAÑA: ' + now + '\\n\\nSOLICITUD ACTUAL DEL USUARIO:\\n' + currentMessage;\n  return promptBody + '\\n\\nINSTRUCCIÓN CRÍTICA: Si el usuario consulta citas (próximas, agendadas, pasadas, recientes, semana pasada o cualquier período), TIENES LA OBLIGACIÓN ESTRICTA DE EJECUTAR Tool_List_Appointments pasando date_range. Prohibido responder que no hay citas o que no tienes acceso sin consultar la herramienta.';\n})() }}"
+      },
+      "position": [
+        464,
+        304
+      ],
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7
+    },
+    {
+      "id": "4",
+      "name": "Tool_Search_Patients",
+      "parameters": {
+        "description": "Busca pacientes por nombre, apellido, código de historia (PAC-###) o teléfono en Melosmile",
+        "method": "GET",
+        "url": "https://agenda.melosmile.com/api/patients/search",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "specifyQuery": "keypair",
+        "parametersQuery": {
+          "values": [
+            {
+              "name": "q",
+              "valueProvider": "modelRequired"
+            }
+          ]
+        }
+      },
+      "position": [
+        840,
+        750
+      ],
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "hhO2D8waUEyApE47",
+          "name": "Melosmile Backend JWT x-api-key"
+        }
+      }
+    },
+    {
+      "id": "5",
+      "name": "Tool_Appointment_Manager",
+      "parameters": {
+        "method": "POST",
+        "url": "https://agenda.melosmile.com/api/appointments/update",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "specifyQuery": "keypair",
+        "parametersQuery": {
+          "values": [
+            {
+              "name": "action",
+              "valueProvider": "fieldValue",
+              "value": "create"
+            },
+            {
+              "name": "patient_name",
+              "valueProvider": "modelRequired"
+            },
+            {
+              "name": "appointment_date",
+              "valueProvider": "modelRequired"
+            },
+            {
+              "name": "reason",
+              "valueProvider": "modelRequired"
+            },
+            {
+              "name": "clinic",
+              "valueProvider": "modelRequired"
+            }
+          ]
+        }
+      },
+      "position": [
+        660,
+        750
+      ],
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "hhO2D8waUEyApE47",
+          "name": "Melosmile Backend JWT x-api-key"
+        }
+      }
+    },
+    {
+      "id": "6",
+      "name": "Tool_List_Appointments",
+      "parameters": {
+        "description": "Consulta y busca citas existentes por fecha o por nombre de paciente. Acepta fechas relativas: 'hoy', 'mañana', 'ayer', 'esta semana', 'semana pasada', 'próxima semana', 'este mes', 'mes pasado', 'próximo mes', o días de la semana ('lunes', 'martes', 'próximo viernes'). Úsala para revisar huecos o franjas horarias ocupadas en la agenda de la clínica.",
+        "method": "GET",
+        "url": "https://agenda.melosmile.com/api/appointments/list",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "specifyQuery": "keypair",
+        "parametersQuery": {
+          "values": [
+            {
+              "name": "date",
+              "valueProvider": "modelRequired"
+            },
+            {
+              "name": "clinic",
+              "valueProvider": "modelOptional"
+            }
+          ]
+        }
+      },
+      "position": [
+        480,
+        750
+      ],
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "hhO2D8waUEyApE47",
+          "name": "Melosmile Backend JWT x-api-key"
+        }
+      }
+    },
+    {
+      "id": "7",
+      "name": "Tool_Search_Memory",
+      "parameters": {
+        "description": "Busca expresiones idiomáticas, modismos o términos específicos en la memoria persistente de Melosmile",
+        "method": "GET",
+        "url": "https://agenda.melosmile.com/api/ai/memory/search",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "specifyQuery": "keypair",
+        "parametersQuery": {
+          "values": [
+            {
+              "name": "query",
+              "valueProvider": "modelRequired"
+            }
+          ]
+        }
+      },
+      "position": [
+        704,
+        512
+      ],
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "hhO2D8waUEyApE47",
+          "name": "Melosmile Backend JWT x-api-key"
+        }
+      }
+    },
+    {
+      "id": "8",
+      "name": "Tool_Save_Learning",
+      "parameters": {
+        "jsonBody": "={\\n  \\\"expression\\\": \\\"{{ $fromAI('expression', 'La expresión o modismo del usuario') }}\\\",\\n  \\\"meaning\\\": \\\"{{ $fromAI('meaning', 'El significado técnico o acción asociada') }}\\\",\\n  \\\"category\\\": \\\"vocabulary\\\"\\n}",
+        "method": "POST",
+        "sendBody": true,
+        "specifyBody": "json",
+        "url": "https://agenda.melosmile.com/api/ai/memory/learn",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth"
+      },
+      "position": [
+        896,
+        512
+      ],
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "hhO2D8waUEyApE47",
+          "name": "Melosmile Backend JWT x-api-key"
+        }
+      }
+    },
+    {
+      "id": "9",
+      "name": "Tool_Update_Appointment",
+      "parameters": {
+        "method": "POST",
+        "url": "https://agenda.melosmile.com/api/appointments/update",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendQuery": true,
+        "specifyQuery": "keypair",
+        "parametersQuery": {
+          "values": [
+            {
+              "name": "action",
+              "valueProvider": "modelRequired",
+              "value": ""
+            },
+            {
+              "name": "patient_name",
+              "valueProvider": "modelRequired"
+            },
+            {
+              "name": "appointment_date",
+              "valueProvider": "modelRequired"
+            },
+            {
+              "name": "appointment_id",
+              "valueProvider": "modelOptional"
+            },
+            {
+              "name": "reason",
+              "valueProvider": "modelOptional"
+            },
+            {
+              "name": "clinic",
+              "valueProvider": "modelOptional"
+            }
+          ]
+        }
+      },
+      "position": [
+        300,
+        750
+      ],
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "hhO2D8waUEyApE47",
+          "name": "Melosmile Backend JWT x-api-key"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Execute_Workflow_Trigger": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Agent_Scheduling",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "OpenRouter_Chat_Model": {
+      "ai_languageModel": [
+        [
+          {
+            "index": 0,
+            "node": "Agent_Scheduling",
+            "type": "ai_languageModel"
+          }
+        ]
+      ]
+    },
+    "Tool_Appointment_Manager": {
+      "ai_tool": [
+        [
+          {
+            "index": 0,
+            "node": "Agent_Scheduling",
+            "type": "ai_tool"
+          }
+        ]
+      ]
+    },
+    "Tool_List_Appointments": {
+      "ai_tool": [
+        [
+          {
+            "index": 0,
+            "node": "Agent_Scheduling",
+            "type": "ai_tool"
+          }
+        ]
+      ]
+    },
+    "Tool_Save_Learning": {
+      "ai_tool": [
+        [
+          {
+            "index": 0,
+            "node": "Agent_Scheduling",
+            "type": "ai_tool"
+          }
+        ]
+      ]
+    },
+    "Tool_Search_Memory": {
+      "ai_tool": [
+        [
+          {
+            "index": 0,
+            "node": "Agent_Scheduling",
+            "type": "ai_tool"
+          }
+        ]
+      ]
+    },
+    "Tool_Search_Patients": {
+      "ai_tool": [
+        [
+          {
+            "index": 0,
+            "node": "Agent_Scheduling",
+            "type": "ai_tool"
+          }
+        ]
+      ]
+    },
+    "Tool_Update_Appointment": {
+      "ai_tool": [
+        [
+          {
+            "index": 0,
+            "node": "Agent_Scheduling",
+            "type": "ai_tool"
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

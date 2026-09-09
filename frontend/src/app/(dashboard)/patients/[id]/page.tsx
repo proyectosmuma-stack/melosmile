@@ -869,7 +869,7 @@ function toTitleCase(text: string): string {
                 <Stethoscope className="h-3.5 w-3.5 text-primary" /> Plan de Tratamiento Registrado
               </span>
               <div className="p-3 rounded-xl bg-muted/40 border border-border">
-                <p className="text-xs text-foreground font-semibold leading-relaxed">
+                <p className="text-xs text-foreground font-semibold leading-relaxed whitespace-pre-line">
                   {patient.treatmentPlan ? patient.treatmentPlan.replace(/\[OdontogramaBase:\s*[\s\S]*?\]/gi, '').trim() || "Sin plan registrado" : "Sin plan registrado"}
                 </p>
               </div>

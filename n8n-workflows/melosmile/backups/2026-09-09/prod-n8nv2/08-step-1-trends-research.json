@@ -1,0 +1,297 @@
+{
+  "_export": {
+    "source": "n8n API backup",
+    "instance": "https://n8nv2.mumaweb.com",
+    "date": "2026-09-09T10:16:56.280Z",
+    "workflow_id": "i9BfSUvPBD72bRgy",
+    "active": true
+  },
+  "id": "i9BfSUvPBD72bRgy",
+  "name": "[MELOSMILE] Step 1 - Trends Research",
+  "active": true,
+  "nodes": [
+    {
+      "parameters": {},
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "id": "1",
+      "position": [
+        340,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "manual-melosmile-trends",
+        "options": {}
+      },
+      "name": "Webhook: Receive Trends",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "id": "2",
+      "position": [
+        340,
+        360
+      ],
+      "webhookId": "eabf24c1-3e1e-487c-96cb-2f77d26fae5d"
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "operation": "getAll",
+        "databaseId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "d1fb6518-1657-8363-9903-01981cd61cf5"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "key": "Cuenta|relation",
+              "condition": "contains",
+              "relationValue": "db7b6518-1657-823f-8262-81d244bd3d48"
+            }
+          ]
+        },
+        "returnAll": true,
+        "filterType": "manual",
+        "matchType": "allFilters"
+      },
+      "name": "Notion Query: Recent Posts",
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 1,
+      "id": "3",
+      "position": [
+        560,
+        300
+      ],
+      "credentials": {
+        "notionApi": {
+          "id": "CycFjSXnednwQIOC",
+          "name": "notion_account_muma"
+        }
+      }
+    },
+    {
+      "id": "code-prepare-1788397015650",
+      "name": "Code: Prepare Prompt Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        650,
+        300
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const items = $input.all();\nconst clientName = 'MELOSMILE';\nconst niche = 'salud bucal y estética dental';\n\n// Extract content from Notion pages\nconst posts = items.map(item => {\n  const props = item.json.properties || {};\n  const title = props.Title?.title?.[0]?.plain_text || props.Name?.title?.[0]?.plain_text || 'Sin título';\n  const content = props.Content?.rich_text?.[0]?.plain_text || props.Description?.rich_text?.[0]?.plain_text || '';\n  const platform = props.Platform?.select?.name || '';\n  const format = props.Meta_Format?.select?.name || '';\n  return { title, content, platform, format };\n}).filter(p => p.content.length > 0);\n\nconst postsText = posts.map((p, i) => `${i+1}. [${p.platform}/${p.format}] ${p.title}: ${p.content.substring(0, 300)}`).join('\\n\\n');\n\nconst prompt = `Basado en los siguientes posts recientes de ${clientName} (${niche}), investiga y detecta las 3-5 tendencias más relevantes en el nicho. La respuesta debe ser un array JSON con objetos: { \"title\": \"Nombre tendencia\", \"description\": \"Descripción\", \"relevance\": \"Alta/Media/Baja\", \"angles\": [\"ángulo1\", \"ángulo2\"] }.\n\nPosts recientes:\\n${postsText}`;\n\nreturn [{ json: { prompt, clientName: 'MELOSMILE', niche: 'salud bucal y estética dental', postsCount: posts.length } }];"
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://openrouter.ai/api/v1/chat/completions",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpHeaderAuth",
+        "jsonBody": "={{ JSON.stringify({ model: 'anthropic/claude-3-haiku', messages: [{ role: 'user', content: $json.prompt }], temperature: 0.7, max_tokens: 2000 }) }}",
+        "sendBody": true,
+        "sendHeaders": true,
+        "specifyBody": "json"
+      },
+      "name": "OpenRouter Agent: Trend Research",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "id": "4",
+      "position": [
+        780,
+        300
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "k3cjhrV4qfsLVzPE",
+          "name": "OpenRouter"
+        }
+      },
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const response = $json;\nconst content = response.choices?.[0]?.message?.content || '';\nif (!content) {\n  return { json: { error: 'No content' } };\n}\n// Extract JSON array from text\nlet trends;\ntry {\n  const jsonMatch = content.match(/\\[\\s*\\{.*\\}\\s*\\]/s);\n  if (jsonMatch) {\n    trends = JSON.parse(jsonMatch[0]);\n  } else {\n    trends = JSON.parse(content);\n  }\n} catch (e) {\n  trends = [{ title: 'Tendencia detectada', description: content.substring(0, 200), relevance: 'Media', angles: ['revisar'] }];\n}\nif (!Array.isArray(trends) || trends.length === 0) {\n  trends = [{ title: 'Tendencia detectada', description: 'Ver contenido', relevance: 'Media', angles: ['revisar'] }];\n}\n// Return FIRST trend only (one page per trend)\nconst trend = trends[0];\nreturn { json: { title: trend.title || 'Tendencia', description: trend.description || 'Sin descripción', relevance: trend.relevance || 'Media', angles: JSON.stringify(trend.angles || []) } };"
+      },
+      "name": "Code: Normalize Trends",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "id": "5",
+      "position": [
+        1000,
+        300
+      ]
+    },
+    {
+      "id": "code-notion-payload-1788398647513",
+      "name": "Code: Prepare Notion Payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        1600,
+        300
+      ],
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "\nconst title = $json.title || 'Sin título';\nconst description = $json.description || 'Sin descripción';\nreturn {\n  json: {\n    action: 'create',\n    target_db: 'PUBLICACIONES',\n    properties: {\n      Title: { title: [{ text: { content: title } }] },\n      Status: { select: { name: 'research' } },\n      Content: { rich_text: [{ text: { content: description } }] }\n    }\n  }\n};\n"
+      }
+    },
+    {
+      "id": "6",
+      "name": "HTTP Request: Create via Router",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        1220,
+        300
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://n8n.mumaweb.com/webhook/notion-query",
+        "authentication": "none",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "specifyBody": "json",
+        "jsonBody": "={{ $json }}",
+        "sendBody": true,
+        "sendHeaders": true,
+        "options": {}
+      },
+      "credentials": {}
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://n8n.mumaweb.com/webhook/melosmile-step2-receive-trends",
+        "authentication": "none",
+        "bodyContentType": "json",
+        "jsonParameters": true,
+        "body": "={{ JSON.stringify({ trends: $json.trends || [$json], client: 'MELOSMILE' }) }}",
+        "options": {},
+        "sendBody": true,
+        "sendHeaders": true
+      },
+      "name": "HTTP Request: Call Step 2",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "id": "7",
+      "position": [
+        1440,
+        300
+      ],
+      "credentials": {}
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Notion Query: Recent Posts",
+            "index": 0,
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Webhook: Receive Trends": {
+      "main": [
+        [
+          {
+            "node": "Notion Query: Recent Posts",
+            "index": 0,
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Notion Query: Recent Posts": {
+      "main": [
+        [
+          {
+            "node": "Code: Prepare Prompt Data",
+            "index": 0,
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "OpenRouter Agent: Trend Research": {
+      "main": [
+        [
+          {
+            "node": "Code: Normalize Trends",
+            "index": 0,
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Code: Normalize Trends": {
+      "main": [
+        [
+          {
+            "node": "Code: Prepare Notion Payload",
+            "index": 0,
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Code: Prepare Prompt Data": {
+      "main": [
+        [
+          {
+            "node": "OpenRouter Agent: Trend Research",
+            "index": 0,
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Code: Prepare Notion Payload": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request: Create via Router",
+            "index": 0,
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "HTTP Request: Create via Router": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request: Call Step 2",
+            "index": 0,
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "HTTP Request: Call Step 2": {
+      "main": [
+        []
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Europe/Madrid"
+  }
+}

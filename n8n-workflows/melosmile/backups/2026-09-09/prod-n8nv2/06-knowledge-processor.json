@@ -1,0 +1,150 @@
+{
+  "_export": {
+    "source": "n8n API backup",
+    "instance": "https://n8nv2.mumaweb.com",
+    "date": "2026-09-09T10:16:56.159Z",
+    "workflow_id": "wwp4x2fToB5Liu0d",
+    "active": true
+  },
+  "id": "wwp4x2fToB5Liu0d",
+  "name": "[MELOSMILE] Knowledge Processor",
+  "active": true,
+  "nodes": [
+    {
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "melosmile-knowledge-processor",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "b1b19c59-d3da-4394-8875-fd32ac99c28f",
+      "webhookId": "91447dcd-ffbe-4bd1-8729-691dc8530023"
+    },
+    {
+      "name": "Gemini Embed",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        240,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-001:embedContent",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "x-goog-api-key",
+              "value": "[REDACTED]"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\"content\":{\"parts\":[{\"text\":\"{{ $json.body.file_name || 'documento' }} {{ $json.body.document_type || 'informe' }}\"}]}}"
+      },
+      "id": "0cf6527a-461b-4675-8577-7f1dfd08ff00"
+    },
+    {
+      "name": "Embedding To Vector",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const items=[];\nfor(const item of $input.all()){const emb=(item.json.embedding&&item.json.embedding.values)||[];items.push({json:{embedding:emb}});}\nreturn items;"
+      },
+      "id": "3f601d3e-65a6-4961-ae53-b0bcec010e77"
+    },
+    {
+      "name": "Insert Supabase",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        720,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "https://amhfdzfcmpastmlsosou.supabase.co/rest/v1/document_embeddings",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "apikey",
+              "value": "[REDACTED_JWT]"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer [REDACTED_JWT]"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n \"document_id\": \"{{ $('Webhook').item.json.body.document_id }}\",\n \"patient_id\": \"{{ $('Webhook').item.json.body.patient_id }}\",\n \"chunk_index\": 0,\n \"chunk_text\": \"{{ $('Webhook').item.json.body.file_name }}\",\n \"embedding\": {{ JSON.stringify($json.embedding) }}\n}"
+      },
+      "id": "1b76e2f4-85ed-4e49-8e70-5ccce47a5969"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Gemini Embed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini Embed": {
+      "main": [
+        [
+          {
+            "node": "Embedding To Vector",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embedding To Vector": {
+      "main": [
+        [
+          {
+            "node": "Insert Supabase",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

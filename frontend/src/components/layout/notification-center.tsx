@@ -11,7 +11,8 @@ export type SystemNotification = {
   title: string;
   message: string;
   timestamp: string;
-  type: "success" | "info" | "warning";
+  type: "success" | "info" | "warning" | "error";
+  link?: string;
   read: boolean;
 };
 
@@ -106,13 +107,49 @@ export function NotificationBell() {
       const dynamicAlerts = await fetchActivePlanAlerts();
 
       const combined = [...dynamicAlerts];
-      local.forEach((loc) => {
-        if (!combined.some((c) => c.title === loc.title && c.message === loc.message)) {
-          combined.push(loc);
+
+      // Fetch system notifications from API
+      let systemNotifs: SystemNotification[] = [];
+      try {
+        const res = await fetch("/api/notifications");
+        if (res.ok) {
+          const json = await res.json();
+          systemNotifs = (json.data || []).map((n: any) => ({
+            id: n.id,
+            title: n.title,
+            message: n.message,
+            timestamp: new Date(n.created_at).toLocaleString(), // Format as needed
+            type: n.type || "info", // Default to info if type is not provided
+            read: n.read,
+            link: n.link,
+          }));
+        }
+      } catch (e) {
+        console.error("Error fetching system notifications:", e);
+      }
+
+      // Combine system notifications first, then dynamic alerts, then local
+      const finalNotifications: SystemNotification[] = [];
+
+      systemNotifs.forEach((sysNotif) => {
+        if (!finalNotifications.some((n) => n.title === sysNotif.title && n.message === sysNotif.message)) {
+          finalNotifications.push(sysNotif);
         }
       });
 
-      setNotifications(combined);
+      dynamicAlerts.forEach((dynamicNotif) => {
+        if (!finalNotifications.some((n) => n.title === dynamicNotif.title && n.message === dynamicNotif.message)) {
+          finalNotifications.push(dynamicNotif);
+        }
+      });
+      
+      local.forEach((loc) => {
+        if (!finalNotifications.some((n) => n.title === loc.title && n.message === loc.message)) {
+          finalNotifications.push(loc);
+        }
+      });
+
+      setNotifications(finalNotifications);
     };
 
     syncNotifs();
@@ -203,15 +240,31 @@ export function NotificationBell() {
                     <div className="flex items-start gap-3">
                       {n.type === "success" ? (
                         <CheckCircle2 className="w-5 h-5 text-success shrink-0 mt-0.5" />
-                      ) : (
+                      ) : n.type === "warning" ? (
                         <AlertCircle className="w-5 h-5 text-warning shrink-0 mt-0.5" />
+                      ) : n.type === "error" ? (
+                        <AlertCircle className="w-5 h-5 text-destructive shrink-0 mt-0.5" />
+                      ) : (
+                        <Sparkles className="w-5 h-5 text-info shrink-0 mt-0.5" /> // Default for info
                       )}
                       <div className="flex-1 space-y-1">
-                        <div className="flex items-center justify-between">
-                          <h4 className="text-xs font-bold text-foreground">{n.title}</h4>
-                          <span className="text-[10px] text-muted-foreground">{n.timestamp}</span>
-                        </div>
-                        <p className="text-xs text-muted-foreground leading-relaxed">{n.message}</p>
+                        {n.link ? (
+                          <a href={n.link} className="block" onClick={() => setIsOpen(false)}>
+                            <div className="flex items-center justify-between">
+                              <h4 className="text-xs font-bold text-foreground">{n.title}</h4>
+                              <span className="text-[10px] text-muted-foreground">{n.timestamp}</span>
+                            </div>
+                            <p className="text-xs text-muted-foreground leading-relaxed">{n.message}</p>
+                          </a>
+                        ) : (
+                          <>
+                            <div className="flex items-center justify-between">
+                              <h4 className="text-xs font-bold text-foreground">{n.title}</h4>
+                              <span className="text-[10px] text-muted-foreground">{n.timestamp}</span>
+                            </div>
+                            <p className="text-xs text-muted-foreground leading-relaxed">{n.message}</p>
+                          </>
+                        )}
                       </div>
                     </div>
                   </div>

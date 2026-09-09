@@ -1,0 +1,161 @@
+{
+  "_export": {
+    "source": "n8n API backup",
+    "instance": "https://n8nv2.mumaweb.com",
+    "date": "2026-09-09T10:16:56.402Z",
+    "workflow_id": "inakl5N4ROrmmrFh",
+    "active": true
+  },
+  "id": "inakl5N4ROrmmrFh",
+  "name": "[MELOSMILE] Sub-Agent: Contabilidad",
+  "active": true,
+  "nodes": [
+    {
+      "id": "trigger-1",
+      "name": "Execute_Workflow_Trigger",
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "position": [
+        250,
+        300
+      ],
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1
+    },
+    {
+      "credentials": {
+        "openRouterApi": {
+          "id": "gUxVRtGMJgLk9JTl",
+          "name": "OpenRouter account"
+        }
+      },
+      "id": "2",
+      "name": "OpenRouter_Chat_Model",
+      "parameters": {
+        "model": "openai/gpt-4o-mini",
+        "options": {
+          "temperature": 0
+        }
+      },
+      "position": [
+        450,
+        450
+      ],
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1
+    },
+    {
+      "id": "3",
+      "name": "Agent_Billing",
+      "parameters": {
+        "options": {
+          "systemMessage": "Role: Eres el Sub-agente Especialista en Contabilidad y Facturación Odoo de Melosmile.\n\nObjective: Consultar cobros pendientes por facturar, desglose financiero de sesiones clínicas y procesar la emisión de facturas borrador en Odoo ERP (`res.partner` y `account.move`), además de enviar avisos de cobro.\n\nApproach Step-by-Step:\n1. Recibir la solicitud financiera (paciente, cobros seleccionados, monto).\n2. Usar 'Tool_Odoo_Invoice' para registrar el cliente y emitir la factura en Odoo ERP.\n3. Si se solicita aviso de cobro, utilizar 'Tool_Reminders_Dispatcher'.\n4. Retornar el resumen contable con el número de factura generado (INV/2026/XXXX) e importe total.\n\nREGLA ANTI-ALUCINACIÓN — OBLIGATORIA:\nCuando NO entiendas claramente la intención del usuario o faltan datos necesarios:\n1. NUNCA ejecutes una herramienta con datos inventados o incorrectos.\n2. NUNCA generes una respuesta de contenido que no haya sido devuelta por una herramienta.\n3. EN SU LUGAR, pregunta al usuario para confirmar usando opciones concretas.\n   Ejemplos de cómo pedir aclaración:\n   - \"¿Me puedes aclarar si quieres [opción A] o [opción B]?\"\n   - \"Entiendo que quieres [X], ¿es correcto? Necesito también [dato que falta].\"\n   - \"No he reconocido bien la petición. ¿Te refieres a [X] o a [Y]?\"\n4. Cada aclaración del profesional es aprendizaje: úsala para interpretar mejor sus próximas expresiones similares."
+        },
+        "promptType": "define",
+        "text": "={{ ($json.body?.history || $json.history) ? \"HISTORIAL DE CONVERSACIÓN PREVIA:\\n\" + ($json.body?.history || $json.history).map(h => (h.role == \"user\" ? \"Usuario\" : \"Musly\") + \": \" + h.content).join(\"\\n\") + \"\\n\\nSOLICITUD ACTUAL DEL USUARIO:\\n\" + ($json.body?.message || $json.message || $json.query || \"\") : ($json.body?.message || $json.message || $json.query || JSON.stringify($json)) }}"
+      },
+      "position": [
+        450,
+        300
+      ],
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7
+    },
+    {
+      "id": "4",
+      "name": "Tool_Odoo_Invoice",
+      "parameters": {
+        "method": "GET",
+        "url": "https://melosmile.odoo.com/api/invoices?query={{ $fromAI('query', 'Nombre o ID del paciente o período a consultar') }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth"
+      },
+      "position": [
+        700,
+        200
+      ],
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "hhO2D8waUEyApE47",
+          "name": "Melosmile Backend JWT x-api-key"
+        }
+      }
+    },
+    {
+      "id": "5",
+      "name": "Tool_Reminders_Dispatcher",
+      "parameters": {
+        "method": "POST",
+        "url": "https://agenda.melosmile.com/api/billing/reminders",
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"invoice_id\": \"{{ $fromAI('invoice_id', 'ID de la factura vencida') }}\"\n}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth"
+      },
+      "position": [
+        700,
+        400
+      ],
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "hhO2D8waUEyApE47",
+          "name": "Melosmile Backend JWT x-api-key"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Execute_Workflow_Trigger": {
+      "main": [
+        [
+          {
+            "index": 0,
+            "node": "Agent_Billing",
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "OpenRouter_Chat_Model": {
+      "ai_languageModel": [
+        [
+          {
+            "index": 0,
+            "node": "Agent_Billing",
+            "type": "ai_languageModel"
+          }
+        ]
+      ]
+    },
+    "Tool_Odoo_Invoice": {
+      "ai_tool": [
+        [
+          {
+            "index": 0,
+            "node": "Agent_Billing",
+            "type": "ai_tool"
+          }
+        ]
+      ]
+    },
+    "Tool_Reminders_Dispatcher": {
+      "ai_tool": [
+        [
+          {
+            "index": 0,
+            "node": "Agent_Billing",
+            "type": "ai_tool"
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

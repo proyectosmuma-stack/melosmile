@@ -1,0 +1,34 @@
+{
+  "exported_at": "2026-09-09T10:16:55.538Z",
+  "instance": "https://n8n.mumaweb.com",
+  "workflows": [
+    {
+      "file": "01-step-2-content-ideation.json",
+      "id": "3yx28zXrIw7XIVLG",
+      "name": "[MELOSMILE] Step 2 - Content Ideation",
+      "nodes": 7,
+      "active": false
+    },
+    {
+      "file": "02-step-4-scheduling-publication.json",
+      "id": "6XW0l0l319ph9ywk",
+      "name": "[MELOSMILE] Step 4 - Scheduling & Publication",
+      "nodes": 10,
+      "active": false
+    },
+    {
+      "file": "03-step-3-content-production.json",
+      "id": "iUf37Vm8iT6ZqWZG",
+      "name": "[MELOSMILE] Step 3 - Content Production",
+      "nodes": 9,
+      "active": false
+    },
+    {
+      "file": "04-step-1-trends-research.json",
+      "id": "wfTGYJUhMBZJ8dim",
+      "name": "[MELOSMILE] Step 1 - Trends Research",
+      "nodes": 9,
+      "active": false
+    }
+  ]
+}

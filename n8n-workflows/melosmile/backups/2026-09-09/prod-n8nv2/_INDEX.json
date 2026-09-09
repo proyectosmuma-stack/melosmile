@@ -1,0 +1,104 @@
+{
+  "exported_at": "2026-09-09T10:16:56.659Z",
+  "instance": "https://n8nv2.mumaweb.com",
+  "workflows": [
+    {
+      "file": "01-sub-agent-clinico.json",
+      "id": "WNViucEUuhzigYtE",
+      "name": "[MELOSMILE] Sub-Agent: Clinico",
+      "nodes": 6,
+      "active": true
+    },
+    {
+      "file": "02-keep-alive-supabase-databases-app.json",
+      "id": "suXh01RfJ190FEd4",
+      "name": "[MELOSMILE] Keep-Alive Supabase Databases & App",
+      "nodes": 4,
+      "active": true
+    },
+    {
+      "file": "03-step-4-scheduling-publication.json",
+      "id": "aNlyjAhXjucsetWN",
+      "name": "[MELOSMILE] Step 4 - Scheduling & Publication",
+      "nodes": 10,
+      "active": true
+    },
+    {
+      "file": "04-step-2-content-ideation.json",
+      "id": "nKqO4ofWj3iA7tmS",
+      "name": "[MELOSMILE] Step 2 - Content Ideation",
+      "nodes": 7,
+      "active": true
+    },
+    {
+      "file": "05-ai-dispatcher.json",
+      "id": "5xjgNTJ86tMQ09rP",
+      "name": "[MELOSMILE] AI Dispatcher",
+      "nodes": 9,
+      "active": true
+    },
+    {
+      "file": "06-knowledge-processor.json",
+      "id": "wwp4x2fToB5Liu0d",
+      "name": "[MELOSMILE] Knowledge Processor",
+      "nodes": 4,
+      "active": true
+    },
+    {
+      "file": "07-sub-agent-agendamiento.json",
+      "id": "d74hAW8IkmmCqoh5",
+      "name": "[MELOSMILE] Sub-Agent: Agendamiento",
+      "nodes": 9,
+      "active": true
+    },
+    {
+      "file": "08-step-1-trends-research.json",
+      "id": "i9BfSUvPBD72bRgy",
+      "name": "[MELOSMILE] Step 1 - Trends Research",
+      "nodes": 9,
+      "active": true
+    },
+    {
+      "file": "09-step-3-content-production.json",
+      "id": "CpNIlJE08h6ujRws",
+      "name": "[MELOSMILE] Step 3 - Content Production",
+      "nodes": 9,
+      "active": true
+    },
+    {
+      "file": "10-sub-agent-contabilidad.json",
+      "id": "inakl5N4ROrmmrFh",
+      "name": "[MELOSMILE] Sub-Agent: Contabilidad",
+      "nodes": 5,
+      "active": true
+    },
+    {
+      "file": "11-agent-document-cleaner.json",
+      "id": "W4yPIa4pWCZfqFir",
+      "name": "[MELOSMILE] Agent Document Cleaner",
+      "nodes": 6,
+      "active": true
+    },
+    {
+      "file": "12-sub-agent-general.json",
+      "id": "T5FvJ4PMcHKp1gBa",
+      "name": "[MELOSMILE] Sub-Agent: General",
+      "nodes": 6,
+      "active": true
+    },
+    {
+      "file": "13-workflow-aprobaci-n-de-contabilidad-y-env-o-de-resumen-pdf.json",
+      "id": "prTnkeZNFQwSUzNj",
+      "name": "[MELOSMILE] Workflow: Aprobación de Contabilidad y Envío de Resumen PDF",
+      "nodes": 3,
+      "active": false
+    },
+    {
+      "file": "14-sub-agent-extracci-n-contable-multicanal-audio-ocr-excel.json",
+      "id": "PhSfFPMcc96nUH57",
+      "name": "[MELOSMILE] Sub-Agent: Extracción Contable Multicanal (Audio/OCR/Excel)",
+      "nodes": 5,
+      "active": false
+    }
+  ]
+}

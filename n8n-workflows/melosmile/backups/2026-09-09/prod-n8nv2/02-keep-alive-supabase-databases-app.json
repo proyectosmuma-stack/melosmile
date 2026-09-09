@@ -1,0 +1,155 @@
+{
+  "_export": {
+    "source": "n8n API backup",
+    "instance": "https://n8nv2.mumaweb.com",
+    "date": "2026-09-09T10:16:55.941Z",
+    "workflow_id": "suXh01RfJ190FEd4",
+    "active": true
+  },
+  "id": "suXh01RfJ190FEd4",
+  "name": "[MELOSMILE] Keep-Alive Supabase Databases & App",
+  "active": true,
+  "nodes": [
+    {
+      "id": "schedule-trigger",
+      "name": "Schedule Trigger (Cada 1 Hora)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [
+        200,
+        300
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 * * * *"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "ping-staging-db",
+      "name": "Ping Staging Supabase DB",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        440,
+        300
+      ],
+      "continueOnFail": true,
+      "parameters": {
+        "method": "GET",
+        "url": "https://amhfdzfcmpastmlsosou.supabase.co/rest/v1/clinics?select=id&limit=1",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "[REDACTED]"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer [REDACTED]"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 20000
+        }
+      }
+    },
+    {
+      "id": "ping-prod-db",
+      "name": "Ping Production Supabase DB",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        680,
+        300
+      ],
+      "continueOnFail": true,
+      "parameters": {
+        "method": "GET",
+        "url": "https://xylqytpudbdcsbuuwqpi.supabase.co/rest/v1/clinics?select=id&limit=1",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "[REDACTED_JWT]"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer [REDACTED_JWT]"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 20000
+        }
+      }
+    },
+    {
+      "id": "ping-vercel-prod",
+      "name": "Ping Vercel Keepalive App",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        920,
+        300
+      ],
+      "continueOnFail": true,
+      "parameters": {
+        "method": "GET",
+        "url": "https://agenda.melosmile.com/api/cron/keepalive",
+        "options": {
+          "timeout": 20000
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Schedule Trigger (Cada 1 Hora)": {
+      "main": [
+        [
+          {
+            "node": "Ping Staging Supabase DB",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ping Staging Supabase DB": {
+      "main": [
+        [
+          {
+            "node": "Ping Production Supabase DB",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ping Production Supabase DB": {
+      "main": [
+        [
+          {
+            "node": "Ping Vercel Keepalive App",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all"
+  }
+}

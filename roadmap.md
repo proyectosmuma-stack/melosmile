@@ -139,4 +139,6 @@ Este documento establece el plan de desarrollo y próximas tareas activas para l
 - [ ] **Timezone UX**: `/api/appointments/list` devuelve horas en UTC crudo; normalizar a hora España en endpoint o enriquecer contexto del agente.
 - [x] **Odoo end-to-end**: configurar `ODOO_*` en Vercel y probar facturación (la ruta `odoinvoice` ya existe en el Bridge).
 - [ ] **Paridad storage dev-local** (opcional): sincronizar objetos/buckets al Supabase local o apuntar env dev a cloud para que la galería local no muestre rotas.
+- [x] **Persistencia de Alertas Campanita en Producción y Staging**: Tabla `system_notifications` creada y operativa en Supabase Producción y Staging.
+- [ ] **Migración `system_notifications` en Supabase Local**: Ejecutar `supabase db push` en local al levantar Colima (`supabase/migrations/20260909000000_create_system_notifications.sql`).
 

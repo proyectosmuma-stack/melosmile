@@ -1,113 +1,75 @@
-# 🏆 ESTADO DEL PROYECTO MELOSMILE - CERTIFICACIÓN MUSLY v1.0 COMPLETADA
+# 🏆 ESTADO DEL PROYECTO MELOSMILE — PAGOS VINCULADOS + CAMPANITA COMPLETADA (09/09/2026)
 
-## 🎯 **OBJETIVO ACTUAL**
-**Despliegue a producción del agente Musly v1.0** tras certificación completa exitosa.
+## 🎯 OBJETIVO ACTUAL
+**Sesión de hoy (09/09/2026):** ✅ COMPLETADO — Vincular los pagos registrados en las fichas Notion de los pacientes a las citas del sistema (`billing_records` en Supabase producción) + anotar pendientes en fichas + crear alertas en la campanita del frontend.
 
 **Situación actual:**
-- ✅ Musly v1.0 certificado completamente para producción
-- ✅ Confirmación Product Owner: PAC-XXX NO es blocker para lanzamiento
-- ✅ Auditoría n8n completada: configuración staging correcta
-- ⏳ Despliegue técnico en progreso por equipo n8n
-- 🔜 Validación post-despliegue pendiente
+- ✅ **22 billing_records** creados/vinculados en Supabase producción (6 pacientes, total 6.248€) + verificación final OK
+- ✅ Cita CONTROL 5 de Leal Rey (2026-09-08) creada en agenda + pago 120€ confirmado
+- ✅ Código de campanita persistente implementado (`/api/notifications` + componente) — build OK
+- ✅ **CAMPANITA Y NOTAS COMPLETADAS EN PRODUCCIÓN:** Tabla `system_notifications` creada, 4 alertas insertadas y 4 fichas clínicas anotadas con "PENDIENTE DE REVISIÓN" vía script determinista.
+- ✅ **TABLA APLICADA EN STAGING:** `system_notifications` creada con éxito en Supabase Staging (`amhfdzfcmpastmlsosou`).
+- ✅ **TODO EN PRODUCCIÓN:** Migración aplicada, alertas insertadas, fichas anotadas — verificación exitosa.
+- 📌 **REGISTRO PARA LOCAL:** La migración `supabase/migrations/20260909000000_create_system_notifications.sql` está en el repo y se aplicará automáticamente en Supabase Local cuando se levante Colima.
+- ⚠️ Previo completado: contexto largo Musly validado en prod + backup n8n (commit `ec50adf`/`214aaee`)
 
-## 📁 **ARCHIVOS MODIFICADOS/RELEVANTES**
+## 📁 ARCHIVOS MODIFICADOS/RELEVANTES (SESIÓN 3 — 09/09/2026)
 
-### **ARCHIVOS CRÍTICOS ACTUALIZADOS:**
-1. **`roadmap.md`** - Mejoras futuras registradas:
-   - Mejora 13.1: Búsqueda PAC-XXX (v1.1)
-   - Mejora 13.4: Corrección configuración multi-clínica
-2. **`.opencode/ESTADO_PROYECTO.md`** - Este archivo (estado actual)
-3. **`scratch/TICKET_MULTI_CLINICA_N8N.md`** - Ticket específico para corrección
+### 🔔 CAMPANITA PERSISTENTE (frontend — ✅ COMMITEADO `dd17030` + DEPLOY Vercel)
+1. **`frontend/src/app/api/notifications/route.ts`** (NUEVO) — GET (lista `system_notifications` ordenada por created_at desc) + PATCH (marcar leída/editar campos).
+2. **`frontend/src/components/layout/notification-center.tsx`** (MODIFICADO) — tipo `SystemNotification` gana `link?: string` y `type "error"`; `syncNotifs` combina notificaciones del sistema (primeras) + alertas de planes + localStorage; render con `<a href>` clicable → lleva a `/patients/<id>`.
+3. **`supabase/migrations/20260909000000_create_system_notifications.sql`** (NUEVO) — tabla `system_notifications` (id uuid pk, title, message, type check success/info/warning, read bool, link text, created_by text, created_at timestamptz) + grants + RLS. ✅ Aplicada en prod y staging.
+4. **`scratch/alertas-campanita.json`** — 4 alertas listas (Billing Tartrectomía 60€ → paciente f0be2929-4436-4014-aa02-c87476f02a5a; Billing Control 4 Motion → Begoña 52b1d22b-975f-4eab-a0c6-b9d3d75c31e5; Factura Myobrace 700€ → Alberto Rama 933bc479-2d82-4784-9096-628d656cb923; Registro pagos sin importes → Candela 5f01d39d-8c4e-474c-9b4f-7adb69f85db6).
+5. **`scratch/notas-pendientes.json`** — 4 anotaciones "PENDIENTE DE REVISION" para los mismos pacientes (2 billing pendientes + Myobrace 700€ + Candela sin importes).
 
-### **ARCHIVOS DE AUDITORÍA GENERADOS:**
-- `scripts/audit_n8n_development_complete.js` - Script auditoría
-- `scratch/CHECKLIST_VERIFICACION_DESARROLLO.md` - Checklist procedimientos
-- `scratch/PROCEDIMIENTO_SINCRONIZACION_N8N.md` - Guía estándar
+### 💰 VINCULACIÓN DE PAGOS (Supabase prod — VERIFICADO)
+6. Scripts temporales en `/tmp/`: `link_pagos.ts`, `complete_link.ts`, `fix_unicity.ts`, `verify_link.ts`, `identify_pending*.ts`, `schema_reminders.ts`, `schema_billing.ts`.
+7. **Billing creados (Aprobado):** Diego Martínez PAC-018 (515€: 215+100+100+100), Kamila PAC-022 (715€: 535+60+60+60), Begoña PAC-024 (2238€: 2038+100+100), Leal Rey PAC-025 (2130€: 1650+120+120+120+120 — fusionado pago inicial+Ctrl1 por UNIQUE appointment_id), Claire PAC-028 (200€), Richard PAC-031 (450€: 150+100+100+100, 2 citas reconstruidas).
+8. **Citas reconstruidas Richard:** `65a2f58a-0900-4065-95a7-3a2d31c8a8c6` (31/03/25 Limpieza+Control 150€) y `bb4cd2f0-4f96-4a4c-bd46-6124290eb96b` (28/07/26 ABONO 100€).
+9. **Leal Rey CONTROL 5:** cita `41515709-5d04-41f4-be03-6bb8223c6f72` (08/09 13:00 Goya, Realizada); billing automático `bf2bb1b2-e6b8-4644-9053-418e6ba2c99f` confirmado Aprobado/tarjeta + patient_id fijado; Control 1 fusionado en billing del pago inicial `737b6146-ebdc-4a01-a2b1-5bd8f6a3d437` (1650€).
+10. **2 billing pendientes detectados (sin anotar aún):** `5464409e-4bd5-4798-9e39-fe36c786ae77` (60€ Tartrectomía, appt `3a6b1e14-aaa0-4b49-91f0-8c46aa5aa515`, paciente f0be2929) y `1864e754-7ce2-4fc2-b4e1-3f1763c9b290` (0€ Control 4 Motion, appt `f2c94184-bb06-4301-a6d0-8680a1090a01`, Begoña) — son las alertas/anotaciones pendientes.
 
-### **DOCUMENTACIÓN EJECUTIVA:**
-- `scratch/RESUMEN_EJECUTIVO_FINAL.md` - Resumen completo sesión
-- `scratch/COMUNICACION_STAKEHOLDERS.md` - Comunicación lista
-- `scratch/HISTORIA_COMPLETA_MUSLY.md` - Evolución técnica
+## 🔧 DECISIONES TOMADAS
 
-## 🔧 **DECISIONES TOMADAS**
+### 1. Mecanismo de campanita = tabla `system_notifications` + API + componente
+- La campanita (`NotificationBell`) SOLO leía localStorage + alertas dinámicas de `/api/treatment-plans?status=activo`. Se decidió añadir tabla persistente con campo `link` para que cada alerta lleve a la ficha de revisión (`/patients/<id>`).
+- API route + componente generados por `mumabot-coder-cloud` (Build OK, 47/47). ✅ Commiteado (`dd17030`) y desplegado en prod/staging.
 
-### **1. CERTIFICACIÓN COMPLETA APROBADA**
-- **Musly v1.0 certificado** para despliegue producción
-- **Basado en:** 11/15 tests E2E exitosos + evidencia física escritura
-- **Condición:** PAC-XXX NO es blocker (confirmado Product Owner)
+### 2. Lección de integridad: `billing_records.appointment_id` es UNIQUE
+- No se pueden insertar 2 billing para el mismo appointment → se fusiona importe en uno solo (pago inicial 1530 + Control 1 120 = 1650€ en un registro con notas claras).
+- Los billing autogenerados al crear cita quedan status "Pendiente" y `patient_id NULL` → hay que confirmarlos/rellenarlos manualmente.
 
-### **2. AUDITORÍA N8N COMPLETADA**
-- **6 flujos verificados:** Todos apuntan a staging Vercel ✅
-- **Sin producción:** 0 referencias a agenda.melosmile.com ✅
-- **Issue detectado:** Configuración multi-clínica (registrado)
+### 3. Regla de datos sensibles (usuario, 09/09)
+- **Toda información sensible (service role key, datos pacientes) SOLO vía agentes locales** (`mumabot-coder-local`), nunca por hilo cloud. La key de Supabase prod está en `/tmp/sb_prod_service_role.txt` (temporal).
+- Pendientes de fichas y alertas NO se aplican por cloud aunque el local esté caído — se espera al local.
 
-### **3. DEUDA TÉCNICA REGISTRADA**
-- **PAC-XXX:** Mejora 13.1 programada v1.1 (no blocker v1.0)
-- **Multi-clínica:** Mejora 13.4 registrada para corrección
-- **Transparencia total:** Issues documentados en roadmap
+### 4. Convenciones de billing usadas
+- `applied_commission_rate: 60`, `applied_lab_discount_rate: 50`, `calculated_total` = importe, `billing_month` = `YYYY-MM-01`, `status: Aprobado`, `payment_method` y `notes` desde la ficha Notion.
 
-### **4. DESPLIEGUE AUTORIZADO**
-- **Git commit ejecutado:** Certificación pusheada a `develop`
-- **Equipo n8n:** Trabajando en despliegue técnico producción
-- **Comunicación stakeholders:** Documentación preparada
+## 🚀 PRÓXIMOS PASOS PENDIENTES
+1. ✅ **Campanita y alertas en Producción:** Tabla `system_notifications` creada, 4 alertas insertadas y 4 fichas clínicas anotadas.
+2. ✅ **Tabla en Staging:** Migración `20260909000000_create_system_notifications.sql` aplicada con éxito en Supabase Staging (`amhfdzfcmpastmlsosou`).
+3. 📌 **Aplicar migración en Local:** Cuando se levante el entorno local (Colima/Docker), correr las migraciones pendientes en Supabase Local (`supabase db push` o arranque habitual).
+4. ✅ **Commit a `develop`** `dd17030` — campanita (route + componente + migración).
+5. ✅ **Deploy Vercel completado (ambos entornos):** Producción `https://agenda.melosmile.com` (aliased, deploy `87boa52dr`, verificado 307→login / API 401 auth OK) + Staging/Preview (`melosmile-production-160ohmpjv-...`, verificado 302).
+6. 📋 Confirmar con usuario: caso Alberto Rama (700€ Myobrace — facturar?) y Candela (ficha sin importes en "Control de Pagos").
+7. ⚠️ Pendientes históricos: migración `add_conversation_context` y `create_system_notifications` a Local (NO levantar Colima sin preguntar); citas reales Munir 09-10/09; secretos embebidos en nodos n8n → Credenciales n8n.
 
-## 🚀 **PRÓXIMOS PASOS PENDIENTES**
+## 📊 ESTADO DE VERIFICACIONES (09/09/2026 — SESIÓN 3)
+- ✅ Billing vinculados verificados por paciente (sumas totales correctas).
+- ✅ API `/api/notifications` + componente: build TypeScript OK.
+- ✅ Producción DB: Tabla `system_notifications` activa con 4 alertas y 4 anotaciones en pacientes.
+- ✅ Staging DB: Tabla `system_notifications` activa.
+- 📌 **Local DB:** Migración `20260909000000_create_system_notifications.sql` registrada para ejecución al levantar Colima.
+- ✅ **VERIFICACIÓN POST-ESCRITURA:** Re-lectura confirmada — tabla existe + 4 alertas insertadas + 4 fichas anotadas.
+- ✅ **COMMIT + DEPLOY COMPLETADOS:** `dd17030` a develop + deploy Vercel en Producción (`agenda.melosmile.com`) y Staging/Preview. Verificación HTTP: prod 307→login, API `/api/notifications` 401 (auth OK), preview 302.
 
-### **INMEDIATOS (HOY):**
-1. **⏳ Completar despliegue técnico** (equipo n8n)
-2. **🔜 Ejecutar validación post-despliegue**
-3. **🔜 Configurar monitorización 24 horas**
-4. **🔜 Enviar comunicación a stakeholders**
+## 📦 RESUMEN GIT (SESIÓN 3)
+- ✅ **Commit újovo `dd17030`** en `develop`: `feat(notifications): campanita persistente con system_notifications + API + migración` — incluye `route.ts` (nuevo), `notification-center.tsx` (modificado), migración `create_system_notifications.sql` (nuevo). Solo estos 3 archivos; los demás cambios sin commitear se preservan intactos.
+- **Working tree NUEVO (sin commitear aún, NO tocar):** `.opencode/ESTADO_PROYECTO.md` (este), `.agents/skills/` (borrados), `context.md`, `Walkthrough.md`, `roadmap.md`, `frontend/src/app/(dashboard)/patients/[id]/page.tsx`, `frontend/package*.json`, `supabase/seed.sql`, `scratch/` y `frontend/scratch/` (muchos).
+- Historial previo (sesión 2): `develop` en `ec50adf`/`214aaee`/`3954cb6`/`a4f1ab2`; `main` en `9d188e4`.
 
-### **PRÓXIMO SPRINT (v1.1):**
-1. **Implementar PAC-XXX** - Búsqueda por código historia
-2. **Corregir multi-clínica** - Unificar como Dra. Osly Melo
-3. **Optimizar enrutamiento** - Mejorar consultas clínicas
-4. **Expandir funcionalidades** - Basado en feedback producción
-
-### **CHECKLIST POST-DESPLIEGUE:**
-- [ ] Backend producción desplegado (Vercel)
-- [ ] Workflows n8n producción activos
-- [ ] Test conversacional básico funcionando
-- [ ] Health checks todos pasando
-- [ ] Monitorización configurada
-- [ ] Comunicación enviada
-
-## 📊 **ESTADO DE VERIFICACIONES**
-
-### **✅ CONFIRMADO:**
-- Funcionalidades core 100% operativas (agendamiento + búsqueda nombre)
-- Infraestructura staging estable
-- 0 alucinaciones en auditoría E2E
-- Enrutamiento 100% correcto (15/15)
-
-### **⚠️ LIMITACIONES CONOCIDAS (NO BLOCKERS):**
-- Búsqueda PAC-XXX no disponible en v1.0
-- Configuración multi-clínica en flujos n8n
-- Mejoras planificadas para v1.1
-
-### **🚀 LISTO PARA:**
-- Despliegue inmediato a producción
-- Uso real en clínica Dra. Osly Melo
-- Recolección feedback para v1.1
-
-## 🎯 **CONTEXTO PARA REINICIAR CONVERSACIÓN**
-
-**Si reinicias esta sesión, empieza leyendo este archivo y continúa con:**
-
-1. Verificar estado del despliegue en progreso
-2. Ejecutar validación post-despliegue si está completo
-3. Preparar comunicación final a stakeholders
-4. Monitorear primeras horas en producción
-
-**Comando recomendado para usuario:**
-```
-Lee .opencode/ESTADO_PROYECTO.md y sigamos desde ahí.
-```
-
----
-
-**Última actualización:** 2026-09-04  
+**Última actualización:** 2026-09-09 (sesión 3)  
 **Proyecto:** melosmile  
-**Sesión:** Certificación Musly v1.0 completa  
-**Estado:** 🚀 **LISTO PARA PRODUCCIÓN - Despliegue en progreso**
+**Sesión:** Vinculación pagos Notion→billing_records + campanita  
+**Estado:** ✅ COMPLETO — pagos vinculados ✅ / campanita código ✅ commiteado (`dd17030`) / migración+alertas+anotaciones ✅ / deploy Vercel ✅ (prod + staging). Quedan: confirmaciones usuario (Alberto Rama, Candela) + pendientes históricos.

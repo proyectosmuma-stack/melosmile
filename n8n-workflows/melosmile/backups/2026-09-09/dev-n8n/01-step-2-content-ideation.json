@@ -1,0 +1,256 @@
+{
+  "_export": {
+    "source": "n8n API backup",
+    "instance": "https://n8n.mumaweb.com",
+    "date": "2026-09-09T10:16:55.362Z",
+    "workflow_id": "3yx28zXrIw7XIVLG",
+    "active": false
+  },
+  "id": "3yx28zXrIw7XIVLG",
+  "name": "[MELOSMILE] Step 2 - Content Ideation",
+  "active": false,
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "melosmile-step2-receive-trends",
+        "options": {}
+      },
+      "name": "Webhook: Receive Trend Data",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "id": "1",
+      "position": [
+        340,
+        300
+      ],
+      "webhookId": "3c61a212-e704-4544-b08a-011ce16fe8f9"
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "operation": "getAll",
+        "databaseId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "d1fb6518-1657-8363-9903-01981cd61cf5"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "key": "Cuenta|relation",
+              "condition": "contains",
+              "relationValue": "db7b6518-1657-823f-8262-81d244bd3d48"
+            }
+          ]
+        },
+        "sort": [
+          {
+            "property": "Created",
+            "direction": "descending"
+          }
+        ],
+        "limit": 30,
+        "returnAll": true,
+        "filterType": "manual",
+        "matchType": "allFilters"
+      },
+      "name": "Notion Query: Last 30 Posts",
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 1,
+      "id": "2",
+      "position": [
+        560,
+        300
+      ],
+      "credentials": {
+        "notionApi": {
+          "id": "x6pQtdjvUiW5DKLA",
+          "name": "notion_account_muma"
+        }
+      }
+    },
+    {
+      "id": "code-prepare-1788425554499",
+      "name": "Code: Prepare Prompt Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        650,
+        300
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const items = $input.all();\nconst clientName = 'MELOSMILE';\nconst niche = 'salud bucal y estética dental';\n\n// Extract content from Notion pages\nconst posts = items.map(item => {\n  const props = item.json.properties || {};\n  const title = props.Title?.title?.[0]?.plain_text || props.Name?.title?.[0]?.plain_text || 'Sin título';\n  const content = props.Content?.rich_text?.[0]?.plain_text || props.Description?.rich_text?.[0]?.plain_text || '';\n  const platform = props.Platform?.select?.name || '';\n  const format = props.Meta_Format?.select?.name || '';\n  return { title, content, platform, format };\n}).filter(p => p.content.length > 0);\n\nconst postsText = posts.map((p, i) => `${i+1}. [${p.platform}/${p.format}] ${p.title}: ${p.content.substring(0, 300)}`).join('\\n\\n');\n\nconst prompt = `Basado en los siguientes posts recientes de ${clientName} (${niche}), genera 5-10 ideas de contenido fresco. Para cada idea devuelve un objeto JSON con: title, description, format (Reel/Carousel/Story/Post), angles (array de strings).\n\nPosts recientes:\\n${postsText}`;\n\nreturn [{ json: { prompt, clientName, niche } }];"
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://openrouter.ai/api/v1/chat/completions",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpHeaderAuth",
+        "jsonBody": "={{ JSON.stringify({ model: 'anthropic/claude-3-haiku', messages: [{ role: 'user', content: $json.prompt }], temperature: 0.7, max_tokens: 2000 }) }}",
+        "sendBody": true,
+        "sendHeaders": true,
+        "specifyBody": "json"
+      },
+      "name": "OpenRouter Agent: Content Ideas",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "id": "3",
+      "position": [
+        780,
+        300
+      ],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "8s9UK3yBbRrhXrZV",
+          "name": "OpenRouter HTTP Header Auth v2"
+        }
+      }
+    },
+    {
+      "id": "code-normalize-1788429235347",
+      "name": "Code: Normalize Ideas",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        880,
+        300
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "\nconst response = $json;\nconst content = (response.choices?.[0]?.message?.content || '').toString();\nif (!content.trim()) return [{ json: { error: 'No content' } }];\n\n// --- Extract JSON objects embedded in the numbered list the LLM produces ---\n// The LLM returns blocks like: \"1. { \\\"title\\\": ... }\" then \"2. { ... }\"\n// Strategy: find every { ... } block and parse it; fall back to line parser if none.\n\nfunction parseBlockJSON(text) {\n  const ideas = [];\n  let idx = 0;\n  while (idx < text.length) {\n    const open = text.indexOf('{', idx);\n    if (open === -1) break;\n    // find matching closing brace balancing nested { }\n    let depth = 0;\n    let inStr = false;\n    let close = -1;\n    for (let i = open; i < text.length; i++) {\n      const c = text[i];\n      if (inStr) {\n        if (c === '\\\\') { i++; continue; }\n        if (c === '\"') inStr = false;\n        continue;\n      }\n      if (c === '\"') { inStr = true; continue; }\n      if (c === '{') depth++;\n      else if (c === '}') { depth--; if (depth === 0) { close = i; break; } }\n    }\n    if (close === -1) break;\n    const chunk = text.substring(open, close + 1);\n    try {\n      const obj = JSON.parse(chunk);\n      if (obj && typeof obj === 'object' && (obj.title || obj.description || obj.angles || obj.format)) {\n        ideas.push(obj);\n      }\n    } catch (e) {\n      // not a valid JSON object block; skip\n    }\n    idx = close + 1;\n  }\n  return ideas;\n}\n\nfunction parseLineByLine(text) {\n  const ideas = [];\n  let current = null;\n  for (const line of text.split('\\n').map(l => l.trim()).filter(l => l)) {\n    const numMatch = line.match(/^\\d+[.)]\\s*(.+)/);\n    if (numMatch) {\n      if (current && current.title) ideas.push(current);\n      current = { title: numMatch[1].trim().replace(/^[{\\\"' \t]+|[}\\\"' \t]+$/g, ''), description: '', format: 'Post', angles: [] };\n      continue;\n    }\n    if (current && line.toLowerCase().startsWith('description:')) {\n      current.description = line.substring(line.indexOf(':') + 1).trim();\n      continue;\n    }\n    if (current && line.toLowerCase().startsWith('format:')) {\n      current.format = line.substring(line.indexOf(':') + 1).trim();\n      continue;\n    }\n    if (current && line.toLowerCase().startsWith('angles:')) {\n      const at = line.substring(line.indexOf(':') + 1).trim();\n      current.angles = at.split(',').map(a => a.trim().replace(/^[\\[\\]\"]|[\"\\]]$/g, '')).filter(Boolean);\n      continue;\n    }\n    if (current && current.title && line && !line.match(/^\\d+[.)]/)) {\n      current.description += (current.description ? ' ' : '') + line;\n    }\n  }\n  if (current && current.title) ideas.push(current);\n  return ideas;\n}\n\nlet ideas = parseBlockJSON(content);\nif (ideas.length === 0) ideas = parseLineByLine(content);\n\n// Normalize\nconst VALID_FORMATS = ['Reel', 'Carousel', 'Story', 'Post'];\nideas = ideas\n  .map(idea => ({\n    title: String(idea.title || '').replace(/^[\\s\\\"'{]+|[\\s\\\"'}]+$/g, '').trim(),\n    description: String(idea.description || idea.content || '').trim(),\n    format: String(idea.format || 'Post').trim(),\n    angles: Array.isArray(idea.angles) ? idea.angles.map(String) : []\n  }))\n  .filter(i => i.title.length > 0);\n\nideas.forEach(idea => {\n  const known = VALID_FORMATS.find(k => idea.format.toLowerCase() === k.toLowerCase());\n  idea.format = known || 'Post';\n});\n\nif (ideas.length === 0) return [{ json: { error: 'No ideas parsed' } }];\n\nreturn ideas.map(idea => ({\n  json: {\n    action: 'create',\n    target_db: 'PUBLICACIONES',\n    properties: {\n      Title: { title: [{ text: { content: idea.title } }] },\n      Status: { select: { name: 'ideation' } },\n      Meta_Format: { select: { name: idea.format } },\n      Content: { rich_text: [{ text: { content: idea.description } }] }\n    }\n  }\n}));\n"
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://n8n.mumaweb.com/webhook/notion-query",
+        "authentication": "none",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "specifyBody": "json",
+        "jsonBody": "={{ $json }}",
+        "sendBody": true,
+        "sendHeaders": true,
+        "options": {}
+      },
+      "name": "HTTP Request: Create via Router",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "id": "5",
+      "position": [
+        1220,
+        300
+      ],
+      "credentials": {}
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://n8n.mumaweb.com/webhook/melosmile-step3-receive-idea",
+        "authentication": "none",
+        "bodyContentType": "json",
+        "jsonParameters": true,
+        "body": "={{ JSON.stringify({ ideas: $json.ideas || [$json], client: 'MELOSMILE' }) }}",
+        "options": {},
+        "sendBody": true,
+        "sendHeaders": true
+      },
+      "name": "HTTP Request: Call Step 3",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "id": "6",
+      "position": [
+        1440,
+        300
+      ],
+      "credentials": {}
+    }
+  ],
+  "connections": {
+    "Webhook: Receive Trend Data": {
+      "main": [
+        [
+          {
+            "node": "Notion Query: Last 30 Posts",
+            "index": 0,
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Notion Query: Last 30 Posts": {
+      "main": [
+        [
+          {
+            "node": "Code: Prepare Prompt Data",
+            "index": 0,
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "OpenRouter Agent: Content Ideas": {
+      "main": [
+        [
+          {
+            "node": "Code: Normalize Ideas",
+            "index": 0,
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Code: Prepare Prompt Data": {
+      "main": [
+        [
+          {
+            "node": "OpenRouter Agent: Content Ideas",
+            "index": 0,
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "Code: Normalize Ideas": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request: Create via Router",
+            "index": 0,
+            "type": "main"
+          }
+        ]
+      ]
+    },
+    "HTTP Request: Create via Router": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request: Call Step 3",
+            "index": 0,
+            "type": "main"
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "saveExecutionProgress": true,
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner",
+    "timezone": "Europe/Madrid",
+    "executionOrder": "v1"
+  }
+}

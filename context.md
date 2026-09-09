@@ -185,19 +185,10 @@ VPS_DOMAIN_FOLDER=melosmile.com
 
 ---
 
-### 🔐 Seguridad de Fotos Clínicas en Supabase Storage (RGPD — endurecido 2026-08-24)
+### 🔐 Fotografías y Documentos Clínicos en VPS IONOS (Completado 2026-09-08)
 
-Las 88 fotografías clínicas reales (migración Notion) viven en el bucket `patient-documents` de Supabase Cloud (`amhfdzfcmpastmlsosou`). Estado de seguridad:
+Las 88 fotografías clínicas reales han sido migradas al servidor VPS IONOS (`94.143.139.120`), quedando almacenadas bajo la estructura canónica `melosmile.com/pacientes/{patient_id}/registros/{YYYY-MM-DD}/{file_name}`. En Supabase Producción (`xylqytpudbdcsbuuwqpi`), `file_path` apunta a la ruta relativa del VPS y `file_url` se mantiene en `NULL`. La resolución y acceso se efectúa de forma transparente y segura a través de `NEXT_PUBLIC_VPS_FILES_BASE` y `/api/documents`.
 
-| Capa | Medida | Detalle |
-|---|---|---|
-| **Storage** | Bucket PRIVADO | `PUT /storage/v1/bucket/patient-documents {public:false}` (gotcha: PATCH devuelve 404). Las URLs `/object/public/...` devuelven 400 |
-| **Base de datos** | RLS `documents` endurecida | Migración `20260824000000_secure_documents_rls.sql` elimina las 4 políticas públicas ("Allow all authenticated", "Allow anon read", "Allow public all", "Allow anon and authenticated all"). Aplicada a local Y cloud (0 políticas restantes). El backend opera vía service_role que bypasa RLS |
-| **Servicio** | Signed URLs server-side | Helper `frontend/src/lib/server/storage.ts` → `signDocumentUrl()` (`createSignedUrl`, TTL 3600s, rechaza paths con `..` o URLs externas). `GET /api/documents` firma cada documento con fallback legacy si la firma falla → contrato API intacto, componentes frontend SIN cambios |
-
-> ⚠️ **Deuda conocida**: la galería en DEV LOCAL muestra imágenes rotas (el Supabase local no tiene buckets ni objetos). No afecta a staging ni producción. Cuando se certifique el Document Cleaner de n8n, deberá consumir signed URLs o base64 (nunca URLs públicas).
-
----
 
 ---
 
@@ -304,3 +295,45 @@ El test de verificación reveló que **`google/gemini-3.1-pro-preview` tiene quo
 **Documentación persistente**: ADR "MumaBot Agent Team" en el grafo (codebase-memory), lección/decisión en RAG (Supabase local), wiki Karpathy en `docs/knowledge-base/` (index.md, log.md, domains/agent-team.md, decisions/incidente-2026-08-18-subagentes-vacios.md), referencia en `CLAUDE.md`.
 
 ---
+
+## 📸 Gestión de Fotografías Clínicas y Planes de Tratamiento Notion (2026-09-08)
+
+1. **Resolución de Fotografías Huérfanas (`appointment_id: NULL`)**:
+   - Se vincularon 30 fotografías clínicas en Supabase Cloud (`xylqytpudbdcsbuuwqpi`) a sus citas clínicas específicas:
+     - Begoña Fernández Martínez HS (`PAC-024`): 2 fotos vinculadas a la cita de instalación de Motion F1 + aling 1 (21/04/2026).
+     - Kamila Alejandra Hultzsch Naim (`PAC-022`): 12 fotos vinculadas a su cita diagnóstica inicial (20/01/2026).
+     - Candela Fernández HS (`PAC-019`): 14 fotos vinculadas a su instalación de alineadores (03/02/2026).
+     - Erika Alvarado (`PAC-013`) y Rafael Requeijo (`PAC-012`): Fotos de estudio vinculadas a sus citas de inicio de ortodoncia.
+   - Estado final en BD: **0 documentos sin cita vinculada**.
+2. **Documentación Clínica en `treatment_plan`**:
+   - Registro cronológico detallado de intervenciones, prescripción de aparatología, números de alineadores entregados, IPR ejecutado y cronogramas de citas en 26 pacientes activos.
+3. **Frontend & Despliegue**:
+   - Incorporado soporte `whitespace-pre-line` en la ficha de paciente ([page.tsx](file:///Users/munircallaos/Antigravity%20Projects/melosmile/frontend/src/app/(dashboard)/patients/[id]/page.tsx)) para visualización estructurada.
+   - Desplegado en producción en **agenda.melosmile.com**.
+
+---
+
+## 🔔 Sistema de Alertas Persistentes de la Campanita (`system_notifications`) (2026-09-09)
+
+1. **Estructura y Migración SQL**:
+   - Creada tabla `public.system_notifications` (`supabase/migrations/20260909000000_create_system_notifications.sql`) con soporte para tipos (`warning`, `info`, `success`), enlaces interactivos directos (`link`) a fichas de revisión, y políticas RLS públicas.
+2. **Estado por Entornos**:
+   - **Producción (`xylqytpudbdcsbuuwqpi` / `agenda.melosmile.com`)**: Tabla creada y activa con 4 alertas de revisión iniciales + 4 anotaciones en los `treatment_plan` de los pacientes asociados.
+   - **Staging (`amhfdzfcmpastmlsosou` / `staging.melosmile.com`)**: Migración ejecutada con éxito y tabla `system_notifications` plenamente operativa.
+   - **Local (Supabase Local)**: Archivo de migración registrado en `supabase/migrations/`; se aplicará automáticamente al iniciar el stack local (Colima/Docker) mediante `supabase db push` o `supabase start`.
+3. **Frontend**:
+   - Endpoint `/api/notifications` (GET / PATCH) y componente [notification-center.tsx](file:///Users/munircallaos/Antigravity%20Projects/melosmile/frontend/src/components/layout/notification-center.tsx) preparados para consumir y persistir alertas con links clicables.
+
+---
+
+## 🌐 Configuración de Entornos Vercel y Bases de Datos (09/09/2026)
+
+- **Producción (`agenda.melosmile.com` / Proyecto Vercel: `melosmile-production`)**:
+  - Base de Datos Supabase: `xylqytpudbdcsbuuwqpi` (`melosmile-production`).
+  - Contenido: 67 pacientes reales, 119 citas, 88 documentos/fotos, 53 tratamientos/facturación, 4 alertas de campanita.
+  - Variables Vercel: `NEXT_PUBLIC_SUPABASE_URL=https://xylqytpudbdcsbuuwqpi.supabase.co`, `NEXT_PUBLIC_APP_URL=https://agenda.melosmile.com`.
+- **Staging (`staging.melosmile.com` / Proyecto Vercel: `melosmile-staging`)**:
+  - Base de Datos Supabase: `amhfdzfcmpastmlsosou` (`melosmile_db`).
+  - Contenido: Sandbox de pruebas limpio (solo ficha `Munir Mauel Callaos Cardama PAC-001`).
+  - Variables Vercel: `NEXT_PUBLIC_SUPABASE_URL=https://amhfdzfcmpastmlsosou.supabase.co`, `NEXT_PUBLIC_APP_URL=https://staging.melosmile.com`.
+

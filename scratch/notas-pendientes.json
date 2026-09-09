@@ -1,0 +1,43 @@
+{
+  "descripcion": "Anotaciones PENDIENTE DE REVISION en treatment_plan (Supabase prod Melosmile). Leidas por mumabot-coder-local. No exponer contenido en chat cloud.",
+  "target": "supabase",
+  "base_url": "https://xylqytpudbdcsbuuwqpi.supabase.co/rest/v1",
+  "secret_file": "/tmp/sb_prod_service_role.txt",
+  "notas_a_aplicar": [
+    {
+      "patient_id": "f0be2929-4436-4014-aa02-c87476f02a5a",
+      "billing_id": "5464409e-4bd5-4798-9e39-fe36c786ae77",
+      "appointment_id": "3a6b1e14-aaa0-4b49-91f0-8c46aa5aa515",
+      "motivo_cita": "Tartrectomia / Limpieza Dental",
+      "nota": "PENDIENTE DE REVISION (billing_records 5464409e, 60 EUR, creado 2026-09-03, estado Pendiente, cita Tartrectomia/Limpieza): validar cobro y completar metodo de pago en el sistema."
+    },
+    {
+      "patient_id": "52b1d22b-975f-4eab-a0c6-b9d3d75c31e5",
+      "billing_id": "1864e754-7ce2-4fc2-b4e1-3f1763c9b290",
+      "appointment_id": "f2c94184-bb06-4301-a6d0-8680a1090a01",
+      "motivo_cita": "Control 4 Motion / Retirada",
+      "nota": "PENDIENTE DE REVISION (billing_records 1864e754, 0 EUR, creado 2026-09-09, estado Pendiente, cita Control 4 Motion/Retirada aun Pendiente): confirmar importe real del control y cerrar billing."
+    },
+    {
+      "patient_id": "933bc479-2d82-4784-9096-628d656cb923",
+      "billing_id": null,
+      "appointment_id": null,
+      "motivo_cita": null,
+      "nota": "PENDIENTE DE REVISION: factura 700 EUR de inicio de tratamiento Myobrace pendiente de decidir/emitir (anotacion en ficha Notion). Revisar y, si procede, vincular a cita y crear billing."
+    },
+    {
+      "patient_id": "5f01d39d-8c4e-474c-9b4f-7adb69f85db6",
+      "billing_id": null,
+      "appointment_id": null,
+      "motivo_cita": null,
+      "nota": "PENDIENTE DE REVISION: la ficha Notion tiene cabecera 'Control de Pagos:' sin importes registrados. Completar registro de pagos en la ficha para poder vincularlos en el sistema."
+    }
+  ],
+  "instrucciones": [
+    "1. Leer la service role key desde /tmp/sb_prod_service_role.txt (NO imprimirla).",
+    "2. Para cada nota: GET /patients?id=eq.<patient_id> y leer el treatment_plan actual.",
+    "3. Si la nota ya existe en treatment_plan, saltar (no duplicar).",
+    "4. Si no existe, PATCH /patients?id=eq.<patient_id> anadiendo la linea \"\\n- <nota>\" al final del treatment_plan.",
+    "5. Reportar SOLO: patient_id, ok/error, y si se anadio o ya existia. NO volcar contenido de treatment_plan."
+  ]
+}
