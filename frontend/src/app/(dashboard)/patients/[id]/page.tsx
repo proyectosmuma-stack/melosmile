@@ -1295,6 +1295,27 @@ function toTitleCase(text: string): string {
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
+                          {(() => {
+                            const apptPhotoCount = documents.filter(
+                              (doc) =>
+                                doc.appointment_id === app.id &&
+                                isImageDocument({
+                                  file_name: doc.file_name,
+                                  document_type: doc.document_type,
+                                  mime_type: doc.mime_type ?? null,
+                                })
+                            ).length;
+                            if (apptPhotoCount === 0) return null;
+                            return (
+                              <span
+                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-primary/10 text-primary border border-primary/20 shrink-0"
+                                title={`${apptPhotoCount} fotografía(s) clínica(s)`}
+                              >
+                                <Camera className="h-3.5 w-3.5" />
+                                {apptPhotoCount}
+                              </span>
+                            );
+                          })()}
                           <Badge variant="outline" className={`text-xs font-semibold ${getStatusBadge(app.status)}`}>{app.status}</Badge>
                           <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-primary/80 transition-colors" />
                         </div>

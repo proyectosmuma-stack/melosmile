@@ -111,6 +111,7 @@ export function resolveDocumentUrl(
   if (!basePath || !filePath) return null;
 
   const normalizedPath = filePath
+    .replace(/^melosmile\.com\//i, "")
     .replace(/^\/+/, "");
   if (!normalizedPath) return null;
 
