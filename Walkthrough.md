@@ -194,6 +194,25 @@ Durante esta sesión, tanto Antigravity como Mumabot (OpenCode) colaboraron en u
   * Sincronizadas y encriptadas las credenciales de Supabase Producción en el proyecto `melosmile-production` de Vercel.
   * Sincronizadas las credenciales de Supabase Staging en `melosmile-staging`.
   * Corregidos los fallbacks en `frontend/src/app/api/treatment-plans/route.ts` y `frontend/src/app/api/ai/report/route.ts`.
-  * Redespliegue de producción ejecutado con éxito en Vercel (`dpl_bHSyqDAgVcSgz2DY94w14B719xUA`) y vinculado a `agenda.melosmile.com`.
+  * Redespliegue de producción ejecutado con éxito en Vercel (`dpl_bHSyqDAgVcSgz2DY94w14B719xUA` y `dpl_6fLMR9KjNt6f3226nG6vqmq2ikgD`) y vinculado a `agenda.melosmile.com`.
   * Verificación visual en navegador: Ficha de Ronald Alejandro Delgado (`d1ca0793-3164-4b0d-b01f-e4d763a84416` / `PAC-008`), citas, historial, odontograma y lista completa de pacientes cargando al 100%.
+
+### E. Verificación Completa de Pagos y Centro de Notificaciones (09/09/2026 ✅)
+* **Corrección de API `/api/notifications`**:
+  * Sustituida la invocación asíncrona incompatible de `cookies()` de `@supabase/ssr` por cliente directo de Supabase con `SERVICE_ROLE_KEY`.
+* **Auditoría Exhaustiva de Datos en Producción (`xylqytpudbdcsbuuwqpi`)**:
+  * **Pacientes**: 67 pacientes activos (100% de la base de datos intacta).
+  * **Citas**: 119 citas registradas, incluyendo la cita `CONTROL 5 (08/09/2026)` de Leal Rey y las citas históricas reconstruidas de Richard Enciso (`31/03/2025` y `28/07/2026`).
+  * **Documentos / Fotografías Clínicas**: 88 registros archivados y vinculados.
+  * **Facturación y Pagos**: 53 registros de facturación (`billing_records`) totalizando **9.173,00 €** (incluyendo los 22 pagos vinculados hoy por **6.248,00 €** para Diego Martínez, Kamila, Begoña, Leal Rey, Claire y Richard).
+  * **Campanita (`system_notifications`)**: 4 alertas operativas y clicables en producción:
+    1. `PENDIENTE DE REVISION - Registro pagos sin importes` → Candela Fernández HS (`PAC-019`).
+    2. `PENDIENTE DE REVISION - Factura Myobrace 700 EUR` → Alberto Rama Rodríguez (`PAC-009`).
+    3. `PENDIENTE DE REVISION - Billing Control 4 Motion` → Begoña Fernández Martínez HS (`PAC-024`).
+    4. `PENDIENTE DE REVISION - Billing Tartrectomia` → Lucas Pérez (`PAC-6535`).
+* **Verificación UI en Navegador**:
+  * Sesión autenticada en `agenda.melosmile.com`.
+  * Campanita abierta en el navegador: muestra indicador rojo y despliega las 4 notificaciones con sus links directos a las fichas.
+  * Módulo contable `/billing` accesible y operativo con las 5 sedes clínicas activas.
+
 
