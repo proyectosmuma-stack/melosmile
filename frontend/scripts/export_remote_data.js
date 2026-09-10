@@ -16,10 +16,14 @@ dns.lookup = (hostname, options, callback) => {
     if (options && options.all) return callback(null, [{ address: '172.64.149.246', family: 4 }]);
     return callback(null, '172.64.149.246', 4);
   }
+  if (hostname === 'xylqytpudbdcsbuuwqpi.supabase.co') {
+    if (options && options.all) return callback(null, [{ address: '104.18.38.10', family: 4 }]);
+    return callback(null, '104.18.38.10', 4);
+  }
   return origLookup(hostname, options, callback);
 };
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://amhfdzfcmpastmlsosou.supabase.co';
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://xylqytpudbdcsbuuwqpi.supabase.co';
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY || '';
 
 if (!SUPABASE_SERVICE_KEY) {

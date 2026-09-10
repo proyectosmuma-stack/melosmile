@@ -229,10 +229,43 @@ Durante esta sesión, tanto Antigravity como Mumabot (OpenCode) colaboraron en u
      * Actualizados los 11 teléfonos de Notion que faltaban en la base de datos (incluyendo Carlos Pujol: `+34 661 902 521`).
      * Sanitizados caracteres invisibles UTF-8 (`\u202A`, etc.) en números de teléfono.
      * Sincronizado `in_treatment = false` para los 8 pacientes dados de alta en Notion (Ángel Da Silva, Carlos Pujol, Estefania Maccanin, Claire Ulmer, Laura Romero, Noelia Vega, Ainur Kozhabek, Raquel Calviches).
-  3. **Frontend y Despliegue**:
-     * Reescrito el mapeo de clínicas en `patients/page.tsx` para consultar `patient_clinics` como fuente canónica primaria.
-     * Corregido el orden de las columnas en la vista listado.
-     * Desplegado a producción en Vercel y verificado visualmente en `https://agenda.melosmile.com/patients`.
+3. **Frontend y Despliegue**:
+      * Reescrito el mapeo de clínicas en `patients/page.tsx` para consultar `patient_clinics` como fuente canónica primaria.
+      * Corregido el orden de las columnas en la vista listado.
+      * Desplegado a producción en Vercel y verificado visualmente en `https://agenda.melosmile.com/patients`.
+
+## 13. Sesión 10/09/2026 — Saneamiento y Consolidación de Variables Vercel, Corrección Monorepo Staging y Certificación General del Sistema (Completada ✅)
+
+### A. Diagnóstico y Causa Raíz: 94 Filas Caóticas en Vercel
+* **Síntoma**: El panel de Vercel mostraba 94 filas de variables (44 en producción y 50 en staging) fragmentadas por entorno (`production`, `preview`, `development` en filas separadas), imposibilitando el flujo de merge limpio `develop` → `main`.
+* **Causa raíz #1 (fragmentación)**: Cada nuevo valor se creaba en una fila separada por entorno en vez de una única variable con target multi-entorno.
+* **Causa raíz #2 (`type: sensitive`)**: Las variables recreadas por CLI vía pipe no-interactivo se guardaban como `sensitive`, invisibles para `vercel env pull` (devuelve `""`), generando falsas alarmas de "variables vacías" y verificaciones inválidas.
+
+### B. Purga y Unificación SSOT
+* Se eliminaron las 94 entradas fragmentadas y se crearon **exactamente 23 variables únicas limpias por proyecto** con target unificado `["production", "preview", "development"]` y `type: "encrypted"`.
+* **Inconsistencias corregidas**:
+  * URLs de n8n en Producción migradas de la v1 obsoleta (`https://n8n.mumaweb.com`) a la v2 oficial (`https://n8nv2.mumaweb.com`).
+  * Agregadas en Producción: `N8N_API_KEY`, `N8N_VECTORIZER_WEBHOOK_URL` y `VPS_DOCS_BASE_PATH`.
+  * Agregadas en Staging: `AUTH_USERNAME` y `AUTH_PASSWORD`.
+  * Expandidas credenciales de Odoo y VPS para dar cobertura total a despliegues de Preview.
+* **Artefactos**: Informe técnico para el CTO en `cto_env_vars_consolidation.md` y respaldo previo en `scratch/vercel_envs_backup_before_consolidation.json`.
+
+### C. Corrección del Monorepo en Vercel Staging
+* **Incidencia**: `melosmile-staging` fallaba en compilación por no ubicar `next` en el root del repo (configuración monorepo no declarada).
+* **Solución**: Se configuró `rootDirectory: "frontend"` vía API en la configuración del proyecto (`prj_qP5or4gNukJS9w8PTXeiL5vHI02t`), resolviendo de raíz el despliegue automático.
+
+### D. Certificación y Test General del Sistema
+* **Despliegues Vercel**: Ambos proyectos (`melosmile-production` y `melosmile-staging`) alcanzaron estado `READY` con las nuevas variables.
+* **Build Local**: Next.js 16 (Turbopack) compiló 46 rutas estáticas y dinámicas con 0 errores.
+* **Unit Tests**: 14/14 tests pasando (Vitest).
+* **Conectividad Cloud**: Supabase Cloud (5 clínicas y pacientes) y Odoo ERP (19 productos/servicios vía XML-RPC) 100% operativos.
+* **Verificación en Vivo**: `https://agenda.melosmile.com/` validada en navegador, panel interactivo y badge `Odoo API: Connected` en verde.
+
+### E. Lecciones Aprendidas (esta sesión)
+1. **Vercel `type: sensitive` es write-only**: `vercel env pull` devuelve `""` para variables sensibles aunque tengan valor real. Método de verificación válido: `vercel env ls` (tipo) o comprobar runtime tras deploy. NO usar pull para verificar sensibles.
+2. **SSOT de variables por proyecto**: Todo cambio de variables debe crearse con target `["production","preview","development"]` unificado; nunca filas separadas por entorno (genera caos e imposibilita merges limpios).
+3. **Monorepo en Vercel**: Declarar `rootDirectory` explícito en el proyecto (vía API o dashboard) es imprescindible cuando el `package.json` de Next.js vive en `frontend/`.
+4. **Merge develop→main sin fricción de variables**: Al vivir cada entorno en su propio proyecto Vercel con variables unificadas, el merge entre ramas no exige renombrar ni reconfigurar nada.
 
 
 
