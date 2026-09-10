@@ -362,9 +362,9 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
   const getPlanProgress = useCallback((plan: any) => {
     const planType = (plan?.treatment_type || "Ortodoncia").toLowerCase();
     const completedControlsCount = appointments.filter((a) => {
-      const isNotCancelled = a.status !== "Cancelada" && a.status !== "cancelada";
+      const isDone = a.status === "Realizada";
       const isControl = /control|mensualidad/i.test(a.reason || "");
-      if (!isNotCancelled || !isControl) return false;
+      if (!isDone || !isControl) return false;
 
       const reasonLower = (a.reason || "").toLowerCase();
       if (activePlans.length > 1) {
