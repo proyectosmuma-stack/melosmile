@@ -770,6 +770,28 @@ function toTitleCase(text: string): string {
                 {patient.address && <p className="flex items-start gap-2 text-muted-foreground pt-1"><MapPin className="h-3.5 w-3.5 text-muted-foreground mt-0.5 shrink-0" />{patient.address}</p>}
                 {patient.dni && <p className="flex items-center gap-2 text-muted-foreground"><FileText className="h-3.5 w-3.5" /> DNI/NIE: {patient.dni}</p>}
               </div>
+
+              {/* Representante Legal / Tutor */}
+              {representatives.length > 0 && (
+                <div className="pt-2.5 mt-2 border-t border-border/50 space-y-1.5">
+                  <p className="text-[11px] font-bold text-primary flex items-center gap-1.5 uppercase tracking-wider">
+                    <UserCheck className="h-3.5 w-3.5" /> Representante Legal / Tutor
+                  </p>
+                  {representatives.map((r: any) => (
+                    <div key={r.id} className="p-2.5 rounded-xl bg-muted/40 border border-border/60 text-xs space-y-1">
+                      <div className="flex items-center justify-between font-bold text-foreground">
+                        <span>{r.full_name}</span>
+                        <span className="text-[10px] font-semibold text-primary px-2 py-0.5 rounded-full bg-primary/10 border border-primary/20">
+                          {r.relationship || "Tutor"}
+                        </span>
+                      </div>
+                      {r.dni_nie && <p className="text-[11px] text-muted-foreground">DNI/NIE: {r.dni_nie}</p>}
+                      {r.phone && <p className="text-[11px] text-muted-foreground flex items-center gap-1"><Phone className="h-3 w-3" /> {r.phone}</p>}
+                      {r.email && <p className="text-[11px] text-muted-foreground flex items-center gap-1"><Mail className="h-3 w-3" /> {r.email}</p>}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Medical Alerts */}
