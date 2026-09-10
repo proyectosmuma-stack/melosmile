@@ -12,17 +12,17 @@ import {
   Mail, 
   FileText, 
   AlertCircle, 
-  Activity, 
   ChevronRight,
   Filter,
   CheckCircle2,
   Calendar,
-  ShieldAlert,
   Pill,
   Stethoscope,
   Tag as TagIcon,
   Building2,
-  ArrowUpDown
+  ArrowUpDown,
+  ShieldAlert,
+  Activity
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,6 +35,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/lib/supabase/client";
 import { TagItem, getTagStyle } from "@/components/patients/tag-input";
 import { cn } from "@/lib/utils";
+import { differenceInYears } from "date-fns";
+
+function calculateAge(dob: string): string {
+  if (!dob) return "—";
+  const age = differenceInYears(new Date(), new Date(dob));
+  return `${age} años`;
+}
+
 
 export type PatientRecord = {
   id: string;
@@ -220,16 +228,26 @@ function toTitleCase(text: string): string {
     loadPatients();
   }, []);
 
+  function normalizeSearch(str: string): string {
+    return (str || "")
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .trim();
+  }
+
   // Filtrado y Ordenación de pacientes
   const filteredPatients = patients
     .filter((p) => {
-      const search = searchQuery.toLowerCase();
-      const fullName = `${p.firstName} ${p.lastName}`.toLowerCase();
+      const search = normalizeSearch(searchQuery);
+      const fullName = normalizeSearch(`${p.firstName} ${p.lastName}`);
       const matchesSearch =
+        !search ||
         fullName.includes(search) ||
-        p.dniNie.toLowerCase().includes(search) ||
-        p.historiaId.toLowerCase().includes(search) ||
-        p.phone.includes(search);
+        normalizeSearch(p.dniNie).includes(search) ||
+        normalizeSearch(p.historiaId).includes(search) ||
+        normalizeSearch(p.phone).includes(search) ||
+        normalizeSearch(p.treatmentPlan).includes(search);
 
       const matchesStatus =
         statusFilter === "all" ||
@@ -240,7 +258,9 @@ function toTitleCase(text: string): string {
         selectedTagFilter === "all" ||
         p.tags?.some((t) => t.id === selectedTagFilter || t.name === selectedTagFilter);
 
+      // Si el usuario escribe un término de búsqueda, buscar en todas las clínicas para no ocultar resultados
       const matchesClinic =
+        search.length > 0 ||
         clinicFilter === "all" ||
         (p.clinicIds && p.clinicIds.includes(clinicFilter));
 
@@ -526,7 +546,8 @@ function toTitleCase(text: string): string {
                         <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-muted text-foreground">
                           {patient.historiaId}
                         </span>
-                        <span className="text-xs text-muted-foreground">DNI: {patient.dniNie}</span>
+                        <span className="text-xs text-muted-foreground">Edad: {calculateAge(patient.dob)}</span>
+
                       </div>
                       {patient.clinicNames && patient.clinicNames.length > 0 && (
                         <div className="flex flex-wrap items-center gap-1 mt-1.5">
@@ -566,21 +587,7 @@ function toTitleCase(text: string): string {
                 </div>
 
                 {/* Medical Alerts (Allergies & Antecedents) */}
-                <div className="space-y-2 pt-2 border-t border-border/60 text-xs">
-                  {patient.allergies && patient.allergies.toLowerCase() !== "ninguna" && (
-                    <div className="flex items-center gap-1.5 text-primary bg-primary/10 px-2.5 py-1 rounded-lg border border-primary/20 font-semibold">
-                      <ShieldAlert className="h-3.5 w-3.5 shrink-0" />
-                      <span className="truncate">Alergia: {patient.allergies}</span>
-                    </div>
-                  )}
 
-                  {patient.importantDiseases && patient.importantDiseases.toLowerCase() !== "ninguna" && (
-                    <div className="flex items-center gap-1.5 text-warning bg-warning/10 px-2.5 py-1 rounded-lg border border-warning/20 font-medium">
-                      <Activity className="h-3.5 w-3.5 shrink-0 text-warning" />
-                      <span className="truncate">{patient.importantDiseases}</span>
-                    </div>
-                  )}
-                </div>
 
                 {/* Patient Tags */}
                 {patient.tags && patient.tags.length > 0 && (
@@ -643,11 +650,11 @@ function toTitleCase(text: string): string {
                     <th className="py-3.5 px-4">Historia ID</th>
                     <th className="py-3.5 px-4">Paciente</th>
                     <th className="py-3.5 px-4">Clínica / Sede</th>
-                    <th className="py-3.5 px-4">DNI / NIE</th>
+
                     <th className="py-3.5 px-4">Teléfono & Email</th>
                     <th className="py-3.5 px-4">Estado</th>
-                    <th className="py-3.5 px-4">Alertas Médicas</th>
-                    <th className="py-3.5 px-4 text-right">Acción</th>
+
+
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border text-foreground font-medium">
@@ -664,7 +671,7 @@ function toTitleCase(text: string): string {
                              {patient.firstName} {patient.lastName}
                            </Link>
                          </div>
-                         <span className="text-[10px] text-muted-foreground">{patient.gender} · {patient.address}</span>
+                         <span className="text-[10px] text-muted-foreground">{patient.gender} · {calculateAge(patient.dob)}</span>
                        </td>
                       <td className="py-3.5 px-4 font-medium">
                         {patient.clinicNames && patient.clinicNames.length > 0 ? (
@@ -680,9 +687,7 @@ function toTitleCase(text: string): string {
                           <span className="text-muted-foreground text-[11px] italic">Sin sede</span>
                         )}
                       </td>
-                      <td className="py-3.5 px-4 font-mono font-semibold text-foreground">
-                        {patient.dniNie || <span className="text-muted-foreground text-[11px] font-normal italic">Sin DNI</span>}
-                      </td>
+
                       <td className="py-3.5 px-4 space-y-0.5">
                         {patient.phone ? (
                           <div className="flex items-center gap-1.5 text-foreground">
@@ -715,27 +720,8 @@ function toTitleCase(text: string): string {
                           {patient.inTreatment ? "En Tratamiento" : "Alta"}
                         </Badge>
                       </td>
-                      <td className="py-3.5 px-4 max-w-xs truncate">
-                        {patient.allergies && patient.allergies.toLowerCase() !== "ninguna" ? (
-                          <span className="text-primary bg-primary/10 px-2 py-0.5 rounded font-semibold text-[11px] mr-1">
-                            Alergia: {patient.allergies}
-                          </span>
-                        ) : null}
-                        {patient.importantDiseases && patient.importantDiseases.toLowerCase() !== "ninguna" ? (
-                          <span className="text-warning bg-warning/10 px-2 py-0.5 rounded font-medium text-[11px]">
-                            {patient.importantDiseases}
-                          </span>
-                        ) : (
-                          <span className="text-muted-foreground text-[11px]">Sin antecedentes</span>
-                        )}
-                      </td>
-                      <td className="py-3.5 px-4 text-right">
-                        <Link href={`/patients/${patient.id}`}>
-                          <Button size="sm" variant="outline" className="h-8 text-xs font-semibold rounded-lg border-input gap-1 hover:border-primary/40 hover:text-primary">
-                            Ver Ficha <ChevronRight className="h-3.5 w-3.5" />
-                          </Button>
-                        </Link>
-                      </td>
+
+
                     </tr>
                   ))}
                 </tbody>
