@@ -45,12 +45,12 @@ type PatientDetails = {
   id: string;
   first_name: string;
   last_name: string;
-  email: string | null;
-  phone: string | null;
-  street: string | null;
-  city: string | null;
-  zip_code: string | null;
-  vat: string | null;
+  email?: string | null;
+  phone?: string | null;
+  street?: string | null;
+  city?: string | null;
+  zip_code?: string | null;
+  vat?: string | null;
   billing_name?: string; // Optional: separate billing name from contact name
 };
 
@@ -66,6 +66,7 @@ type PaymentRegistrationModalProps = {
   onSuccess?: () => void;
   patientDetails?: PatientDetails; // Optional: for Odoo invoice generation
   representatives?: { id?: string; full_name: string; dni_nie: string | null; email: string | null; phone: string | null; }[];
+  paidAppointmentIds?: string[]; // New prop: IDs of appointments that are already 'Pagado'
 };
 
 export const PAYMENT_METHODS = [
@@ -87,13 +88,13 @@ type OdooPatientDetails = {
   firstName: string;
   lastName: string;
   historiaId?: string;
-  nifCif: string | null;
+  nifCif?: string | null;
   billingName: string;
-  billingAddress: string | null;
-  billingCity: string | null;
-  billingPostalCode: string | null;
-  email: string | null;
-  phone: string | null;
+  billingAddress?: string | null;
+  billingCity?: string | null;
+  billingPostalCode?: string | null;
+  email?: string | null;
+  phone?: string | null;
 };
 
 export function PaymentRegistrationModal({
@@ -108,6 +109,7 @@ export function PaymentRegistrationModal({
   onSuccess,
   patientDetails, // Desestructured patientDetails
   representatives = [],
+  paidAppointmentIds = [],
 }: PaymentRegistrationModalProps) {
   const [saving, setSaving] = useState(false);
   const [currentBillingRecord, setCurrentBillingRecord] = useState<BillingRecord | undefined>(initialEditingRecord);
@@ -175,6 +177,12 @@ export function PaymentRegistrationModal({
       status,
       paymentMethod
     });
+
+    // Bloqueo preventivo si la cita ya está pagada (solo si NO estamos editando un registro existente)
+    if (!currentBillingRecord && appointmentId && paidAppointmentIds.includes(appointmentId)) {
+      alert("❌ Esta cita ya está pagada. No se puede registrar otro pago para la misma cita.");
+      return;
+    }
 
     setSaving(true);
     let recordToProcess = currentBillingRecord;
@@ -391,9 +399,15 @@ export function PaymentRegistrationModal({
                 <option value="">-- Sin cita (Aconto / Pago General) --</option>
                 {appointments.map((a) => {
                   const d = new Date(a.appointment_date).toLocaleDateString("es-ES", { day: "2-digit", month: "short" });
+                  const isPaid = paidAppointmentIds.includes(a.id);
                   return (
-                    <option key={a.id} value={a.id}>
-                      {d} - {a.reason}
+                    <option
+                      key={a.id}
+                      value={a.id}
+                      disabled={isPaid}
+                      className={isPaid ? "opacity-50 cursor-not-allowed" : ""}
+                    >
+                      {d} - {a.reason} {isPaid && "— (ya pagada)"}
                     </option>
                   );
                 })}

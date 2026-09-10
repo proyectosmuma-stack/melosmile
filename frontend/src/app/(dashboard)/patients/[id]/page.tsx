@@ -77,6 +77,7 @@ type BillingRecord = {
   odoo_invoice_id: number | null;
   odoo_invoice_number: string | null;
   payment_method: string | null;
+  appointment_id: string | null;
 };
 
 type PatientClinic = {
@@ -263,6 +264,7 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [editingBillingRecord, setEditingBillingRecord] = useState<BillingRecord | null>(null);
   const [isEditingPaymentModalOpen, setIsEditingPaymentModalOpen] = useState(false);
+  const [paidAppointmentIds, setPaidAppointmentIds] = useState<string[]>([]);
   const [selectedBillingIds, setSelectedBillingIds] = useState<string[]>([]);
   const [generatingInvoice, setGeneratingInvoice] = useState(false);
   const [sendingInvoiceEmailId, setSendingInvoiceEmailId] = useState<string | null>(null);
@@ -530,10 +532,10 @@ function toTitleCase(text: string): string {
 
         // 3. Billing
         if (apptData.length > 0) {
-          const { data: billingData } = await supabase
+          const { data: billingData } = await (supabase as any)
             .from("billing_records")
-            .select(`id, billing_month, custom_price, calculated_total, status, odoo_invoice_id, odoo_invoice_number, payment_method, appointments ( reason )`)
-            .in("appointment_id", apptData.map((a: any) => a.id))
+            .select(`id, billing_month, custom_price, calculated_total, status, odoo_invoice_id, odoo_invoice_number, payment_method, appointment_id, appointments ( reason )`)
+            .eq("patient_id", p.id)
             .order("billing_month", { ascending: false });
 
           if (billingData) {
@@ -546,7 +548,11 @@ function toTitleCase(text: string): string {
               odoo_invoice_id: b.odoo_invoice_id ?? null,
               odoo_invoice_number: b.odoo_invoice_number ?? null,
               payment_method: b.payment_method ?? null,
+              appointment_id: b.appointment_id ?? null,
             })));
+            
+            const paidAppointmentIds = (billingData ?? []).filter((b: any) => b.status === "Pagado" && b.appointment_id).map((b: any) => b.appointment_id);
+            setPaidAppointmentIds(paidAppointmentIds);
           }
         }
       }
@@ -1829,21 +1835,24 @@ function toTitleCase(text: string): string {
             reason: a.reason,
             appointment_date: a.appointment_date,
           }))}
-          editingRecord={(editingBillingRecord as any) || undefined}
+          defaultAppointmentId={editingBillingRecord?.appointment_id || undefined}
+          defaultAmount={editingBillingRecord?.custom_price ?? undefined}
+          editingRecord={editingBillingRecord as any}
           onSuccess={fetchAll}
           patientDetails={{
-            id: patient.historiaId, // historiaId for Odoo reference
+            id: patient.id,
             first_name: patient.firstName,
             last_name: patient.lastName,
-            email: patient.email,
-            phone: patient.phone,
-            street: patient.billingAddress || patient.address, // billing address preferred
-            city: patient.billingCity,
-            zip_code: patient.billingPostalCode,
-            vat: patient.nifCif, // NIF/CIF for Odoo
-            billing_name: patient.billingName || undefined, // Separate billing name if different from contact
+            email: patient.email ?? undefined,
+            phone: patient.phone ?? undefined,
+            street: (patient.billingAddress || patient.address) ?? undefined,
+            city: patient.billingCity ?? undefined,
+            zip_code: patient.billingPostalCode ?? undefined,
+            vat: patient.nifCif ?? undefined,
+            billing_name: patient.billingName ?? undefined,
           }}
           representatives={representatives}
+          paidAppointmentIds={paidAppointmentIds}
         />
       )}
 
