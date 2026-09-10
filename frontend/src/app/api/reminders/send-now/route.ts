@@ -18,7 +18,7 @@ export async function POST(req: Request) {
       .from("reminders")
       .select(`
         *,
-        patients ( first_name, last_name, phone, email, historia_id ),
+        patients ( first_name, last_name, phone, email, historia_id, telegram_chat_id ),
         appointments ( appointment_date, reason, clinics(name) )
       `)
       .eq("id", reminderId)
@@ -30,6 +30,12 @@ export async function POST(req: Request) {
 
     const patient = reminder.patients;
     const appointment = reminder.appointments;
+
+    const { data: msg } = await (supabase as any)
+      .from("messaging_settings")
+      .select("*")
+      .eq("id", 1)
+      .single();
 
     const payload = {
       reminder_id: reminder.id,
@@ -46,6 +52,12 @@ export async function POST(req: Request) {
       appointment_reason: appointment?.reason || null,
       clinic_name: appointment?.clinics?.name || null,
       timestamp: new Date().toISOString(),
+      messaging_config: {
+        whatsapp: { enabled: msg?.whatsapp_enabled, phone: msg?.whatsapp_phone, template_name: msg?.whatsapp_template_name },
+        telegram: { enabled: msg?.telegram_enabled },
+        email: { enabled: msg?.email_enabled, from: msg?.email_from, from_name: msg?.email_from_name },
+      },
+      telegram_chat_id: patient?.telegram_chat_id || null,
     };
 
     const n8nWebhookUrl = process.env.N8N_REMINDERS_WEBHOOK || "https://n8n.mumaleads.com/webhook/melosmile-reminders-dispatcher";
