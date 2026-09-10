@@ -27,6 +27,7 @@ export interface RawLineInput {
   appointment_id?: string;
   procedure_index?: number;
   source_type?: 'appointment' | 'manual' | 'excel_import';
+  is_facturado_odoo?: boolean;
 }
 
 export interface ProcessedBillingLine {
@@ -64,6 +65,7 @@ export interface ProcessedBillingLine {
   no_price: boolean;
   zero_quantity: boolean;
   is_lab_suggested: boolean;
+  is_facturado_odoo?: boolean;
   validation_flags: {
     level: 'ERROR' | 'ALERTA' | 'NEGATIVO' | 'INFO';
     code: string;
@@ -373,6 +375,7 @@ export function processBillingLine(
     no_price,
     zero_quantity,
     is_lab_suggested,
+    is_facturado_odoo: input.is_facturado_odoo ?? false,
     validation_flags,
     catalog_price,
     price_deviation_pct,

@@ -122,11 +122,28 @@ export async function PATCH(
 
     let processedLines = [];
 
+    // Enriquecer líneas con factura Odoo (regla CTO: bloquear pago si paid + facturado)
+    const appointmentIds = (inputLines || []).map((l: any) => l.appointment_id).filter(Boolean);
+    const invoicedAppointments = new Set<string>();
+    if (appointmentIds.length > 0) {
+      const { data: records } = await (supabase as any)
+        .from("billing_records")
+        .select("appointment_id, odoo_invoice_id, status")
+        .in("appointment_id", appointmentIds);
+      if (records) {
+        (records as any[]).forEach((r: any) => {
+          if (r.odoo_invoice_id || r.status === "Facturado Odoo") {
+            invoicedAppointments.add(r.appointment_id);
+          }
+        });
+      }
+    }
+
     // If lines array is provided, replace or re-process all lines
     if (Array.isArray(inputLines)) {
       processedLines = inputLines.map((l: RawLineInput, idx: number) => {
         return processBillingLine(
-          { ...l, sort_order: l.sort_order ?? idx },
+          { ...l, sort_order: l.sort_order ?? idx, is_facturado_odoo: l.appointment_id ? invoicedAppointments.has(l.appointment_id) : false },
           l.commission_pct ?? finalCommPct,
           l.lab_discount_pct ?? finalLabDiscPct,
           catalogMap

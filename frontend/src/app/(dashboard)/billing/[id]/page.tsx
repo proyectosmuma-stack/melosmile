@@ -500,7 +500,7 @@ export default function BillingDetailPage({ params }: { params: Promise<{ id: st
 
           <Button
             onClick={handleSave}
-            disabled={saving || session.status === "approved"}
+            disabled={saving}
             variant="outline"
             size="sm"
             className="gap-2 border-success/30 text-success hover:bg-success/10"
@@ -902,7 +902,7 @@ export default function BillingDetailPage({ params }: { params: Promise<{ id: st
                       <select
                         value={l.payment_status || 'pending'}
                         onChange={(e) => handleLineChange(idx, "payment_status", e.target.value)}
-                        disabled={session.status === "approved"}
+                        disabled={l.payment_status === 'paid' && (l.is_facturado_odoo || session.status === 'invoiced')}
                         className="bg-transparent border rounded px-1 py-0.5 text-xs font-semibold"
                       >
                         <option value="paid">✅ Pagado</option>
