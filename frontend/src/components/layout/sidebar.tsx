@@ -20,15 +20,9 @@ import {
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 
-import { useClinic } from "@/context/clinic-context";
+
+
 
 const mainNavigation = [
   { name: "Agenda & Citas", href: "/", icon: Calendar },
@@ -55,26 +49,12 @@ const COLOR_PALETTE = [
 export function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
-  const { clinics: dbClinics, selectedClinicId, setSelectedClinicId } = useClinic();
+
   const [isCollapsed, setIsCollapsed] = useState(true); // Collapsed by default as requested
   const isSettingsActive = pathname.startsWith("/settings");
   const [settingsOpen, setSettingsOpen] = useState(isSettingsActive);
 
-  // Combine "all" option with real database clinics
-  const clinicOptions = [
-    { id: "all", name: "Todas las Clínicas", color: "bg-rose-500", colorHex: undefined },
-    ...dbClinics.map((c, idx) => ({
-      id: c.id,
-      name: c.name,
-      color: c.color_hex ? `bg-[${c.color_hex}]` : COLOR_PALETTE[idx % COLOR_PALETTE.length],
-      colorHex: c.color_hex,
-    })),
-  ];
 
-  const clinicItems = clinicOptions.map((c) => ({ value: c.id, label: c.name }));
-
-  const currentClinicName =
-    clinicOptions.find((c) => c.id === selectedClinicId)?.name || "Todas las Clínicas";
 
   const handleLogout = async () => {
     try {
@@ -136,48 +116,7 @@ export function Sidebar() {
         )}
       </div>
 
-      {/* Clinic Selector */}
-      <div className="px-3 pt-5 pb-3">
-        {!isCollapsed ? (
-          <>
-            <label className="text-[11px] font-semibold text-sidebar-muted-foreground uppercase tracking-wider px-2 mb-2 block">
-              Sede Activa
-            </label>
-            <Select items={clinicItems} value={selectedClinicId} onValueChange={(val) => val && setSelectedClinicId(val)}>
-              <SelectTrigger className="w-full bg-sidebar-accent/90 border-sidebar-border text-sidebar-foreground hover:bg-sidebar-accent transition-colors focus:ring-primary h-11 rounded-xl">
-                <div className="flex items-center gap-2.5 overflow-hidden text-ellipsis">
-                  <Building2 className="h-4 w-4 text-primary-foreground shrink-0" />
-                  <SelectValue placeholder="Seleccionar clínica" />
-                </div>
-              </SelectTrigger>
-              <SelectContent className="bg-sidebar-accent border-sidebar-border text-sidebar-foreground z-50">
-                {clinicOptions.map((c) => (
-                  <SelectItem key={c.id} value={c.id} className="focus:bg-sidebar-muted focus:text-white cursor-pointer py-2.5">
-                    <div className="flex items-center gap-2">
-                      <span
-                        className={cn("h-2.5 w-2.5 rounded-full shrink-0", c.color)}
-                        style={c.colorHex ? { backgroundColor: c.colorHex } : undefined}
-                      />
-                      <span className="font-medium truncate">{c.name}</span>
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </>
-        ) : (
-          /* Compact Clinic Icon in Collapsed State with Unclipped Floating Tooltip */
-          <div className="group relative flex justify-center">
-            <div className="h-11 w-11 rounded-xl bg-sidebar-accent border border-sidebar-border flex items-center justify-center text-primary-foreground cursor-pointer hover:bg-sidebar-muted transition-colors">
-              <Building2 className="h-5 w-5" />
-            </div>
-            {/* Escapes overflow clipping using fixed z-[9999] */}
-            <div className="fixed left-24 ml-1 z-[9999] hidden group-hover:flex items-center bg-sidebar-accent text-white text-xs font-semibold px-3 py-2 rounded-xl shadow-2xl border border-sidebar-muted whitespace-nowrap pointer-events-none">
-              Sede: {currentClinicName}
-            </div>
-          </div>
-        )}
-      </div>
+
 
       {/* Main Navigation */}
       <nav className="flex flex-1 flex-col overflow-y-auto px-3 py-4 space-y-1">

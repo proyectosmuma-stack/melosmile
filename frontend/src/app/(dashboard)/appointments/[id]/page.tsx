@@ -1389,9 +1389,9 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
 
                 {/* Action Buttons */}
                 <div className="space-y-2 pt-2">
-                  {appt.billingId && appt.paymentStatus === "Pagado" ? (
+                  {appt.billingId && (appt.paymentStatus === "Pagado" || appt.paymentStatus === "Facturado Odoo") ? (
                     <span className="inline-flex items-center rounded-full bg-emerald-500/20 px-2.5 py-0.5 text-xs font-bold text-emerald-400 border border-emerald-500/30 gap-1">
-                      <Check className="h-3 w-3" /> Cita ya pagada
+                      <Check className="h-3 w-3" /> {appt.paymentStatus === "Facturado Odoo" ? "Cita pagada y facturada" : "Cita ya pagada"}
                     </span>
                   ) : (
                     <Button
@@ -1452,7 +1452,7 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
               appointments={[{ id: appt.id, reason: appt.reason, appointment_date: appt.appointment_date }]}
               defaultAppointmentId={appt.id}
               defaultAmount={totals.totalPrice}
-              paidAppointmentIds={appt.billingId && appt.paymentStatus === "Pagado" ? [appt.id] : []}
+              paidAppointmentIds={appt.billingId && (appt.paymentStatus === "Pagado" || appt.paymentStatus === "Facturado Odoo") ? [appt.id] : []}
               onSuccess={() => fetchAppointment()}
               patientDetails={{
                 id: appt.patientId,
