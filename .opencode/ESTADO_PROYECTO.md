@@ -1,19 +1,21 @@
-# 🏥 ESTADO DEL PROYECTO MELOSMILE — CIERRE SESIÓN 6B: FIX CANCELACIÓN CERTIFICADO + POLÍTICA N8N PROD/DEV (10/09/2026)
+# 🏥 ESTADO DEL PROYECTO MELOSMILE — SESIÓN 6C: DEPLOY COMPLETADO + REPORTE CERRADO (10/09/2026)
 
 ## 🎯 OBJETIVO ACTUAL
-**Sesión 10/09/2026 (Sesión 6B — continuación):** ✅ FASE 1 (verificación UX) COMPLETADA + FASE 2 (fallos Musly: cancelación, fechas, tratamientos) IMPLEMENTADA Y CERTIFICADA. Se certificó E2E el fix de cancelación de citas contra staging (melosmile_db).
+**Sesión 10/09/2026 (Sesión 6C):** ✅ DEPLOY staging completado + ✅ REPORTE b659df08 CERRADO. Todo el pipeline de fix cancelación está operativo.
 
 **Situación actual:**
-- ✅ **Fix cancelación citas CERTIFICADO (E2E PASS v8)**: soft-cancel real — la cita conserva la fila con `status="Cancelada"` y el endpoint devuelve `count: 1` (antes: falso positivo con count: 0)
-- ✅ **Mejoras n8n Musly aplicadas**: SM Agendamiento reforzado (reglas día-semana, confirmación explícita, UTC/España), rutas `clinical`/`summary` añadidas al Bridge, date-parser solo en dev
-- ✅ **NUEVA POLÍTICA N8N PROD/DEV**: los workflows de producción validados NO se tocan; toda prueba se hace en desarrollo; producción se actualiza solo con mejora real validada
-- ✅ **Lección RAG crítica guardada**: en staging `appointments` NO tiene columna `treatment` (es `treatment_id`) — selects con `treatment` fallan en silencio (42703) y dan falsos "NO_ENCONTRADA"
-- ✅ **Entornos 100% separados** (sesión 6): staging `amhfdzfcmpastmlsosou` / prod `xylqytpudbdcsbuuwqpi`
+- ✅ **Fix cancelación DEPLOYADO en staging**: `melosmile-staging-fmmihhamf-proyectosmuma-stacks-projects.vercel.app`
+- ✅ **Reporte IA b659df08 CERRADO**: `resolved: true` con notas de resolución
+- ✅ **Fix cancelación certificado E2E** (PASS v8): soft-cancel real con `status="Cancelada"` y `count: 1`
+- ✅ **Auditoría y Saneamiento BD Pacientes Producción**: 67 pacientes reales, secuenciados PAC-001 a PAC-067
+- ✅ **Mejoras n8n Musly aplicadas**: SM Agendamiento reforzado, rutas `clinical`/`summary`, date-parser solo dev
+- ✅ **Política N8N PROD/DEV**: workflows validados NO se tocan; pruebas solo en dev
+- ✅ **Entornos 100% separados**: staging `amhfdzfcmpastmlsosou` / prod `xylqytpudbdcsbuuwqpi`
 
 ## 📁 ARCHIVOS/DOCUMENTOS RELEVANTES (SESIÓN 6B — 10/09/2026)
 
-### 🔧 CÓDIGO (FIX CANCELACIÓN — certificado E2E):
-1. **`frontend/src/app/api/appointments/update/route.ts`** — FUNCIÓN NUEVA `cancelAppointmentAndBilling()` (línea 61): soft-cancel `status="Cancelada"` con `.eq("id").select()`, devuelve `count` real. `enrichNotesWithProcedure()` devuelve `procedureAdded: boolean` (dedup). **PENDIENTE DE DEPLOY**
+### 🔧 CÓDIGO (FIX CANCELACIÓN — deployado staging):
+1. **`frontend/src/app/api/appointments/update/route.ts`** — FUNCIÓN `cancelAppointmentAndBilling()`: soft-cancel `status="Cancelada"` con `.eq("id").select()`, devuelve `count` real. `enrichNotesWithProcedure()` devuelve `procedureAdded: boolean` (dedup). ✅ **DEPLOYADO staging 10/09/2026**
 2. **`frontend/src/app/api/appointments/create/route.ts`** — contiene `dbFetch()` para REST con service role key
 
 ### ⚙️ N8N (MEJORAS MUSLY — prod, sin tocar tras validación):
@@ -43,47 +45,41 @@
 
 ## 🚀 PRÓXIMOS PASOS PENDIENTES (PRÓXIMA SESIÓN)
 
-### CRÍTICO (fix ya certificado):
-1. **DEPLOY del fix de cancelación**: git commit → vercel staging (desde `frontend/`) → producción tras validación
-2. **Cerrar reporte IA `b659df08`**: PATCH `/api/ai/report` tras deploy + verificación en vivo (protocolo obligatorio)
+### COMPLETADO EN ESTA SESIÓN:
+- ✅ **Deploy fix cancelación staging**: `melosmile-staging-fmmihhamf-proyectosmuma-stacks-projects.vercel.app`
+- ✅ **Cierre reporte IA `b659df08`**: Marcado como resuelto en Supabase
 
-### FASE 2 (resto):
-3. **Parser Notion → citas** basado en auditoría
-4. **Resumen IA automático** al entrar en ficha paciente
-5. **Botón "Limpiar historial"** para conversaciones Musly
-6. **Revisar logs agente Musly** (acceso específico)
-
-### FASE 3 (optimizaciones):
-7. **Separación historia médica vs citas** (tabla `medical_history` inmutable)
-8. **Mejora posición botón "Guardar cambios"** (sticky/fixed)
-9. **Eliminar selector sidebar redundante**
+### PENDIENTE (siguiente sesión):
+1. **Deploy a producción**: tras validación manual en staging, mergear `develop` → `main`
+2. **Parser Notion → citas** basado en auditoría
+3. **Resumen IA automático** al entrar en ficha paciente
+4. **Botón "Limpiar historial"** para conversaciones Musly
+5. **Revisar logs agente Musly** (acceso específico)
 
 ## 📊 ESTADO DE VERIFICACIONES (10/09/2026)
 
-### ✅ VERIFICADO (SESIÓN 6B):
-- **E2E Cancelación PASS** (v8): create → `status=Pendiente` → cancel → `status=Cancelada` count:1 → cleanup físico OK
-- **Fase 1 UX**: 3 mejoras verificadas en código — `viewMode="list"` (patients/page.tsx:70), `getNearestTimeSlot` (new-appointment-modal.tsx:81), logging pagos (payment-registration-modal.tsx)
-- **Conectividad dev→staging**: `localhost:3028` HTTP 200, vinculado a melosmile_db
-- **Lecciones RAG** (3 guardadas): agentes locales no editan .env · treatment_id en staging · política N8N prod/dev
+### ✅ VERIFICADO (SESIÓN 6C):
+- **Deploy staging OK**: `melosmile-staging-fmmihhamf-proyectosmuma-stacks-projects.vercel.app` (Build Ready 1m, 46 páginas generadas)
+- **Reporte b659df08 CERRADO**: `resolved: true`, `resolution_notes` con detalle, timestamp 2026-09-10
+- **Sesión 6B (heredado)**: E2E Cancelación PASS v8 · 3 mejoras UX en código · conectividad dev→staging OK
 
 ### ⚠️ PENDIENTE:
-- **Deploy fix cancelación** (staging + prod) — requiere confirmación de Munir
-- **Cierre reporte b659df08** (PATCH /api/ai/report)
+- **Deploy fix cancelación a producción** (merge develop → main) — requiere validación manual en staging
 - **Pruebas manuales UX en navegador** en staging
 
 ## 📦 RESUMEN DE SESIÓN
 
 **Proyecto:** melosmile  
-**Sesión:** 6B — Fix cancelación citas certificado E2E + mejoras Musly n8n + política prod/dev  
-**Estado:** ✅ Fix implementado y certificado · mejora n8n aplicada · política N8N prod/dev registrada  
-**Impacto:** Alto (bug crítico de cancelación resuelto, riesgo de producción controlado)  
-**Riesgo:** Gestionado (pruebas solo en staging/dev; prod intocable salvo mejora validada)
+**Sesión:** 6C — Deploy staging fix cancelación + cierre reporte IA b659df08  
+**Estado:** ✅ Deploy completado · reporte cerrado · flujo de fix operativo  
+**Impacto:** Alto (bug crítico de cancelación resuelto y desplegado)  
+**Riesgo:** Bajo (solo staging; producción espera validación)
 
 ---
 
-**Última actualización:** 2026-09-10 (sesión 6B)  
+**Última actualización:** 2026-09-10 (sesión 6C)  
 **Proyecto:** melosmile  
-**Estado:** ✅ FIX CANCELACIÓN CERTIFICADO (E2E PASS). Próximo: DEPLOY del fix + cierre reporte b659df08. Luego: parser Notion, resumen IA, botón limpiar historial.
+**Estado:** ✅ FIX CANCELACIÓN DEPLOYADO EN STAGING + REPORTE b659df08 CERRADO. Próximo: validación manual en staging → deploy producción → parser Notion, resumen IA, botón limpiar historial.
 
 ---
-**Nota para siguiente sesión:** Leer este archivo y continuar con "DEPLOY del fix de cancelación (CRÍTICO)" → cierre reporte b659df08 → FASE 2.
+**Nota para siguiente sesión:** Leer este archivo y continuar con "validación manual staging → deploy producción" o FASE 2 (parser Notion, resumen IA, limpiar historial).
