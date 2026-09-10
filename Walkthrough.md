@@ -170,11 +170,11 @@ Durante esta sesión, tanto Antigravity como Mumabot (OpenCode) colaboraron en u
 ## 12. Sesión 08/09/2026 — Auditoría de Pacientes contra Notion, Enriquecimiento de Citas y Migración de Fotos a VPS (Completada ✅)
 
 ### A. Auditoría Minuciosa de Pacientes y Clínicas vs Notion
-* **Problema Identificado**: Existían discrepancias en la asignación de sedes clínicas para varios pacientes, y un paciente (`PAC-6535 Lucas Pérez`) carecía de asignación de clínica en `patient_clinics`.
+* **Problema Identificado**: Existían discrepancias en la asignación de sedes clínicas para varios pacientes, y un paciente (`Lucas Pérez PAC-067`, anterior `PAC-6535`) carecía de asignación de clínica en `patient_clinics`.
 * **Auditoría Exhaustiva contra Notion (`Pacientes` y `Pacientes Albacete`)**:
   * **Clínica Montaño (Getafe)**: Verificada como la sede real de `Ricardo De Freitas (PAC-023)`, `Rafael Requeijo (PAC-012)`, `Erika Alvarado (PAC-013)`, `Ana Gabriela De Nigris (PAC-014)`, `Alexis Morales (PAC-015)`, `Genesis Duque (PAC-016)`, `Greicee Rodriguez (PAC-017)`, `Angelo (PAC-002)`, `Luis Gil (PAC-003)`, `Alejandro Delgado (PAC-006)` y `Brenda (PAC-007)`. Se aseguró `is_primary = true` en Getafe.
   * **Clínica Goya**: Fijada como primaria para `Oscar Enrique Melo Cupido (PAC-035)` y los 22 pacientes asignados a Goya (`PAC-004` a `PAC-034`).
-  * **Clínica Daniel Bustamante (Albacete)**: Asignada a todos los pacientes de Albacete (`PAC-036` a `PAC-066`, correspondientes a `ALB-1` a `ALB-33` de Notion / Clínica Roldán) y a `Lucas Pérez (PAC-6535)`.
+  * **Clínica Daniel Bustamante (Albacete)**: Asignada a todos los pacientes de Albacete (`PAC-036` a `PAC-066`, correspondientes a `ALB-1` a `ALB-33` de Notion / Clínica Roldán) y a `Lucas Pérez (PAC-067)`.
 
 ### B. Enriquecimiento de Citas y Anotaciones Clínicas
 * De las 85 citas existentes en Producción, se auditaron estados y observaciones.
@@ -208,8 +208,8 @@ Durante esta sesión, tanto Antigravity como Mumabot (OpenCode) colaboraron en u
   * **Campanita (`system_notifications`)**: 4 alertas operativas y clicables en producción:
     1. `PENDIENTE DE REVISION - Registro pagos sin importes` → Candela Fernández HS (`PAC-019`).
     2. `PENDIENTE DE REVISION - Factura Myobrace 700 EUR` → Alberto Rama Rodríguez (`PAC-009`).
-    3. `PENDIENTE DE REVISION - Billing Control 4 Motion` → Begoña Fernández Martínez HS (`PAC-024`).
-    4. `PENDIENTE DE REVISION - Billing Tartrectomia` → Lucas Pérez (`PAC-6535`).
+    3. `PENDIENTE DE REVISION - Billing Control 4 Motion` → Begoña Fernández Martínez (`PAC-024`).
+    4. `PENDIENTE DE REVISION - Billing Tartrectomia` → Lucas Pérez (`PAC-067`, test IA re-secuenciado).
 * **Verificación UI en Navegador**:
   * Sesión autenticada en `agenda.melosmile.com`.
   * Campanita abierta en el navegador: muestra indicador rojo y despliega las 4 notificaciones con sus links directos a las fichas.
@@ -266,6 +266,35 @@ Durante esta sesión, tanto Antigravity como Mumabot (OpenCode) colaboraron en u
 2. **SSOT de variables por proyecto**: Todo cambio de variables debe crearse con target `["production","preview","development"]` unificado; nunca filas separadas por entorno (genera caos e imposibilita merges limpios).
 3. **Monorepo en Vercel**: Declarar `rootDirectory` explícito en el proyecto (vía API o dashboard) es imprescindible cuando el `package.json` de Next.js vive en `frontend/`.
 4. **Merge develop→main sin fricción de variables**: Al vivir cada entorno en su propio proyecto Vercel con variables unificadas, el merge entre ramas no exige renombrar ni reconfigurar nada.
+
+---
+
+## 14. Sesión 10/09/2026 — Auditoría Exhaustiva de Pacientes contra Notion y Saneamiento Serial en Producción (Completada ✅)
+
+### A. Diagnóstico y Comparativa vs Fichas de Notion
+* **Alcance**: Auditoría de los 67 pacientes registrados en Supabase Producción (`xylqytpudbdcsbuuwqpi`) cotejados 1 a 1 contra las bases de datos maestras de Notion (`Pacientes` y `Pacientes Albacete`).
+* **Autenticidad Verificada**:
+  * **66 Pacientes Reales**: Confirmados al 100% en Notion (`PAC-1` a `PAC-27` y `ALB-1` a `ALB-27` / citas de Albacete) con historial clínico y citas médicas reales.
+  * **1 Paciente Mock / Test IA**: `Lucas Pérez` no existía en Notion. Fue creado el 03/09/2026 durante pruebas del asistente de citas con datos dummy (`+34 600 000 000`, `lucas@melosmile.local`).
+* **Anomalía Crítica de Secuencia**: `Lucas Pérez` tenía asignado el código anómalo `PAC-6535`, lo que provocaba que `getNextHistoriaId()` (`frontend/src/lib/utils/patient-id.ts`) generara `PAC-6536` para cualquier paciente nuevo en lugar del correlativo `PAC-067`.
+
+### B. Saneamiento Aplicado en Producción (`apply_patient_sanitization.js`)
+* **Respaldo previo de seguridad**: Generado snapshot completo en `scratch/backup_patients_prod_pre_sanitize.json`.
+* **Re-secuenciación Serial**:
+  * `Lucas Pérez`: Actualizado de `PAC-6535` a **`PAC-067`** (restaurando la continuidad 100% estricta `PAC-001` a `PAC-067` y asegurando que el próximo paciente nuevo sea `PAC-068`).
+* **Limpieza de Nombres y Apellidos**:
+  * Eliminados los sufijos de convenio `HS` y `hs` de los apellidos de `Sara Rubio (PAC-004)`, `Gabriel Cañizales Rubio (PAC-005)`, `Diego Martínez García (PAC-018)`, `Candela Fernández (PAC-019)`, `Begoña Fernández Martínez (PAC-024)` y `Francisco Javier Leal Rey (PAC-025)`, manteniéndolos en su etiqueta canónica `Henryschein`.
+  * `Raquel Calviches Fernández (PAC-011)`: Retirada la nota personal `(novia de Hector Hs)` del apellido y trasladada a observaciones clínicas.
+  * `Sobrina Silvia (PAC-036)`: Añadida nota clínica interna de procedencia Notion Albacete.
+* **Corrección de Erratas y Formato**:
+  * `Carmen Martín García (PAC-059)`: Corregida errata tipográfica `Masrtin` → `Martín`.
+  * `Greicee Angely Rodríguez (PAC-017)`: Separado segundo nombre pegado al apellido (`angelyRodriguez` → `Angely Rodríguez`).
+  * Normalizados a Capital Case: `Luis Gil (PAC-003)`, `Alejandro Delgado (PAC-006)`, `Brenda (PAC-007)`, `Oswaldo Enrique Soler (PAC-010)`, `Rafael Requeijo (PAC-012)`, `Erika Alvarado (PAC-013)`, `Ana Gabriela De Nigris Silva (PAC-014)`, `Alexis Morales (PAC-015)` y `Génesis Duque (PAC-016)`.
+* **Normalización de Teléfono**:
+  * `Ronald Alejandro Delgado (PAC-008)`: Normalizado teléfono principal a `+34 665 278 727` y guardado el alternativo (`654 480 839`) en notas.
+* **Verificación Final**:
+  * 67 pacientes en producción con secuencia ininterrumpida `PAC-001` a `PAC-067`.
+  * `getNextHistoriaId()` probado en vivo: Devuelve con total precisión **`PAC-068`**.
 
 
 

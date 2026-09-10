@@ -58,6 +58,17 @@ async function deleteAppointmentAndBilling(dbClient: any, appointmentId: string)
   return { success: true, action: "deleted", count: data?.length || 0, data };
 }
 
+async function cancelAppointmentAndBilling(dbClient: any, appointmentId: string) {
+  const { data, error } = await dbClient
+    .from("appointments")
+    .update({ status: "Cancelada" })
+    .eq("id", appointmentId)
+    .select();
+
+  if (error) throw error;
+  return { success: true, action: "cancelled", count: data?.length || 0, data };
+}
+
 export async function POST(req: Request) {
   try {
     const url = new URL(req.url);
@@ -333,9 +344,17 @@ export async function POST(req: Request) {
     }
 
     if (isDelete) {
+      // Check if the intention is to truly delete or just cancel
+      const isStatusCancel = String(status).toLowerCase().includes("cancelada");
+
       if (targetId) {
         try {
-          const result = await deleteAppointmentAndBilling(dbClient, targetId);
+          let result;
+          if (isStatusCancel) {
+            result = await cancelAppointmentAndBilling(dbClient, targetId);
+          } else {
+            result = await deleteAppointmentAndBilling(dbClient, targetId);
+          }
           return NextResponse.json(result);
         } catch (error: any) {
           return NextResponse.json(
@@ -414,7 +433,7 @@ export async function POST(req: Request) {
         .maybeSingle();
 
       if (currentTarget && currentTarget.notes) {
-        const updatedNotes = await enrichNotesWithProcedure(currentTarget.notes, rawReason || "Procedimiento");
+        const { notes: updatedNotes, procedureAdded } = await enrichNotesWithProcedure(currentTarget.notes, rawReason || "Procedimiento");
         const { data: updatedAppt, error: updErr } = await dbClient
           .from("appointments")
           .update({ notes: updatedNotes })
@@ -422,10 +441,9 @@ export async function POST(req: Request) {
           .select();
 
         if (updErr) throw updErr;
-        return NextResponse.json({ success: true, action: "add_procedures", count: 1, data: [updatedAppt] });
+        return NextResponse.json({ success: procedureAdded, action: "add_procedures", count: procedureAdded ? 1 : 0, data: [updatedAppt] });
       } else if (currentTarget) {
-        // No existing notes, create minimal ones with procedure
-        const minimalNotes = `[Procedimientos: [${rawReason ? `{serviceName: "${rawReason}", treatmentId: ""}` : ""}]];`
+        const { notes: minimalNotes, procedureAdded } = await enrichNotesWithProcedure(null, rawReason || "Procedimiento");
         const { data: updatedAppt, error: updErr } = await dbClient
           .from("appointments")
           .update({ notes: minimalNotes })
@@ -433,7 +451,7 @@ export async function POST(req: Request) {
           .select();
 
         if (updErr) throw updErr;
-        return NextResponse.json({ success: true, action: "add_procedures", count: 1, data: [updatedAppt] });
+        return NextResponse.json({ success: procedureAdded, action: "add_procedures", count: procedureAdded ? 1 : 0, data: [updatedAppt] });
       } else {
         return NextResponse.json(
           { error: "Cita no encontrada" },
@@ -475,10 +493,11 @@ export async function POST(req: Request) {
     }
 
     // Helper to enrich procedures in notes if a new treatment/reason is requested on update
-    async function enrichNotesWithProcedure(existingNotes: string | null, newReason: string): Promise<string> {
+    async function enrichNotesWithProcedure(existingNotes: string | null, newReason: string): Promise<{ notes: string, procedureAdded: boolean }> {
       let notesText = existingNotes || "Agendada por Asistente IA";
       let existingProcs: any[] = [];
       let procTagIdx = notesText.indexOf("[Procedimientos:");
+      let procedureWasAdded = false;
 
       if (procTagIdx !== -1) {
         const contentAfter = notesText.substring(procTagIdx);
@@ -538,6 +557,7 @@ export async function POST(req: Request) {
           overrideLabCost: null,
           showOverride: false,
         });
+        procedureWasAdded = true;
 
         if (procTagIdx !== -1) {
           let depth = 0, outerEnd = -1;
@@ -552,7 +572,7 @@ export async function POST(req: Request) {
         }
       }
 
-      return notesText;
+      return { notes: notesText, procedureAdded: procedureWasAdded };
     }
 
     // Perform update by targetId if present
@@ -628,7 +648,13 @@ export async function POST(req: Request) {
       // Check if this is a deletion (status 'Cancelada' or action 'delete')
       if (isDelete) { // isDelete has been extended to include cancel
         try {
-          const result = await deleteAppointmentAndBilling(dbClient, soleAppointment.id);
+          const isStatusCancel = String(status).toLowerCase().includes("cancelada");
+          let result;
+          if (isStatusCancel) {
+            result = await cancelAppointmentAndBilling(dbClient, soleAppointment.id);
+          } else {
+            result = await deleteAppointmentAndBilling(dbClient, soleAppointment.id);
+          }
           return NextResponse.json(result);
         } catch (error: any) {
           return NextResponse.json(

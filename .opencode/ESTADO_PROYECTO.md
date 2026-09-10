@@ -1,88 +1,89 @@
-# 🏥 ESTADO DEL PROYECTO MELOSMILE — CONSOLIDACIÓN INFRAESTRUCTURA VERCEL + MEJORAS UX/UI (10/09/2026)
+# 🏥 ESTADO DEL PROYECTO MELOSMILE — CIERRE SESIÓN 6B: FIX CANCELACIÓN CERTIFICADO + POLÍTICA N8N PROD/DEV (10/09/2026)
 
 ## 🎯 OBJETIVO ACTUAL
-**Sesión actual (10/09/2026 — Sesión 6):** ✅ COMPLETADO — Saneamiento y consolidación de variables de entorno Vercel (entornos separados staging/producción con SSOT por proyecto), corrección del monorepo en Vercel Staging y certificación completa del sistema.
+**Sesión 10/09/2026 (Sesión 6B — continuación):** ✅ FASE 1 (verificación UX) COMPLETADA + FASE 2 (fallos Musly: cancelación, fechas, tratamientos) IMPLEMENTADA Y CERTIFICADA. Se certificó E2E el fix de cancelación de citas contra staging (melosmile_db).
 
 **Situación actual:**
-- ✅ **Entornos 100% separados**: `melosmile-staging` (rama `develop` → `staging.melosmile.com` → Supabase `amhfdzfcmpastmlsosou`) y `melosmile-production` (rama `main` → `agenda.melosmile.com` → Supabase `xylqytpudbdcsbuuwqpi`)
-- ✅ **23 variables únicas por proyecto** con target `["production","preview","development"]`, `type: "encrypted"` — merge develop→main sin tocar variables
-- ✅ **Corregido monorepo en staging**: `rootDirectory: "frontend"` vía API (`prj_qP5or4gNukJS9w8PTXeiL5vHI02t`)
-- ✅ **Certificación E2E**: Build 0 errores, 14/14 tests, conectividad Supabase + Odoo verificada, `agenda.melosmile.com` operativa con badge `Odoo API: Connected`
-- ✅ **4 mejoras UX/UI previas** desplegadas y verificadas (vista lista pacientes, hora dinámica, logging pagos, scripts auditoría)
+- ✅ **Fix cancelación citas CERTIFICADO (E2E PASS v8)**: soft-cancel real — la cita conserva la fila con `status="Cancelada"` y el endpoint devuelve `count: 1` (antes: falso positivo con count: 0)
+- ✅ **Mejoras n8n Musly aplicadas**: SM Agendamiento reforzado (reglas día-semana, confirmación explícita, UTC/España), rutas `clinical`/`summary` añadidas al Bridge, date-parser solo en dev
+- ✅ **NUEVA POLÍTICA N8N PROD/DEV**: los workflows de producción validados NO se tocan; toda prueba se hace en desarrollo; producción se actualiza solo con mejora real validada
+- ✅ **Lección RAG crítica guardada**: en staging `appointments` NO tiene columna `treatment` (es `treatment_id`) — selects con `treatment` fallan en silencio (42703) y dan falsos "NO_ENCONTRADA"
+- ✅ **Entornos 100% separados** (sesión 6): staging `amhfdzfcmpastmlsosou` / prod `xylqytpudbdcsbuuwqpi`
 
-## 📁 ARCHIVOS/DOCUMENTOS RELEVANTES (SESIÓN 6 — 10/09/2026)
+## 📁 ARCHIVOS/DOCUMENTOS RELEVANTES (SESIÓN 6B — 10/09/2026)
 
-### 🔧 INFRAESTRUCTURA Y VARIABLES:
-1. **`cto_env_vars_consolidation.md`** (NUEVO) — Informe técnico para el CTO del saneamiento de variables
-2. **`scratch/vercel_envs_backup_before_consolidation.json`** (NUEVO) — Respaldo previo de las 94 variables fragmentadas
-3. **`docs/knowledge-base/domains/infra-vercel.md`** — Documentación de referencia de arquitectura (2 proyectos separados)
+### 🔧 CÓDIGO (FIX CANCELACIÓN — certificado E2E):
+1. **`frontend/src/app/api/appointments/update/route.ts`** — FUNCIÓN NUEVA `cancelAppointmentAndBilling()` (línea 61): soft-cancel `status="Cancelada"` con `.eq("id").select()`, devuelve `count` real. `enrichNotesWithProcedure()` devuelve `procedureAdded: boolean` (dedup). **PENDIENTE DE DEPLOY**
+2. **`frontend/src/app/api/appointments/create/route.ts`** — contiene `dbFetch()` para REST con service role key
 
-### ✅ MEJORAS UX/UI IMPLEMENTADAS (Sesión 5 — 09/09/2026):
-1. **`frontend/src/app/(dashboard)/patients/page.tsx`** — `viewMode="list"` por defecto, nombres clickables
-2. **`frontend/src/components/calendar/new-appointment-modal.tsx`** — Hora dinámica (`getNearestTimeSlot()`, solo si fecha es hoy)
-3. **`frontend/src/components/billing/payment-registration-modal.tsx`** — Logging mejorado, validaciones robustas
-4. **`patient_data_audit.ts`** + **`database_backup.ts`** — Scripts de auditoría y respaldo
+### ⚙️ N8N (MEJORAS MUSLY — prod, sin tocar tras validación):
+3. **Dispatcher Musly**: `QgNoVFr9TBXGbdOl`
+4. **Sub-Agent Agendamiento**: `d74hAW8IkmmCqoh5` (antes E59OoSRNJ4skt43W) — SM reforzado
+5. **Bridge**: `CyCVHWOxPuHCLteP` — + rutas `clinical`/`summary`
+6. **Date-parser**: solo en dev `Yv9X1EGUvQg8qErW` (en prod NO existe — por política nueva, OK)
+7. Credencial OpenRouter activa n8n: `UU1j5uOp8ejNx4BU`
 
-## 🏗️ ARQUITECTURA DE ENTORNOS (CONSOLIDADA)
+### 🛠️ ENTORNO LOCAL (configurado esta sesión):
+8. **`frontend/.env.local`** → apunta a **STAGING** `https://amhfdzfcmpastmlsosou.supabase.co` (restaurado con checksums OK_MATCH tras corrupción de agentes locales)
+9. **`frontend/.env.local.backup`** → fuente canónica de staging
+10. **Servidor dev**: `http://localhost:3028` activo (next dev -p 3028) vinculado a staging/melosmile_db
+11. **11 pacientes en staging**: PAC-001 (Munir, intacto) + PAC-002…PAC-011 (seed de prueba)
+
+## 🏗️ ARQUITECTURA DE ENTORNOS (CONSOLIDADA — NO CAMBIAR)
 
 | Entorno | Proyecto Vercel | Rama | Dominio | Supabase | Contenido |
 |---|---|---|---|---|---|
-| **Staging** | `melosmile-staging` | `develop` | `staging.melosmile.com` | `amhfdzfcmpastmlsosou` | Sandbox (solo Munir PAC-001) |
+| **Staging** | `melosmile-staging` | `develop` | `staging.melosmile.com` | `amhfdzfcmpastmlsosou` | Sandbox (11 pacientes de prueba) |
 | **Producción** | `melosmile-production` | `main` | `agenda.melosmile.com` | `xylqytpudbdcsbuuwqpi` | 67 pacientes reales, 119 citas, 88 docs, 53 billing |
 
 **Gotchas críticos:**
 - `frontend/.vercel/project.json` → `melosmile-staging` | raíz `.vercel/project.json` → `melosmile-production`
 - Desplegar staging SIEMPRE desde `frontend/` (`vercel --prod=false --yes`)
-- Variables `type: sensitive` no se leen con `vercel env pull` (devuelve `""`) — verificar con `vercel env ls` o runtime
+- **EN STAGING: tabla `appointments` NO tiene columna `treatment` (es `treatment_id`)** — verificar citas con REST puro y columnas válidas
 
-## 🚀 PRÓXIMOS PASOS PENDIENTES
+## 🚀 PRÓXIMOS PASOS PENDIENTES (PRÓXIMA SESIÓN)
 
-### FASE 1 - Verificación UX en navegador (pendiente menor):
-1. **Probar cambios frontend en staging** (`staging.melosmile.com`):
-   - Vista pacientes en lista por defecto
-   - Hora dinámica en creación de citas (hoy vs mañana)
-   - Logging pagos en consola
+### CRÍTICO (fix ya certificado):
+1. **DEPLOY del fix de cancelación**: git commit → vercel staging (desde `frontend/`) → producción tras validación
+2. **Cerrar reporte IA `b659df08`**: PATCH `/api/ai/report` tras deploy + verificación en vivo (protocolo obligatorio)
 
-### FASE 2 - Implementación próxima sesión:
-2. **Revisar logs agente Musly** (requiere acceso específico)
-3. **Implementar parser Notion → citas** basado en auditoría
-4. **Implementar resumen IA automático** al entrar en ficha paciente
-5. **Crear botón "Limpiar historial"** para conversaciones Musly
+### FASE 2 (resto):
+3. **Parser Notion → citas** basado en auditoría
+4. **Resumen IA automático** al entrar en ficha paciente
+5. **Botón "Limpiar historial"** para conversaciones Musly
+6. **Revisar logs agente Musly** (acceso específico)
 
-### FASE 3 - Optimizaciones a mediano plazo:
-6. **Separación historia médica vs citas** (tabla `medical_history` inmutable)
-7. **Mejora posición botón "Guardar cambios"** (sticky/fixed)
-8. **Eliminar selector sidebar redundante**
+### FASE 3 (optimizaciones):
+7. **Separación historia médica vs citas** (tabla `medical_history` inmutable)
+8. **Mejora posición botón "Guardar cambios"** (sticky/fixed)
+9. **Eliminar selector sidebar redundante**
 
 ## 📊 ESTADO DE VERIFICACIONES (10/09/2026)
 
-### ✅ VERIFICADO:
-- **Despliegues Vercel**: `melosmile-production` y `melosmile-staging` en estado `READY`
-- **Build Local**: Next.js 16 (Turbopack) — 46 rutas, 0 errores
-- **Unit Tests**: 14/14 (Vitest)
-- **Conectividad Cloud**: Supabase (5 clínicas + pacientes) y Odoo (19 productos vía XML-RPC) operativos
-- **Verificación en vivo**: `https://agenda.melosmile.com/` — panel interactivo + badge `Odoo API: Connected` verde
-- **Variables**: 23 únicas por proyecto, target unificado, tipo `encrypted`
-- **Separación de BD**: staging (1 paciente) vs prod (67 pacientes) — sin cruces
+### ✅ VERIFICADO (SESIÓN 6B):
+- **E2E Cancelación PASS** (v8): create → `status=Pendiente` → cancel → `status=Cancelada` count:1 → cleanup físico OK
+- **Fase 1 UX**: 3 mejoras verificadas en código — `viewMode="list"` (patients/page.tsx:70), `getNearestTimeSlot` (new-appointment-modal.tsx:81), logging pagos (payment-registration-modal.tsx)
+- **Conectividad dev→staging**: `localhost:3028` HTTP 200, vinculado a melosmile_db
+- **Lecciones RAG** (3 guardadas): agentes locales no editan .env · treatment_id en staging · política N8N prod/dev
 
-### ⚠️ PENDIENTE DE VERIFICACIÓN:
-- **Pruebas manuales en navegador** de las mejoras UX (staging)
-- **Auditoría de datos completa** con `patient_data_audit.ts`
-- **Logs agente Musly**: acceso y análisis específico
+### ⚠️ PENDIENTE:
+- **Deploy fix cancelación** (staging + prod) — requiere confirmación de Munir
+- **Cierre reporte b659df08** (PATCH /api/ai/report)
+- **Pruebas manuales UX en navegador** en staging
 
 ## 📦 RESUMEN DE SESIÓN
 
 **Proyecto:** melosmile  
-**Sesión:** Consolidación infraestructura Vercel + mejoras UX/UI  
-**Estado:** ✅ Infraestructura saneada y certificada · UX/UI implementada  
-**Impacto:** Alto (separación de entornos, flujo de release limpio develop→main)  
-**Riesgo:** Gestionado (respaldo previo, verificación post-cambio, rollback disponible)
+**Sesión:** 6B — Fix cancelación citas certificado E2E + mejoras Musly n8n + política prod/dev  
+**Estado:** ✅ Fix implementado y certificado · mejora n8n aplicada · política N8N prod/dev registrada  
+**Impacto:** Alto (bug crítico de cancelación resuelto, riesgo de producción controlado)  
+**Riesgo:** Gestionado (pruebas solo en staging/dev; prod intocable salvo mejora validada)
 
 ---
 
-**Última actualización:** 2026-09-10 (sesión 6)  
+**Última actualización:** 2026-09-10 (sesión 6B)  
 **Proyecto:** melosmile  
-**Estado:** ✅ INFRAESTRUCTURA CONSOLIDADA + MEJORAS UX/UI IMPLEMENTADAS. Quedan: pruebas manuales UX en navegador, auditoría de datos, revisión logs Musly, parser Notion.
+**Estado:** ✅ FIX CANCELACIÓN CERTIFICADO (E2E PASS). Próximo: DEPLOY del fix + cierre reporte b659df08. Luego: parser Notion, resumen IA, botón limpiar historial.
 
 ---
-**Nota para siguiente sesión:** Leer este archivo y continuar con "Verificación UX en navegador (FASE 1)" y luego FASE 2.
+**Nota para siguiente sesión:** Leer este archivo y continuar con "DEPLOY del fix de cancelación (CRÍTICO)" → cierre reporte b659df08 → FASE 2.
