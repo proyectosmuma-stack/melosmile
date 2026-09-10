@@ -23,9 +23,11 @@
 
 ---
 
-## 🌐 Infraestructura de Entornos
+## 🌐 Infraestructura de Entornos (Consolidada 2026-09-10)
 
-> **Arquitectura de 3 capas**: `localhost` (desarrollo) → `develop` (staging) → `main` (producción)
+> **Arquitectura de 3 capas**: `localhost` (desarrollo) → `develop` → `staging` (Preview) → `main` → `producción`
+>
+> **Fuente única de verdad por proyecto**: Cada proyecto Vercel (`melosmile-staging` y `melosmile-production`) tiene exactamente **23 variables únicas** con target unificado `["production", "preview", "development"]`. No hay fragmentación por entorno. Cuando se hace merge de `develop` → `main`, las variables se heredan automáticamente del proyecto destino sin necesidad de tocar nada.
 
 ### 🟣 ENTORNO LOCAL — Desarrollo (`localhost:3028`)
 
@@ -57,64 +59,76 @@ ODOO_USER=gestion@melosmile.com
 
 ---
 
-### 🟡 ENTORNO STAGING — Rama `develop` (Preview Vercel)
+### 🟡 ENTORNO STAGING — Proyecto Vercel `melosmile-staging` (rama `develop`)
 
 | Servicio | URL / Valor |
 |---|---|
 | **Rama Git** | `develop` |
-| **Proyecto Vercel** | `melosmile-staging` (separado de `melosmile-production`) |
-| **App Web (estable)** | `https://frontend-eight-dusky-42.vercel.app` |
-| **App Web (branch alias)** | `https://melosmile-staging-git-develop-proyectosmuma-stacks-projects.vercel.app` |
-| **Despliegue** | Manual vía CLI desde `frontend/` (NO hay integración Git→Vercel automática) |
-
-> ⚠️ **Política de despliegue (regla del usuario)**: por defecto SIEMPRE se despliega a staging (`develop`). Producción (`main`) solo cuando el usuario lo pida explícitamente tras aprobar el desarrollo.
->
-> ⚠️ **Gotcha**: existen dos enlaces `.vercel` en el repo — la raíz apunta a `melosmile-production` y `frontend/.vercel` apunta a `melosmile-staging`. Para desplegar staging hay que ejecutar vercel DESDE `frontend/`; hacerlo desde la raíz desplegaría al proyecto equivocado. Detalles completos: `docs/knowledge-base/domains/infra-vercel.md`.
->
-> 📝 PENDING: DNS de `develop.mumaweb.com` apunta al VPS IONOS (94.143.139.120) en vez de a Vercel; corregir CNAME → `cname.vercel-dns.com` en el panel DNS.
+| **Proyecto Vercel** | `melosmile-staging` (PRJ: `prj_qP5or4gNukJS9w8PTXeiL5vHI02t`) |
+| **Root Directory** | `frontend` (configurado vía API para resolver el monorepo) |
+| **App Web** | `https://staging.melosmile.com` |
 | **Supabase Staging** | `https://amhfdzfcmpastmlsosou.supabase.co` |
-| **n8n (prod/staging)** | `https://n8nv2.mumaweb.com` |
+| **n8n (prod)** | `https://n8nv2.mumaweb.com` |
 | **Fichero env** | `frontend/.env.remote` |
 | **Sincronizar datos** | `npm --prefix frontend run db:sync` |
+| **Despliegue** | `cd frontend && vercel --prod=false --yes` (desde `frontend/` que tiene `.vercel` linkeado a `melosmile-staging`) |
 
-**Variables Vercel Preview (`develop`):**
-```env
-NEXT_PUBLIC_SUPABASE_URL=https://amhfdzfcmpastmlsosou.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_kN-3hlqUxOni9onF1CDmhg_03EOCXG6
-SUPABASE_SERVICE_ROLE_KEY=eyJ...ref:amhfdzfcmpastmlsosou...service_role
-N8N_WEBHOOK_BASE_URL=https://n8nv2.mumaweb.com
-N8N_WEBHOOK_URL=https://n8nv2.mumaweb.com/webhook/document-cleaner
-N8N_VECTORIZER_WEBHOOK_URL=https://n8nv2.mumaweb.com/webhook/melosmile-knowledge-processor
-NEXT_PUBLIC_APP_URL=https://melosmile-develop.vercel.app
-ODOO_URL=https://melosmile.odoo.com / ODOO_DB=melosmile / ODOO_USER=gestion@melosmile.com
-```
+> ⚠️ **Política de despliegue**: por defecto SIEMPRE se despliega a staging (`develop`). Producción (`main`) solo cuando el usuario lo pida explícitamente tras aprobar el desarrollo.
+>
+> ⚠️ **Gotcha de enlace `.vercel`**: La raíz del repo tiene `.vercel/project.json` → `melosmile-production`. `frontend/.vercel/project.json` → `melosmile-staging`. Para desplegar staging hay que ejecutar `vercel` DESDE `frontend/`. Desde la raíz iría al proyecto equivocado.
+>
+> 📝 PENDING: DNS de `develop.mumaweb.com` apunta al VPS IONOS (94.143.139.120) en vez de a Vercel; corregir CNAME → `cname.vercel-dns.com`.
 
 ---
 
-### 🟢 ENTORNO PRODUCCIÓN — Rama `main` → `agenda.melosmile.com`
+### 🟢 ENTORNO PRODUCCIÓN — Proyecto Vercel `melosmile-production` (rama `main`)
 
 | Servicio | URL / Valor |
 |---|---|
 | **Rama Git** | `main` |
-| **Vercel Entorno** | `Production` |
+| **Proyecto Vercel** | `melosmile-production` (PRJ: `prj_sqADVALHygkmgEaTqKdwc8evOtvh`) |
 | **App Web** | `https://agenda.melosmile.com` |
 | **Supabase Producción** | `https://xylqytpudbdcsbuuwqpi.supabase.co` |
 | **Org Supabase** | `melosmile org` → Proyecto `melosmile-production` (Única y exclusiva BD de producción real) |
 | **n8n (prod)** | `https://n8nv2.mumaweb.com` |
 | **API Key n8n prod** | `Antigravity-melosmile` (JWT en `mcp_config.json`) |
-| **Fichero env** | Variables en Vercel `Production` (encriptadas) |
+| **Fichero env** | Variables en Vercel `Production` (encriptadas, 23 únicas) |
+| **Despliegue** | `vercel --prod` desde la raíz (`.vercel` apunta a `melosmile-production`) |
 
-**Variables Vercel Production (`main`):**
-```env
-NEXT_PUBLIC_SUPABASE_URL=https://xylqytpudbdcsbuuwqpi.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=<key producción melosmile org>
-SUPABASE_SERVICE_ROLE_KEY=<service role producción>
-N8N_WEBHOOK_BASE_URL=https://n8nv2.mumaweb.com
-N8N_WEBHOOK_URL=https://n8nv2.mumaweb.com/webhook/document-cleaner
-NEXT_PUBLIC_APP_URL=https://agenda.melosmile.com
-ODOO_URL=https://melosmile.odoo.com / ODOO_DB=melosmile / ODOO_USER=gestion@melosmile.com
-AUTH_USERNAME=clinica / AUTH_PASSWORD=melosmile2024
-```
+---
+
+### 📋 Variables Unificadas por Proyecto (SSOT — 2026-09-10)
+
+> Cada proyecto Vercel tiene **exactamente las mismas 23 variables** para los 3 targets (`production`, `preview`, `development`). Los valores varían solo entre proyectos (staging vs producción). Esto garantiza que un merge de `develop` → `main` no requiere tocar variables.
+
+**Proyecto `melosmile-staging` (23 vars):** Apunta a `amhfdzfcmpastmlsosou` (solo Munir PAC-001).
+**Proyecto `melosmile-production` (23 vars):** Apunta a `xylqytpudbdcsbuuwqpi` (67 pacientes reales).
+
+Variables comunes a ambos proyectos (diferentes valores):
+- `NEXT_PUBLIC_SUPABASE_URL` → URL de Supabase (staging o prod)
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY` → Anon key del proyecto Supabase correspondiente
+- `SUPABASE_SERVICE_ROLE_KEY` → Service role del proyecto Supabase correspondiente
+- `NEXT_PUBLIC_APP_URL` → `https://staging.melosmile.com` (staging) / `https://agenda.melosmile.com` (prod)
+- `N8N_WEBHOOK_BASE_URL` → `https://n8nv2.mumaweb.com` (ambos)
+- `N8N_WEBHOOK_URL` → `https://n8nv2.mumaweb.com/webhook/document-cleaner`
+- `N8N_VECTORIZER_WEBHOOK_URL` → `https://n8nv2.mumaweb.com/webhook/melosmile-knowledge-processor`
+- `N8N_API_KEY` → API key de n8n
+- `ODOO_URL` → `https://melosmile.odoo.com`
+- `ODOO_DB` → `melosmile`
+- `ODOO_USER` → `gestion@melosmile.com`
+- `ODOO_PASSWORD` → (sensible)
+- `VPS_SSH_HOST` → `94.143.139.120`
+- `VPS_SSH_USER` → `u60945363`
+- `VPS_SSH_PASSWORD` → (sensible)
+- `VPS_FTP_PORT` → `21`
+- `VPS_DOMAIN_FOLDER` → `melosmile.com`
+- `VPS_DOCS_BASE_PATH` → ruta base en VPS
+- `AUTH_USERNAME` → usuario de autenticación de la app
+- `AUTH_PASSWORD` → contraseña de la app
+- `NEXT_PUBLIC_VPS_FILES_BASE` → URL base para fotos/documentos
+
+**Respaldo pre-saneamiento:** `scratch/vercel_envs_backup_before_consolidation.json`
+**Informe técnico CTO:** `cto_env_vars_consolidation.md`
 
 ---
 
@@ -326,14 +340,42 @@ El test de verificación reveló que **`google/gemini-3.1-pro-preview` tiene quo
 
 ---
 
-## 🌐 Configuración de Entornos Vercel y Bases de Datos (09/09/2026)
+## 🌐 Configuración de Entornos Vercel y Bases de Datos (Consolidado 10/09/2026)
 
 - **Producción (`agenda.melosmile.com` / Proyecto Vercel: `melosmile-production`)**:
   - Base de Datos Supabase: `xylqytpudbdcsbuuwqpi` (`melosmile-production`).
   - Contenido: 67 pacientes reales, 119 citas, 88 documentos/fotos, 53 tratamientos/facturación, 4 alertas de campanita.
-  - Variables Vercel: `NEXT_PUBLIC_SUPABASE_URL=https://xylqytpudbdcsbuuwqpi.supabase.co`, `NEXT_PUBLIC_APP_URL=https://agenda.melosmile.com`.
+  - Variables Vercel: 23 únicas con target `["production", "preview", "development"]` y `type: "encrypted"`.
+  - URLs n8n migradas a v2 oficial (`https://n8nv2.mumaweb.com`), añadidas `N8N_API_KEY`, `N8N_VECTORIZER_WEBHOOK_URL` y `VPS_DOCS_BASE_PATH`.
 - **Staging (`staging.melosmile.com` / Proyecto Vercel: `melosmile-staging`)**:
   - Base de Datos Supabase: `amhfdzfcmpastmlsosou` (`melosmile_db`).
   - Contenido: Sandbox de pruebas limpio (solo ficha `Munir Mauel Callaos Cardama PAC-001`).
-  - Variables Vercel: `NEXT_PUBLIC_SUPABASE_URL=https://amhfdzfcmpastmlsosou.supabase.co`, `NEXT_PUBLIC_APP_URL=https://staging.melosmile.com`.
+  - Variables Vercel: 23 únicas con target unificado y `type: "encrypted"`.
+  - Añadidas: `AUTH_USERNAME` y `AUTH_PASSWORD`.
+  - Root Directory del proyecto corregido a `frontend` (monorepo) vía API (`prj_qP5or4gNukJS9w8PTXeiL5vHI02t`).
+
+> ⚠️ **Comportamiento Vercel `type: sensitive`**: Las variables recreadas por CLI vía pipe no-interactivo se guardan como `sensitive` y `vercel env pull` devuelve `""` aunque el valor real esté presente. No usar `pull` como método de verificación para estas; usar `vercel env ls` (tipo) o comprobación en runtime.
+>
+> ✅ **Verificación en vivo (10/09/2026)**: `https://agenda.melosmile.com/` validada en navegador con panel interactivo y badge `Odoo API: Connected` en verde.
+
+---
+
+## 🏷️ Normalización 1 a 1 de Pacientes y Etiquetas Notion (`patient_tags`) (2026-09-09)
+
+1. **Población y Normalización de Etiquetas (`patient_tags`)**:
+   - Se crearon y asignaron 13 etiquetas en producción basadas en el contacto de Notion:
+     - **`Henryschein` (8 pacientes)**: `PAC-027` (Laura Romero), `PAC-025` (Francisco Javier Leal Rey), `PAC-024` (Begoña Fernández HS), `PAC-019` (Candela Fernández HS), `PAC-018` (Diego Martínez HS), `PAC-011` (Raquel Calviches), `PAC-004` (Sara Rubio), `PAC-005` (Gabriel Cañizales Rubio).
+     - **`Familiar` (4 pacientes)**: `PAC-001` (Munir Callaos), `PAC-035` (Oscar Melo), `PAC-028` (Claire Ulmer), `PAC-022` (Kamila Hultzsch).
+     - **`Referido` (1 paciente)**: `PAC-020` (Ainur Kozhabek, referida de Claire).
+2. **Sincronización de Teléfonos y Sanitización Unicode**:
+   - 11 números de teléfono recuperados de Notion e insertados en producción (Carlos Pujol, Ángel Da Silva, Carlos Moreno, Emma Mora, Richard Enciso, Estefania Maccanin, Claire Ulmer, Javier Alberto Rosales, Francisco Javier Leal Rey, Ricardo De Freitas, Diego Martínez García).
+   - Sanitizados caracteres invisibles UTF-8 (`\u202A`, `\u202C`).
+3. **Estado de Tratamiento / Altas**:
+   - Sincronizados 8 pacientes a `in_treatment = false` reflejando su estado de Alta médica en Notion.
+4. **Corrección Frontend ([patients/page.tsx](file:///Users/munircallaos/Antigravity%20Projects/melosmile/frontend/src/app/(dashboard)/patients/page.tsx))**:
+   - Sede/Clínica primaria ahora se consulta desde `patient_clinics` (relación `clinics(id, name)`), manteniendo citas como fallback secundario. Esto resuelve que pacientes dados de alta o sin citas (como Carlos Pujol) no mostrasen su sede asignada.
+   - Corregido el orden invertido de columnas en vista tabla (`Clínica / Sede` vs `DNI / NIE`).
+   - Añadidos textos de fallback claros (`Sin teléfono`, `Sin email`, `Sin DNI`).
+   - Desplegado y verificado en producción `https://agenda.melosmile.com/patients`.
+
 

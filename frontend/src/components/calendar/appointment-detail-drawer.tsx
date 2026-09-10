@@ -324,6 +324,34 @@ export function AppointmentDetailDrawer({
             </div>
           </div>
 
+          {/* Sección Resumen de Sesiones */}
+          <div className="space-y-3.5 pt-4 mt-4 border-t border-border/60 text-xs text-muted-foreground">
+            <div className="flex items-center gap-2">
+              <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
+              <h4 className="font-bold text-foreground">📋 Resumen de Sesiones</h4>
+            </div>
+
+            {/* Sesión Anterior */}
+            <div className="pl-7 space-y-1">
+              <p className="font-semibold text-foreground">Sesión Anterior: {event.previousDate ? format(new Date(event.previousDate), "d MMM yyyy", { locale: es }) : "Sin sesión anterior registrada"}</p>
+              {event.previousNotes ? (
+                <p className="text-muted-foreground whitespace-pre-wrap">{event.previousNotes}</p>
+              ) : (
+                <p className="text-muted-foreground italic">No hay notas para la sesión anterior.</p>
+              )}
+            </div>
+
+            {/* Sesión Actual / Plan */}
+            <div className="pl-7 space-y-1">
+              <p className="font-semibold text-foreground">Sesión Actual / Plan:</p>
+              {event.notes ? (
+                <p className="text-muted-foreground whitespace-pre-wrap">{event.notes}</p>
+              ) : (
+                <p className="text-muted-foreground italic">{event.title}</p>
+              )}
+            </div>
+          </div>
+
           {/* Sección Adjuntos */}
           {loadingDocs ? (
             <div className="mt-5 pt-4 border-t border-border/60 space-y-3">

@@ -77,11 +77,41 @@ export function NewAppointmentModalGlobal() {
   const [clinics, setClinics] = useState<{ id: string; name: string }[]>([]);
   const [professionals, setProfessionals] = useState<{ id: string; name: string }[]>([]);
 
+  // Función para obtener la hora actual redondeada al cuarto de hora más próximo
+  const getNearestTimeSlot = (): string => {
+    const now = new Date();
+    const totalMins = now.getHours() * 60 + now.getMinutes();
+    
+    // Redondear al próximo cuarto de hora (ceil)
+    const roundedMins = Math.ceil(totalMins / 15) * 15;
+    
+    // Verificar si estamos fuera del horario laboral (después de 20:30)
+    const lastSlotMins = 20 * 60 + 30; // 20:30 en minutos
+    
+    if (roundedMins > lastSlotMins) {
+      // Si es después del horario laboral, usar primera hora del día siguiente
+      return TIME_SLOTS[0];
+    }
+    
+    // Buscar el slot más cercano disponible
+    for (const slot of TIME_SLOTS) {
+      const [slotHour, slotMinute] = slot.split(':').map(Number);
+      const slotTotalMins = slotHour * 60 + slotMinute;
+      
+      if (slotTotalMins >= roundedMins) {
+        return slot;
+      }
+    }
+    
+    // Si no encuentra slot, usar el primero
+    return TIME_SLOTS[0];
+  };
+
   // Form states
   const [appointmentDate, setAppointmentDate] = useState<string>(
     format(new Date(), "yyyy-MM-dd")
   );
-  const [selectedStartTime, setSelectedStartTime] = useState<string>("10:00");
+  const [selectedStartTime, setSelectedStartTime] = useState<string>(getNearestTimeSlot());
   const [durationMinutes, setDurationMinutes] = useState<number>(30);
 
   const [patientId, setPatientId] = useState<string>("");
@@ -154,7 +184,14 @@ export function NewAppointmentModalGlobal() {
 
       if (detail?.patientName) setPatientName(detail.patientName);
       if (detail?.patientId) setPatientId(detail.patientId);
-      if (detail?.date) setAppointmentDate(detail.date);
+      if (detail?.date) {
+        setAppointmentDate(detail.date);
+        // CMO: hora precargada solo si la cita es para HOY; en fechas futuras primera franja
+        const isToday = format(new Date(), "yyyy-MM-dd") === detail.date;
+        setSelectedStartTime(isToday ? getNearestTimeSlot() : TIME_SLOTS[0]);
+      } else {
+        setSelectedStartTime(getNearestTimeSlot());
+      }
       if (detail?.time) setSelectedStartTime(detail.time);
 
       setIsOpen(true);

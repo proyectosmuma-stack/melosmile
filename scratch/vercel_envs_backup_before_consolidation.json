@@ -1,0 +1,1561 @@
+{
+  "timestamp": "2026-09-10T07:22:58.813Z",
+  "melosmile_production": [
+    {
+      "type": "encrypted",
+      "value": "eyJ2IjoidjIiLCJjIjoiaHlmK29iT1JlbGM1MjQydGZlek1BV2dHUk9DNXJUbjVlQmJtM0pjaTg2RnJlakNIL2Q4Q3YzTU9CcWViSVJZd1EyZUVJOC9nWng0R1d6c1h3NU85V05Kd1hJd2RsclhwVjd5VitzUmNnemFoOUhjT3N3S0RXTXgvekE4ZnB2L1ZvS29YTERGTXhCc1RlbUJGNEUyYzM3Q3VNeUN4VkVaSTlRbWppL3NFaFQ5OVpxNGUwaU4vZldaSjRwd2RBN1l0MGhvZ2Y2Sm5hTUVhdTd5YXJwN3JkandRTGo4RmdLWGJTTHZJaXhBbXUrbmJQbDlBNy9kRU9VUTJUcGdRbVU3N1NqNk8rYnRURXQyMlZVNTg5TnhpZmMvTHkvVmRSZlRZdERrb2NqNlZuSXlvcDZRRFVLZU9UUllpSWZ1QjNuT1A5WTZjUTF3OGkvV09haVhtdmlBcS8xVWlVbkNNTUFsNE56OHgxTEJvTFd3Z2lvU2QvTUR1THhCbXJtU2hWZHJhSTEweGRNSzd0QWpKNEoyWGN0MHdZWjFGY0RYU0lmbVdaanlkNW1aQmpsM1M4WGxqWHFZL2l2WHQrTklMNDlTTDROanhjbGYvVEpaR2YzSDk5Q1FHWWx0R3Vqd1VEZFN4WWl3U3dTVE83NWRrQTgvZytKRlVoMFgzMU43cmFUQ2NNSEx0ZWFZUTFXUE02RmZmWXlNRzVXQmxQNzVuWE1sbjVWbktVcUpBcTk5OGl4RmlrNEw1emFQM0RrTWZyOTdES0JBQXdmaGVZMFBTbWpHdlRiUUVCNXpnOWZRPSIsImsiOlsxODQsMSwyLDMsMCwxMjAsMTA3LDExOSwxNTMsMjMsMjIzLDExNywxODMsMTIwLDU3LDE5NiwxMSwyOCwyNDksMTE5LDEwNCwyMTMsMTY5LDE2MSwxNDEsMTQyLDk5LDY1LDQ5LDIxMiwzMCwxOTksOTcsMjA0LDIxOCw3NywxMDUsMTc5LDEsMjE3LDY3LDIxNSwxNTQsMjE0LDIzMiwxNDUsMTY3LDMyLDU4LDE4NSwyMTQsMjQwLDMwLDIxOSw3NSwwLDAsMCwxMjYsNDgsMTI0LDYsOSw0MiwxMzQsNzIsMTM0LDI0NywxMywxLDcsNiwxNjAsMTExLDQ4LDEwOSwyLDEsMCw0OCwxMDQsNiw5LDQyLDEzNCw3MiwxMzQsMjQ3LDEzLDEsNywxLDQ4LDMwLDYsOSw5NiwxMzQsNzIsMSwxMDEsMyw0LDEsNDYsNDgsMTcsNCwxMiw0NywxLDEzMSw4OCw1MCwxNjksMzksOTUsMTM0LDE2NCwxMTcsNDMsMiwxLDE2LDEyOCw1OSw3NCwxOTksODUsODUsNTgsNjksNTcsMTgwLDMxLDk0LDExOSwxODIsMTU4LDkyLDE3MSwxNjEsMjIsMjAwLDk5LDI1NCw1OCwyMzMsMzYsNDMsMTE2LDIwNSwxNTYsMjE5LDE5OSwxMzgsMTgsMzksMTAzLDg1LDIxMywxMzYsODMsODcsMjIyLDg5LDQwLDIwMiwxMDgsNzgsNzIsMTUzLDYwLDEzOSwyMjQsMTU1LDIwLDIxMiwyMTIsMjQzLDEyMywyNDQsMTMzLDI1MiwxMDddfQ==",
+      "target": [
+        "development"
+      ],
+      "configurationId": null,
+      "id": "c1cGppj2PFcgEmDC",
+      "key": "SUPABASE_SERVICE_ROLE_KEY",
+      "createdAt": 1789024405815,
+      "updatedAt": 1789024405815,
+      "createdBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "updatedBy": null,
+      "decrypted": false,
+      "lastEditedByDisplayName": "proyectosmuma-stack"
+    },
+    {
+      "type": "sensitive",
+      "value": "",
+      "target": [
+        "preview"
+      ],
+      "configurationId": null,
+      "visibility": "secret",
+      "id": "gJjooUtQIkTKdIAz",
+      "key": "SUPABASE_SERVICE_ROLE_KEY",
+      "createdAt": 1789024403632,
+      "updatedAt": 1789024403632,
+      "createdBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "updatedBy": null,
+      "decrypted": false,
+      "lastEditedByDisplayName": "proyectosmuma-stack"
+    },
+    {
+      "type": "sensitive",
+      "value": "",
+      "target": [
+        "production"
+      ],
+      "configurationId": null,
+      "visibility": "secret",
+      "id": "ee048Roht1LzWLuX",
+      "key": "SUPABASE_SERVICE_ROLE_KEY",
+      "createdAt": 1789024401272,
+      "updatedAt": 1789024401272,
+      "createdBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "updatedBy": null,
+      "decrypted": false,
+      "lastEditedByDisplayName": "proyectosmuma-stack"
+    },
+    {
+      "type": "encrypted",
+      "value": "eyJ2IjoidjIiLCJjIjoiSnZkYXFRV0ZQU0dVUXUzcGJEMzRPajNUKzBRTmxLcjVKQUs3WFZFWERwSitaN0VFWnVzckZQaFo4c05mZHdnMGlZaFA3ckFhRjhzSUhqL296UENJcEtkd1BuSDU0RzMyL3FVeGpITFJzU1FrSVhIczd1d2pwRzhTQVlQMDgyRk1MNTFyN0g3b1lUWitPQjVqalRDNzZwbUwzbHF3SVFBODhiZUJOK3oyRFg4ZUdzN2l5MkFJU0tQb2g2UmMvNkoxUFg1blh3PT0iLCJrIjpbMTg0LDEsMiwzLDAsMTIwLDEwNywxMTksMTUzLDIzLDIyMywxMTcsMTgzLDEyMCw1NywxOTYsMTEsMjgsMjQ5LDExOSwxMDQsMjEzLDE2OSwxNjEsMTQxLDE0Miw5OSw2NSw0OSwyMTIsMzAsMTk5LDk3LDIwNCwyMTgsNzcsMTA1LDE3OSwxLDIxNyw2NywyMTUsMTU0LDIxNCwyMzIsMTQ1LDE2NywzMiw1OCwxODUsMjE0LDI0MCwzMCwyMTksNzUsMCwwLDAsMTI2LDQ4LDEyNCw2LDksNDIsMTM0LDcyLDEzNCwyNDcsMTMsMSw3LDYsMTYwLDExMSw0OCwxMDksMiwxLDAsNDgsMTA0LDYsOSw0MiwxMzQsNzIsMTM0LDI0NywxMywxLDcsMSw0OCwzMCw2LDksOTYsMTM0LDcyLDEsMTAxLDMsNCwxLDQ2LDQ4LDE3LDQsMTIsNDcsMSwxMzEsODgsNTAsMTY5LDM5LDk1LDEzNCwxNjQsMTE3LDQzLDIsMSwxNiwxMjgsNTksNzQsMTk5LDg1LDg1LDU4LDY5LDU3LDE4MCwzMSw5NCwxMTksMTgyLDE1OCw5MiwxNzEsMTYxLDIyLDIwMCw5OSwyNTQsNTgsMjMzLDM2LDQzLDExNiwyMDUsMTU2LDIxOSwxOTksMTM4LDE4LDM5LDEwMyw4NSwyMTMsMTM2LDgzLDg3LDIyMiw4OSw0MCwyMDIsMTA4LDc4LDcyLDE1Myw2MCwxMzksMjI0LDE1NSwyMCwyMTIsMjEyLDI0MywxMjMsMjQ0LDEzMywyNTIsMTA3XX0=",
+      "target": [
+        "development"
+      ],
+      "configurationId": null,
+      "id": "Nw3mjAhSWDyygYSD",
+      "key": "NEXT_PUBLIC_SUPABASE_ANON_KEY",
+      "createdAt": 1789024399160,
+      "updatedAt": 1789024399160,
+      "createdBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "updatedBy": null,
+      "decrypted": false,
+      "lastEditedByDisplayName": "proyectosmuma-stack"
+    },
+    {
+      "type": "sensitive",
+      "value": "",
+      "target": [
+        "preview"
+      ],
+      "configurationId": null,
+      "id": "h5XNphOLJHGIoQ9p",
+      "key": "NEXT_PUBLIC_SUPABASE_ANON_KEY",
+      "createdAt": 1789024396821,
+      "updatedAt": 1789024396821,
+      "createdBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "updatedBy": null,
+      "decrypted": false,
+      "lastEditedByDisplayName": "proyectosmuma-stack"
+    },
+    {
+      "type": "sensitive",
+      "value": "",
+      "target": [
+        "production"
+      ],
+      "configurationId": null,
+      "id": "lx8nyxUMeHrEfpM4",
+      "key": "NEXT_PUBLIC_SUPABASE_ANON_KEY",
+      "createdAt": 1789024394660,
+      "updatedAt": 1789024394660,
+      "createdBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "updatedBy": null,
+      "decrypted": false,
+      "lastEditedByDisplayName": "proyectosmuma-stack"
+    },
+    {
+      "type": "encrypted",
+      "value": "eyJ2IjoidjIiLCJjIjoiLzlXekd0RmhqSnRZUDU1bDhzNEhwb2UwWWxyR05SLzQ3c3kwZ0NwZjE3K0hyekVxc29Oem42QkdjVklJOTdwWHJNUUMvaysxbERrNlVhdTdLb1dTUERTL1gvMnZ4ZUFrVUNFaW0ydjU2TVRvTlR3SWNtYTVwcGxQRUQ4eHk0SGE2RU9oOGFZcDRNVCtXTjNmTEoyRmRBeUtpZE1GOTRYWEpQV0FacEpqcXRPOUl3YXNyWUZVa3BoNXlhRT0iLCJrIjpbMTg0LDEsMiwzLDAsMTIwLDEwNywxMTksMTUzLDIzLDIyMywxMTcsMTgzLDEyMCw1NywxOTYsMTEsMjgsMjQ5LDExOSwxMDQsMjEzLDE2OSwxNjEsMTQxLDE0Miw5OSw2NSw0OSwyMTIsMzAsMTk5LDk3LDIwNCwyMTgsNzcsMTA1LDE3OSwxLDE3NSwyMjUsMTA4LDc2LDE2LDEzMSwxNDQsMTA2LDI0LDE1OSwxMjgsMTkxLDIwNCwyNDQsMjQ0LDIyMywwLDAsMCwxMjYsNDgsMTI0LDYsOSw0MiwxMzQsNzIsMTM0LDI0NywxMywxLDcsNiwxNjAsMTExLDQ4LDEwOSwyLDEsMCw0OCwxMDQsNiw5LDQyLDEzNCw3MiwxMzQsMjQ3LDEzLDEsNywxLDQ4LDMwLDYsOSw5NiwxMzQsNzIsMSwxMDEsMyw0LDEsNDYsNDgsMTcsNCwxMiwxNTUsMTM0LDE4OCwzOSwyMyw4MCw5OSwxOTIsMTQzLDY0LDI1MSw2NywyLDEsMTYsMTI4LDU5LDM1LDI1MCwxNTIsMTIxLDIxMSwxNjcsMTgyLDE2OSwxODYsMTcyLDg0LDIxMyw5MCwxMTMsMjUzLDIzNCwyNywxNzQsNTIsMTgxLDEyLDcxLDI0NCwxNDMsNTMsMTE0LDQxLDk2LDEzMywyMTEsNTMsMjI5LDUyLDIyMSwxNzMsMjI0LDI0OCwyNDIsOTcsMjM1LDIwMiwxMzYsMTkzLDkzLDEyNSwxNiwxNzIsMjAyLDQ4LDE3NSwzNCwyMTYsMTIxLDEzNyw4OSwxMDYsMTg4LDQyLDEzNV19",
+      "target": [
+        "development"
+      ],
+      "configurationId": null,
+      "id": "mPXANNxtB4DwsnN9",
+      "key": "NEXT_PUBLIC_SUPABASE_URL",
+      "createdAt": 1789024392517,
+      "updatedAt": 1789024392517,
+      "createdBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "updatedBy": null,
+      "decrypted": false,
+      "lastEditedByDisplayName": "proyectosmuma-stack"
+    },
+    {
+      "type": "sensitive",
+      "value": "",
+      "target": [
+        "preview"
+      ],
+      "configurationId": null,
+      "id": "ip70lIM9XseEaKqh",
+      "key": "NEXT_PUBLIC_SUPABASE_URL",
+      "createdAt": 1789024390152,
+      "updatedAt": 1789024390152,
+      "createdBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "updatedBy": null,
+      "decrypted": false,
+      "lastEditedByDisplayName": "proyectosmuma-stack"
+    },
+    {
+      "type": "sensitive",
+      "value": "",
+      "target": [
+        "production"
+      ],
+      "configurationId": null,
+      "id": "yrTuBkbJxSSRMMEd",
+      "key": "NEXT_PUBLIC_SUPABASE_URL",
+      "createdAt": 1789024387790,
+      "updatedAt": 1789024387790,
+      "createdBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "updatedBy": null,
+      "decrypted": false,
+      "lastEditedByDisplayName": "proyectosmuma-stack"
+    },
+    {
+      "type": "encrypted",
+      "value": "eyJ2IjoidjIiLCJjIjoibU00b1ZFT1BhYSt3L3lIVS9wNkhHOUxYQndBK2VWelZLNkc3UCtKeTZySUMvOVZvOTg0cnp6VjlPWkYybXpVb1ZFSzM2WlhzZk5pZnQ4VXFSM0JCYmFFcC9vakY5UnAwTiszeHV4KzZKVDZlTm84eWpISzQvMzZqdS83eFJvdWRxeGY0Tktyc3Nnd2VCc3U5SXFScFRveXl5T2c9IiwiayI6WzE4NCwxLDIsMywwLDEyMCwxMDcsMTE5LDE1MywyMywyMjMsMTE3LDE4MywxMjAsNTcsMTk2LDExLDI4LDI0OSwxMTksMTA0LDIxMywxNjksMTYxLDE0MSwxNDIsOTksNjUsNDksMjEyLDMwLDE5OSw5NywyMDQsMjE4LDc3LDEwNSwxNzksMSwyMTcsNjcsMjE1LDE1NCwyMTQsMjMyLDE0NSwxNjcsMzIsNTgsMTg1LDIxNCwyNDAsMzAsMjE5LDc1LDAsMCwwLDEyNiw0OCwxMjQsNiw5LDQyLDEzNCw3MiwxMzQsMjQ3LDEzLDEsNyw2LDE2MCwxMTEsNDgsMTA5LDIsMSwwLDQ4LDEwNCw2LDksNDIsMTM0LDcyLDEzNCwyNDcsMTMsMSw3LDEsNDgsMzAsNiw5LDk2LDEzNCw3MiwxLDEwMSwzLDQsMSw0Niw0OCwxNyw0LDEyLDQ3LDEsMTMxLDg4LDUwLDE2OSwzOSw5NSwxMzQsMTY0LDExNyw0MywyLDEsMTYsMTI4LDU5LDc0LDE5OSw4NSw4NSw1OCw2OSw1NywxODAsMzEsOTQsMTE5LDE4MiwxNTgsOTIsMTcxLDE2MSwyMiwyMDAsOTksMjU0LDU4LDIzMywzNiw0MywxMTYsMjA1LDE1NiwyMTksMTk5LDEzOCwxOCwzOSwxMDMsODUsMjEzLDEzNiw4Myw4NywyMjIsODksNDAsMjAyLDEwOCw3OCw3MiwxNTMsNjAsMTM5LDIyNCwxNTUsMjAsMjEyLDIxMiwyNDMsMTIzLDI0NCwxMzMsMjUyLDEwN119",
+      "target": [
+        "development"
+      ],
+      "configurationId": null,
+      "id": "EahADamMAWoEA6YM",
+      "key": "NEXT_PUBLIC_APP_URL",
+      "createdAt": 1789024385725,
+      "updatedAt": 1789024385725,
+      "createdBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "updatedBy": null,
+      "decrypted": false,
+      "lastEditedByDisplayName": "proyectosmuma-stack"
+    },
+    {
+      "type": "sensitive",
+      "value": "",
+      "target": [
+        "preview"
+      ],
+      "configurationId": null,
+      "id": "qQ0eiFBRqfr3DOvq",
+      "key": "NEXT_PUBLIC_APP_URL",
+      "createdAt": 1789024383408,
+      "updatedAt": 1789024383408,
+      "createdBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "updatedBy": null,
+      "decrypted": false,
+      "lastEditedByDisplayName": "proyectosmuma-stack"
+    },
+    {
+      "type": "sensitive",
+      "value": "",
+      "target": [
+        "production"
+      ],
+      "configurationId": null,
+      "id": "xPQOUrGkWjg7nwHM",
+      "key": "NEXT_PUBLIC_APP_URL",
+      "createdAt": 1789024381263,
+      "updatedAt": 1789024381263,
+      "createdBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "updatedBy": null,
+      "decrypted": false,
+      "lastEditedByDisplayName": "proyectosmuma-stack"
+    },
+    {
+      "type": "encrypted",
+      "value": "eyJ2IjoidjIiLCJjIjoiLzlRVXhRZnovdWNrOXhlWGhlSTkxWkNMdjBQTzJRUlVTaHhjVGdHYVVhblFvbGw1WmYvK3AxeE9XNitHUzQ3b04yK0dmNnYwbVpHOVRVUlYyOHlkR3libFkrUXBWcVoyRHlMOU92bCtIWWJMcmpNTXFweXc2T0h2TFlQZGttRndMMkx6NTkzY1FscFV1c1RWcUlPenZGMEFJSm5nWXBISExKNDVwSWZXNmxWSzlSRWY4a3ZXamJpTks0RTVQLzllSktuYkVkeGJNS3dxK09TdTczdENZRGwyd2k5cC9tZVBIVW92UWN3WVpLUTU0L0pqIiwiayI6WzE4NCwxLDIsMywwLDEyMCwxMDcsMTE5LDE1MywyMywyMjMsMTE3LDE4MywxMjAsNTcsMTk2LDExLDI4LDI0OSwxMTksMTA0LDIxMywxNjksMTYxLDE0MSwxNDIsOTksNjUsNDksMjEyLDMwLDE5OSw5NywyMDQsMjE4LDc3LDEwNSwxNzksMSwxNzQsMTM4LDQsMjI2LDIxLDE5Miw4OCwxNDYsNzYsMTU2LDM2LDkyLDk4LDE2MiwxNTQsMzAsMCwwLDAsMTI2LDQ4LDEyNCw2LDksNDIsMTM0LDcyLDEzNCwyNDcsMTMsMSw3LDYsMTYwLDExMSw0OCwxMDksMiwxLDAsNDgsMTA0LDYsOSw0MiwxMzQsNzIsMTM0LDI0NywxMywxLDcsMSw0OCwzMCw2LDksOTYsMTM0LDcyLDEsMTAxLDMsNCwxLDQ2LDQ4LDE3LDQsMTIsOTQsMjA3LDEyNSwxODUsMjUyLDI4LDU1LDE5NSwxMjgsMjMzLDEwOSw4MCwyLDEsMTYsMTI4LDU5LDIyMCwyMDYsMjM2LDgzLDIzLDUyLDQsMjksMjAwLDE4NSw0NSw0MiwyNTQsMTQ3LDQ3LDEwMCwyNDUsMTA1LDI1MywxNjYsNzAsMzEsMjAzLDI0NSwxMDksNzYsMTQ3LDIzOSwxMzAsMjU1LDIxMCwxODQsNzIsMTEzLDEyMCwyNDEsMTkzLDE5MSwyNDcsMTA4LDE5MCwyNCwxMzYsNzgsMTIxLDI0Nyw3NywxMjQsMjQ1LDY2LDE2NywyMjgsMjAzLDU1LDE2NCwyMywxMjUsMjEsMTkxXX0=",
+      "target": [
+        "development"
+      ],
+      "configurationId": null,
+      "id": "9yMxdWsz3nEVKrbb",
+      "key": "ICAL_TOKEN",
+      "createdAt": 1788943124111,
+      "updatedAt": 1788943124111,
+      "createdBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "updatedBy": null,
+      "decrypted": false,
+      "lastEditedByDisplayName": "proyectosmuma-stack"
+    },
+    {
+      "type": "sensitive",
+      "value": "",
+      "target": [
+        "preview"
+      ],
+      "configurationId": null,
+      "visibility": "secret",
+      "id": "Ajl4dzdfdAIqfZLH",
+      "key": "ICAL_TOKEN",
+      "createdAt": 1788943122247,
+      "updatedAt": 1788943122247,
+      "createdBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "updatedBy": null,
+      "decrypted": false,
+      "lastEditedByDisplayName": "proyectosmuma-stack"
+    },
+    {
+      "type": "sensitive",
+      "value": "",
+      "target": [
+        "production"
+      ],
+      "configurationId": null,
+      "visibility": "secret",
+      "id": "1wWmqQQyst8LXqwk",
+      "key": "ICAL_TOKEN",
+      "createdAt": 1788943120084,
+      "updatedAt": 1788943120084,
+      "createdBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "updatedBy": null,
+      "decrypted": false,
+      "lastEditedByDisplayName": "proyectosmuma-stack"
+    },
+    {
+      "type": "sensitive",
+      "value": "",
+      "target": [
+        "production"
+      ],
+      "configurationId": null,
+      "id": "veutiT9cVuDWnTPx",
+      "key": "NEXT_PUBLIC_VPS_FILES_BASE",
+      "createdAt": 1788852537452,
+      "updatedAt": 1788852537452,
+      "createdBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "updatedBy": null,
+      "decrypted": false,
+      "lastEditedByDisplayName": "proyectosmuma-stack"
+    },
+    {
+      "type": "sensitive",
+      "value": "",
+      "target": [
+        "production"
+      ],
+      "configurationId": null,
+      "visibility": "secret",
+      "id": "gIstjl7oZUpfIIET",
+      "key": "ODOO_API_KEY",
+      "createdAt": 1787770145366,
+      "updatedAt": 1787770145366,
+      "createdBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "updatedBy": null,
+      "decrypted": false,
+      "lastEditedByDisplayName": "proyectosmuma-stack"
+    },
+    {
+      "type": "sensitive",
+      "value": "",
+      "target": [
+        "production"
+      ],
+      "configurationId": null,
+      "visibility": "secret",
+      "id": "FahcuNzxGzUYbnWZ",
+      "key": "ODOO_PASSWORD",
+      "createdAt": 1787770143058,
+      "updatedAt": 1787770143058,
+      "createdBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "updatedBy": null,
+      "decrypted": false,
+      "lastEditedByDisplayName": "proyectosmuma-stack"
+    },
+    {
+      "type": "sensitive",
+      "value": "",
+      "target": [
+        "production"
+      ],
+      "configurationId": null,
+      "visibility": "secret",
+      "id": "MUfprpRBmrOCm8Wo",
+      "key": "ODOO_USER",
+      "createdAt": 1787770140931,
+      "updatedAt": 1787770140931,
+      "createdBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "updatedBy": null,
+      "decrypted": false,
+      "lastEditedByDisplayName": "proyectosmuma-stack"
+    },
+    {
+      "type": "sensitive",
+      "value": "",
+      "target": [
+        "production"
+      ],
+      "configurationId": null,
+      "visibility": "secret",
+      "id": "VZWAHV5OXqic1Itr",
+      "key": "ODOO_DB",
+      "createdAt": 1787770138819,
+      "updatedAt": 1787770138819,
+      "createdBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "updatedBy": null,
+      "decrypted": false,
+      "lastEditedByDisplayName": "proyectosmuma-stack"
+    },
+    {
+      "type": "sensitive",
+      "value": "",
+      "target": [
+        "production"
+      ],
+      "configurationId": null,
+      "visibility": "secret",
+      "id": "zWmUGAGSKH1pX6kO",
+      "key": "ODOO_URL",
+      "createdAt": 1787770136570,
+      "updatedAt": 1787770136570,
+      "createdBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "updatedBy": null,
+      "decrypted": false,
+      "lastEditedByDisplayName": "proyectosmuma-stack"
+    },
+    {
+      "type": "sensitive",
+      "value": "",
+      "target": [
+        "production"
+      ],
+      "configurationId": null,
+      "id": "XkCMehh63jObXJZz",
+      "key": "VPS_SSH_PASSWORD",
+      "createdAt": 1787492062542,
+      "updatedAt": 1787492062542,
+      "createdBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "updatedBy": null,
+      "decrypted": false,
+      "lastEditedByDisplayName": "proyectosmuma-stack"
+    },
+    {
+      "type": "sensitive",
+      "value": "",
+      "target": [
+        "production"
+      ],
+      "configurationId": null,
+      "id": "fPH5ikGJ11xDTJ8z",
+      "key": "VPS_DOMAIN_FOLDER",
+      "createdAt": 1787490682399,
+      "updatedAt": 1787490682399,
+      "createdBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "updatedBy": null,
+      "decrypted": false,
+      "lastEditedByDisplayName": "proyectosmuma-stack"
+    },
+    {
+      "type": "sensitive",
+      "value": "",
+      "target": [
+        "production"
+      ],
+      "configurationId": null,
+      "id": "2msaMu5q5HCTVmHY",
+      "key": "VPS_SSH_USER",
+      "createdAt": 1787490675827,
+      "updatedAt": 1787490675827,
+      "createdBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "updatedBy": null,
+      "decrypted": false,
+      "lastEditedByDisplayName": "proyectosmuma-stack"
+    },
+    {
+      "type": "sensitive",
+      "value": "",
+      "target": [
+        "production"
+      ],
+      "configurationId": null,
+      "id": "WZJGtAYKbdEDbsf3",
+      "key": "VPS_SSH_HOST",
+      "createdAt": 1787490672902,
+      "updatedAt": 1787490672902,
+      "createdBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "updatedBy": null,
+      "decrypted": false,
+      "lastEditedByDisplayName": "proyectosmuma-stack"
+    },
+    {
+      "type": "sensitive",
+      "value": "",
+      "target": [
+        "production"
+      ],
+      "configurationId": null,
+      "id": "Gc12T1UnVP5rZ7eE",
+      "key": "VPS_FTP_PORT",
+      "createdAt": 1787490653842,
+      "updatedAt": 1787490653842,
+      "createdBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "updatedBy": null,
+      "decrypted": false,
+      "lastEditedByDisplayName": "proyectosmuma-stack"
+    },
+    {
+      "type": "encrypted",
+      "value": "eyJ2IjoidjIiLCJjIjoiZUlCWGR6VmJTbm4vNHpTNDcrVWwzMTRMa0dlSGpZdUJDTExjY1Q5Q29TS3dqN2RQb01XWDhvZnZBRnBQZXdrektnYkNVeG1ZN0RDTFpQUW01SFhCQzhjUzlUcmZPRWZNaStQMW84cDBwOVdyd05JcXBUVXBlcU8zVDZjPSIsImsiOlsxODQsMSwyLDMsMCwxMjAsMTA3LDExOSwxNTMsMjMsMjIzLDExNywxODMsMTIwLDU3LDE5NiwxMSwyOCwyNDksMTE5LDEwNCwyMTMsMTY5LDE2MSwxNDEsMTQyLDk5LDY1LDQ5LDIxMiwzMCwxOTksOTcsMjA0LDIxOCw3NywxMDUsMTc5LDEsMjE0LDE5NSw1MiwyMzIsMTUsMTMyLDIwMSwxMDQsMTczLDMzLDE0MSwxNjAsMzMsMTc2LDI5LDMwLDAsMCwwLDEyNiw0OCwxMjQsNiw5LDQyLDEzNCw3MiwxMzQsMjQ3LDEzLDEsNyw2LDE2MCwxMTEsNDgsMTA5LDIsMSwwLDQ4LDEwNCw2LDksNDIsMTM0LDcyLDEzNCwyNDcsMTMsMSw3LDEsNDgsMzAsNiw5LDk2LDEzNCw3MiwxLDEwMSwzLDQsMSw0Niw0OCwxNyw0LDEyLDE2NSwxMTYsMjMzLDE2MSwxODAsODEsOTEsMTg3LDQwLDIxNSw2OCwxNjQsMiwxLDE2LDEyOCw1OSw4MiwyMjUsOTQsMjksMTI0LDE1OSw4Niw2MiwxMTUsMjA4LDE2OCw1NiwzLDEzMywxMDksMTEyLDk3LDE0NCwxOTQsNDAsNjMsMTkxLDE4OSwxMTIsOTksNzgsMTgxLDEwLDIyMSw0Niw2Niw4MCwyMTcsODcsMjQ0LDcxLDI1Myw4OSwyMTcsMTgwLDY4LDIyNiwxMDksMjIsMjQyLDI1MywxMTIsMTk4LDE2LDEyMiwzNCwxNzYsODYsNzUsNjYsNTQsMTEyLDU5LDEzNV19",
+      "target": [
+        "development"
+      ],
+      "configurationId": null,
+      "id": "TkvVeTxGBCtjYjHD",
+      "key": "AUTH_PASSWORD",
+      "createdAt": 1785344816233,
+      "updatedAt": 1785344816233,
+      "createdBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "updatedBy": null,
+      "decrypted": false,
+      "lastEditedByDisplayName": "proyectosmuma-stack"
+    },
+    {
+      "type": "encrypted",
+      "value": "eyJ2IjoidjIiLCJjIjoidlY4YnNoOExoU1FkSFFhcEVMVmc1bWdScTNiN0tXaFRnYXJYakNEaHcza2FuN0N0RmhPdStpbEhTbThjSFArYUNvVTE2N1lOdHg3UjlpbmpPdVpYWVNTOGR2bTJybzdRYW40Y2tBMWdXcDg9IiwiayI6WzE4NCwxLDIsMywwLDEyMCwxMDcsMTE5LDE1MywyMywyMjMsMTE3LDE4MywxMjAsNTcsMTk2LDExLDI4LDI0OSwxMTksMTA0LDIxMywxNjksMTYxLDE0MSwxNDIsOTksNjUsNDksMjEyLDMwLDE5OSw5NywyMDQsMjE4LDc3LDEwNSwxNzksMSw1Myw0NiwyMjMsMSwxMjQsMjQzLDg0LDEyNyw2OCwzNywyMywxNjgsMjEwLDI4LDE1MiwxNTgsMCwwLDAsMTI2LDQ4LDEyNCw2LDksNDIsMTM0LDcyLDEzNCwyNDcsMTMsMSw3LDYsMTYwLDExMSw0OCwxMDksMiwxLDAsNDgsMTA0LDYsOSw0MiwxMzQsNzIsMTM0LDI0NywxMywxLDcsMSw0OCwzMCw2LDksOTYsMTM0LDcyLDEsMTAxLDMsNCwxLDQ2LDQ4LDE3LDQsMTIsMTU3LDc2LDE5OCw5MCwxMjYsMTY2LDExNiw4MiwyMSwyMzcsMTQxLDg5LDIsMSwxNiwxMjgsNTksMjQwLDI0Miw5MCwyMDksNyw4NSw5OCwxMDgsODIsMTMsOTcsMTM2LDQ4LDEzNywxNCwyMTcsMTgxLDE3OSwyMjQsNDksODEsNTYsMTM4LDIzNCw5MywyNDIsMTYwLDc0LDIxOCwyMDQsMjU0LDE5MCw2OSw4OCwxNjMsMjM5LDQ2LDI1NSwxMzcsNjgsOTYsMjA4LDkxLDIyNywyMSwxMjIsMTA4LDQyLDczLDIxMiwxMTYsNDgsMjE1LDEwOSwxMzksNTksMjA2LDU2LDIxNF19",
+      "target": [
+        "development"
+      ],
+      "configurationId": null,
+      "id": "S5GgQQXo7q5erDCX",
+      "key": "AUTH_USERNAME",
+      "createdAt": 1785344813980,
+      "updatedAt": 1785344813980,
+      "createdBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "updatedBy": null,
+      "decrypted": false,
+      "lastEditedByDisplayName": "proyectosmuma-stack"
+    },
+    {
+      "type": "encrypted",
+      "value": "eyJ2IjoidjIiLCJjIjoieXZrM2FwcThmYmpjNXFUeVdxUDJyam0xdklnbm1pNDZEcW9Jc2E2akh4U0xIWUxjOEFEWG5mdWQ3Qk4rRzFiMkdtbklYcWJUcU1uUE4yZ3o1WjV2SlFjN1BrR2ZHZWpkOVYzMXQzL1gzUE1QMndpakFiOXRiMzRQUTB4SVllUU5kNThSUEE9PSIsImsiOlsxODQsMSwyLDMsMCwxMjAsMTA3LDExOSwxNTMsMjMsMjIzLDExNywxODMsMTIwLDU3LDE5NiwxMSwyOCwyNDksMTE5LDEwNCwyMTMsMTY5LDE2MSwxNDEsMTQyLDk5LDY1LDQ5LDIxMiwzMCwxOTksOTcsMjA0LDIxOCw3NywxMDUsMTc5LDEsMTU4LDEzMywxNzQsMTU4LDIxMyw2NiwxODUsMTcsMjMzLDE4NCw0MywwLDY3LDM3LDE4LDIwNSwwLDAsMCwxMjYsNDgsMTI0LDYsOSw0MiwxMzQsNzIsMTM0LDI0NywxMywxLDcsNiwxNjAsMTExLDQ4LDEwOSwyLDEsMCw0OCwxMDQsNiw5LDQyLDEzNCw3MiwxMzQsMjQ3LDEzLDEsNywxLDQ4LDMwLDYsOSw5NiwxMzQsNzIsMSwxMDEsMyw0LDEsNDYsNDgsMTcsNCwxMiw5OSw1MCwxNjMsMTA2LDI0NSwxNjQsMTQ2LDExNSw3Niw1OSwxMTgsMTE4LDIsMSwxNiwxMjgsNTksMTU2LDE5NCwxMDAsMTc0LDg2LDE5Nyw3MywyNDcsMjI5LDEyNiwyMTIsMTk2LDExLDIwNywxOTEsMjQ1LDcxLDEwOSwxNDEsODYsMjQ2LDU0LDExOCwyNDAsMTAsNDIsNzgsMzEsMTMxLDIzNSwxNzksMTMwLDcxLDE5OCw0OSwxNTYsMjM5LDcyLDI0Nyw3NSwxMDksMTM1LDI0NSw0NCwxODMsMjUyLDc5LDEwLDEyLDE1Nyw2OSw3MiwzOSwxMzMsMTQwLDkxLDE2MywxOTksOTRdfQ==",
+      "target": [
+        "development"
+      ],
+      "configurationId": null,
+      "id": "BEN1Yu7KUnCeViG6",
+      "key": "ODOO_USER",
+      "createdAt": 1785344811557,
+      "updatedAt": 1785344811557,
+      "createdBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "updatedBy": null,
+      "decrypted": false,
+      "lastEditedByDisplayName": "proyectosmuma-stack"
+    },
+    {
+      "type": "encrypted",
+      "value": "eyJ2IjoidjIiLCJjIjoieStBM3N3QVg5ejhEa1NWaGJkSzlJNUltUGlGbzdpYXU3ZDV5eXdIeDNydzA2cCsyWU84eG1Kek1MVlROb0cwRisxUmxzUk1Jazh5aTNCRm9MZjMrcDI1ZFNkQkZSV3JBVHIxL1ZkbEw2M2c9IiwiayI6WzE4NCwxLDIsMywwLDEyMCwxMDcsMTE5LDE1MywyMywyMjMsMTE3LDE4MywxMjAsNTcsMTk2LDExLDI4LDI0OSwxMTksMTA0LDIxMywxNjksMTYxLDE0MSwxNDIsOTksNjUsNDksMjEyLDMwLDE5OSw5NywyMDQsMjE4LDc3LDEwNSwxNzksMSw1Myw0NiwyMjMsMSwxMjQsMjQzLDg0LDEyNyw2OCwzNywyMywxNjgsMjEwLDI4LDE1MiwxNTgsMCwwLDAsMTI2LDQ4LDEyNCw2LDksNDIsMTM0LDcyLDEzNCwyNDcsMTMsMSw3LDYsMTYwLDExMSw0OCwxMDksMiwxLDAsNDgsMTA0LDYsOSw0MiwxMzQsNzIsMTM0LDI0NywxMywxLDcsMSw0OCwzMCw2LDksOTYsMTM0LDcyLDEsMTAxLDMsNCwxLDQ2LDQ4LDE3LDQsMTIsMTU3LDc2LDE5OCw5MCwxMjYsMTY2LDExNiw4MiwyMSwyMzcsMTQxLDg5LDIsMSwxNiwxMjgsNTksMjQwLDI0Miw5MCwyMDksNyw4NSw5OCwxMDgsODIsMTMsOTcsMTM2LDQ4LDEzNywxNCwyMTcsMTgxLDE3OSwyMjQsNDksODEsNTYsMTM4LDIzNCw5MywyNDIsMTYwLDc0LDIxOCwyMDQsMjU0LDE5MCw2OSw4OCwxNjMsMjM5LDQ2LDI1NSwxMzcsNjgsOTYsMjA4LDkxLDIyNywyMSwxMjIsMTA4LDQyLDczLDIxMiwxMTYsNDgsMjE1LDEwOSwxMzksNTksMjA2LDU2LDIxNF19",
+      "target": [
+        "development"
+      ],
+      "configurationId": null,
+      "id": "id55jUJzEpPstyrH",
+      "key": "ODOO_DB",
+      "createdAt": 1785344809349,
+      "updatedAt": 1785344809349,
+      "createdBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "updatedBy": null,
+      "decrypted": false,
+      "lastEditedByDisplayName": "proyectosmuma-stack"
+    },
+    {
+      "type": "encrypted",
+      "value": "eyJ2IjoidjIiLCJjIjoiM2NXd2RrODNyRHlWVFlkcEJXWUxiYjNCVHVZNGFhY2FHandMcjlyRGVoOEgzbUN4QnR5bE1FWmdWakJ0MFBPNGdzSjdyQ3g0VGZZbXREeGIwWkxwREJ3Umhaakw1L2JESDkxZ0U3YVBNNExmL3BicmVEOG85OFVxM0ROZWw0WE13bWNsT21tWk9xNVAvU2t2eWdnN013PT0iLCJrIjpbMTg0LDEsMiwzLDAsMTIwLDEwNywxMTksMTUzLDIzLDIyMywxMTcsMTgzLDEyMCw1NywxOTYsMTEsMjgsMjQ5LDExOSwxMDQsMjEzLDE2OSwxNjEsMTQxLDE0Miw5OSw2NSw0OSwyMTIsMzAsMTk5LDk3LDIwNCwyMTgsNzcsMTA1LDE3OSwxLDE1OCwxMzMsMTc0LDE1OCwyMTMsNjYsMTg1LDE3LDIzMywxODQsNDMsMCw2NywzNywxOCwyMDUsMCwwLDAsMTI2LDQ4LDEyNCw2LDksNDIsMTM0LDcyLDEzNCwyNDcsMTMsMSw3LDYsMTYwLDExMSw0OCwxMDksMiwxLDAsNDgsMTA0LDYsOSw0MiwxMzQsNzIsMTM0LDI0NywxMywxLDcsMSw0OCwzMCw2LDksOTYsMTM0LDcyLDEsMTAxLDMsNCwxLDQ2LDQ4LDE3LDQsMTIsOTksNTAsMTYzLDEwNiwyNDUsMTY0LDE0NiwxMTUsNzYsNTksMTE4LDExOCwyLDEsMTYsMTI4LDU5LDE1NiwxOTQsMTAwLDE3NCw4NiwxOTcsNzMsMjQ3LDIyOSwxMjYsMjEyLDE5NiwxMSwyMDcsMTkxLDI0NSw3MSwxMDksMTQxLDg2LDI0Niw1NCwxMTgsMjQwLDEwLDQyLDc4LDMxLDEzMSwyMzUsMTc5LDEzMCw3MSwxOTgsNDksMTU2LDIzOSw3MiwyNDcsNzUsMTA5LDEzNSwyNDUsNDQsMTgzLDI1Miw3OSwxMCwxMiwxNTcsNjksNzIsMzksMTMzLDE0MCw5MSwxNjMsMTk5LDk0XX0=",
+      "target": [
+        "development"
+      ],
+      "configurationId": null,
+      "id": "7G7O260ypYAIVb1z",
+      "key": "ODOO_URL",
+      "createdAt": 1785344806913,
+      "updatedAt": 1785344806913,
+      "createdBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "updatedBy": null,
+      "decrypted": false,
+      "lastEditedByDisplayName": "proyectosmuma-stack"
+    },
+    {
+      "type": "encrypted",
+      "value": "eyJ2IjoidjIiLCJjIjoiQ0JZYzgwUmdMemZmNDczbitLQXNRSWNjcHVUNEtnZVRiWDNNSWFBb2MweWM0YXhtUXhmUTFra25nd3d6SlVnRjZweEoycFhGNWd2cVRiOWpDc3ZZNzE3bXpIMXVHQUdRS0oycGFGbjMzblkvWTlqeDFsYzkzNmdkbWcyNEpXckZEL3VCeU8xRjlnM2Q5QkxMN040WlJBa2dVU0VhTTI1QldUek1HUXYrVFhrSjdkMStJbEV0TmY4eHNSZ0ZQaWZBZWFYYkt3PT0iLCJrIjpbMTg0LDEsMiwzLDAsMTIwLDEwNywxMTksMTUzLDIzLDIyMywxMTcsMTgzLDEyMCw1NywxOTYsMTEsMjgsMjQ5LDExOSwxMDQsMjEzLDE2OSwxNjEsMTQxLDE0Miw5OSw2NSw0OSwyMTIsMzAsMTk5LDk3LDIwNCwyMTgsNzcsMTA1LDE3OSwxLDE1OCwxMzMsMTc0LDE1OCwyMTMsNjYsMTg1LDE3LDIzMywxODQsNDMsMCw2NywzNywxOCwyMDUsMCwwLDAsMTI2LDQ4LDEyNCw2LDksNDIsMTM0LDcyLDEzNCwyNDcsMTMsMSw3LDYsMTYwLDExMSw0OCwxMDksMiwxLDAsNDgsMTA0LDYsOSw0MiwxMzQsNzIsMTM0LDI0NywxMywxLDcsMSw0OCwzMCw2LDksOTYsMTM0LDcyLDEsMTAxLDMsNCwxLDQ2LDQ4LDE3LDQsMTIsOTksNTAsMTYzLDEwNiwyNDUsMTY0LDE0NiwxMTUsNzYsNTksMTE4LDExOCwyLDEsMTYsMTI4LDU5LDE1NiwxOTQsMTAwLDE3NCw4NiwxOTcsNzMsMjQ3LDIyOSwxMjYsMjEyLDE5NiwxMSwyMDcsMTkxLDI0NSw3MSwxMDksMTQxLDg2LDI0Niw1NCwxMTgsMjQwLDEwLDQyLDc4LDMxLDEzMSwyMzUsMTc5LDEzMCw3MSwxOTgsNDksMTU2LDIzOSw3MiwyNDcsNzUsMTA5LDEzNSwyNDUsNDQsMTgzLDI1Miw3OSwxMCwxMiwxNTcsNjksNzIsMzksMTMzLDE0MCw5MSwxNjMsMTk5LDk0XX0=",
+      "target": [
+        "development"
+      ],
+      "configurationId": null,
+      "id": "ER4T28uIJ4nZRNoW",
+      "key": "N8N_WEBHOOK_URL",
+      "createdAt": 1785344802413,
+      "updatedAt": 1785344802413,
+      "createdBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "updatedBy": null,
+      "decrypted": false,
+      "lastEditedByDisplayName": "proyectosmuma-stack"
+    },
+    {
+      "type": "encrypted",
+      "value": "eyJ2IjoidjIiLCJjIjoib2NPOFcxdHZ3TVd4VGtVREtET1dGWmR2cVNMV1ZoME9weXA2bkhsYktmc2x1Zk1WeXl4dFRrR0ZlQ0gzb1JCU0RGbDhVSEtKSHg5dW45bVF5N0xNV0tGOHllanJWM3ZhTmdNbzRUZWsvVGhoYXhURDZLajhEZFc4WFdHd29XWjhEdjFOQzNUczBqYnFzRFZqIiwiayI6WzE4NCwxLDIsMywwLDEyMCwxMDcsMTE5LDE1MywyMywyMjMsMTE3LDE4MywxMjAsNTcsMTk2LDExLDI4LDI0OSwxMTksMTA0LDIxMywxNjksMTYxLDE0MSwxNDIsOTksNjUsNDksMjEyLDMwLDE5OSw5NywyMDQsMjE4LDc3LDEwNSwxNzksMSw1Myw0NiwyMjMsMSwxMjQsMjQzLDg0LDEyNyw2OCwzNywyMywxNjgsMjEwLDI4LDE1MiwxNTgsMCwwLDAsMTI2LDQ4LDEyNCw2LDksNDIsMTM0LDcyLDEzNCwyNDcsMTMsMSw3LDYsMTYwLDExMSw0OCwxMDksMiwxLDAsNDgsMTA0LDYsOSw0MiwxMzQsNzIsMTM0LDI0NywxMywxLDcsMSw0OCwzMCw2LDksOTYsMTM0LDcyLDEsMTAxLDMsNCwxLDQ2LDQ4LDE3LDQsMTIsMTU3LDc2LDE5OCw5MCwxMjYsMTY2LDExNiw4MiwyMSwyMzcsMTQxLDg5LDIsMSwxNiwxMjgsNTksMjQwLDI0Miw5MCwyMDksNyw4NSw5OCwxMDgsODIsMTMsOTcsMTM2LDQ4LDEzNywxNCwyMTcsMTgxLDE3OSwyMjQsNDksODEsNTYsMTM4LDIzNCw5MywyNDIsMTYwLDc0LDIxOCwyMDQsMjU0LDE5MCw2OSw4OCwxNjMsMjM5LDQ2LDI1NSwxMzcsNjgsOTYsMjA4LDkxLDIyNywyMSwxMjIsMTA4LDQyLDczLDIxMiwxMTYsNDgsMjE1LDEwOSwxMzksNTksMjA2LDU2LDIxNF19",
+      "target": [
+        "development"
+      ],
+      "configurationId": null,
+      "id": "7S6j1gYro7ivqM7g",
+      "key": "N8N_WEBHOOK_BASE_URL",
+      "createdAt": 1785344800047,
+      "updatedAt": 1785344800047,
+      "createdBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "updatedBy": null,
+      "decrypted": false,
+      "lastEditedByDisplayName": "proyectosmuma-stack"
+    },
+    {
+      "type": "sensitive",
+      "value": "",
+      "target": [
+        "preview"
+      ],
+      "configurationId": null,
+      "id": "AZdyfBzDfAT424gQ",
+      "key": "AUTH_PASSWORD",
+      "createdAt": 1785344440843,
+      "updatedAt": 1785344440843,
+      "createdBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "updatedBy": null,
+      "decrypted": false,
+      "lastEditedByDisplayName": "proyectosmuma-stack"
+    },
+    {
+      "type": "sensitive",
+      "value": "",
+      "target": [
+        "preview"
+      ],
+      "configurationId": null,
+      "id": "pUCewHqQt4nn5gPD",
+      "key": "AUTH_USERNAME",
+      "createdAt": 1785344438682,
+      "updatedAt": 1785344438682,
+      "createdBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "updatedBy": null,
+      "decrypted": false,
+      "lastEditedByDisplayName": "proyectosmuma-stack"
+    },
+    {
+      "type": "sensitive",
+      "value": "",
+      "target": [
+        "preview"
+      ],
+      "configurationId": null,
+      "id": "o6GQ08uZcNwFX7Um",
+      "key": "ODOO_USER",
+      "createdAt": 1785344429674,
+      "updatedAt": 1785344429674,
+      "createdBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "updatedBy": null,
+      "decrypted": false,
+      "lastEditedByDisplayName": "proyectosmuma-stack"
+    },
+    {
+      "type": "sensitive",
+      "value": "",
+      "target": [
+        "preview"
+      ],
+      "configurationId": null,
+      "id": "1aeJvwbgcGHVA33k",
+      "key": "ODOO_DB",
+      "createdAt": 1785344427270,
+      "updatedAt": 1785344427270,
+      "createdBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "updatedBy": null,
+      "decrypted": false,
+      "lastEditedByDisplayName": "proyectosmuma-stack"
+    },
+    {
+      "type": "sensitive",
+      "value": "",
+      "target": [
+        "preview"
+      ],
+      "configurationId": null,
+      "id": "xZr5CW5cuoldidL4",
+      "key": "ODOO_URL",
+      "createdAt": 1785344424919,
+      "updatedAt": 1785344424919,
+      "createdBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "updatedBy": null,
+      "decrypted": false,
+      "lastEditedByDisplayName": "proyectosmuma-stack"
+    },
+    {
+      "type": "sensitive",
+      "value": "",
+      "target": [
+        "preview"
+      ],
+      "configurationId": null,
+      "id": "nzzVSsW19XTvMTFe",
+      "key": "N8N_WEBHOOK_URL",
+      "createdAt": 1785344420556,
+      "updatedAt": 1785344420556,
+      "createdBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "updatedBy": null,
+      "decrypted": false,
+      "lastEditedByDisplayName": "proyectosmuma-stack"
+    },
+    {
+      "type": "sensitive",
+      "value": "",
+      "target": [
+        "preview"
+      ],
+      "configurationId": null,
+      "id": "mteFppAjuWwJW2ev",
+      "key": "N8N_WEBHOOK_BASE_URL",
+      "createdAt": 1785344418398,
+      "updatedAt": 1785344418398,
+      "createdBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "updatedBy": null,
+      "decrypted": false,
+      "lastEditedByDisplayName": "proyectosmuma-stack"
+    },
+    {
+      "type": "sensitive",
+      "value": "",
+      "target": [
+        "production"
+      ],
+      "configurationId": null,
+      "id": "iV3lngEeSCGXn6J3",
+      "key": "AUTH_PASSWORD",
+      "createdAt": 1785341430904,
+      "updatedAt": 1785341430904,
+      "createdBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "updatedBy": null,
+      "decrypted": false,
+      "lastEditedByDisplayName": "proyectosmuma-stack"
+    },
+    {
+      "type": "sensitive",
+      "value": "",
+      "target": [
+        "production"
+      ],
+      "configurationId": null,
+      "id": "JU0E6nhYpmwg0YQh",
+      "key": "AUTH_USERNAME",
+      "createdAt": 1785341428901,
+      "updatedAt": 1785341428901,
+      "createdBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "updatedBy": null,
+      "decrypted": false,
+      "lastEditedByDisplayName": "proyectosmuma-stack"
+    },
+    {
+      "type": "sensitive",
+      "value": "",
+      "target": [
+        "production"
+      ],
+      "configurationId": null,
+      "id": "EP3AfYkTsHFLfm0X",
+      "key": "N8N_WEBHOOK_URL",
+      "createdAt": 1785341426656,
+      "updatedAt": 1785343737949,
+      "createdBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "updatedBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "decrypted": false,
+      "lastEditedByDisplayName": "proyectosmuma-stack"
+    },
+    {
+      "type": "sensitive",
+      "value": "",
+      "target": [
+        "production"
+      ],
+      "configurationId": null,
+      "id": "WFtkaMkdZNyQpY4Q",
+      "key": "N8N_WEBHOOK_BASE_URL",
+      "createdAt": 1785341424600,
+      "updatedAt": 1785343735698,
+      "createdBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "updatedBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "decrypted": false,
+      "lastEditedByDisplayName": "proyectosmuma-stack"
+    }
+  ],
+  "melosmile_staging": [
+    {
+      "type": "encrypted",
+      "value": "eyJ2IjoidjIiLCJjIjoieWF6YzZDcG5jT0tZb0h3dEJZNDdGNkVzNUFrT0VPS3RXRjRUNFg5L2tsTFlVRVh0ZC9NVFhXUENUNTVrcTZXS2RLWnNQaUlsbEIrd0liWFdxSmRldlhHWkFtZlNReWNyNDBGajVvb1E0K2hyRDgzYzR4NGhkSmhzMElURThOT0VqYm56LzZCSG8ySGZRdlk2QmN3Y1Q0U04rdVU9IiwiayI6WzE4NCwxLDIsMywwLDEyMCwxMDcsMTE5LDE1MywyMywyMjMsMTE3LDE4MywxMjAsNTcsMTk2LDExLDI4LDI0OSwxMTksMTA0LDIxMywxNjksMTYxLDE0MSwxNDIsOTksNjUsNDksMjEyLDMwLDE5OSw5NywyMDQsMjE4LDc3LDEwNSwxNzksMSwxNzUsMjI1LDEwOCw3NiwxNiwxMzEsMTQ0LDEwNiwyNCwxNTksMTI4LDE5MSwyMDQsMjQ0LDI0NCwyMjMsMCwwLDAsMTI2LDQ4LDEyNCw2LDksNDIsMTM0LDcyLDEzNCwyNDcsMTMsMSw3LDYsMTYwLDExMSw0OCwxMDksMiwxLDAsNDgsMTA0LDYsOSw0MiwxMzQsNzIsMTM0LDI0NywxMywxLDcsMSw0OCwzMCw2LDksOTYsMTM0LDcyLDEsMTAxLDMsNCwxLDQ2LDQ4LDE3LDQsMTIsMTU1LDEzNCwxODgsMzksMjMsODAsOTksMTkyLDE0Myw2NCwyNTEsNjcsMiwxLDE2LDEyOCw1OSwzNSwyNTAsMTUyLDEyMSwyMTEsMTY3LDE4MiwxNjksMTg2LDE3Miw4NCwyMTMsOTAsMTEzLDI1MywyMzQsMjcsMTc0LDUyLDE4MSwxMiw3MSwyNDQsMTQzLDUzLDExNCw0MSw5NiwxMzMsMjExLDUzLDIyOSw1MiwyMjEsMTczLDIyNCwyNDgsMjQyLDk3LDIzNSwyMDIsMTM2LDE5Myw5MywxMjUsMTYsMTcyLDIwMiw0OCwxNzUsMzQsMjE2LDEyMSwxMzcsODksMTA2LDE4OCw0MiwxMzVdfQ==",
+      "target": [
+        "production",
+        "preview",
+        "development"
+      ],
+      "configurationId": null,
+      "id": "iQfXwCewxRGQ7E8x",
+      "key": "NEXT_PUBLIC_APP_URL",
+      "createdAt": 1788962673368,
+      "updatedAt": 1788962673368,
+      "createdBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "updatedBy": null,
+      "decrypted": false,
+      "lastEditedByDisplayName": "proyectosmuma-stack"
+    },
+    {
+      "type": "encrypted",
+      "value": "eyJ2IjoidjIiLCJjIjoiK0ZZV285b1BHZnhzY3FlQ3loZVlMdmdCRThCdUg1TFNLSG50aE1sc1lwc2doQUxYQ3dkaFo3MUpwZmpOdUtNM041RDJwYXF0QTRNUXU2RUdLSXVFc0lKNlduOXExM2dBVUJrMDZ2SEE0Tk5wamV1MkhEa1kzb0dKRnBESWxScGErQjRjQmtCMjVLU0tKRmVNSVJrSGxUSzlQMUN1Rlo2M1d4SjEyR1BsWEFKaTE5NGV2QWMvNjhacTJyeVRpK2U3MzFZdmlRTUZmZUU3T0hzVEZnWFJSaFdVT3RqQzZMaVd6VFUrYi82SG90WnExTXQ0RmZHZEIvOXRtVmN6UGxuS3Y3TlQ5ZGQyOWlyMTdpaTU3UkhLb3BQTkUyelF5d291VDFlM3EvM09SY1QweEFhMW1Ob25mR1VRQk1IakZGdE02LzJMeWFwUmZOcU9yT2Z2elF2VzQ1VFBvRGc1MWFWb0FlZEdVNkYzT20vMUxBMXBrZzNxbFhYNHpodms3M2F6MlpBdXFZY0hUY3BjQmhEYXBaeGxjMy9hcElROTdON0xmZkxhTklMVU1TSk1XZS9acDdPUFh5VzZlTWUvSy9tbU45NWZHUlZHa09sNWdhNGp0THo4bkFTRFMvOStMUGEyYmhpUXVieDVxSnlNdTg0SjJiV1dOWS9sdTV5aFZtQkpjNHU3MjU1R3MyamQ3alZxVlBnUUdwNVJLeE1GOTU0WmNOR080Y0FzUHp2VFQwVGJCdkR3TzllTVI3TVdyRDAvSlNVbjZET3BXRS9UL1pjNEV2NFdhWldJZHlRPSIsImsiOlsxODQsMSwyLDMsMCwxMjAsMTA3LDExOSwxNTMsMjMsMjIzLDExNywxODMsMTIwLDU3LDE5NiwxMSwyOCwyNDksMTE5LDEwNCwyMTMsMTY5LDE2MSwxNDEsMTQyLDk5LDY1LDQ5LDIxMiwzMCwxOTksOTcsMjA0LDIxOCw3NywxMDUsMTc5LDEsMTc0LDEzOCw0LDIyNiwyMSwxOTIsODgsMTQ2LDc2LDE1NiwzNiw5Miw5OCwxNjIsMTU0LDMwLDAsMCwwLDEyNiw0OCwxMjQsNiw5LDQyLDEzNCw3MiwxMzQsMjQ3LDEzLDEsNyw2LDE2MCwxMTEsNDgsMTA5LDIsMSwwLDQ4LDEwNCw2LDksNDIsMTM0LDcyLDEzNCwyNDcsMTMsMSw3LDEsNDgsMzAsNiw5LDk2LDEzNCw3MiwxLDEwMSwzLDQsMSw0Niw0OCwxNyw0LDEyLDk0LDIwNywxMjUsMTg1LDI1MiwyOCw1NSwxOTUsMTI4LDIzMywxMDksODAsMiwxLDE2LDEyOCw1OSwyMjAsMjA2LDIzNiw4MywyMyw1Miw0LDI5LDIwMCwxODUsNDUsNDIsMjU0LDE0Nyw0NywxMDAsMjQ1LDEwNSwyNTMsMTY2LDcwLDMxLDIwMywyNDUsMTA5LDc2LDE0NywyMzksMTMwLDI1NSwyMTAsMTg0LDcyLDExMywxMjAsMjQxLDE5MywxOTEsMjQ3LDEwOCwxOTAsMjQsMTM2LDc4LDEyMSwyNDcsNzcsMTI0LDI0NSw2NiwxNjcsMjI4LDIwMyw1NSwxNjQsMjMsMTI1LDIxLDE5MV19",
+      "target": [
+        "production",
+        "preview",
+        "development"
+      ],
+      "configurationId": null,
+      "id": "YuQuXk5KlH8deLIO",
+      "key": "SUPABASE_SERVICE_ROLE_KEY",
+      "createdAt": 1788962672648,
+      "updatedAt": 1788962672648,
+      "createdBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "updatedBy": null,
+      "decrypted": false,
+      "lastEditedByDisplayName": "proyectosmuma-stack"
+    },
+    {
+      "type": "encrypted",
+      "value": "eyJ2IjoidjIiLCJjIjoiSVRxd0hUK3EzVnJqUGx2QXpzWDB6ckZBSC9IaWxtVGJUS2MwVkVrNUEwWGp2OVhxMUJ2OGxFdS93UU1Ic0tySSsvUnVpa25MdGROaCtKazMvZzBzTGExK2UyY3JodGVHSm0vemhzVDVMT1ZPYTIrSkluNU1BS0hXR2h5SUZ4eEEvQ0tKelprM0JKSUJEeVl3UG8vSlhPR3BOaGJRY24yMXBjL0RJMGFzanh2dTNwb0VJOGxmbDJGTlY5bHlzeEcwRUVlR0xkdFp0aW5wcEtTNDZzL0lRb3c3aEdzbzJmczFQV0h5ajQ3TVZvRWw4NFo2YUVhcnBWMVRJdldpb1gvQmViOGZFWjFqSVQ3bHR3ZzB1bmJmZ2sza2JVYmNabnY2MEZ5Q3ZDaXhSQkxtVUV6OFVoa1BoOE5QZE9MSEdpTSs4bEsydzJrRVJnWXBQS002dGp2dkttUmd5TENrSTJnYTNidVBmNDB6WjBLYXU3TTY0YVNyaThLQnZYK0xyc0pGbGNtMS9BVFY3QjQ1WkZqVmRlUFc1UzJuYmdRRFJaR3dLUlVmNlc3anRnNlpKNDJ6TXBaYStCd1JGR0F6Ti9qVVNmVnNTcmY0WkNqRy90djEwaG5sOFJUVFBKdlZjU2RwS3ZGYzBOOHFoL1ZoSzhTbktnLzJiUjdBMEIwK0hFbllacU9kRm1vNlNjaWpVSEtXRFoyUzhPSzd3V3JDWlQ5UE1IQW1vUGhDeWZOdnBSVlp0NTM4MWZXYm8zNEk2UjZWK000SkdBPT0iLCJrIjpbMTg0LDEsMiwzLDAsMTIwLDEwNywxMTksMTUzLDIzLDIyMywxMTcsMTgzLDEyMCw1NywxOTYsMTEsMjgsMjQ5LDExOSwxMDQsMjEzLDE2OSwxNjEsMTQxLDE0Miw5OSw2NSw0OSwyMTIsMzAsMTk5LDk3LDIwNCwyMTgsNzcsMTA1LDE3OSwxLDE3NSwyMjUsMTA4LDc2LDE2LDEzMSwxNDQsMTA2LDI0LDE1OSwxMjgsMTkxLDIwNCwyNDQsMjQ0LDIyMywwLDAsMCwxMjYsNDgsMTI0LDYsOSw0MiwxMzQsNzIsMTM0LDI0NywxMywxLDcsNiwxNjAsMTExLDQ4LDEwOSwyLDEsMCw0OCwxMDQsNiw5LDQyLDEzNCw3MiwxMzQsMjQ3LDEzLDEsNywxLDQ4LDMwLDYsOSw5NiwxMzQsNzIsMSwxMDEsMyw0LDEsNDYsNDgsMTcsNCwxMiwxNTUsMTM0LDE4OCwzOSwyMyw4MCw5OSwxOTIsMTQzLDY0LDI1MSw2NywyLDEsMTYsMTI4LDU5LDM1LDI1MCwxNTIsMTIxLDIxMSwxNjcsMTgyLDE2OSwxODYsMTcyLDg0LDIxMyw5MCwxMTMsMjUzLDIzNCwyNywxNzQsNTIsMTgxLDEyLDcxLDI0NCwxNDMsNTMsMTE0LDQxLDk2LDEzMywyMTEsNTMsMjI5LDUyLDIyMSwxNzMsMjI0LDI0OCwyNDIsOTcsMjM1LDIwMiwxMzYsMTkzLDkzLDEyNSwxNiwxNzIsMjAyLDQ4LDE3NSwzNCwyMTYsMTIxLDEzNyw4OSwxMDYsMTg4LDQyLDEzNV19",
+      "target": [
+        "production",
+        "preview",
+        "development"
+      ],
+      "configurationId": null,
+      "id": "fL9iElGe6viPx1wC",
+      "key": "NEXT_PUBLIC_SUPABASE_ANON_KEY",
+      "createdAt": 1788962671317,
+      "updatedAt": 1788962671317,
+      "createdBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "updatedBy": null,
+      "decrypted": false,
+      "lastEditedByDisplayName": "proyectosmuma-stack"
+    },
+    {
+      "type": "encrypted",
+      "value": "eyJ2IjoidjIiLCJjIjoieFNlSVl6K1l6d2hUNmxjTS9HQkZJazJqYlpnRU9kWXNMT1Q1NUkzQ2kvOHQrb2xZbnBHaFlaMU5RaDRDemc4S1F0OFdKbC8zSE5sV1RuSmVReUFIWjlHdnJpV1dob2lFbERtbC9jMmZyTFczYmlZTlZjcEdRZ1Evc3RwR3l5bDA2U2RFMVZ1L2hkMUZwNlp5eW1VN0tCQURPQWsvc1FnaFBnU3dmOGNLRitvWEJHVWFwUWhSTXRTWm1TWT0iLCJrIjpbMTg0LDEsMiwzLDAsMTIwLDEwNywxMTksMTUzLDIzLDIyMywxMTcsMTgzLDEyMCw1NywxOTYsMTEsMjgsMjQ5LDExOSwxMDQsMjEzLDE2OSwxNjEsMTQxLDE0Miw5OSw2NSw0OSwyMTIsMzAsMTk5LDk3LDIwNCwyMTgsNzcsMTA1LDE3OSwxLDIxNyw2NywyMTUsMTU0LDIxNCwyMzIsMTQ1LDE2NywzMiw1OCwxODUsMjE0LDI0MCwzMCwyMTksNzUsMCwwLDAsMTI2LDQ4LDEyNCw2LDksNDIsMTM0LDcyLDEzNCwyNDcsMTMsMSw3LDYsMTYwLDExMSw0OCwxMDksMiwxLDAsNDgsMTA0LDYsOSw0MiwxMzQsNzIsMTM0LDI0NywxMywxLDcsMSw0OCwzMCw2LDksOTYsMTM0LDcyLDEsMTAxLDMsNCwxLDQ2LDQ4LDE3LDQsMTIsNDcsMSwxMzEsODgsNTAsMTY5LDM5LDk1LDEzNCwxNjQsMTE3LDQzLDIsMSwxNiwxMjgsNTksNzQsMTk5LDg1LDg1LDU4LDY5LDU3LDE4MCwzMSw5NCwxMTksMTgyLDE1OCw5MiwxNzEsMTYxLDIyLDIwMCw5OSwyNTQsNTgsMjMzLDM2LDQzLDExNiwyMDUsMTU2LDIxOSwxOTksMTM4LDE4LDM5LDEwMyw4NSwyMTMsMTM2LDgzLDg3LDIyMiw4OSw0MCwyMDIsMTA4LDc4LDcyLDE1Myw2MCwxMzksMjI0LDE1NSwyMCwyMTIsMjEyLDI0MywxMjMsMjQ0LDEzMywyNTIsMTA3XX0=",
+      "target": [
+        "production",
+        "preview",
+        "development"
+      ],
+      "configurationId": null,
+      "id": "PbQ5Eit6fS2lOSkB",
+      "key": "NEXT_PUBLIC_SUPABASE_URL",
+      "createdAt": 1788962669550,
+      "updatedAt": 1788962669550,
+      "createdBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "updatedBy": null,
+      "decrypted": false,
+      "lastEditedByDisplayName": "proyectosmuma-stack"
+    },
+    {
+      "type": "encrypted",
+      "value": "eyJ2IjoidjIiLCJjIjoiblB6V2FnWlJoRTJ1RU4yUHNtUG0ydlg5aUlqVUszaUpwYXZ0a2VwZlViVHZhMVoxVVg1bDZsV1hyeVlaRUF2dXMvQ21WaHJFRlZrOGxFSGg5Rnh4dUFOU0E1ZnZxYk5KV2RzQ3lLR0ZmbnNCbVZUV0ZVcVBZdTdXamk2VTQrVFE0VFpsQ01DL0JjajNsSDRSV3JOdnNzaUYreTRiNU9ndmNTQXBPMUZQM0FjaURFemZkZWtUK09Ud2F5bjFQZTM1RkVYbFBQQXFaT2tBWWlDc0tFVGxYY1ZPa25tbzgxQnorNVB4aGZwVXY5bHlYMFNuIiwiayI6WzE4NCwxLDIsMywwLDEyMCwxMDcsMTE5LDE1MywyMywyMjMsMTE3LDE4MywxMjAsNTcsMTk2LDExLDI4LDI0OSwxMTksMTA0LDIxMywxNjksMTYxLDE0MSwxNDIsOTksNjUsNDksMjEyLDMwLDE5OSw5NywyMDQsMjE4LDc3LDEwNSwxNzksMSwyMTcsNjcsMjE1LDE1NCwyMTQsMjMyLDE0NSwxNjcsMzIsNTgsMTg1LDIxNCwyNDAsMzAsMjE5LDc1LDAsMCwwLDEyNiw0OCwxMjQsNiw5LDQyLDEzNCw3MiwxMzQsMjQ3LDEzLDEsNyw2LDE2MCwxMTEsNDgsMTA5LDIsMSwwLDQ4LDEwNCw2LDksNDIsMTM0LDcyLDEzNCwyNDcsMTMsMSw3LDEsNDgsMzAsNiw5LDk2LDEzNCw3MiwxLDEwMSwzLDQsMSw0Niw0OCwxNyw0LDEyLDQ3LDEsMTMxLDg4LDUwLDE2OSwzOSw5NSwxMzQsMTY0LDExNyw0MywyLDEsMTYsMTI4LDU5LDc0LDE5OSw4NSw4NSw1OCw2OSw1NywxODAsMzEsOTQsMTE5LDE4MiwxNTgsOTIsMTcxLDE2MSwyMiwyMDAsOTksMjU0LDU4LDIzMywzNiw0MywxMTYsMjA1LDE1NiwyMTksMTk5LDEzOCwxOCwzOSwxMDMsODUsMjEzLDEzNiw4Myw4NywyMjIsODksNDAsMjAyLDEwOCw3OCw3MiwxNTMsNjAsMTM5LDIyNCwxNTUsMjAsMjEyLDIxMiwyNDMsMTIzLDI0NCwxMzMsMjUyLDEwN119",
+      "target": [
+        "development"
+      ],
+      "configurationId": null,
+      "id": "2HTJyltWd3abtZsh",
+      "key": "ICAL_TOKEN",
+      "createdAt": 1788943116071,
+      "updatedAt": 1788943116071,
+      "createdBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "updatedBy": null,
+      "decrypted": false,
+      "lastEditedByDisplayName": "proyectosmuma-stack"
+    },
+    {
+      "type": "sensitive",
+      "value": "",
+      "target": [
+        "preview"
+      ],
+      "configurationId": null,
+      "visibility": "secret",
+      "id": "n0I6tLNyTs5yfI10",
+      "key": "ICAL_TOKEN",
+      "createdAt": 1788943113917,
+      "updatedAt": 1788943113917,
+      "createdBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "updatedBy": null,
+      "decrypted": false,
+      "lastEditedByDisplayName": "proyectosmuma-stack"
+    },
+    {
+      "type": "sensitive",
+      "value": "",
+      "target": [
+        "production"
+      ],
+      "configurationId": null,
+      "visibility": "secret",
+      "id": "pMu9xbQyG21gYQC0",
+      "key": "ICAL_TOKEN",
+      "createdAt": 1788943111835,
+      "updatedAt": 1788943111835,
+      "createdBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "updatedBy": null,
+      "decrypted": false,
+      "lastEditedByDisplayName": "proyectosmuma-stack"
+    },
+    {
+      "type": "sensitive",
+      "value": "",
+      "target": [
+        "production"
+      ],
+      "configurationId": null,
+      "id": "kQ7E2dlrRpITh9xl",
+      "key": "NEXT_PUBLIC_VPS_FILES_BASE",
+      "createdAt": 1788850629492,
+      "updatedAt": 1788850629492,
+      "createdBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "updatedBy": null,
+      "decrypted": false,
+      "lastEditedByDisplayName": "proyectosmuma-stack"
+    },
+    {
+      "type": "encrypted",
+      "value": "eyJ2IjoidjIiLCJjIjoiNHdKMHUwRGFkRzdKSG9nZmszNHFZaG5pQysrVlh3QXhSL01vNVBLbGoveklvWHdwVDJLWWJhSnZxcFRmWWtQelp3TkdFeXloN3F4ZWVCeGs5Z1lCWTdwb1k3VHdpMVpvQUpRSmRjblQxRUF0cUtJdnNoVTRJMkV6QUo4Rll3SGJ0b3F5QkE9PSIsImsiOlsxODQsMSwyLDMsMCwxMjAsMTA3LDExOSwxNTMsMjMsMjIzLDExNywxODMsMTIwLDU3LDE5NiwxMSwyOCwyNDksMTE5LDEwNCwyMTMsMTY5LDE2MSwxNDEsMTQyLDk5LDY1LDQ5LDIxMiwzMCwxOTksOTcsMjA0LDIxOCw3NywxMDUsMTc5LDEsMTc1LDIyNSwxMDgsNzYsMTYsMTMxLDE0NCwxMDYsMjQsMTU5LDEyOCwxOTEsMjA0LDI0NCwyNDQsMjIzLDAsMCwwLDEyNiw0OCwxMjQsNiw5LDQyLDEzNCw3MiwxMzQsMjQ3LDEzLDEsNyw2LDE2MCwxMTEsNDgsMTA5LDIsMSwwLDQ4LDEwNCw2LDksNDIsMTM0LDcyLDEzNCwyNDcsMTMsMSw3LDEsNDgsMzAsNiw5LDk2LDEzNCw3MiwxLDEwMSwzLDQsMSw0Niw0OCwxNyw0LDEyLDE1NSwxMzQsMTg4LDM5LDIzLDgwLDk5LDE5MiwxNDMsNjQsMjUxLDY3LDIsMSwxNiwxMjgsNTksMzUsMjUwLDE1MiwxMjEsMjExLDE2NywxODIsMTY5LDE4NiwxNzIsODQsMjEzLDkwLDExMywyNTMsMjM0LDI3LDE3NCw1MiwxODEsMTIsNzEsMjQ0LDE0Myw1MywxMTQsNDEsOTYsMTMzLDIxMSw1MywyMjksNTIsMjIxLDE3MywyMjQsMjQ4LDI0Miw5NywyMzUsMjAyLDEzNiwxOTMsOTMsMTI1LDE2LDE3MiwyMDIsNDgsMTc1LDM0LDIxNiwxMjEsMTM3LDg5LDEwNiwxODgsNDIsMTM1XX0=",
+      "target": [
+        "development"
+      ],
+      "configurationId": null,
+      "id": "WXIYZes0QwcpsWkO",
+      "key": "VPS_DOCS_BASE_PATH",
+      "createdAt": 1788437457894,
+      "updatedAt": 1788850166018,
+      "createdBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "updatedBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "decrypted": false,
+      "lastEditedByDisplayName": "proyectosmuma-stack"
+    },
+    {
+      "type": "sensitive",
+      "value": "",
+      "target": [
+        "production"
+      ],
+      "configurationId": null,
+      "visibility": "secret",
+      "id": "s1IlXwZz0fhfQ2Ah",
+      "key": "VPS_DOCS_BASE_PATH",
+      "createdAt": 1788437454984,
+      "updatedAt": 1788850163047,
+      "createdBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "updatedBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "decrypted": false,
+      "lastEditedByDisplayName": "proyectosmuma-stack"
+    },
+    {
+      "type": "sensitive",
+      "value": "",
+      "target": [
+        "preview"
+      ],
+      "configurationId": null,
+      "visibility": "secret",
+      "id": "tI9Lw4Pv1efppvEM",
+      "key": "VPS_DOCS_BASE_PATH",
+      "createdAt": 1788437451998,
+      "updatedAt": 1788850160135,
+      "createdBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "updatedBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "decrypted": false,
+      "lastEditedByDisplayName": "proyectosmuma-stack"
+    },
+    {
+      "type": "encrypted",
+      "value": "eyJ2IjoidjIiLCJjIjoia0JuNS9pampMM1NLVGh2Slh1czNXOUR3bU5nQytEL2xSYjB5dG9CRnBjQlJ0MlVXS2tXbDZRWW83RGZSTGQ3TjloWFdFSG0rZDNZQnlpYm1OSVVtelpJaGcwcWtKMDFaZUZsajZMcnhZam5UNUt0T0pKTThqNHg0OFg0RzlMYS9XY0xXSGc9PSIsImsiOlsxODQsMSwyLDMsMCwxMjAsMTA3LDExOSwxNTMsMjMsMjIzLDExNywxODMsMTIwLDU3LDE5NiwxMSwyOCwyNDksMTE5LDEwNCwyMTMsMTY5LDE2MSwxNDEsMTQyLDk5LDY1LDQ5LDIxMiwzMCwxOTksOTcsMjA0LDIxOCw3NywxMDUsMTc5LDEsMTc1LDIyNSwxMDgsNzYsMTYsMTMxLDE0NCwxMDYsMjQsMTU5LDEyOCwxOTEsMjA0LDI0NCwyNDQsMjIzLDAsMCwwLDEyNiw0OCwxMjQsNiw5LDQyLDEzNCw3MiwxMzQsMjQ3LDEzLDEsNyw2LDE2MCwxMTEsNDgsMTA5LDIsMSwwLDQ4LDEwNCw2LDksNDIsMTM0LDcyLDEzNCwyNDcsMTMsMSw3LDEsNDgsMzAsNiw5LDk2LDEzNCw3MiwxLDEwMSwzLDQsMSw0Niw0OCwxNyw0LDEyLDE1NSwxMzQsMTg4LDM5LDIzLDgwLDk5LDE5MiwxNDMsNjQsMjUxLDY3LDIsMSwxNiwxMjgsNTksMzUsMjUwLDE1MiwxMjEsMjExLDE2NywxODIsMTY5LDE4NiwxNzIsODQsMjEzLDkwLDExMywyNTMsMjM0LDI3LDE3NCw1MiwxODEsMTIsNzEsMjQ0LDE0Myw1MywxMTQsNDEsOTYsMTMzLDIxMSw1MywyMjksNTIsMjIxLDE3MywyMjQsMjQ4LDI0Miw5NywyMzUsMjAyLDEzNiwxOTMsOTMsMTI1LDE2LDE3MiwyMDIsNDgsMTc1LDM0LDIxNiwxMjEsMTM3LDg5LDEwNiwxODgsNDIsMTM1XX0=",
+      "target": [
+        "development"
+      ],
+      "configurationId": null,
+      "id": "f6bHj25ciki4H52j",
+      "key": "NEXT_PUBLIC_VPS_FILES_BASE",
+      "createdAt": 1788437449006,
+      "updatedAt": 1788850157237,
+      "createdBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "updatedBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "decrypted": false,
+      "lastEditedByDisplayName": "proyectosmuma-stack"
+    },
+    {
+      "type": "sensitive",
+      "value": "",
+      "target": [
+        "preview"
+      ],
+      "configurationId": null,
+      "id": "tPA5pTzq9bAbzJFl",
+      "key": "NEXT_PUBLIC_VPS_FILES_BASE",
+      "createdAt": 1788437442757,
+      "updatedAt": 1788850151480,
+      "createdBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "updatedBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "decrypted": false,
+      "lastEditedByDisplayName": "proyectosmuma-stack"
+    },
+    {
+      "type": "encrypted",
+      "value": "eyJ2IjoidjIiLCJjIjoiUzdzc2JOS2ZkRTVSSFRVUmhWVmoveWF3aEhDWkVHdlY4SzlGbm5SUEwyQjE1UDR5anBmTmt3dnZxQVIyMzJrWHZIWlM3Y2lEdkM4ZitUU0ZSZFVZSkxpejJxR3kzY1dUQzRpSStUQkt3OGtEYWZGMDFCVkRCL0ZUOWxNPSIsImsiOlsxODQsMSwyLDMsMCwxMjAsMTA3LDExOSwxNTMsMjMsMjIzLDExNywxODMsMTIwLDU3LDE5NiwxMSwyOCwyNDksMTE5LDEwNCwyMTMsMTY5LDE2MSwxNDEsMTQyLDk5LDY1LDQ5LDIxMiwzMCwxOTksOTcsMjA0LDIxOCw3NywxMDUsMTc5LDEsMTc1LDIyNSwxMDgsNzYsMTYsMTMxLDE0NCwxMDYsMjQsMTU5LDEyOCwxOTEsMjA0LDI0NCwyNDQsMjIzLDAsMCwwLDEyNiw0OCwxMjQsNiw5LDQyLDEzNCw3MiwxMzQsMjQ3LDEzLDEsNyw2LDE2MCwxMTEsNDgsMTA5LDIsMSwwLDQ4LDEwNCw2LDksNDIsMTM0LDcyLDEzNCwyNDcsMTMsMSw3LDEsNDgsMzAsNiw5LDk2LDEzNCw3MiwxLDEwMSwzLDQsMSw0Niw0OCwxNyw0LDEyLDE1NSwxMzQsMTg4LDM5LDIzLDgwLDk5LDE5MiwxNDMsNjQsMjUxLDY3LDIsMSwxNiwxMjgsNTksMzUsMjUwLDE1MiwxMjEsMjExLDE2NywxODIsMTY5LDE4NiwxNzIsODQsMjEzLDkwLDExMywyNTMsMjM0LDI3LDE3NCw1MiwxODEsMTIsNzEsMjQ0LDE0Myw1MywxMTQsNDEsOTYsMTMzLDIxMSw1MywyMjksNTIsMjIxLDE3MywyMjQsMjQ4LDI0Miw5NywyMzUsMjAyLDEzNiwxOTMsOTMsMTI1LDE2LDE3MiwyMDIsNDgsMTc1LDM0LDIxNiwxMjEsMTM3LDg5LDEwNiwxODgsNDIsMTM1XX0=",
+      "target": [
+        "development"
+      ],
+      "configurationId": null,
+      "id": "ha5sy0d41QJvEHoA",
+      "key": "VPS_DOMAIN_FOLDER",
+      "createdAt": 1788437440042,
+      "updatedAt": 1788850148765,
+      "createdBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "updatedBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "decrypted": false,
+      "lastEditedByDisplayName": "proyectosmuma-stack"
+    },
+    {
+      "type": "sensitive",
+      "value": "",
+      "target": [
+        "preview"
+      ],
+      "configurationId": null,
+      "visibility": "secret",
+      "id": "A2VO8OOcD84C3nlL",
+      "key": "VPS_DOMAIN_FOLDER",
+      "createdAt": 1788437434285,
+      "updatedAt": 1788850142923,
+      "createdBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "updatedBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "decrypted": false,
+      "lastEditedByDisplayName": "proyectosmuma-stack"
+    },
+    {
+      "type": "encrypted",
+      "value": "eyJ2IjoidjIiLCJjIjoidGgyNEtXSzRheTYwMjVVa21FRUFjWFd5cjlWVVNYMmlIWFpwR1pMUm8wMkJsM2ZKa0l5UFhlS3NuT2d3SVI0MWFLTnVIUFR5eHlzS3pnM0t3ZUJRK2VQZTNnUT0iLCJrIjpbMTg0LDEsMiwzLDAsMTIwLDEwNywxMTksMTUzLDIzLDIyMywxMTcsMTgzLDEyMCw1NywxOTYsMTEsMjgsMjQ5LDExOSwxMDQsMjEzLDE2OSwxNjEsMTQxLDE0Miw5OSw2NSw0OSwyMTIsMzAsMTk5LDk3LDIwNCwyMTgsNzcsMTA1LDE3OSwxLDE3NSwyMjUsMTA4LDc2LDE2LDEzMSwxNDQsMTA2LDI0LDE1OSwxMjgsMTkxLDIwNCwyNDQsMjQ0LDIyMywwLDAsMCwxMjYsNDgsMTI0LDYsOSw0MiwxMzQsNzIsMTM0LDI0NywxMywxLDcsNiwxNjAsMTExLDQ4LDEwOSwyLDEsMCw0OCwxMDQsNiw5LDQyLDEzNCw3MiwxMzQsMjQ3LDEzLDEsNywxLDQ4LDMwLDYsOSw5NiwxMzQsNzIsMSwxMDEsMyw0LDEsNDYsNDgsMTcsNCwxMiwxNTUsMTM0LDE4OCwzOSwyMyw4MCw5OSwxOTIsMTQzLDY0LDI1MSw2NywyLDEsMTYsMTI4LDU5LDM1LDI1MCwxNTIsMTIxLDIxMSwxNjcsMTgyLDE2OSwxODYsMTcyLDg0LDIxMyw5MCwxMTMsMjUzLDIzNCwyNywxNzQsNTIsMTgxLDEyLDcxLDI0NCwxNDMsNTMsMTE0LDQxLDk2LDEzMywyMTEsNTMsMjI5LDUyLDIyMSwxNzMsMjI0LDI0OCwyNDIsOTcsMjM1LDIwMiwxMzYsMTkzLDkzLDEyNSwxNiwxNzIsMjAyLDQ4LDE3NSwzNCwyMTYsMTIxLDEzNyw4OSwxMDYsMTg4LDQyLDEzNV19",
+      "target": [
+        "development"
+      ],
+      "configurationId": null,
+      "id": "tg6uA4Mwp2pHvUwQ",
+      "key": "VPS_FTP_PORT",
+      "createdAt": 1788437431167,
+      "updatedAt": 1788850140027,
+      "createdBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "updatedBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "decrypted": false,
+      "lastEditedByDisplayName": "proyectosmuma-stack"
+    },
+    {
+      "type": "sensitive",
+      "value": "",
+      "target": [
+        "preview"
+      ],
+      "configurationId": null,
+      "visibility": "secret",
+      "id": "5LZOElJbNDyufwa6",
+      "key": "VPS_FTP_PORT",
+      "createdAt": 1788437425522,
+      "updatedAt": 1788850134472,
+      "createdBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "updatedBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "decrypted": false,
+      "lastEditedByDisplayName": "proyectosmuma-stack"
+    },
+    {
+      "type": "encrypted",
+      "value": "eyJ2IjoidjIiLCJjIjoickN2ZWl2WFpDajlZWVVSeEdpWS9OSm9JajJRSCtDRFNud1ZMSTQveXZMOHRmbUhlaWhlODdhYlB4M1EwMlhZZkNRTU5KNERHVGdsbDJhWElXNlpBYkNrWmNSWGFLVGljcHdUTk5rL1BFRjk2L3VVREs5TjNCSThhOElzPSIsImsiOlsxODQsMSwyLDMsMCwxMjAsMTA3LDExOSwxNTMsMjMsMjIzLDExNywxODMsMTIwLDU3LDE5NiwxMSwyOCwyNDksMTE5LDEwNCwyMTMsMTY5LDE2MSwxNDEsMTQyLDk5LDY1LDQ5LDIxMiwzMCwxOTksOTcsMjA0LDIxOCw3NywxMDUsMTc5LDEsMjE3LDY3LDIxNSwxNTQsMjE0LDIzMiwxNDUsMTY3LDMyLDU4LDE4NSwyMTQsMjQwLDMwLDIxOSw3NSwwLDAsMCwxMjYsNDgsMTI0LDYsOSw0MiwxMzQsNzIsMTM0LDI0NywxMywxLDcsNiwxNjAsMTExLDQ4LDEwOSwyLDEsMCw0OCwxMDQsNiw5LDQyLDEzNCw3MiwxMzQsMjQ3LDEzLDEsNywxLDQ4LDMwLDYsOSw5NiwxMzQsNzIsMSwxMDEsMyw0LDEsNDYsNDgsMTcsNCwxMiw0NywxLDEzMSw4OCw1MCwxNjksMzksOTUsMTM0LDE2NCwxMTcsNDMsMiwxLDE2LDEyOCw1OSw3NCwxOTksODUsODUsNTgsNjksNTcsMTgwLDMxLDk0LDExOSwxODIsMTU4LDkyLDE3MSwxNjEsMjIsMjAwLDk5LDI1NCw1OCwyMzMsMzYsNDMsMTE2LDIwNSwxNTYsMjE5LDE5OSwxMzgsMTgsMzksMTAzLDg1LDIxMywxMzYsODMsODcsMjIyLDg5LDQwLDIwMiwxMDgsNzgsNzIsMTUzLDYwLDEzOSwyMjQsMTU1LDIwLDIxMiwyMTIsMjQzLDEyMywyNDQsMTMzLDI1MiwxMDddfQ==",
+      "target": [
+        "development"
+      ],
+      "configurationId": null,
+      "id": "X9bAEDlrOSpVbrHx",
+      "key": "VPS_SSH_PASSWORD",
+      "createdAt": 1788437422836,
+      "updatedAt": 1788850131712,
+      "createdBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "updatedBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "decrypted": false,
+      "lastEditedByDisplayName": "proyectosmuma-stack"
+    },
+    {
+      "type": "sensitive",
+      "value": "",
+      "target": [
+        "preview"
+      ],
+      "configurationId": null,
+      "visibility": "secret",
+      "id": "Jegfb7DL4DUgZ74g",
+      "key": "VPS_SSH_PASSWORD",
+      "createdAt": 1788437416928,
+      "updatedAt": 1788850125837,
+      "createdBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "updatedBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "decrypted": false,
+      "lastEditedByDisplayName": "proyectosmuma-stack"
+    },
+    {
+      "type": "encrypted",
+      "value": "eyJ2IjoidjIiLCJjIjoiN0FlVGhzTjFhcVlPS3A5bHhDVHVSVHAyRThRNm54eWRZMjkyQk5mVVd4VzIrRVNWQmdiUFRBNnY2NFppS1REMEdZblJVbGMvVkxFOVg1azZSUWM2ZzdFYzZOcnREY2Vvc1UrQUhEazVja289IiwiayI6WzE4NCwxLDIsMywwLDEyMCwxMDcsMTE5LDE1MywyMywyMjMsMTE3LDE4MywxMjAsNTcsMTk2LDExLDI4LDI0OSwxMTksMTA0LDIxMywxNjksMTYxLDE0MSwxNDIsOTksNjUsNDksMjEyLDMwLDE5OSw5NywyMDQsMjE4LDc3LDEwNSwxNzksMSwxNzQsMTM4LDQsMjI2LDIxLDE5Miw4OCwxNDYsNzYsMTU2LDM2LDkyLDk4LDE2MiwxNTQsMzAsMCwwLDAsMTI2LDQ4LDEyNCw2LDksNDIsMTM0LDcyLDEzNCwyNDcsMTMsMSw3LDYsMTYwLDExMSw0OCwxMDksMiwxLDAsNDgsMTA0LDYsOSw0MiwxMzQsNzIsMTM0LDI0NywxMywxLDcsMSw0OCwzMCw2LDksOTYsMTM0LDcyLDEsMTAxLDMsNCwxLDQ2LDQ4LDE3LDQsMTIsOTQsMjA3LDEyNSwxODUsMjUyLDI4LDU1LDE5NSwxMjgsMjMzLDEwOSw4MCwyLDEsMTYsMTI4LDU5LDIyMCwyMDYsMjM2LDgzLDIzLDUyLDQsMjksMjAwLDE4NSw0NSw0MiwyNTQsMTQ3LDQ3LDEwMCwyNDUsMTA1LDI1MywxNjYsNzAsMzEsMjAzLDI0NSwxMDksNzYsMTQ3LDIzOSwxMzAsMjU1LDIxMCwxODQsNzIsMTEzLDEyMCwyNDEsMTkzLDE5MSwyNDcsMTA4LDE5MCwyNCwxMzYsNzgsMTIxLDI0Nyw3NywxMjQsMjQ1LDY2LDE2NywyMjgsMjAzLDU1LDE2NCwyMywxMjUsMjEsMTkxXX0=",
+      "target": [
+        "development"
+      ],
+      "configurationId": null,
+      "id": "BnYQs9RRYJeQGFV3",
+      "key": "VPS_SSH_USER",
+      "createdAt": 1788437413986,
+      "updatedAt": 1788850123025,
+      "createdBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "updatedBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "decrypted": false,
+      "lastEditedByDisplayName": "proyectosmuma-stack"
+    },
+    {
+      "type": "sensitive",
+      "value": "",
+      "target": [
+        "preview"
+      ],
+      "configurationId": null,
+      "visibility": "secret",
+      "id": "qIhmmM5fQ0dmegow",
+      "key": "VPS_SSH_USER",
+      "createdAt": 1788437408274,
+      "updatedAt": 1788850117268,
+      "createdBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "updatedBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "decrypted": false,
+      "lastEditedByDisplayName": "proyectosmuma-stack"
+    },
+    {
+      "type": "encrypted",
+      "value": "eyJ2IjoidjIiLCJjIjoidEpnOTE4WHBvM0t3TjZYMEdub0Vkd1ZhNzBDYVVHUWU3dTlLMFFrcVZLWXlWSEJPM2ZNN1VwUXVUazh3a3BTTDJWN1FMZVREWkJUdFdOTHhXUGxhV3plcGxLM2R0aWxLOXg2cjNRKzZZSEVKclVHVVhBeUN0K2dGWENJPSIsImsiOlsxODQsMSwyLDMsMCwxMjAsMTA3LDExOSwxNTMsMjMsMjIzLDExNywxODMsMTIwLDU3LDE5NiwxMSwyOCwyNDksMTE5LDEwNCwyMTMsMTY5LDE2MSwxNDEsMTQyLDk5LDY1LDQ5LDIxMiwzMCwxOTksOTcsMjA0LDIxOCw3NywxMDUsMTc5LDEsMTc1LDIyNSwxMDgsNzYsMTYsMTMxLDE0NCwxMDYsMjQsMTU5LDEyOCwxOTEsMjA0LDI0NCwyNDQsMjIzLDAsMCwwLDEyNiw0OCwxMjQsNiw5LDQyLDEzNCw3MiwxMzQsMjQ3LDEzLDEsNyw2LDE2MCwxMTEsNDgsMTA5LDIsMSwwLDQ4LDEwNCw2LDksNDIsMTM0LDcyLDEzNCwyNDcsMTMsMSw3LDEsNDgsMzAsNiw5LDk2LDEzNCw3MiwxLDEwMSwzLDQsMSw0Niw0OCwxNyw0LDEyLDE1NSwxMzQsMTg4LDM5LDIzLDgwLDk5LDE5MiwxNDMsNjQsMjUxLDY3LDIsMSwxNiwxMjgsNTksMzUsMjUwLDE1MiwxMjEsMjExLDE2NywxODIsMTY5LDE4NiwxNzIsODQsMjEzLDkwLDExMywyNTMsMjM0LDI3LDE3NCw1MiwxODEsMTIsNzEsMjQ0LDE0Myw1MywxMTQsNDEsOTYsMTMzLDIxMSw1MywyMjksNTIsMjIxLDE3MywyMjQsMjQ4LDI0Miw5NywyMzUsMjAyLDEzNiwxOTMsOTMsMTI1LDE2LDE3MiwyMDIsNDgsMTc1LDM0LDIxNiwxMjEsMTM3LDg5LDEwNiwxODgsNDIsMTM1XX0=",
+      "target": [
+        "development"
+      ],
+      "configurationId": null,
+      "id": "lL25dCPO7VPGEVHl",
+      "key": "VPS_SSH_HOST",
+      "createdAt": 1788437405354,
+      "updatedAt": 1788850114419,
+      "createdBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "updatedBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "decrypted": false,
+      "lastEditedByDisplayName": "proyectosmuma-stack"
+    },
+    {
+      "type": "sensitive",
+      "value": "",
+      "target": [
+        "preview"
+      ],
+      "configurationId": null,
+      "visibility": "secret",
+      "id": "XDBVxSH56zUTHIPu",
+      "key": "VPS_SSH_HOST",
+      "createdAt": 1788437399025,
+      "updatedAt": 1788850108722,
+      "createdBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "updatedBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "decrypted": false,
+      "lastEditedByDisplayName": "proyectosmuma-stack"
+    },
+    {
+      "type": "encrypted",
+      "value": "eyJ2IjoidjIiLCJjIjoidjlIbU43T0UzY3lPd2N3TFQwd1ZsUXNQc2xzaGFBTk5iME5STVorNmJRS3FNNUIycXhGNWUyc2VyUy96RFZ5L2YyeDFqekRFbkczS293d2xXME8zdllvWnh4b29vMmtPQUlqM2JCMWpoZm1IZVNnYzNxRnhPVG51S05XY0QyYlRVcUxHcWptYk5Ed0FzbHUraUJWZENoWnpNMWthVXNxY0ZGRjIrWjk4N3liRVJXNVlvZTUyQ3o2OVpEVytZYWhuZVZLaEhwWFpReENLT2NoOEpEWUNpeHpkbHp6dWQvc25FMm5uWGEzNkFlZ1cwQTU1YTRJcjNnUmk4SERjNmNsQVJrL2JyNytZV0dIalp6Z0FWd2JXZ2MvMGtTS3ZJQkhGN0NuQjh2V25uU3RHSFExL242U1JmNWVIbEgrTTdoTWRZYVZ1TzJ6b0Rjd2Q3dlZhVXI1Sm80d0luV3RhcmhXaHc5Zy9oQ1ZrSW5ZbmV6eFpabzgrK1JCSVBhbUNoRVhJVTJ5OUZCMnFIOWVFdE1NSEZJK3hxQldiYnNvcVJMUjgyL2FabWREUUNLN2kxVEo0eVpndCtLVEMrNXExR3gwY0s2SzBMWUZVa3A2R0F5UnJ3Nkw1cUt2NFl6Z3MrWnR0TlhSb0xGMVBzeXR2TW5WRmp0Vnh0T2Z1ODhlandjODh3WWIycHRNQ0JRY3JMbk1vZk50bjJ0SHR6RGNzdFEvYmxKa0o4dkw3NGs3UjlIVDR0MjdabS9YUXhVK3VoL3JYS3U2RVNTOUI1dGQyYithS3M0SFhISVNLZXhCd3ZEVEJCbFhYVzZ2azRTb09pRmVlMlI5TGZac1JzWXRscldmZlFnTkdBYjgxS2hkRmZySkR0c1JuajRDdzdFRmxZR29FS3Q4ekVFTlc1RzM0Uk9hWU4rbzBOamdoRHZZdkRqL05Bc2RrRFNJRklqTGIwK0tZIiwiayI6WzE4NCwxLDIsMywwLDEyMCwxMDcsMTE5LDE1MywyMywyMjMsMTE3LDE4MywxMjAsNTcsMTk2LDExLDI4LDI0OSwxMTksMTA0LDIxMywxNjksMTYxLDE0MSwxNDIsOTksNjUsNDksMjEyLDMwLDE5OSw5NywyMDQsMjE4LDc3LDEwNSwxNzksMSwyMTcsNjcsMjE1LDE1NCwyMTQsMjMyLDE0NSwxNjcsMzIsNTgsMTg1LDIxNCwyNDAsMzAsMjE5LDc1LDAsMCwwLDEyNiw0OCwxMjQsNiw5LDQyLDEzNCw3MiwxMzQsMjQ3LDEzLDEsNyw2LDE2MCwxMTEsNDgsMTA5LDIsMSwwLDQ4LDEwNCw2LDksNDIsMTM0LDcyLDEzNCwyNDcsMTMsMSw3LDEsNDgsMzAsNiw5LDk2LDEzNCw3MiwxLDEwMSwzLDQsMSw0Niw0OCwxNyw0LDEyLDQ3LDEsMTMxLDg4LDUwLDE2OSwzOSw5NSwxMzQsMTY0LDExNyw0MywyLDEsMTYsMTI4LDU5LDc0LDE5OSw4NSw4NSw1OCw2OSw1NywxODAsMzEsOTQsMTE5LDE4MiwxNTgsOTIsMTcxLDE2MSwyMiwyMDAsOTksMjU0LDU4LDIzMywzNiw0MywxMTYsMjA1LDE1NiwyMTksMTk5LDEzOCwxOCwzOSwxMDMsODUsMjEzLDEzNiw4Myw4NywyMjIsODksNDAsMjAyLDEwOCw3OCw3MiwxNTMsNjAsMTM5LDIyNCwxNTUsMjAsMjEyLDIxMiwyNDMsMTIzLDI0NCwxMzMsMjUyLDEwN119",
+      "target": [
+        "development"
+      ],
+      "configurationId": null,
+      "id": "N4keMoeMMw8BHCEL",
+      "key": "N8N_API_KEY",
+      "createdAt": 1788437395892,
+      "updatedAt": 1788850105867,
+      "createdBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "updatedBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "decrypted": false,
+      "lastEditedByDisplayName": "proyectosmuma-stack"
+    },
+    {
+      "type": "sensitive",
+      "value": "",
+      "target": [
+        "production"
+      ],
+      "configurationId": null,
+      "visibility": "secret",
+      "id": "unt0qYHyHl2SkFYA",
+      "key": "N8N_API_KEY",
+      "createdAt": 1788437392975,
+      "updatedAt": 1788850103092,
+      "createdBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "updatedBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "decrypted": false,
+      "lastEditedByDisplayName": "proyectosmuma-stack"
+    },
+    {
+      "type": "sensitive",
+      "value": "",
+      "target": [
+        "preview"
+      ],
+      "configurationId": null,
+      "visibility": "secret",
+      "id": "zzQvBMA1CbflPEla",
+      "key": "N8N_API_KEY",
+      "createdAt": 1788437390201,
+      "updatedAt": 1788850100279,
+      "createdBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "updatedBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "decrypted": false,
+      "lastEditedByDisplayName": "proyectosmuma-stack"
+    },
+    {
+      "type": "encrypted",
+      "value": "eyJ2IjoidjIiLCJjIjoiYjhxdXRISVdkd3ZGMFRGZ0xhSElrbWx6cCtPZWo3Tk1udWx5c2RVbTRMRk9XSFBPdC81VkZMYzBVQ0M1ZHdtdTJTeEhZaGhRd1pFRDZhUzcxQWVqUmFHTzNRRE51VjU3a1pleTAvNWdsbXhpQUNWYUdSdDI4QXpDVE9mWVQ0Z1BwWUNMclJvdDAzUFFXM0FKSmhQa3dvdS9sV0hlb2pZSmU2UFNvSVpqZHpkSDUwOGJudUxTZHFYZW1aSWpxV3pvZnJONWZ2TWlLaHRNRXpFTURFK0N3VFVJSGFtVzVaUG1WY0dJRUhSSHkvOD0iLCJrIjpbMTg0LDEsMiwzLDAsMTIwLDEwNywxMTksMTUzLDIzLDIyMywxMTcsMTgzLDEyMCw1NywxOTYsMTEsMjgsMjQ5LDExOSwxMDQsMjEzLDE2OSwxNjEsMTQxLDE0Miw5OSw2NSw0OSwyMTIsMzAsMTk5LDk3LDIwNCwyMTgsNzcsMTA1LDE3OSwxLDE3NCwxMzgsNCwyMjYsMjEsMTkyLDg4LDE0Niw3NiwxNTYsMzYsOTIsOTgsMTYyLDE1NCwzMCwwLDAsMCwxMjYsNDgsMTI0LDYsOSw0MiwxMzQsNzIsMTM0LDI0NywxMywxLDcsNiwxNjAsMTExLDQ4LDEwOSwyLDEsMCw0OCwxMDQsNiw5LDQyLDEzNCw3MiwxMzQsMjQ3LDEzLDEsNywxLDQ4LDMwLDYsOSw5NiwxMzQsNzIsMSwxMDEsMyw0LDEsNDYsNDgsMTcsNCwxMiw5NCwyMDcsMTI1LDE4NSwyNTIsMjgsNTUsMTk1LDEyOCwyMzMsMTA5LDgwLDIsMSwxNiwxMjgsNTksMjIwLDIwNiwyMzYsODMsMjMsNTIsNCwyOSwyMDAsMTg1LDQ1LDQyLDI1NCwxNDcsNDcsMTAwLDI0NSwxMDUsMjUzLDE2Niw3MCwzMSwyMDMsMjQ1LDEwOSw3NiwxNDcsMjM5LDEzMCwyNTUsMjEwLDE4NCw3MiwxMTMsMTIwLDI0MSwxOTMsMTkxLDI0NywxMDgsMTkwLDI0LDEzNiw3OCwxMjEsMjQ3LDc3LDEyNCwyNDUsNjYsMTY3LDIyOCwyMDMsNTUsMTY0LDIzLDEyNSwyMSwxOTFdfQ==",
+      "target": [
+        "development"
+      ],
+      "configurationId": null,
+      "id": "W5HvNxVGcKWQoyim",
+      "key": "N8N_VECTORIZER_WEBHOOK_URL",
+      "createdAt": 1788437387241,
+      "updatedAt": 1788850097420,
+      "createdBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "updatedBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "decrypted": false,
+      "lastEditedByDisplayName": "proyectosmuma-stack"
+    },
+    {
+      "type": "sensitive",
+      "value": "",
+      "target": [
+        "production"
+      ],
+      "configurationId": null,
+      "visibility": "secret",
+      "id": "qW51XQAqs6ZgZSE8",
+      "key": "N8N_VECTORIZER_WEBHOOK_URL",
+      "createdAt": 1788437384377,
+      "updatedAt": 1788850094663,
+      "createdBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "updatedBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "decrypted": false,
+      "lastEditedByDisplayName": "proyectosmuma-stack"
+    },
+    {
+      "type": "sensitive",
+      "value": "",
+      "target": [
+        "preview"
+      ],
+      "configurationId": null,
+      "visibility": "secret",
+      "id": "y4rscbk59oRp5FMj",
+      "key": "N8N_VECTORIZER_WEBHOOK_URL",
+      "createdAt": 1788437381388,
+      "updatedAt": 1788850091794,
+      "createdBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "updatedBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "decrypted": false,
+      "lastEditedByDisplayName": "proyectosmuma-stack"
+    },
+    {
+      "type": "encrypted",
+      "value": "eyJ2IjoidjIiLCJjIjoiR2FMeEtnTEZUNldMWDhabGVTS0U5VVZ0WHRWYWdQSXdhOWNhZDluNU9iTWphZXZuRjJJa3lTWmNyWGYvMTdpeEdHeVZ4ajZJak53d2ZzdE9TRWpoM2lNMmVoNFR5Z2g0MUZJKzNlSHZUTHI1Rm96MTc2TXVMRk5TTnJZWEJtQkVnSU5kYkdIL3JLdGFoMnArODUvY0dHbHF5Yk41YmtuUG4rcmVqR01SZEFNVXZvOURtbGUyeUZnRzl4REplVDc3akFTU2E4c00vSURsekJNLyIsImsiOlsxODQsMSwyLDMsMCwxMjAsMTA3LDExOSwxNTMsMjMsMjIzLDExNywxODMsMTIwLDU3LDE5NiwxMSwyOCwyNDksMTE5LDEwNCwyMTMsMTY5LDE2MSwxNDEsMTQyLDk5LDY1LDQ5LDIxMiwzMCwxOTksOTcsMjA0LDIxOCw3NywxMDUsMTc5LDEsMjE3LDY3LDIxNSwxNTQsMjE0LDIzMiwxNDUsMTY3LDMyLDU4LDE4NSwyMTQsMjQwLDMwLDIxOSw3NSwwLDAsMCwxMjYsNDgsMTI0LDYsOSw0MiwxMzQsNzIsMTM0LDI0NywxMywxLDcsNiwxNjAsMTExLDQ4LDEwOSwyLDEsMCw0OCwxMDQsNiw5LDQyLDEzNCw3MiwxMzQsMjQ3LDEzLDEsNywxLDQ4LDMwLDYsOSw5NiwxMzQsNzIsMSwxMDEsMyw0LDEsNDYsNDgsMTcsNCwxMiw0NywxLDEzMSw4OCw1MCwxNjksMzksOTUsMTM0LDE2NCwxMTcsNDMsMiwxLDE2LDEyOCw1OSw3NCwxOTksODUsODUsNTgsNjksNTcsMTgwLDMxLDk0LDExOSwxODIsMTU4LDkyLDE3MSwxNjEsMjIsMjAwLDk5LDI1NCw1OCwyMzMsMzYsNDMsMTE2LDIwNSwxNTYsMjE5LDE5OSwxMzgsMTgsMzksMTAzLDg1LDIxMywxMzYsODMsODcsMjIyLDg5LDQwLDIwMiwxMDgsNzgsNzIsMTUzLDYwLDEzOSwyMjQsMTU1LDIwLDIxMiwyMTIsMjQzLDEyMywyNDQsMTMzLDI1MiwxMDddfQ==",
+      "target": [
+        "development"
+      ],
+      "configurationId": null,
+      "id": "ritHzOoybg0IW6Qg",
+      "key": "N8N_WEBHOOK_URL",
+      "createdAt": 1788437378479,
+      "updatedAt": 1788850088962,
+      "createdBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "updatedBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "decrypted": false,
+      "lastEditedByDisplayName": "proyectosmuma-stack"
+    },
+    {
+      "type": "sensitive",
+      "value": "",
+      "target": [
+        "production"
+      ],
+      "configurationId": null,
+      "visibility": "secret",
+      "id": "gWiA3T66077URcB1",
+      "key": "N8N_WEBHOOK_URL",
+      "createdAt": 1788437375460,
+      "updatedAt": 1788850086001,
+      "createdBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "updatedBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "decrypted": false,
+      "lastEditedByDisplayName": "proyectosmuma-stack"
+    },
+    {
+      "type": "sensitive",
+      "value": "",
+      "target": [
+        "preview"
+      ],
+      "configurationId": null,
+      "visibility": "secret",
+      "id": "LgOVqBBbHPnef62f",
+      "key": "N8N_WEBHOOK_URL",
+      "createdAt": 1788437372438,
+      "updatedAt": 1788850083235,
+      "createdBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "updatedBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "decrypted": false,
+      "lastEditedByDisplayName": "proyectosmuma-stack"
+    },
+    {
+      "type": "encrypted",
+      "value": "eyJ2IjoidjIiLCJjIjoibnpwSVFGd0lIajNxdysxRFlkdEgrUzFyWjQ4SWhVU2NaYTZRcXhxemh2VDZ6bWYzV0YzY1RxNGpYc3Y5a3EyT3B5dlhJNjFMenM1aEJyMUhKMU9zb3o0WGdaVjIvVkV1enozQmtGUHlvQlpzM2ZMSlBDd3BwQW5zb0h2VGdMWWh6WW9STGhITEdlcFR6K3lmU0gxdlp3PT0iLCJrIjpbMTg0LDEsMiwzLDAsMTIwLDEwNywxMTksMTUzLDIzLDIyMywxMTcsMTgzLDEyMCw1NywxOTYsMTEsMjgsMjQ5LDExOSwxMDQsMjEzLDE2OSwxNjEsMTQxLDE0Miw5OSw2NSw0OSwyMTIsMzAsMTk5LDk3LDIwNCwyMTgsNzcsMTA1LDE3OSwxLDIxNyw2NywyMTUsMTU0LDIxNCwyMzIsMTQ1LDE2NywzMiw1OCwxODUsMjE0LDI0MCwzMCwyMTksNzUsMCwwLDAsMTI2LDQ4LDEyNCw2LDksNDIsMTM0LDcyLDEzNCwyNDcsMTMsMSw3LDYsMTYwLDExMSw0OCwxMDksMiwxLDAsNDgsMTA0LDYsOSw0MiwxMzQsNzIsMTM0LDI0NywxMywxLDcsMSw0OCwzMCw2LDksOTYsMTM0LDcyLDEsMTAxLDMsNCwxLDQ2LDQ4LDE3LDQsMTIsNDcsMSwxMzEsODgsNTAsMTY5LDM5LDk1LDEzNCwxNjQsMTE3LDQzLDIsMSwxNiwxMjgsNTksNzQsMTk5LDg1LDg1LDU4LDY5LDU3LDE4MCwzMSw5NCwxMTksMTgyLDE1OCw5MiwxNzEsMTYxLDIyLDIwMCw5OSwyNTQsNTgsMjMzLDM2LDQzLDExNiwyMDUsMTU2LDIxOSwxOTksMTM4LDE4LDM5LDEwMyw4NSwyMTMsMTM2LDgzLDg3LDIyMiw4OSw0MCwyMDIsMTA4LDc4LDcyLDE1Myw2MCwxMzksMjI0LDE1NSwyMCwyMTIsMjEyLDI0MywxMjMsMjQ0LDEzMywyNTIsMTA3XX0=",
+      "target": [
+        "development"
+      ],
+      "configurationId": null,
+      "id": "dBuheO4x9rsqsbuu",
+      "key": "N8N_WEBHOOK_BASE_URL",
+      "createdAt": 1788437369526,
+      "updatedAt": 1788850080190,
+      "createdBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "updatedBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "decrypted": false,
+      "lastEditedByDisplayName": "proyectosmuma-stack"
+    },
+    {
+      "type": "sensitive",
+      "value": "",
+      "target": [
+        "production"
+      ],
+      "configurationId": null,
+      "visibility": "secret",
+      "id": "JJoZccJvvIBzHOQ3",
+      "key": "N8N_WEBHOOK_BASE_URL",
+      "createdAt": 1788437366845,
+      "updatedAt": 1788850077331,
+      "createdBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "updatedBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "decrypted": false,
+      "lastEditedByDisplayName": "proyectosmuma-stack"
+    },
+    {
+      "type": "sensitive",
+      "value": "",
+      "target": [
+        "preview"
+      ],
+      "configurationId": null,
+      "visibility": "secret",
+      "id": "OYbtzAhHHLsNtEe6",
+      "key": "N8N_WEBHOOK_BASE_URL",
+      "createdAt": 1788437133997,
+      "updatedAt": 1788850074537,
+      "createdBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "updatedBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "decrypted": false,
+      "lastEditedByDisplayName": "proyectosmuma-stack"
+    },
+    {
+      "type": "sensitive",
+      "value": "",
+      "target": [
+        "preview"
+      ],
+      "configurationId": null,
+      "visibility": "secret",
+      "id": "pECY8eVvS00j6WIF",
+      "key": "ODOO_API_KEY",
+      "createdAt": 1787769952615,
+      "updatedAt": 1787769952615,
+      "createdBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "updatedBy": null,
+      "decrypted": false,
+      "lastEditedByDisplayName": "proyectosmuma-stack"
+    },
+    {
+      "type": "sensitive",
+      "value": "",
+      "target": [
+        "preview"
+      ],
+      "configurationId": null,
+      "visibility": "secret",
+      "id": "knsvMXBcA9aJEDt3",
+      "key": "ODOO_PASSWORD",
+      "createdAt": 1787769950330,
+      "updatedAt": 1787769950330,
+      "createdBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "updatedBy": null,
+      "decrypted": false,
+      "lastEditedByDisplayName": "proyectosmuma-stack"
+    },
+    {
+      "type": "sensitive",
+      "value": "",
+      "target": [
+        "preview"
+      ],
+      "configurationId": null,
+      "visibility": "secret",
+      "id": "uCt9yfElgQe4h4Ai",
+      "key": "ODOO_USER",
+      "createdAt": 1787769947989,
+      "updatedAt": 1787769947989,
+      "createdBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "updatedBy": null,
+      "decrypted": false,
+      "lastEditedByDisplayName": "proyectosmuma-stack"
+    },
+    {
+      "type": "sensitive",
+      "value": "",
+      "target": [
+        "preview"
+      ],
+      "configurationId": null,
+      "visibility": "secret",
+      "id": "WRNfsyxHi6HFuNSX",
+      "key": "ODOO_DB",
+      "createdAt": 1787769945700,
+      "updatedAt": 1787769945700,
+      "createdBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "updatedBy": null,
+      "decrypted": false,
+      "lastEditedByDisplayName": "proyectosmuma-stack"
+    },
+    {
+      "type": "sensitive",
+      "value": "",
+      "target": [
+        "preview"
+      ],
+      "configurationId": null,
+      "visibility": "secret",
+      "id": "WpI0RosjlYVLadtU",
+      "key": "ODOO_URL",
+      "createdAt": 1787769943467,
+      "updatedAt": 1787769943467,
+      "createdBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "updatedBy": null,
+      "decrypted": false,
+      "lastEditedByDisplayName": "proyectosmuma-stack"
+    },
+    {
+      "type": "sensitive",
+      "value": "",
+      "target": [
+        "production"
+      ],
+      "configurationId": null,
+      "visibility": "secret",
+      "id": "qk5cnfJhCq2iA0jf",
+      "key": "ODOO_PASSWORD",
+      "createdAt": 1787769930542,
+      "updatedAt": 1787769930542,
+      "createdBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "updatedBy": null,
+      "decrypted": false,
+      "lastEditedByDisplayName": "proyectosmuma-stack"
+    },
+    {
+      "type": "sensitive",
+      "value": "",
+      "target": [
+        "production"
+      ],
+      "configurationId": null,
+      "visibility": "secret",
+      "id": "ZWk8nZKUwQeXn2qc",
+      "key": "ODOO_USER",
+      "createdAt": 1787769928274,
+      "updatedAt": 1787769928274,
+      "createdBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "updatedBy": null,
+      "decrypted": false,
+      "lastEditedByDisplayName": "proyectosmuma-stack"
+    },
+    {
+      "type": "sensitive",
+      "value": "",
+      "target": [
+        "production"
+      ],
+      "configurationId": null,
+      "visibility": "secret",
+      "id": "2pBJqcmRS1u09JDO",
+      "key": "ODOO_DB",
+      "createdAt": 1787769925785,
+      "updatedAt": 1787769925785,
+      "createdBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "updatedBy": null,
+      "decrypted": false,
+      "lastEditedByDisplayName": "proyectosmuma-stack"
+    },
+    {
+      "type": "sensitive",
+      "value": "",
+      "target": [
+        "production"
+      ],
+      "configurationId": null,
+      "visibility": "secret",
+      "id": "T0PMtm4NH8l2VVHU",
+      "key": "ODOO_URL",
+      "createdAt": 1787769923504,
+      "updatedAt": 1787769923504,
+      "createdBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "updatedBy": null,
+      "decrypted": false,
+      "lastEditedByDisplayName": "proyectosmuma-stack"
+    },
+    {
+      "type": "sensitive",
+      "value": "",
+      "target": [
+        "production"
+      ],
+      "configurationId": null,
+      "comment": "",
+      "visibility": "secret",
+      "id": "sOkvLx7UEtI6KjsQ",
+      "key": "ODOO_API_KEY",
+      "createdAt": 1787769171038,
+      "updatedAt": 1787769171038,
+      "createdBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "updatedBy": null,
+      "decrypted": false,
+      "lastEditedByDisplayName": "proyectosmuma-stack"
+    },
+    {
+      "type": "sensitive",
+      "value": "",
+      "target": [
+        "production"
+      ],
+      "configurationId": null,
+      "id": "HGniVZAZO59RXpFR",
+      "key": "VPS_SSH_PASSWORD",
+      "createdAt": 1787492067357,
+      "updatedAt": 1788850128791,
+      "createdBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "updatedBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "visibility": "secret",
+      "decrypted": false,
+      "lastEditedByDisplayName": "proyectosmuma-stack"
+    },
+    {
+      "type": "sensitive",
+      "value": "",
+      "target": [
+        "production"
+      ],
+      "configurationId": null,
+      "id": "BbrKfsp6Qz2v7CrY",
+      "key": "VPS_DOMAIN_FOLDER",
+      "createdAt": 1787490909288,
+      "updatedAt": 1788850145818,
+      "createdBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "updatedBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "visibility": "secret",
+      "decrypted": false,
+      "lastEditedByDisplayName": "proyectosmuma-stack"
+    },
+    {
+      "type": "sensitive",
+      "value": "",
+      "target": [
+        "production"
+      ],
+      "configurationId": null,
+      "id": "RhLuB6xUOXpcQb3g",
+      "key": "VPS_SSH_USER",
+      "createdAt": 1787490902257,
+      "updatedAt": 1788850120025,
+      "createdBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "updatedBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "visibility": "secret",
+      "decrypted": false,
+      "lastEditedByDisplayName": "proyectosmuma-stack"
+    },
+    {
+      "type": "sensitive",
+      "value": "",
+      "target": [
+        "production"
+      ],
+      "configurationId": null,
+      "id": "pNierhEMAfYpH0ge",
+      "key": "VPS_FTP_PORT",
+      "createdAt": 1787490898865,
+      "updatedAt": 1788850137343,
+      "createdBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "updatedBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "visibility": "secret",
+      "decrypted": false,
+      "lastEditedByDisplayName": "proyectosmuma-stack"
+    },
+    {
+      "type": "sensitive",
+      "value": "",
+      "target": [
+        "production"
+      ],
+      "configurationId": null,
+      "id": "7q4xMz32ELjvUiFy",
+      "key": "VPS_SSH_HOST",
+      "createdAt": 1787490895481,
+      "updatedAt": 1788850111404,
+      "createdBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "updatedBy": "42CKCCl2bZou0W3qv9EyAtiA",
+      "visibility": "secret",
+      "decrypted": false,
+      "lastEditedByDisplayName": "proyectosmuma-stack"
+    }
+  ]
+}

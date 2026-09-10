@@ -1389,12 +1389,18 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
 
                 {/* Action Buttons */}
                 <div className="space-y-2 pt-2">
-                  <Button
-                    onClick={() => setPaymentModalOpen(true)}
-                    className="w-full bg-success hover:bg-success/90 text-white rounded-xl gap-2 font-bold text-xs h-10 shadow-md shadow-success/20 cursor-pointer"
-                  >
-                    <Plus className="h-4 w-4" /> Registrar Pago de esta Cita
-                  </Button>
+                  {appt.billingId && (appt.paymentStatus === "Pagado" || appt.paymentStatus === "Facturado Odoo") ? (
+                    <span className="inline-flex items-center rounded-full bg-emerald-500/20 px-2.5 py-0.5 text-xs font-bold text-emerald-400 border border-emerald-500/30 gap-1">
+                      <Check className="h-3 w-3" /> {appt.paymentStatus === "Facturado Odoo" ? "Cita pagada y facturada" : "Cita ya pagada"}
+                    </span>
+                  ) : (
+                    <Button
+                      onClick={() => setPaymentModalOpen(true)}
+                      className="w-full bg-success hover:bg-success/90 text-white rounded-xl gap-2 font-bold text-xs h-10 shadow-md shadow-success/20 cursor-pointer"
+                    >
+                      <Plus className="h-4 w-4" /> Registrar Pago de esta Cita
+                    </Button>
+                  )}
 
                   {appt.odooInvoiceNumber ? (
                     <div className="flex items-center gap-2">
@@ -1438,15 +1444,26 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
 
       {/* Payment Modal Pre-Populated for this Appointment */}
       {appt && (
-        <PaymentRegistrationModal
-          open={paymentModalOpen}
-          onOpenChange={setPaymentModalOpen}
-          patientId={appt.patientId}
-          patientName={appt.patientName}
-          defaultAppointmentId={appt.id}
-          defaultAmount={totals.totalPrice}
-          onSuccess={fetchAppointment}
-        />
+            <PaymentRegistrationModal
+              open={paymentModalOpen}
+              onOpenChange={setPaymentModalOpen}
+              patientId={appt.patientId}
+              patientName={appt.patientName}
+              appointments={[{ id: appt.id, reason: appt.reason, appointment_date: appt.appointment_date }]}
+              defaultAppointmentId={appt.id}
+              defaultAmount={totals.totalPrice}
+              paidAppointmentIds={appt.billingId && (appt.paymentStatus === "Pagado" || appt.paymentStatus === "Facturado Odoo") ? [appt.id] : []}
+              onSuccess={() => fetchAppointment()}
+              patientDetails={{
+                id: appt.patientId,
+                first_name: appt.patientName.split(' ')[0],
+                last_name: appt.patientName.split(' ').slice(1).join(' ') || '',
+                email: appt.patientEmail ?? undefined,
+                phone: appt.patientPhone ?? undefined,
+                vat: appt.patientNif ?? undefined,
+                // No hay street, city, zip_code disponibles directamente en appt para pasar a PatientDetails
+              }} // Patient details from appt
+            />
       )}
 
       {/* Edit Appointment Modal */}

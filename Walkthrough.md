@@ -170,11 +170,11 @@ Durante esta sesión, tanto Antigravity como Mumabot (OpenCode) colaboraron en u
 ## 12. Sesión 08/09/2026 — Auditoría de Pacientes contra Notion, Enriquecimiento de Citas y Migración de Fotos a VPS (Completada ✅)
 
 ### A. Auditoría Minuciosa de Pacientes y Clínicas vs Notion
-* **Problema Identificado**: Existían discrepancias en la asignación de sedes clínicas para varios pacientes, y un paciente (`PAC-6535 Lucas Pérez`) carecía de asignación de clínica en `patient_clinics`.
+* **Problema Identificado**: Existían discrepancias en la asignación de sedes clínicas para varios pacientes, y un paciente (`Lucas Pérez PAC-067`, anterior `PAC-6535`) carecía de asignación de clínica en `patient_clinics`.
 * **Auditoría Exhaustiva contra Notion (`Pacientes` y `Pacientes Albacete`)**:
   * **Clínica Montaño (Getafe)**: Verificada como la sede real de `Ricardo De Freitas (PAC-023)`, `Rafael Requeijo (PAC-012)`, `Erika Alvarado (PAC-013)`, `Ana Gabriela De Nigris (PAC-014)`, `Alexis Morales (PAC-015)`, `Genesis Duque (PAC-016)`, `Greicee Rodriguez (PAC-017)`, `Angelo (PAC-002)`, `Luis Gil (PAC-003)`, `Alejandro Delgado (PAC-006)` y `Brenda (PAC-007)`. Se aseguró `is_primary = true` en Getafe.
   * **Clínica Goya**: Fijada como primaria para `Oscar Enrique Melo Cupido (PAC-035)` y los 22 pacientes asignados a Goya (`PAC-004` a `PAC-034`).
-  * **Clínica Daniel Bustamante (Albacete)**: Asignada a todos los pacientes de Albacete (`PAC-036` a `PAC-066`, correspondientes a `ALB-1` a `ALB-33` de Notion / Clínica Roldán) y a `Lucas Pérez (PAC-6535)`.
+  * **Clínica Daniel Bustamante (Albacete)**: Asignada a todos los pacientes de Albacete (`PAC-036` a `PAC-066`, correspondientes a `ALB-1` a `ALB-33` de Notion / Clínica Roldán) y a `Lucas Pérez (PAC-067)`.
 
 ### B. Enriquecimiento de Citas y Anotaciones Clínicas
 * De las 85 citas existentes en Producción, se auditaron estados y observaciones.
@@ -208,8 +208,8 @@ Durante esta sesión, tanto Antigravity como Mumabot (OpenCode) colaboraron en u
   * **Campanita (`system_notifications`)**: 4 alertas operativas y clicables en producción:
     1. `PENDIENTE DE REVISION - Registro pagos sin importes` → Candela Fernández HS (`PAC-019`).
     2. `PENDIENTE DE REVISION - Factura Myobrace 700 EUR` → Alberto Rama Rodríguez (`PAC-009`).
-    3. `PENDIENTE DE REVISION - Billing Control 4 Motion` → Begoña Fernández Martínez HS (`PAC-024`).
-    4. `PENDIENTE DE REVISION - Billing Tartrectomia` → Lucas Pérez (`PAC-6535`).
+    3. `PENDIENTE DE REVISION - Billing Control 4 Motion` → Begoña Fernández Martínez (`PAC-024`).
+    4. `PENDIENTE DE REVISION - Billing Tartrectomia` → Lucas Pérez (`PAC-067`, test IA re-secuenciado).
 * **Verificación UI en Navegador**:
   * Sesión autenticada en `agenda.melosmile.com`.
   * Campanita abierta en el navegador: muestra indicador rojo y despliega las 4 notificaciones con sus links directos a las fichas.
@@ -229,10 +229,72 @@ Durante esta sesión, tanto Antigravity como Mumabot (OpenCode) colaboraron en u
      * Actualizados los 11 teléfonos de Notion que faltaban en la base de datos (incluyendo Carlos Pujol: `+34 661 902 521`).
      * Sanitizados caracteres invisibles UTF-8 (`\u202A`, etc.) en números de teléfono.
      * Sincronizado `in_treatment = false` para los 8 pacientes dados de alta en Notion (Ángel Da Silva, Carlos Pujol, Estefania Maccanin, Claire Ulmer, Laura Romero, Noelia Vega, Ainur Kozhabek, Raquel Calviches).
-  3. **Frontend y Despliegue**:
-     * Reescrito el mapeo de clínicas en `patients/page.tsx` para consultar `patient_clinics` como fuente canónica primaria.
-     * Corregido el orden de las columnas en la vista listado.
-     * Desplegado a producción en Vercel y verificado visualmente en `https://agenda.melosmile.com/patients`.
+3. **Frontend y Despliegue**:
+      * Reescrito el mapeo de clínicas en `patients/page.tsx` para consultar `patient_clinics` como fuente canónica primaria.
+      * Corregido el orden de las columnas en la vista listado.
+      * Desplegado a producción en Vercel y verificado visualmente en `https://agenda.melosmile.com/patients`.
+
+## 13. Sesión 10/09/2026 — Saneamiento y Consolidación de Variables Vercel, Corrección Monorepo Staging y Certificación General del Sistema (Completada ✅)
+
+### A. Diagnóstico y Causa Raíz: 94 Filas Caóticas en Vercel
+* **Síntoma**: El panel de Vercel mostraba 94 filas de variables (44 en producción y 50 en staging) fragmentadas por entorno (`production`, `preview`, `development` en filas separadas), imposibilitando el flujo de merge limpio `develop` → `main`.
+* **Causa raíz #1 (fragmentación)**: Cada nuevo valor se creaba en una fila separada por entorno en vez de una única variable con target multi-entorno.
+* **Causa raíz #2 (`type: sensitive`)**: Las variables recreadas por CLI vía pipe no-interactivo se guardaban como `sensitive`, invisibles para `vercel env pull` (devuelve `""`), generando falsas alarmas de "variables vacías" y verificaciones inválidas.
+
+### B. Purga y Unificación SSOT
+* Se eliminaron las 94 entradas fragmentadas y se crearon **exactamente 23 variables únicas limpias por proyecto** con target unificado `["production", "preview", "development"]` y `type: "encrypted"`.
+* **Inconsistencias corregidas**:
+  * URLs de n8n en Producción migradas de la v1 obsoleta (`https://n8n.mumaweb.com`) a la v2 oficial (`https://n8nv2.mumaweb.com`).
+  * Agregadas en Producción: `N8N_API_KEY`, `N8N_VECTORIZER_WEBHOOK_URL` y `VPS_DOCS_BASE_PATH`.
+  * Agregadas en Staging: `AUTH_USERNAME` y `AUTH_PASSWORD`.
+  * Expandidas credenciales de Odoo y VPS para dar cobertura total a despliegues de Preview.
+* **Artefactos**: Informe técnico para el CTO en `cto_env_vars_consolidation.md` y respaldo previo en `scratch/vercel_envs_backup_before_consolidation.json`.
+
+### C. Corrección del Monorepo en Vercel Staging
+* **Incidencia**: `melosmile-staging` fallaba en compilación por no ubicar `next` en el root del repo (configuración monorepo no declarada).
+* **Solución**: Se configuró `rootDirectory: "frontend"` vía API en la configuración del proyecto (`prj_qP5or4gNukJS9w8PTXeiL5vHI02t`), resolviendo de raíz el despliegue automático.
+
+### D. Certificación y Test General del Sistema
+* **Despliegues Vercel**: Ambos proyectos (`melosmile-production` y `melosmile-staging`) alcanzaron estado `READY` con las nuevas variables.
+* **Build Local**: Next.js 16 (Turbopack) compiló 46 rutas estáticas y dinámicas con 0 errores.
+* **Unit Tests**: 14/14 tests pasando (Vitest).
+* **Conectividad Cloud**: Supabase Cloud (5 clínicas y pacientes) y Odoo ERP (19 productos/servicios vía XML-RPC) 100% operativos.
+* **Verificación en Vivo**: `https://agenda.melosmile.com/` validada en navegador, panel interactivo y badge `Odoo API: Connected` en verde.
+
+### E. Lecciones Aprendidas (esta sesión)
+1. **Vercel `type: sensitive` es write-only**: `vercel env pull` devuelve `""` para variables sensibles aunque tengan valor real. Método de verificación válido: `vercel env ls` (tipo) o comprobar runtime tras deploy. NO usar pull para verificar sensibles.
+2. **SSOT de variables por proyecto**: Todo cambio de variables debe crearse con target `["production","preview","development"]` unificado; nunca filas separadas por entorno (genera caos e imposibilita merges limpios).
+3. **Monorepo en Vercel**: Declarar `rootDirectory` explícito en el proyecto (vía API o dashboard) es imprescindible cuando el `package.json` de Next.js vive en `frontend/`.
+4. **Merge develop→main sin fricción de variables**: Al vivir cada entorno en su propio proyecto Vercel con variables unificadas, el merge entre ramas no exige renombrar ni reconfigurar nada.
+
+---
+
+## 14. Sesión 10/09/2026 — Auditoría Exhaustiva de Pacientes contra Notion y Saneamiento Serial en Producción (Completada ✅)
+
+### A. Diagnóstico y Comparativa vs Fichas de Notion
+* **Alcance**: Auditoría de los 67 pacientes registrados en Supabase Producción (`xylqytpudbdcsbuuwqpi`) cotejados 1 a 1 contra las bases de datos maestras de Notion (`Pacientes` y `Pacientes Albacete`).
+* **Autenticidad Verificada**:
+  * **66 Pacientes Reales**: Confirmados al 100% en Notion (`PAC-1` a `PAC-27` y `ALB-1` a `ALB-27` / citas de Albacete) con historial clínico y citas médicas reales.
+  * **1 Paciente Mock / Test IA**: `Lucas Pérez` no existía en Notion. Fue creado el 03/09/2026 durante pruebas del asistente de citas con datos dummy (`+34 600 000 000`, `lucas@melosmile.local`).
+* **Anomalía Crítica de Secuencia**: `Lucas Pérez` tenía asignado el código anómalo `PAC-6535`, lo que provocaba que `getNextHistoriaId()` (`frontend/src/lib/utils/patient-id.ts`) generara `PAC-6536` para cualquier paciente nuevo en lugar del correlativo `PAC-067`.
+
+### B. Saneamiento Aplicado en Producción (`apply_patient_sanitization.js`)
+* **Respaldo previo de seguridad**: Generado snapshot completo en `scratch/backup_patients_prod_pre_sanitize.json`.
+* **Re-secuenciación Serial**:
+  * `Lucas Pérez`: Actualizado de `PAC-6535` a **`PAC-067`** (restaurando la continuidad 100% estricta `PAC-001` a `PAC-067` y asegurando que el próximo paciente nuevo sea `PAC-068`).
+* **Limpieza de Nombres y Apellidos**:
+  * Eliminados los sufijos de convenio `HS` y `hs` de los apellidos de `Sara Rubio (PAC-004)`, `Gabriel Cañizales Rubio (PAC-005)`, `Diego Martínez García (PAC-018)`, `Candela Fernández (PAC-019)`, `Begoña Fernández Martínez (PAC-024)` y `Francisco Javier Leal Rey (PAC-025)`, manteniéndolos en su etiqueta canónica `Henryschein`.
+  * `Raquel Calviches Fernández (PAC-011)`: Retirada la nota personal `(novia de Hector Hs)` del apellido y trasladada a observaciones clínicas.
+  * `Sobrina Silvia (PAC-036)`: Añadida nota clínica interna de procedencia Notion Albacete.
+* **Corrección de Erratas y Formato**:
+  * `Carmen Martín García (PAC-059)`: Corregida errata tipográfica `Masrtin` → `Martín`.
+  * `Greicee Angely Rodríguez (PAC-017)`: Separado segundo nombre pegado al apellido (`angelyRodriguez` → `Angely Rodríguez`).
+  * Normalizados a Capital Case: `Luis Gil (PAC-003)`, `Alejandro Delgado (PAC-006)`, `Brenda (PAC-007)`, `Oswaldo Enrique Soler (PAC-010)`, `Rafael Requeijo (PAC-012)`, `Erika Alvarado (PAC-013)`, `Ana Gabriela De Nigris Silva (PAC-014)`, `Alexis Morales (PAC-015)` y `Génesis Duque (PAC-016)`.
+* **Normalización de Teléfono**:
+  * `Ronald Alejandro Delgado (PAC-008)`: Normalizado teléfono principal a `+34 665 278 727` y guardado el alternativo (`654 480 839`) en notas.
+* **Verificación Final**:
+  * 67 pacientes en producción con secuencia ininterrumpida `PAC-001` a `PAC-067`.
+  * `getNextHistoriaId()` probado en vivo: Devuelve con total precisión **`PAC-068`**.
 
 
 

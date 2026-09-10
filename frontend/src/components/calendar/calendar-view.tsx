@@ -43,6 +43,8 @@ export interface AppointmentEvent {
   hasNotes: boolean;
   status?: string;
   notes?: string;
+  previousNotes?: string;
+  previousDate?: string;
 }
 
 const COLOR_PRESETS = [
@@ -200,6 +202,16 @@ function DraggableEvent({
         </div>
       </div>
       <p className="text-[10px] opacity-90 truncate pointer-events-none">{event.title} · {clinic.name}</p>
+      {(event.previousNotes || event.notes) && (
+        <>
+          {event.previousNotes && (
+            <p className="text-[9px] opacity-80 truncate pointer-events-none">↩ {event.previousNotes}</p>
+          )}
+          {event.notes && (
+            <p className="text-[9px] opacity-80 truncate pointer-events-none">→ {event.notes}</p>
+          )}
+        </>
+      )}
     </div>
   );
 }
@@ -328,6 +340,48 @@ export function CalendarView({ selectedClinicId = "all" }: { selectedClinicId?: 
             notes: rawNotes ?? undefined,
           };
         });
+
+        // Fetch previous appointments for each patient
+        const uniquePatientIds = Array.from(new Set(mapped.map(event => event.patientId).filter(Boolean)));
+
+        if (uniquePatientIds.length > 0) {
+          const { data: prevData } = await (supabase as any)
+            .from("appointments")
+            .select("id, patient_id, appointment_date, notes")
+            .in("patient_id", uniquePatientIds);
+
+          if (prevData) {
+            const groupedPrevData = prevData.reduce((acc: any, curr: any) => {
+              if (!acc[curr.patient_id]) {
+                acc[curr.patient_id] = [];
+              }
+              acc[curr.patient_id].push(curr);
+              return acc;
+            }, {});
+
+            mapped.forEach(event => {
+              if (event.patientId && groupedPrevData[event.patientId]) {
+                const patientAppointments = groupedPrevData[event.patientId]
+                  .filter((prevAppt: any) => new Date(prevAppt.appointment_date) < event.date)
+                  .sort((a: any, b: any) => new Date(b.appointment_date).getTime() - new Date(a.appointment_date).getTime());
+
+                if (patientAppointments.length > 0) {
+                  const previousAppt = patientAppointments[0];
+                  const prevRawNotes: string | null = previousAppt.notes ?? null;
+                  const prevHasNotes =
+                    !!prevRawNotes &&
+                    !prevRawNotes.includes("[Odontograma:") &&
+                    !prevRawNotes.includes("[DoctorInvitado:");
+                  
+                  if (prevHasNotes) {
+                    event.previousNotes = prevRawNotes;
+                    event.previousDate = previousAppt.appointment_date;
+                  }
+                }
+              }
+            });
+          }
+        }
         setEvents(mapped);
       }
     } catch (err) {

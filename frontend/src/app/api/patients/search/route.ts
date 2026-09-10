@@ -14,13 +14,21 @@ function cleanSearchTerm(term: string): string {
   return cleaned.length > 0 ? cleaned : clean;
 }
 
-function scorePatientMatch(patient: any, targetQuery: string): number {
-  const target = targetQuery.toLowerCase().trim();
-  
-  if (patient.historia_id && patient.historia_id.toLowerCase().includes(target)) return 100;
-  if (patient.phone && patient.phone.toLowerCase().includes(target)) return 100;
+function normalizeText(str: string): string {
+  return (str || "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim();
+}
 
-  const fullName = `${patient.first_name || ""} ${patient.last_name || ""}`.toLowerCase().trim();
+function scorePatientMatch(patient: any, targetQuery: string): number {
+  const target = normalizeText(targetQuery);
+  
+  if (patient.historia_id && normalizeText(patient.historia_id).includes(target)) return 100;
+  if (patient.phone && normalizeText(patient.phone).includes(target)) return 100;
+
+  const fullName = normalizeText(`${patient.first_name || ""} ${patient.last_name || ""}`);
 
   if (fullName === target) return 100;
   if (fullName.startsWith(target)) return 90;
@@ -75,6 +83,24 @@ async function handleSearch(rawQ: string | null | undefined) {
     if (error) throw error;
 
     let patients = data || [];
+
+    // Fallback for accent insensitivity (e.g. Genesis vs Génesis, Martin vs Martín)
+    if (patients.length === 0) {
+      const { data: allPats } = await (supabase as any)
+        .from("patients")
+        .select("id, first_name, last_name, historia_id, dob, phone, email, allergies, current_medication")
+        .limit(300);
+
+      if (allPats) {
+        const normTarget = normalizeText(sanitized);
+        patients = allPats.filter((p: any) => {
+          const fn = normalizeText(`${p.first_name || ""} ${p.last_name || ""}`);
+          const hid = normalizeText(p.historia_id || "");
+          const ph = normalizeText(p.phone || "");
+          return fn.includes(normTarget) || hid.includes(normTarget) || ph.includes(normTarget);
+        });
+      }
+    }
 
     // Sort patients by exactness/relevance match to sanitized search term
     patients.sort((a: any, b: any) => scorePatientMatch(b, sanitized) - scorePatientMatch(a, sanitized));

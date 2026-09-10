@@ -45,12 +45,12 @@ type PatientDetails = {
   id: string;
   first_name: string;
   last_name: string;
-  email: string | null;
-  phone: string | null;
-  street: string | null;
-  city: string | null;
-  zip_code: string | null;
-  vat: string | null;
+  email?: string | null;
+  phone?: string | null;
+  street?: string | null;
+  city?: string | null;
+  zip_code?: string | null;
+  vat?: string | null;
   billing_name?: string; // Optional: separate billing name from contact name
 };
 
@@ -66,6 +66,7 @@ type PaymentRegistrationModalProps = {
   onSuccess?: () => void;
   patientDetails?: PatientDetails; // Optional: for Odoo invoice generation
   representatives?: { id?: string; full_name: string; dni_nie: string | null; email: string | null; phone: string | null; }[];
+  paidAppointmentIds?: string[]; // New prop: IDs of appointments that are already 'Pagado'
 };
 
 export const PAYMENT_METHODS = [
@@ -87,13 +88,13 @@ type OdooPatientDetails = {
   firstName: string;
   lastName: string;
   historiaId?: string;
-  nifCif: string | null;
+  nifCif?: string | null;
   billingName: string;
-  billingAddress: string | null;
-  billingCity: string | null;
-  billingPostalCode: string | null;
-  email: string | null;
-  phone: string | null;
+  billingAddress?: string | null;
+  billingCity?: string | null;
+  billingPostalCode?: string | null;
+  email?: string | null;
+  phone?: string | null;
 };
 
 export function PaymentRegistrationModal({
@@ -108,6 +109,7 @@ export function PaymentRegistrationModal({
   onSuccess,
   patientDetails, // Desestructured patientDetails
   representatives = [],
+  paidAppointmentIds = [],
 }: PaymentRegistrationModalProps) {
   const [saving, setSaving] = useState(false);
   const [currentBillingRecord, setCurrentBillingRecord] = useState<BillingRecord | undefined>(initialEditingRecord);
@@ -150,10 +152,40 @@ export function PaymentRegistrationModal({
 
   const handleSave = async () => {
     const numAmount = parseFloat(amount);
-    if (isNaN(numAmount) || numAmount <= 0) return;
+    
+    // Validación mejorada del monto
+    if (isNaN(numAmount)) {
+      alert("❌ El monto debe ser un número válido");
+      return;
+    }
+    
+    if (numAmount <= 0) {
+      alert("❌ El monto debe ser mayor a 0");
+      return;
+    }
+
+    // Validación de paciente ID
+    if (!patientId || patientId.trim() === "") {
+      alert("❌ Falta el ID del paciente. Por favor, verifica la ficha del paciente.");
+      return;
+    }
+
+    console.log("💰 Iniciando registro de pago:", {
+      patientId,
+      amount: numAmount,
+      appointmentId,
+      status,
+      paymentMethod
+    });
+
+    // Bloqueo preventivo si la cita ya está pagada (solo si NO estamos editando un registro existente)
+    if (!currentBillingRecord && appointmentId && paidAppointmentIds.includes(appointmentId)) {
+      alert("❌ Esta cita ya está pagada. No se puede registrar otro pago para la misma cita.");
+      return;
+    }
 
     setSaving(true);
-    let recordToProcess = currentBillingRecord; // Use this variable to hold the record for Odoo invoice generation
+    let recordToProcess = currentBillingRecord;
 
     try {
       const selectedAppt = appointments.find((a) => a.id === appointmentId);
@@ -175,33 +207,65 @@ export function PaymentRegistrationModal({
         notes: notes || null,
       };
 
+      console.log("📝 Payload preparado:", payload);
+
       if (currentBillingRecord) {
         // Update existing record
-        const { error } = await (supabase as any)
+        console.log("🔄 Actualizando registro existente:", currentBillingRecord.id);
+        
+        const { error, data } = await (supabase as any)
           .from("billing_records")
           .update(payload)
-          .eq("id", currentBillingRecord.id);
+          .eq("id", currentBillingRecord.id)
+          .select("*")
+          .single();
 
-        if (error) throw error;
+        if (error) {
+          console.error("❌ Error Supabase UPDATE:", error);
+          throw new Error(`Error actualizando registro: ${error.message}`);
+        }
+        
+        console.log("✅ Registro actualizado:", data);
+        recordToProcess = data;
       } else {
         // Insert new record
+        console.log("➕ Insertando nuevo registro");
         payload.created_at = new Date().toISOString();
+        
         const { error, data } = await (supabase as any)
           .from("billing_records")
           .insert(payload)
           .select("*")
           .single();
 
-        if (error) throw error;
-        recordToProcess = data; // Update recordToProcess with the newly inserted record
-        setCurrentBillingRecord(data); // Also update the state for consistency
+        if (error) {
+          console.error("❌ Error Supabase INSERT:", error);
+          
+          // Mensajes de error más específicos
+          if (error.code === '23505') {
+            throw new Error("Ya existe un registro de pago para esta cita.");
+          } else if (error.code === '23503') {
+            throw new Error("El paciente o la cita no existen en la base de datos.");
+          } else if (error.message.includes('violates foreign key constraint')) {
+            throw new Error("Error de referencia: paciente o cita no encontrados.");
+          } else {
+            throw new Error(`Error guardando pago: ${error.message}`);
+          }
+        }
+        
+        console.log("✅ Nuevo registro insertado:", data);
+        recordToProcess = data;
+        setCurrentBillingRecord(data);
       }
 
-      // After successful save, check if we need to generate Odoo invoice
+      // Después del guardado exitoso, continuar con Odoo si es necesario
       const shouldGenerateOdooInvoice = (status === "Pagado" || status === "Aconto") && patientDetails;
       const hasOdooInvoice = recordToProcess && recordToProcess.odoo_invoice_id;
 
       if (shouldGenerateOdooInvoice && !hasOdooInvoice) {
+        console.log("🧾 Generando factura Odoo...");
+        // ... resto del código Odoo ...
+        
         try {
           const selectedRep = representatives.find(r => r.id === selectedRepId);
           const odooPatientDetails: OdooPatientDetails = {
@@ -210,7 +274,7 @@ export function PaymentRegistrationModal({
             historiaId: patientDetails.id,
             nifCif: selectedRep ? selectedRep.dni_nie : patientDetails.vat,
             billingName: selectedRep ? selectedRep.full_name : (patientDetails.billing_name || `${patientDetails.first_name} ${patientDetails.last_name}`),
-            billingAddress: patientDetails.street, // Usar dirección del menor
+            billingAddress: patientDetails.street,
             billingCity: patientDetails.city,
             billingPostalCode: patientDetails.zip_code,
             email: selectedRep ? selectedRep.email : patientDetails.email,
@@ -220,13 +284,13 @@ export function PaymentRegistrationModal({
           const invoicePayload = {
             patientId: patientId,
             items: [{
-              id: recordToProcess?.id, // Use the ID from the saved/updated record
+              id: recordToProcess?.id,
               name: reasonText,
               price: numAmount,
               quantity: 1,
             }],
             patientDetails: odooPatientDetails,
-            billingRecordId: recordToProcess?.id, // Pass the billing record ID to update
+            billingRecordId: recordToProcess?.id,
           };
 
           const odooResponse = await fetch("/api/odoo/invoice", {
@@ -239,22 +303,46 @@ export function PaymentRegistrationModal({
 
           if (!odooResponse.ok) {
             const errorData = await odooResponse.json();
-            throw new Error(errorData.message || "Error al generar factura en Odoo");
+            console.error("⚠️  Error Odoo:", errorData);
+            alert(`⚠️  Pago registrado en Supabase, pero hubo un error al generar la factura en Odoo: ${errorData.message}. Por favor, genera la factura manualmente.`);
+          } else {
+            const odooData = await odooResponse.json();
+            console.log("✅ Factura Odoo generada:", odooData);
+            alert(`✅ Factura de Odoo generada con éxito: ${odooData.odoo_invoice_number}`);
           }
-
-          const odooData = await odooResponse.json();
-          alert(`Factura de Odoo generada con éxito: ${odooData.odoo_invoice_number}`);
         } catch (odooErr: any) {
-          console.error("Error al generar factura de Odoo:", odooErr);
-          alert(`Advertencia: Pago registrado en Supabase, pero hubo un error al generar la factura en Odoo: ${odooErr.message}. Por favor, genera la factura manualmente.`);
+          console.error("⚠️  Error al generar factura de Odoo:", odooErr);
+          alert(`⚠️  Pago registrado en Supabase, pero hubo un error al generar la factura en Odoo: ${odooErr.message}. Por favor, genera la factura manualmente.`);
         }
       }
 
+      console.log("🎉 Registro de pago completado exitosamente");
       onOpenChange(false);
       if (onSuccess) onSuccess();
+      
     } catch (err: any) {
-      console.error("Error registrando pago:", err);
-      alert(`Error al ${currentBillingRecord ? "actualizar" : "registrar"} el pago: ${err.message || "Error desconocido"}`);
+      console.error("❌ Error completo registrando pago:", err);
+      
+      // Mensajes de error más amigables para el usuario
+      let userMessage = err.message || "Error desconocido";
+      
+      if (err.message.includes("violates foreign key constraint")) {
+        userMessage = "Error: El paciente o la cita no existen en la base de datos.";
+      } else if (err.message.includes("23503")) {
+        userMessage = "Error: Referencia inválida. Verifique que el paciente y la cita existan.";
+      } else if (err.message.includes("23505")) {
+        userMessage = "Error: Ya existe un registro de pago para esta cita.";
+      }
+      
+      alert(`❌ Error al ${currentBillingRecord ? "actualizar" : "registrar"} el pago: ${userMessage}`);
+      
+      // Log adicional para debugging
+      console.error("Detalles del error:", {
+        error: err,
+        patientId,
+        appointmentId,
+        amount: numAmount
+      });
     } finally {
       setSaving(false);
     }
@@ -311,9 +399,15 @@ export function PaymentRegistrationModal({
                 <option value="">-- Sin cita (Aconto / Pago General) --</option>
                 {appointments.map((a) => {
                   const d = new Date(a.appointment_date).toLocaleDateString("es-ES", { day: "2-digit", month: "short" });
+                  const isPaid = paidAppointmentIds.includes(a.id);
                   return (
-                    <option key={a.id} value={a.id}>
-                      {d} - {a.reason}
+                    <option
+                      key={a.id}
+                      value={a.id}
+                      disabled={isPaid}
+                      className={isPaid ? "opacity-50 cursor-not-allowed" : ""}
+                    >
+                      {d} - {a.reason} {isPaid && "— (ya pagada)"}
                     </option>
                   );
                 })}
