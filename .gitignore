@@ -48,3 +48,7 @@ supabase/seed.cloud.sql
 # Scratch directories and temporary scripts
 scratch/
 frontend/scratch/
+*.log
+logs/
+audit_results/
+
