@@ -62,8 +62,8 @@
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
 
-    --primary: 346.8 77.2% 49.8%;
-    --primary-foreground: 355.7 100% 97.3%;
+    --primary: 292 47% 37%;           /* MeloSmile Purple #85348c */
+    --primary-foreground: 0 0% 100%;   /* Blanco corporativo */
 
     --secondary: 210 40% 96.1%;
     --secondary-foreground: 222.2 47.4% 11.2%;
@@ -79,7 +79,7 @@
 
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 346.8 77.2% 49.8%;
+    --ring: 292 47% 37%;              /* MeloSmile Purple */
 
     --radius: 0.75rem;
 
@@ -103,6 +103,12 @@
     /* Marca IA (Musly) */
     --brand-ai-from: 262 83% 58%;
     --brand-ai-to: 243 75% 59%;
+
+    /* Marca MeloSmile */
+    --brand-primary: 292 47% 37%;      /* #85348c - MeloSmile Purple */
+    --brand-primary-light: 292 47% 50%; /* Variante clara */
+    --brand-primary-dark: 292 47% 27%;  /* Variante oscura */
+    --brand-gray: 17 3% 35%;           /* #595756 - Gris Carbón */
   }
 
   .dark {
@@ -115,8 +121,8 @@
     --popover: 222.2 84% 7%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 346.8 77.2% 49.8%;
-    --primary-foreground: 355.7 100% 97.3%;
+    --primary: 292 55% 55%;           /* MeloSmile Purple - variante luminosa dark mode */
+    --primary-foreground: 0 0% 100%;   /* Blanco corporativo */
 
     --secondary: 217 33% 12%;
     --secondary-foreground: 210 40% 98%;
@@ -132,7 +138,7 @@
 
     --border: 217 33% 17%;
     --input: 217 33% 17%;
-    --ring: 346.8 77.2% 49.8%;
+    --ring: 292 55% 55%;              /* MeloSmile Purple dark */
 
     --sidebar: 222.2 84% 4.9%;
     --sidebar-foreground: 210 40% 98%;

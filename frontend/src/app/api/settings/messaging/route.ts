@@ -29,6 +29,9 @@ export const GET = async () => {
   if (maskedData.smtp_password) {
     maskedData.smtp_password = '****' + maskedData.smtp_password.slice(-4);
   }
+  if (maskedData.evolution_api_key) {
+    maskedData.evolution_api_key = '****' + maskedData.evolution_api_key.slice(-4);
+  }
 
   return NextResponse.json({ data: maskedData });
 };
@@ -53,6 +56,7 @@ export const PUT = async (req: Request) => {
   // Only allow actual DB columns — reject UI fields like 'loading', 'saving'
   const ALLOWED_COLUMNS = new Set([
     'whatsapp_enabled', 'whatsapp_phone', 'whatsapp_api_token', 'whatsapp_template_name',
+    'evolution_api_url', 'evolution_api_key', 'evolution_instance',
     'telegram_enabled', 'telegram_bot_token', 'telegram_phone',
     'telegram_api_id', 'telegram_api_hash', 'telegram_session_string',
     'email_enabled', 'smtp_host', 'smtp_port', 'smtp_user', 'smtp_password', 'smtp_secure',
@@ -63,7 +67,7 @@ export const PUT = async (req: Request) => {
   for (const key in body) {
     if (Object.prototype.hasOwnProperty.call(body, key) && ALLOWED_COLUMNS.has(key)) {
       const value = body[key];
-      if (key.includes('token') || key.includes('password') || key.includes('hash') || key.includes('session')) {
+      if (key.includes('token') || key.includes('password') || key.includes('hash') || key.includes('session') || key === 'evolution_api_key') {
         // Skip if the masked placeholder value came back unchanged
         const maskedPlaceholder = currentSettings?.[key]
           ? '****' + currentSettings[key].slice(-4)
@@ -110,6 +114,9 @@ export const PUT = async (req: Request) => {
   }
   if (maskedData.smtp_password) {
     maskedData.smtp_password = '****' + maskedData.smtp_password.slice(-4);
+  }
+  if (maskedData.evolution_api_key) {
+    maskedData.evolution_api_key = '****' + maskedData.evolution_api_key.slice(-4);
   }
 
   return NextResponse.json({ data: maskedData });

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, use } from "react";
+import Image from "next/image";
 import {
   Calendar,
   Clock,
@@ -12,7 +13,8 @@ import {
   Loader2,
   Phone,
   MessageCircle,
-  HelpCircle
+  HelpCircle,
+  Navigation,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -23,6 +25,8 @@ interface AppointmentInfo {
   status: string;
   patientName: string;
   clinicName: string;
+  clinicAddress?: string | null;
+  mapsUrl?: string | null;
   isExpired: boolean;
 }
 
@@ -166,13 +170,20 @@ export default function AppointmentConfirmationPage({
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 via-slate-100 to-slate-200 flex flex-col justify-center items-center p-4 py-10">
       <div className="max-w-md w-full bg-white rounded-3xl shadow-xl border border-slate-100 overflow-hidden">
-        {/* Header con marca Melosmile */}
-        <div className="bg-gradient-to-r from-teal-600 to-emerald-600 p-6 text-white text-center">
-          <div className="inline-flex items-center justify-center h-12 w-12 rounded-2xl bg-white/20 backdrop-blur-md mb-2 shadow-inner">
-            <Sparkles className="h-6 w-6 text-white" />
+        {/* Header con marca MeloSmile oficial */}
+        <div className="bg-gradient-to-r from-[#85348c] to-[#a044a8] p-6 text-white text-center">
+          <div className="inline-flex items-center justify-center h-14 w-14 rounded-2xl bg-white/15 backdrop-blur-md mb-3 shadow-inner p-2">
+            <Image
+              src="/brand/logo-color.svg"
+              alt="MeloSmile"
+              width={48}
+              height={48}
+              className="h-full w-full object-contain"
+              priority
+            />
           </div>
           <h1 className="text-2xl font-black tracking-tight">MeloSmile</h1>
-          <p className="text-teal-100 text-xs font-medium">Clínica Dental & Ortodoncia Avanzada</p>
+          <p className="text-purple-200 text-xs font-medium">Clínica Dental &amp; Ortodoncia Avanzada</p>
         </div>
 
         <div className="p-6 md:p-8 space-y-6">
@@ -188,20 +199,37 @@ export default function AppointmentConfirmationPage({
                 </p>
               </div>
 
-              <div className="bg-emerald-50/70 border border-emerald-200/80 rounded-2xl p-4 text-left space-y-2">
-                <div className="flex items-center gap-2 text-xs font-bold text-emerald-800">
-                  <Calendar className="h-4 w-4 text-emerald-600" />
+              <div className="bg-purple-50/70 border border-purple-200/80 rounded-2xl p-4 text-left space-y-2">
+                <div className="flex items-center gap-2 text-xs font-bold text-purple-900">
+                  <Calendar className="h-4 w-4 text-[#85348c]" />
                   <span className="capitalize">{dateFormatted}</span>
                 </div>
-                <div className="flex items-center gap-2 text-xs font-bold text-emerald-800">
-                  <Clock className="h-4 w-4 text-emerald-600" />
+                <div className="flex items-center gap-2 text-xs font-bold text-purple-900">
+                  <Clock className="h-4 w-4 text-[#85348c]" />
                   <span>{timeFormatted}</span>
                 </div>
-                <div className="flex items-center gap-2 text-xs text-emerald-700">
-                  <MapPin className="h-4 w-4 text-emerald-600" />
-                  <span>{appointment.clinicName}</span>
+                <div className="flex items-start gap-2 text-xs text-purple-900 pt-1 border-t border-purple-200/60">
+                  <MapPin className="h-4 w-4 text-[#85348c] shrink-0 mt-0.5" />
+                  <div>
+                    <span className="font-bold">{appointment.clinicName}</span>
+                    {appointment.clinicAddress && (
+                      <p className="text-[11px] text-purple-700/90 font-normal">{appointment.clinicAddress}</p>
+                    )}
+                  </div>
                 </div>
               </div>
+
+              {appointment.mapsUrl && (
+                <a
+                  href={appointment.mapsUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full py-3 px-4 bg-[#85348c] hover:bg-[#6d2974] text-white font-bold text-xs rounded-xl shadow-md shadow-purple-600/20 flex items-center justify-center gap-2 transition-all cursor-pointer no-underline"
+                >
+                  <Navigation className="h-4 w-4" />
+                  Cómo llegar en Google Maps
+                </a>
+              )}
 
               <p className="text-xs text-slate-400">
                 ¡Te esperamos con entusiasmo en la clínica! Si surge cualquier imprevisto, no dudes en escribirnos.
@@ -226,14 +254,14 @@ export default function AppointmentConfirmationPage({
             <>
               {/* Resumen de la cita */}
               <div className="space-y-1 text-center">
-                <p className="text-xs font-bold uppercase tracking-wider text-teal-600">Confirmación de Asistencia</p>
+                <p className="text-xs font-bold uppercase tracking-wider text-[#85348c]">Confirmación de Asistencia</p>
                 <h2 className="text-xl font-black text-slate-900">Hola, {appointment.patientName}</h2>
                 <p className="text-xs text-slate-500">Por favor indícanos si podrás asistir a tu cita programada:</p>
               </div>
 
               <div className="bg-slate-50 border border-slate-100 rounded-2xl p-5 space-y-3">
                 <div className="flex items-start gap-3">
-                  <div className="h-9 w-9 rounded-xl bg-teal-50 text-teal-700 flex items-center justify-center shrink-0">
+                  <div className="h-9 w-9 rounded-xl bg-purple-50 text-[#85348c] flex items-center justify-center shrink-0">
                     <Calendar className="h-5 w-5" />
                   </div>
                   <div>
@@ -243,7 +271,7 @@ export default function AppointmentConfirmationPage({
                 </div>
 
                 <div className="flex items-start gap-3">
-                  <div className="h-9 w-9 rounded-xl bg-teal-50 text-teal-700 flex items-center justify-center shrink-0">
+                  <div className="h-9 w-9 rounded-xl bg-purple-50 text-[#85348c] flex items-center justify-center shrink-0">
                     <Clock className="h-5 w-5" />
                   </div>
                   <div>
@@ -253,7 +281,7 @@ export default function AppointmentConfirmationPage({
                 </div>
 
                 <div className="flex items-start gap-3">
-                  <div className="h-9 w-9 rounded-xl bg-teal-50 text-teal-700 flex items-center justify-center shrink-0">
+                  <div className="h-9 w-9 rounded-xl bg-purple-50 text-[#85348c] flex items-center justify-center shrink-0">
                     <Sparkles className="h-5 w-5" />
                   </div>
                   <div>
@@ -262,14 +290,30 @@ export default function AppointmentConfirmationPage({
                   </div>
                 </div>
 
-                <div className="flex items-start gap-3">
-                  <div className="h-9 w-9 rounded-xl bg-teal-50 text-teal-700 flex items-center justify-center shrink-0">
-                    <MapPin className="h-5 w-5" />
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-start gap-3">
+                    <div className="h-9 w-9 rounded-xl bg-purple-50 text-[#85348c] flex items-center justify-center shrink-0">
+                      <MapPin className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wide">Lugar</p>
+                      <p className="text-xs font-bold text-slate-800">{appointment.clinicName}</p>
+                      {appointment.clinicAddress && (
+                        <p className="text-[11px] text-slate-500 mt-0.5">{appointment.clinicAddress}</p>
+                      )}
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wide">Lugar</p>
-                    <p className="text-xs font-semibold text-slate-700">{appointment.clinicName}</p>
-                  </div>
+                  {appointment.mapsUrl && (
+                    <a
+                      href={appointment.mapsUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-white hover:bg-teal-50 hover:text-teal-700 text-slate-600 rounded-lg text-[11px] font-semibold border border-slate-200 shadow-xs transition-colors shrink-0 self-center no-underline cursor-pointer"
+                    >
+                      <Navigation className="h-3 w-3 text-teal-600" />
+                      <span>Ver en Maps</span>
+                    </a>
+                  )}
                 </div>
               </div>
 
