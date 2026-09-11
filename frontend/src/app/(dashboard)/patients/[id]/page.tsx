@@ -7,7 +7,7 @@ import {
   Stethoscope, ArrowLeft, Clock, MapPin, Loader2, Building2, Edit3,
   Bell, Plus, Receipt, ChevronRight, X, UserCheck, Baby,
   BadgeCheck, Sparkles, ExternalLink, Tag as TagIcon, Save, Smile, MessageSquare,
-  Trash2, CheckSquare, Square, Image as ImageIcon, Camera
+  Trash2, CheckSquare, Square, Image as ImageIcon, Camera, Send, Send as SendIcon, RefreshCw
 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -20,8 +20,8 @@ import { triggerNewAppointmentModal } from "@/components/calendar/new-appointmen
 import { PaymentRegistrationModal } from "@/components/billing/payment-registration-modal";
 import { Odontogram, OdontogramData } from "@/components/appointments/odontogram";
 import { NewReminderModal } from "@/components/reminders/new-reminder-modal";
+import { EditReminderModal } from "@/components/reminders/edit-reminder-modal";
 import { addSystemNotification } from "@/components/layout/notification-center";
-import { Send as SendIcon } from "lucide-react";
 import { PhotoGallery } from "@/components/patients/photo-gallery";
 import { isImageDocument } from "@/lib/utils/document-utils";
 
@@ -52,6 +52,7 @@ type Patient = {
   billingCountry: string | null;
   odooPartnerId: number | null;
   aiSummary: string | null;
+  telegramChatId: string | null;
 };
 
 type Appointment = {
@@ -95,6 +96,7 @@ type Reminder = {
   subject: string | null;
   message: string;
   status: string;
+  error_message?: string | null;
 };
 
 type Document = {
@@ -334,7 +336,57 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
 
   // Reminders Modal State
   const [newReminderModalOpen, setNewReminderModalOpen] = useState(false);
+  const [editingReminder, setEditingReminder] = useState<Reminder | null>(null);
+  const [deletingReminder, setDeletingReminder] = useState<Reminder | null>(null);
+  const [isDeletingReminder, setIsDeletingReminder] = useState(false);
   const [sendingReminderId, setSendingReminderId] = useState<string | null>(null);
+
+  const confirmDeleteReminder = async () => {
+    if (!deletingReminder) return;
+    const idToDelete = deletingReminder.id;
+    setIsDeletingReminder(true);
+    // Optimistic local update so it disappears immediately
+    setReminders((prev) => prev.filter((r) => r.id !== idToDelete));
+    try {
+      const res = await fetch(`/api/reminders?id=${idToDelete}`, { method: "DELETE" });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        fetchAll();
+      } else {
+        alert(`Error: ${data.error || "No se pudo eliminar el recordatorio"}`);
+        fetchAll();
+      }
+    } catch (e: any) {
+      alert(`Error: ${e.message}`);
+      fetchAll();
+    } finally {
+      setIsDeletingReminder(false);
+      setDeletingReminder(null);
+    }
+  };
+
+  const handleDispatchReminder = async (r: Reminder) => {
+    setSendingReminderId(r.id);
+    try {
+      const res = await fetch("/api/reminders/send-now", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reminderId: r.id }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        alert(`Recordatorio enviado correctamente por ${r.channel}`);
+        fetchAll();
+      } else {
+        alert(`Error al enviar: ${data.error || "No se pudo despachar el mensaje"}`);
+        fetchAll();
+      }
+    } catch (e: any) {
+      alert(`Error de conexión: ${e.message}`);
+    } finally {
+      setSendingReminderId(null);
+    }
+  };
 
   // Patient Master Odontogram State
   const [patientOdontogram, setPatientOdontogram] = useState<OdontogramData>({});
@@ -362,9 +414,9 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
   const getPlanProgress = useCallback((plan: any) => {
     const planType = (plan?.treatment_type || "Ortodoncia").toLowerCase();
     const completedControlsCount = appointments.filter((a) => {
-      const isNotCancelled = a.status !== "Cancelada" && a.status !== "cancelada";
+      const isDone = a.status === "Realizada";
       const isControl = /control|mensualidad/i.test(a.reason || "");
-      if (!isNotCancelled || !isControl) return false;
+      if (!isDone || !isControl) return false;
 
       const reasonLower = (a.reason || "").toLowerCase();
       if (activePlans.length > 1) {
@@ -459,6 +511,7 @@ function toTitleCase(text: string): string {
         billingCountry: (p as any).billing_country ?? "España",
         odooPartnerId: (p as any).odoo_partner_id ?? null,
         aiSummary: (p as any).ai_summary ?? null,
+        telegramChatId: (p as any).telegram_chat_id ?? null,
       });
 
       // 2. Appointments
@@ -584,7 +637,7 @@ function toTitleCase(text: string): string {
       // 5. Reminders
       const { data: remindersData } = await (supabase as any)
         .from("reminders")
-        .select("id, reminder_type, channel, scheduled_at, subject, message, status")
+        .select("id, reminder_type, channel, scheduled_at, subject, message, status, error_message")
         .eq("patient_id", p.id)
         .order("scheduled_at", { ascending: true });
 
@@ -1693,6 +1746,7 @@ function toTitleCase(text: string): string {
                   const d = formatDate(r.scheduled_at);
                   const isWhatsapp = r.channel === "whatsapp";
                   const isEmail = r.channel === "email";
+                  const isTelegram = r.channel === "telegram";
                   const isPending = r.status === "pendiente";
 
                   return (
@@ -1701,9 +1755,10 @@ function toTitleCase(text: string): string {
                         <div className={`h-10 w-10 rounded-xl flex items-center justify-center shrink-0 border ${
                           isWhatsapp ? "bg-success/10 border-success/20 text-success" :
                           isEmail ? "bg-info/10 border-info/20 text-info" :
+                          isTelegram ? "bg-sky-500/10 border-sky-500/20 text-sky-400" :
                           "bg-purple-50 border-purple-100 text-purple-600"
                         }`}>
-                          {isWhatsapp ? <MessageSquare className="h-5 w-5" /> : isEmail ? <Mail className="h-5 w-5" /> : <Bell className="h-5 w-5" />}
+                          {isWhatsapp ? <MessageSquare className="h-5 w-5" /> : isEmail ? <Mail className="h-5 w-5" /> : isTelegram ? <Send className="h-5 w-5" /> : <Bell className="h-5 w-5" />}
                         </div>
                         <div>
                           <div className="flex items-center gap-2">
@@ -1711,6 +1766,7 @@ function toTitleCase(text: string): string {
                             <span className={`text-[10px] uppercase font-extrabold px-2 py-0.5 rounded-full ${
                               isWhatsapp ? "bg-success/15 text-success" :
                               isEmail ? "bg-info/15 text-info" :
+                              isTelegram ? "bg-sky-500/15 text-sky-400" :
                               "bg-purple-100 text-purple-800"
                             }`}>
                               {r.channel}
@@ -1720,10 +1776,16 @@ function toTitleCase(text: string): string {
                           <p className="text-xs text-muted-foreground mt-1 italic bg-muted/40 p-2 rounded-lg border border-border/60 max-w-lg">
                             &quot;{r.message}&quot;
                           </p>
+                          {r.status === "error" && r.error_message && (
+                            <p className="text-[11px] text-destructive mt-1.5 flex items-center gap-1.5 font-medium bg-destructive/10 px-2.5 py-1 rounded-lg border border-destructive/20 max-w-lg">
+                              <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                              <span>{r.error_message}</span>
+                            </p>
+                          )}
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1.5 shrink-0">
                         <span className={`text-[10px] px-2.5 py-0.5 rounded-full font-bold border ${getStatusBadge(r.status)}`}>
                           {r.status}
                         </span>
@@ -1733,33 +1795,62 @@ function toTitleCase(text: string): string {
                             size="sm"
                             variant="outline"
                             disabled={sendingReminderId === r.id}
-                            onClick={async () => {
-                              setSendingReminderId(r.id);
-                              try {
-                                const res = await fetch("/api/reminders/send-now", {
-                                  method: "POST",
-                                  headers: { "Content-Type": "application/json" },
-                                  body: JSON.stringify({ reminderId: r.id }),
-                                });
-                                const data = await res.json();
-                                if (data.success) {
-                                  alert(`Recordatorio enviado por ${r.channel}`);
-                                  fetchAll();
-                                } else {
-                                  alert(`Error: ${data.error || "No se pudo enviar"}`);
-                                }
-                              } catch (e: any) {
-                                alert(`Error: ${e.message}`);
-                              } finally {
-                                setSendingReminderId(null);
-                              }
-                            }}
+                            onClick={() => handleDispatchReminder(r)}
                             className="h-8 px-2.5 text-[11px] font-bold text-success bg-success/10 border-success/30 hover:bg-success/20 rounded-xl gap-1"
                           >
                             {sendingReminderId === r.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <SendIcon className="h-3 w-3" />}
                             Enviar Ahora
                           </Button>
                         )}
+
+                        {r.status === "error" && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={sendingReminderId === r.id}
+                            onClick={() => handleDispatchReminder(r)}
+                            className="h-8 px-2.5 text-[11px] font-bold text-amber-600 dark:text-amber-400 bg-amber-500/10 border-amber-500/30 hover:bg-amber-500/20 rounded-xl gap-1.5 shadow-xs"
+                            title="Reintentar el envío del recordatorio"
+                          >
+                            {sendingReminderId === r.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+                            Reintentar
+                          </Button>
+                        )}
+
+                        {r.status === "enviado" && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            disabled={sendingReminderId === r.id}
+                            onClick={() => handleDispatchReminder(r)}
+                            className="h-8 px-2 text-[11px] font-medium text-muted-foreground hover:text-foreground hover:bg-muted rounded-xl gap-1"
+                            title="Reenviar recordatorio al paciente"
+                          >
+                            {sendingReminderId === r.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
+                            Reenviar
+                          </Button>
+                        )}
+
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => setEditingReminder(r)}
+                          className="h-8 px-2.5 text-xs text-muted-foreground hover:text-foreground hover:bg-muted rounded-xl gap-1"
+                          title="Editar recordatorio o cambiar plataforma de envío"
+                        >
+                          <Edit3 className="h-3.5 w-3.5" />
+                          <span className="hidden sm:inline">Editar</span>
+                        </Button>
+
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => setDeletingReminder(r)}
+                          className="h-8 w-8 p-0 text-xs text-destructive/70 hover:text-destructive hover:bg-destructive/10 rounded-xl"
+                          title="Eliminar recordatorio"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
                       </div>
                     </div>
                   );
@@ -1786,9 +1877,93 @@ function toTitleCase(text: string): string {
           patientName={`${patient.firstName} ${patient.lastName}`}
           patientPhone={patient.phone || ""}
           patientEmail={patient.email || ""}
+          patientTelegramChatId={patient.telegramChatId || ""}
+          treatmentPlan={patient.treatmentPlan || ""}
           appointments={appointments}
           onSuccess={fetchAll}
         />
+      )}
+
+      {/* Edit Reminder Modal */}
+      {editingReminder && patient && (
+        <EditReminderModal
+          open={!!editingReminder}
+          onOpenChange={(open) => {
+            if (!open) setEditingReminder(null);
+          }}
+          reminder={editingReminder}
+          patientName={`${patient.firstName} ${patient.lastName}`}
+          patientPhone={patient.phone || ""}
+          patientEmail={patient.email || ""}
+          onSuccess={fetchAll}
+        />
+      )}
+
+      {/* Delete Reminder Confirmation Modal */}
+      {deletingReminder && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in">
+          <div className="bg-card rounded-3xl shadow-2xl border border-border w-full max-w-md overflow-hidden flex flex-col">
+            <div className="px-6 py-5 bg-gradient-to-r from-slate-900 to-slate-800 text-white flex items-center justify-between border-b border-slate-700/60">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-2xl bg-destructive/20 border border-destructive/40 flex items-center justify-center text-destructive">
+                  <Trash2 className="h-5 w-5" />
+                </div>
+                <div>
+                  <h2 className="text-base font-bold text-white">¿Eliminar Recordatorio?</h2>
+                  <p className="text-xs text-slate-300 font-medium">Esta acción no se puede deshacer</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setDeletingReminder(null)}
+                className="text-slate-300 hover:text-white p-1.5 rounded-xl transition-colors hover:bg-white/10"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4 bg-card">
+              <div className="bg-muted/40 p-3.5 rounded-2xl border border-border space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-foreground">{deletingReminder.subject || "Recordatorio"}</span>
+                  <span className="text-[10px] uppercase font-mono font-bold px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
+                    {deletingReminder.channel}
+                  </span>
+                </div>
+                <p className="text-xs text-muted-foreground italic line-clamp-3">
+                  &quot;{deletingReminder.message}&quot;
+                </p>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                El recordatorio será eliminado de forma permanente y ya no se enviará al paciente.
+              </p>
+            </div>
+
+            <div className="px-6 py-4 bg-muted/40 border-t border-border flex items-center justify-end gap-2">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                disabled={isDeletingReminder}
+                onClick={() => setDeletingReminder(null)}
+                className="rounded-xl text-xs font-semibold"
+              >
+                Cancelar
+              </Button>
+              <Button
+                type="button"
+                variant="destructive"
+                size="sm"
+                disabled={isDeletingReminder}
+                onClick={confirmDeleteReminder}
+                className="rounded-xl text-xs font-bold gap-1.5 shadow-sm"
+              >
+                {isDeletingReminder ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
+                Confirmar y Eliminar
+              </Button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* ── Documentos y Consentimientos (full width, bottom) ───── */}

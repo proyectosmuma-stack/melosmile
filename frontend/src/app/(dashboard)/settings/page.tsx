@@ -3,7 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
-import { Building2, Stethoscope, FlaskConical, ChevronRight, Settings, Palette } from "lucide-react";
+import { Building2, Stethoscope, FlaskConical, ChevronRight, Settings, Palette, Send } from "lucide-react";
 import { ThemeToggle } from "@/components/settings/theme-toggle";
 
 const sections = [
@@ -30,6 +30,14 @@ const sections = [
     icon: FlaskConical,
     color: "bg-(--brand-ai-from)/10 text-(--brand-ai-from)",
     badge: "50+ tratamientos",
+  },
+  {
+    title: "Mensajería",
+    description: "Configura los canales de recordatorios y confirmaciones a pacientes (WhatsApp, Telegram, Email).",
+    href: "/settings/messaging",
+    icon: Send,
+    color: "bg-warning/10 text-warning",
+    badge: "Recordatorios y avisos",
   },
 ];
 

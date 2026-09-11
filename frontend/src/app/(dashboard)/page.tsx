@@ -58,24 +58,20 @@ export default function DashboardPage() {
         }).length;
           
         // Billed this month (from billing_records)
-        let billingQuery = (supabase as any)
+        // Columns: calculated_total, created_at (no clinic_id in this table)
+        const { data: billingData } = await (supabase as any)
           .from("billing_records")
-          .select("total_amount, clinic_id")
-          .gte("date", firstDayStr);
-
-        if (selectedClinicId && selectedClinicId !== "all") {
-          billingQuery = billingQuery.eq("clinic_id", selectedClinicId);
-        }
+          .select("calculated_total")
+          .gte("created_at", firstDayStr);
           
-        const { data: billingData } = await billingQuery;
-        const totalBilled = billingData?.reduce((acc: number, record: any) => acc + Number(record.total_amount || 0), 0) || 0;
+        const totalBilled = billingData?.reduce((acc: number, record: any) => acc + Number(record.calculated_total || 0), 0) || 0;
         
         // Patients seen this month
         let patientsQuery = (supabase as any)
           .from("appointments")
           .select("patient_id, clinic_id")
           .gte("appointment_date", firstDayStr)
-          .in("status", ["completed", "in_progress", "Realizada", "realizada"]);
+          .eq("status", "Realizada"); // Only real status values: Realizada | Pendiente | Cancelada
 
         if (selectedClinicId && selectedClinicId !== "all") {
           patientsQuery = patientsQuery.eq("clinic_id", selectedClinicId);

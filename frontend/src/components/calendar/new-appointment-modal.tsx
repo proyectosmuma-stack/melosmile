@@ -287,6 +287,12 @@ export function NewAppointmentModalGlobal() {
           status: "Pendiente",
         });
 
+        // Disparar cadencia de 3 recordatorios automáticos (1 sem, 2 días, día de la cita)
+        fetch(`/api/appointments/${newAppt.id}/cadence`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+        }).catch((e) => console.warn("Error generando cadencia de recordatorios:", e));
+
         setIsOpen(false);
         // Reset form
         setTreatment("");

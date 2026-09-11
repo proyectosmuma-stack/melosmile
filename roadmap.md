@@ -19,6 +19,7 @@ Este documento establece el plan de desarrollo y próximas tareas activas para l
   - Bugfixes desplegados en Vercel Staging (RLS, fallbacks, base64 images).
   - Todo el sistema de Inteligencia Artificial (Scheduling, Clínico, Billing, General, Document Cleaner) validado end-to-end con bases de datos en la nube.
   - Blindaje multi-entorno Vercel: Sincronizadas las 11 variables de entorno de `n8nv2` y VPS en los 3 entornos de Vercel (`preview`, `production`, `development`) y fallbacks en código actualizados para eliminar cualquier referencia al dominio inactivo legacy.
+- ✅ **Modernización de Mensajería, Cadencia Automática y Gestión de Citas (2026-09-11):** Vinculación web de Telegram MTProto por QR sin SMS/terminal, enlaces One-Click de confirmación rápida con expiración (`/c/[token]`), cadencia automática de 3 etapas al agendar citas, rediseño de cabecera con PAC ID bajo avatar, acciones rápidas en iconos (€, editar, guardar, confirmar cita) y selector de estado con código de color dinámico del sistema.
 - ✅ **Endurecimiento RGPD de Fotografías Clínicas (2026-08-24):** Bucket `patient-documents` en PRIVADO, RLS `documents` sin políticas públicas (local+cloud), signed URLs TTL 3600s servidas por `/api/documents`. Despliegue cero-ventana-rota: staging → verificación → producción (`agenda.melosmile.com`) → verificación → flip del bucket. Verificación final: URL pública→400 · firmadas prod/staging→200.
 
 ---
@@ -141,4 +142,7 @@ Este documento establece el plan de desarrollo y próximas tareas activas para l
 - [ ] **Paridad storage dev-local** (opcional): sincronizar objetos/buckets al Supabase local o apuntar env dev a cloud para que la galería local no muestre rotas.
 - [x] **Persistencia de Alertas Campanita en Producción y Staging**: Tabla `system_notifications` creada y operativa en Supabase Producción y Staging.
 - [ ] **Migración `system_notifications` en Supabase Local**: Ejecutar `supabase db push` en local al levantar Colima (`supabase/migrations/20260909000000_create_system_notifications.sql`).
+- [x] **Gestión y Despacho de Recordatorios (Fase 1)**: Modal de edición/eliminación in-app en ficha de paciente (`edit-reminder-modal.tsx`), corrección de contraste en modo oscuro, y creación del workflow n8n `[MELOSMILE] Reminders Dispatcher` (`OqOwzzat6rh0R1Jr`).
+- [ ] **Mensajería Directa a Número de Paciente (Sin Bots - Fase 2)**: Conectar sesión Telegram MTProto (GramJS/Telethon) o WhatsApp Cloud API para enviar mensajes directamente al teléfono sin exigir interacción previa con un bot. (Agendada en Notion para 2026-09-11).
+
 

@@ -296,5 +296,64 @@ Durante esta sesión, tanto Antigravity como Mumabot (OpenCode) colaboraron en u
   * 67 pacientes en producción con secuencia ininterrumpida `PAC-001` a `PAC-067`.
   * `getNextHistoriaId()` probado en vivo: Devuelve con total precisión **`PAC-068`**.
 
+---
 
+## 15. Sesión 10/09/2026 — Overhaul Integral de Recordatorios y Arquitectura de Mensajería Directa (Completada ✅)
+
+### A. Diagnóstico y Corrección de UX en Ficha de Paciente (`/patients/[id]`)
+* **Problema Original**: En la pestaña de recordatorios de la ficha del paciente, los botones de edición y eliminación no permitían modificar la plataforma ni el mensaje, el contraste en modo oscuro hacía invisibles los textos y los diálogos nativos `window.confirm()` generaban bloqueos visuales.
+* **Solución Implementada**:
+  * **Edición y Cambio de Plataforma (`edit-reminder-modal.tsx`)**: Reconstruido con selector de plataforma (WhatsApp, Telegram, Email, SMS), selector de estado, fecha programada y textarea con tokens semánticos claros (`text-foreground bg-background`).
+  * **Modal de Eliminación Personalizado**: Sustituido el `confirm()` del navegador por un modal reactivo de confirmación in-app tanto en la fila del listado (`page.tsx`) como dentro del modal de edición.
+  * **API de Eliminación (`DELETE /api/reminders`)**: Implementado endpoint seguro que valida existencia y elimina físicamente el registro.
+  * **Corrección de Tokens de Tema (`globals.css`, `input.tsx`, `textarea.tsx`)**: Saneados tokens `--sidebar-muted` y `--sidebar-muted-foreground` en `.dark` para evitar textos negros sobre fondos oscuros.
+
+### B. Diagnóstico y Corrección del Despachador de Envíos (`/api/reminders/send-now`)
+* **Causa Raíz de Envíos Fallidos**: El endpoint intentaba contactar a un dominio inexistente (`https://n8n.mumaleads.com`) con un timeout silencioso que marcaba falsamente `status: "enviado"`.
+* **Creación de Workflow en n8n v2 Oficial**:
+  * Creado y activado el workflow **`[MELOSMILE] Reminders Dispatcher`** (ID: `OqOwzzat6rh0R1Jr`) en `https://n8nv2.mumaweb.com/webhook/melosmile-reminders-dispatcher`.
+  * Integrado con el bot oficial de Melosmile (`7539054739:AAH...`) para despacho inmediato a Telegram.
+  * Actualizado `send-now/route.ts` para capturar respuestas reales, registrar logs en `reminder_events` y auto-detectar el `telegram_chat_id` del paciente mediante `getUpdates` del bot.
+
+### C. Plan de Arquitectura: Mensajería Directa a Número de Teléfono (Sin Bots)
+* **Limitación de Telegram Bot API**: La API estándar de bots (`sendMessage`) exige obligatoriamente un `chat_id` numérico obtenido tras interacción previa (`/start`). No permite enviar mensajes a números de teléfono en frío.
+* **Hoja de Ruta Cumplida (11/09/2026)**:
+  1. Implementado Telegram MTProto Directo vía QR y envío sin bots.
+  2. Implementado enlace web One-Click de confirmación con expiración.
+
+---
+
+## 16. Sesión 11/09/2026 — Telegram QR, Enlace de Confirmación, Cadencia Automática y Rediseño de Citas (Completada ✅)
+
+### A. Vinculación Telegram MTProto por Código QR Web
+* **Módulo SSE en Tiempo Real (`/api/telegram/qr`)**: Endpoint con Server-Sent Events que genera y rota códigos QR MTProto cada 30s. Al escanear desde la app de Telegram del móvil (*Ajustes ➔ Dispositivos ➔ Vincular dispositivo*), vincula la sesión de la clínica en Supabase sin usar comandos de terminal ni SMS.
+* **Modal Visual (`TelegramQrModal.tsx`)**: Diálogo con temporizador discreto (`🔄 Se actualiza en XXs si no se escanea`), feedback en vivo y cierre automático.
+* **Endpoint de Desvinculación (`/api/telegram/unlink`)**: Permite revocar o cambiar de número con un clic.
+* **Ajustes de Mensajería Limpios (`/settings/messaging`)**: Vista simplificada con credenciales técnicas colapsadas en un acordeón desplegable.
+
+### B. Enlace Mágico de Confirmación One-Click (`/c/[token]`)
+* **Página Pública y Segura (`frontend/src/app/c/[token]/page.tsx`)**: Interfaz responsive mobile-first con branding MeloSmile, sin login para el paciente.
+* **Expiración Automática**: El enlace queda inoperativo una vez transcurrida la fecha/hora de la cita (`isExpired: true`), protegiendo la agenda de confirmaciones tardías.
+* **Acciones en 1 Clic**: Botón verde de confirmación inmediata y botón de cancelación con notas opcionales.
+* **Acceso Público en Middleware (`middleware.ts`)**: Añadidas excepciones para `/c/*` y endpoints de confirmación.
+* **Enlaces Clicables Reales**: Normalización de dominios para que las apps móviles de Telegram y WhatsApp reconozcan los TLDs y activen el hipervínculo azul interactivo (`https://agenda.melosmile.com/c/[id]`).
+
+### C. Cadencia Automática de 3 Recordatorios
+* **Módulo de Cadencia (`cadence.ts`)**:
+  * *1 semana antes (09:00)*: Recordatorio con link de confirmación.
+  * *2 días antes (09:00)*: Condicional (amistoso si ya confirmó, link si está pendiente).
+  * *El día de la cita (08:30)*: Aviso de cortesía de última hora.
+* **Integración Automática (`new-appointment-modal.tsx`)**: Disparo de la cadencia en segundo plano al agendar cualquier cita en el calendario.
+
+### D. Rediseño de la Cabecera de la Cita (`/appointments/[id]`)
+* **Identificación del Paciente**: Número de historia clínica (ej. `PAC-001`) colocado como píldora debajo del avatar del paciente.
+* **Barra de Acciones en Iconos**:
+  * `Contabilidad (€)`: Icono verde `Euro` con tooltip.
+  * `Modificar Cita`: Icono azul `Pencil` con tooltip.
+  * `Guardar Cita`: Icono `Save` con spinner reactivo.
+* **Acción de Mensajería / Confirmación**: Botón con icono `MessageSquare` y texto `[Enviar Confirmación]` o `[Mensajería]`, evitando confusión con el estado clínico.
+* **Dropdown de Estado**: Selector con colores reactivos asignados por el sistema (amarillo, azul, morado, verde, rojo) y viñetas circulares.
+
+### E. Despacho In-Process Confiable (`dispatchReminder`)
+* Desacoplado el despacho a un módulo independiente en servidor (`frontend/src/lib/reminders/dispatch.ts`), resolviendo el error 401 que dejaba los recordatorios en estado pendiente al pulsar "Enviar de Inmediato".
 

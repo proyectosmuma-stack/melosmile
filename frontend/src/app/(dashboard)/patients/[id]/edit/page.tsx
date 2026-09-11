@@ -350,10 +350,14 @@ export default function EditPatientPage({ params }: { params: Promise<{ id: stri
       // After successful Supabase update, check for billing changes
       const newValues: PatientForm = {
         ...form,
+        ...formToSave,
         full_name: `${form.first_name} ${form.last_name}`,
       };
 
-      const changed = billingFields.some((f) => (oldValues as any)[f] !== (newValues as any)[f]);
+      const changeFields = form.billing_same_as_contact
+        ? [...billingFields, 'first_name', 'last_name', 'dni_nie', 'address', 'address_2', 'postal_code', 'city', 'province', 'country']
+        : billingFields;
+      const changed = changeFields.some((f) => (oldValues as any)[f] !== (newValues as any)[f]);
 
       if (changed) {
         try {
