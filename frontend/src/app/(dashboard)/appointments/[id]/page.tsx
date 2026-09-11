@@ -6,7 +6,7 @@ import {
   User, Calendar as CalendarIcon, Clock, Building2, Stethoscope, FileText, Upload,
   CreditCard, MessageSquare, CheckCircle2, Save, Loader2, AlertCircle, ArrowLeft, Receipt,
   TrendingDown, TrendingUp, AlertTriangle, FlaskConical, Plus, Sparkles, ExternalLink,
-  Pill, Activity, ShieldAlert, ChevronRight, Check, DollarSign, Settings2, Trash2, Camera, Image as ImageIcon, UserCheck, Pencil
+  Pill, Activity, ShieldAlert, ChevronRight, Check, Euro, Settings2, Trash2, Camera, Image as ImageIcon, UserCheck, Pencil, Bell, Send
 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -19,6 +19,7 @@ import { supabase } from "@/lib/supabase/client";
 import { PaymentRegistrationModal } from "@/components/billing/payment-registration-modal";
 import { Odontogram, OdontogramData } from "@/components/appointments/odontogram";
 import { resolveDocumentUrl } from "@/lib/utils/document-utils";
+import { NewReminderModal } from "@/components/reminders/new-reminder-modal";
 
 type AppointmentData = {
   id: string;
@@ -121,6 +122,26 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
   const [editClinicId, setEditClinicId] = useState("");
   const [editProfessionalId, setEditProfessionalId] = useState("");
   const [editReason, setEditReason] = useState("");
+  const [reminderModalOpen, setReminderModalOpen] = useState(false);
+
+  function getStatusBadgeClass(st: string) {
+    switch (st) {
+      case "Confirmada":
+        return "bg-info/15 text-info border-info/40";
+      case "Pendiente":
+        return "bg-warning/15 text-warning border-warning/40";
+      case "Realizada":
+        return "bg-success/15 text-success border-success/40";
+      case "Cancelada":
+        return "bg-destructive/15 text-destructive border-destructive/40";
+      case "En Proceso":
+        return "bg-purple-500/15 text-purple-400 border-purple-500/40";
+      case "No Presentado":
+        return "bg-zinc-500/15 text-zinc-400 border-zinc-500/40";
+      default:
+        return "bg-card text-foreground border-border";
+    }
+  }
 
   const statusItems = [
     { value: "Pendiente", label: "Pendiente" },
@@ -748,31 +769,34 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
       <div className="bg-card border border-border rounded-2xl shadow-sm p-6 space-y-4">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-start gap-4">
-            {/* Patient Avatar Icon Box with AI Gradient Ring */}
-            <div className={`relative transition-all duration-300 shrink-0 ${
-              isAiAnalyzed
-                ? "p-[3px] rounded-[18px] bg-gradient-to-tr from-violet-600 via-purple-500 to-indigo-500 shadow-md shadow-purple-500/25"
-                : ""
-            }`}>
-              <div className="h-14 w-14 rounded-2xl bg-primary/10 border border-primary/10 flex items-center justify-center text-primary font-black text-xl">
-                {appt.patientName[0]}
+            {/* Patient Avatar Column: Icon Box + Historia ID underneath */}
+            <div className="flex flex-col items-center shrink-0">
+              <div className={`relative transition-all duration-300 ${
+                isAiAnalyzed
+                  ? "p-[3px] rounded-[18px] bg-gradient-to-tr from-violet-600 via-purple-500 to-indigo-500 shadow-md shadow-purple-500/25"
+                  : ""
+              }`}>
+                <div className="h-14 w-14 rounded-2xl bg-primary/10 border border-primary/10 flex items-center justify-center text-primary font-black text-xl">
+                  {appt.patientName[0]}
+                </div>
+                {isAiAnalyzed && (
+                  <span
+                    title="Esta cita ha sido analizada automáticamente por la IA de Melosmile"
+                    className="absolute -top-2 -right-2 bg-gradient-to-r from-violet-600 to-purple-600 text-white text-[9px] font-extrabold px-2 py-0.5 rounded-full shadow-md flex items-center gap-0.5 border-2 border-white"
+                  >
+                    <Sparkles className="h-2.5 w-2.5" /> IA
+                  </span>
+                )}
               </div>
-              {isAiAnalyzed && (
-                <span
-                  title="Esta cita ha sido analizada automáticamente por la IA de Melosmile"
-                  className="absolute -top-2 -right-2 bg-gradient-to-r from-violet-600 to-purple-600 text-white text-[9px] font-extrabold px-2 py-0.5 rounded-full shadow-md flex items-center gap-0.5 border-2 border-white"
-                >
-                  <Sparkles className="h-2.5 w-2.5" /> IA
-                </span>
-              )}
+              {/* Número de paciente debajo del avatar como solicitó el usuario */}
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-primary/10 text-primary border border-primary/20 mt-1.5 text-center block tracking-wide">
+                {appt.patientHistoriaId}
+              </span>
             </div>
 
             <div>
               <div className="flex items-center gap-2 flex-wrap">
                 <h1 className="text-2xl font-black text-foreground">{appt.patientName}</h1>
-                <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/10">
-                  {appt.patientHistoriaId}
-                </span>
               </div>
               <p className="text-xs text-muted-foreground flex flex-wrap items-center gap-3 mt-1">
                 <span className="flex items-center gap-1 font-semibold text-foreground">
@@ -797,8 +821,8 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3">
-            {/* Quick Action Toolbar for Expanded Appointment Options */}
+          <div className="flex flex-wrap items-center gap-2.5">
+            {/* Quick Action Toolbar with icons for Contabilidad, Modificar and Recordatorios */}
             <div className="flex items-center gap-1 bg-muted/80 p-1 rounded-xl border border-border">
               {/* Button 1: Dr. Colaborador */}
               <Button
@@ -806,35 +830,34 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
                 variant="ghost"
                 size="sm"
                 onClick={() => setShowGuestPanel(!showGuestPanel)}
-                title="Añadir o editar Dr. Invitado / Colaborador"
-                className={`h-8 px-3 rounded-lg text-xs font-bold gap-1.5 transition-all cursor-pointer ${
+                title={guestDoctor ? `Dr. Invitado: ${guestDoctor}` : "Añadir o editar Dr. Invitado / Colaborador"}
+                className={`h-8 px-2.5 rounded-lg text-xs font-bold gap-1.5 transition-all cursor-pointer ${
                   showGuestPanel || guestDoctor
                     ? "bg-primary text-white shadow-xs hover:bg-primary/90"
                     : "text-foreground hover:bg-card hover:text-foreground"
                 }`}
               >
                 <UserCheck className="h-3.5 w-3.5" />
-                {guestDoctor ? "Dr. Invitado ✓" : "Dr. Colaborador"}
+                <span className="hidden sm:inline">{guestDoctor ? "Dr. Invitado ✓" : "Colaborador"}</span>
               </Button>
 
-              {/* Button 2: Contabilidad ($) */}
+              {/* Button 2: Contabilidad (€) convertido a icono */}
               <Button
                 type="button"
                 variant="ghost"
                 size="sm"
                 onClick={() => setShowFinancials(!showFinancials)}
-                title="Mostrar u ocultar panel de contabilidad ($)"
-                className={`h-8 px-3 rounded-lg text-xs font-bold gap-1.5 transition-all cursor-pointer ${
+                title="Contabilidad y finanzas de la cita (€)"
+                className={`h-8 w-8 p-0 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                   showFinancials
                     ? "bg-success text-white shadow-xs hover:bg-success/90"
                     : "text-foreground hover:bg-card hover:text-foreground"
                 }`}
               >
-                <DollarSign className="h-3.5 w-3.5" />
-                Contabilidad ($)
+                <Euro className="h-4 w-4" />
               </Button>
 
-              {/* Button 3: Modificar Cita */}
+              {/* Button 3: Modificar Cita convertido a icono */}
               <Button
                 type="button"
                 variant="ghost"
@@ -857,33 +880,78 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
                   }
                 }}
                 title="Modificar fecha, hora, sede o doctor de esta cita"
-                className="h-8 px-3 rounded-lg text-xs font-bold gap-1.5 transition-all text-foreground hover:bg-card hover:text-info border border-border bg-card shadow-2xs cursor-pointer"
+                className="h-8 w-8 p-0 rounded-lg text-xs font-bold transition-all text-foreground hover:bg-card hover:text-info border border-border bg-card shadow-2xs cursor-pointer"
               >
-                <Pencil className="h-3.5 w-3.5 text-info" />
-                Modificar Cita
+                <Pencil className="h-4 w-4 text-info" />
+              </Button>
+
+              {/* Button 4: Recordatorio / Enviar Confirmación con icono de mensajería */}
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setReminderModalOpen(true)}
+                title={status !== "Confirmada" ? "Enviar mensaje recordatorio para confirmar la cita" : "Enviar mensaje o recordatorio al paciente"}
+                className={`h-8 px-2.5 rounded-lg text-xs font-bold gap-1.5 transition-all cursor-pointer ${
+                  status !== "Confirmada"
+                    ? "bg-amber-500/15 text-amber-500 border border-amber-500/30 hover:bg-amber-500/25"
+                    : "text-foreground hover:bg-card hover:text-sky-400"
+                }`}
+              >
+                <MessageSquare className="h-4 w-4" />
+                <span className="hidden sm:inline text-[11px] font-bold">
+                  {status !== "Confirmada" ? "Enviar Confirmación" : "Mensajería"}
+                </span>
               </Button>
             </div>
 
+            {/* Select con color asignado en el sistema para cada estado */}
             <Select items={statusItems} value={status} onValueChange={(val) => setStatus(val || "")}>
-              <SelectTrigger className="w-[140px] bg-card border-border text-xs font-bold shadow-xs h-9">
+              <SelectTrigger className={`w-[145px] border text-xs font-bold shadow-xs h-9 transition-colors ${getStatusBadgeClass(status)}`}>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="Pendiente">Pendiente</SelectItem>
-                <SelectItem value="Confirmada">Confirmada</SelectItem>
-                <SelectItem value="En Proceso">En Proceso</SelectItem>
-                <SelectItem value="Realizada">Realizada (Completada)</SelectItem>
-                <SelectItem value="Cancelada">Cancelada</SelectItem>
-                <SelectItem value="No Presentado">No Presentado</SelectItem>
+                <SelectItem value="Pendiente">
+                  <span className="flex items-center gap-2 text-warning font-semibold">
+                    <span className="h-2 w-2 rounded-full bg-warning" /> Pendiente
+                  </span>
+                </SelectItem>
+                <SelectItem value="Confirmada">
+                  <span className="flex items-center gap-2 text-info font-semibold">
+                    <span className="h-2 w-2 rounded-full bg-info" /> Confirmada
+                  </span>
+                </SelectItem>
+                <SelectItem value="En Proceso">
+                  <span className="flex items-center gap-2 text-purple-400 font-semibold">
+                    <span className="h-2 w-2 rounded-full bg-purple-400" /> En Proceso
+                  </span>
+                </SelectItem>
+                <SelectItem value="Realizada">
+                  <span className="flex items-center gap-2 text-success font-semibold">
+                    <span className="h-2 w-2 rounded-full bg-success" /> Realizada
+                  </span>
+                </SelectItem>
+                <SelectItem value="Cancelada">
+                  <span className="flex items-center gap-2 text-destructive font-semibold">
+                    <span className="h-2 w-2 rounded-full bg-destructive" /> Cancelada
+                  </span>
+                </SelectItem>
+                <SelectItem value="No Presentado">
+                  <span className="flex items-center gap-2 text-zinc-400 font-semibold">
+                    <span className="h-2 w-2 rounded-full bg-zinc-400" /> No Presentado
+                  </span>
+                </SelectItem>
               </SelectContent>
             </Select>
 
+            {/* Guardar convertido a icono */}
             <Button
               onClick={handleSave}
               disabled={saving}
-              className="gap-2 bg-primary hover:bg-primary/90 text-white font-bold text-xs rounded-xl h-9 shadow-md shadow-primary/20 cursor-pointer"
+              title="Guardar cambios de la cita"
+              className="h-9 w-9 p-0 bg-primary hover:bg-primary/90 text-white rounded-xl shadow-md shadow-primary/20 cursor-pointer"
             >
-              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} Guardar
+              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
             </Button>
           </div>
         </div>
@@ -1566,6 +1634,21 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
             </DialogFooter>
           </DialogContent>
         </Dialog>
+      )}
+
+      {reminderModalOpen && appt && (
+        <NewReminderModal
+          open={reminderModalOpen}
+          onOpenChange={setReminderModalOpen}
+          patientId={appt.patientId}
+          patientName={appt.patientName}
+          patientPhone={appt.patientPhone}
+          patientEmail={appt.patientEmail}
+          appointments={[{ id: appt.id, appointment_date: appt.appointment_date, reason: appt.reason }]}
+          onSuccess={() => {
+            alert("Recordatorio programado correctamente para esta cita");
+          }}
+        />
       )}
     </div>
   );

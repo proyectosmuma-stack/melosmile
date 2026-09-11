@@ -378,4 +378,21 @@ El test de verificación reveló que **`google/gemini-3.1-pro-preview` tiene quo
    - Añadidos textos de fallback claros (`Sin teléfono`, `Sin email`, `Sin DNI`).
    - Desplegado y verificado en producción `https://agenda.melosmile.com/patients`.
 
+---
 
+## 📲 Despacho de Recordatorios y Mensajería Directa a Pacientes (10/09/2026)
+
+1. **Gestión Completa de Recordatorios en Ficha (`/patients/[id]`)**:
+   - Soporte para edición completa (modal `edit-reminder-modal.tsx`), cambio de plataforma de envío (WhatsApp, Telegram, Email, SMS), actualización de fecha/hora programada y edición del mensaje.
+   - Eliminación in-app con confirmación modal (`DELETE /api/reminders`).
+   - Saneamiento de tokens CSS en modo oscuro (`globals.css`, `input.tsx`, `textarea.tsx`).
+2. **Despachador n8n v2 (`[MELOSMILE] Reminders Dispatcher`)**:
+   - Workflow `OqOwzzat6rh0R1Jr` en `https://n8nv2.mumaweb.com/webhook/melosmile-reminders-dispatcher`.
+   - Conexión con Bot Telegram de Melosmile (`7539054739:AAH...`).
+   - Saneado `send-now/route.ts` para capturar errores reales e insertar eventos en `reminder_events`.
+3. **Arquitectura para Envío Directo al Teléfono del Paciente (Sin Bots)**:
+   - Los bots de Telegram requieren `chat_id` numérico y que el paciente interactúe previamente (`/start`).
+   - Para enviar mensajes directos como clínica sin exigir que el paciente use bots:
+     - **Telegram MTProto (GramJS/Telethon)**: Conectar una sesión oficial con `api_id` y `api_hash` de la línea telefónica de la clínica para enviar directamente al número del paciente (+34...).
+     - **WhatsApp Business API (Cloud API)**: Envío directo de plantillas de recordatorio al número de WhatsApp del paciente.
+   - Tarea agendada en Notion para 2026-09-11 bajo el proyecto *Sistema Melosmile*.

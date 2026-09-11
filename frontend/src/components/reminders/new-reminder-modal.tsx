@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import {
-  Bell, Calendar, Clock, Mail, MessageSquare, Send, X, Loader2, Sparkles, Check
+  Bell, Calendar, Clock, Mail, MessageSquare, Send, X, Loader2, Sparkles, Check, Smartphone
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,9 +16,19 @@ interface NewReminderModalProps {
   patientName: string;
   patientPhone?: string;
   patientEmail?: string;
+  patientTelegramChatId?: string;
+  treatmentPlan?: string | null;
   appointments?: Array<{ id: string; appointment_date: string; reason: string }>;
   onSuccess?: () => void;
 }
+
+const PRESET_TEMPLATES = [
+  { id: "recordatorio_cita", label: "📅 Recordatorio de Cita" },
+  { id: "cambio_alineador", label: "🦷 Cambio Alineador" },
+  { id: "seguimiento", label: "🩺 Seguimiento" },
+  { id: "pago_pendiente", label: "💳 Aviso de Pago" },
+  { id: "personalizado", label: "📝 Personalizado" },
+];
 
 export function NewReminderModal({
   open,
@@ -27,17 +37,22 @@ export function NewReminderModal({
   patientName,
   patientPhone,
   patientEmail,
+  patientTelegramChatId,
+  treatmentPlan,
   appointments = [],
   onSuccess,
 }: NewReminderModalProps) {
   const [loading, setLoading] = useState(false);
-  const [channel, setChannel] = useState<"whatsapp" | "email" | "sms">("whatsapp");
+  // Selección múltiple de canales
+  const [selectedChannels, setSelectedChannels] = useState<string[]>(["telegram"]);
   const [reminderType, setReminderType] = useState<string>("recordatorio_cita");
   const [selectedAppointmentId, setSelectedAppointmentId] = useState<string>("");
   const [scheduledDate, setScheduledDate] = useState<string>("");
   const [scheduledTime, setScheduledTime] = useState<string>("09:00");
   const [subject, setSubject] = useState<string>("");
   const [message, setMessage] = useState<string>("");
+  // Campo dinámico para alineador
+  const [alignerNumber, setAlignerNumber] = useState<string>("1");
 
   useEffect(() => {
     if (open) {
@@ -45,47 +60,87 @@ export function NewReminderModal({
       const tomorrow = new Date();
       tomorrow.setDate(tomorrow.getDate() + 1);
       setScheduledDate(tomorrow.toISOString().substring(0, 10));
+
+      // Auto-detectar número de alineador si existe en el plan de tratamiento
+      if (treatmentPlan) {
+        const match = treatmentPlan.match(/alineador\s*#?(\d+)/i) || treatmentPlan.match(/etapa\s*#?(\d+)/i);
+        if (match && match[1]) {
+          setAlignerNumber(match[1]);
+        }
+      }
       
       if (appointments.length > 0) {
         setSelectedAppointmentId(appointments[0].id);
-        applyTemplate("recordatorio_cita", appointments[0]);
+        applyTemplate("recordatorio_cita", appointments[0], alignerNumber);
       } else {
-        applyTemplate("recordatorio_cita");
+        applyTemplate("recordatorio_cita", undefined, alignerNumber);
       }
     }
   }, [open]);
 
-  const applyTemplate = (type: string, appt?: { id: string; appointment_date: string; reason: string }) => {
+  const toggleChannel = (ch: string) => {
+    setSelectedChannels((prev) => {
+      if (prev.includes(ch)) {
+        if (prev.length === 1) return prev; // Al menos 1 canal debe estar seleccionado
+        return prev.filter((c) => c !== ch);
+      } else {
+        return [...prev, ch];
+      }
+    });
+  };
+
+  const applyTemplate = (
+    type: string,
+    appt?: { id: string; appointment_date: string; reason: string },
+    currentAlignerNum = alignerNumber
+  ) => {
     setReminderType(type);
     const firstName = patientName.split(" ")[0];
     const apptDateStr = appt
       ? new Date(appt.appointment_date).toLocaleDateString("es-ES", { day: "2-digit", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" })
-      : "[Fecha y Hora]";
+      : "[Fecha y Hora de Cita]";
+
+    const isLocal = typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1");
+    const baseUrl = isLocal ? "https://agenda.melosmile.com" : (typeof window !== "undefined" ? window.location.origin : "https://agenda.melosmile.com");
+    const confirmLink = appt ? `${baseUrl}/c/${appt.id}` : `${baseUrl}/c/confirmar`;
 
     if (type === "recordatorio_cita") {
       setSubject(`Recordatorio de tu cita en Melosmile`);
-      setMessage(`Hola ${firstName}, te recordamos que tienes una cita programada para ${appt ? appt.reason : "tu consulta"} el día ${apptDateStr}. Si necesitas modificarla, por favor avísanos con antelación. ¡Te esperamos en Melosmile!`);
-    } else if (type === "confirmar_cita") {
-      setSubject(`Por favor confirma tu cita — Melosmile`);
-      setMessage(`Hola ${firstName}, necesitamos que confirmes tu asistencia a la cita de ${appt ? appt.reason : "tratamiento"} el día ${apptDateStr}. Responde a este mensaje para confirmar o reagendar.`);
+      setMessage(`Hola ${firstName}, te recordamos que tienes una cita programada para ${appt ? appt.reason : "tu consulta"} el día ${apptDateStr}.
+
+Por favor, confirma o gestiona tu asistencia con un clic en este enlace:
+${confirmLink}
+
+¡Te esperamos en Melosmile!`);
     } else if (type === "cambio_alineador") {
-      setSubject(`Recordatorio: Cambio de Alineador Dental`);
-      setMessage(`Hola ${firstName}, hoy corresponde cambiar a tu siguiente juego de alineadores transparentes. Recuerda usar los masticadores y mantener la higiene adecuada. ¡Seguimos avanzando en tu sonrisa!`);
-    } else if (type === "pago_pendiente") {
-      setSubject(`Aviso de gestión de pago pendiente — Melosmile`);
-      setMessage(`Estimado/a ${firstName}, te escribimos de Melosmile para recordarte que tienes un importe pendiente correspondiente a tus tratamientos. Quedamos a tu disposición para ayudarte con la gestión.`);
+      setSubject(`Recordatorio: Cambio de Alineador Dental #${currentAlignerNum}`);
+      setMessage(`Hola ${firstName}, hoy corresponde cambiar al juego de alineadores #${currentAlignerNum} de tu tratamiento de ortodoncia invisible. Recuerda usarlos al menos 22 horas al día y mantenerlos limpios. ¡Seguimos avanzando en tu sonrisa!`);
     } else if (type === "seguimiento") {
       setSubject(`¿Cómo te encuentras tras tu cita? — Melosmile`);
-      setMessage(`Hola ${firstName}, esperamos que te encuentres muy bien tras tu reciente intervención en Melosmile. Escríbenos si tienes alguna molestia o duda sobre tu pauta de medicación.`);
+      setMessage(`Hola ${firstName}, esperamos que te encuentres muy bien tras tu reciente intervención de ${appt ? appt.reason : "tratamiento"} en Melosmile. Escríbenos por aquí si tienes alguna molestia o duda sobre tu medicación. ¡Un saludo!`);
+    } else if (type === "pago_pendiente") {
+      setSubject(`Aviso de gestión de pago pendiente — Melosmile`);
+      setMessage(`Estimado/a ${firstName}, te escribimos de Melosmile para recordarte la gestión del pago pendiente correspondiente a tu tratamiento. Si necesitas consultar formas de pago o facilidades, avísanos con gusto.`);
     } else {
       setSubject(`Notificación de Melosmile`);
       setMessage(`Hola ${firstName}, `);
     }
   };
 
+  const handleAlignerNumberChange = (newVal: string) => {
+    setAlignerNumber(newVal);
+    if (reminderType === "cambio_alineador") {
+      applyTemplate("cambio_alineador", undefined, newVal);
+    }
+  };
+
   const handleCreate = async (sendImmediately = false) => {
     if (!scheduledDate || !message.trim()) {
       alert("Por favor completa la fecha y el mensaje del recordatorio.");
+      return;
+    }
+    if (selectedChannels.length === 0) {
+      alert("Debes seleccionar al menos un canal de envío (Telegram, WhatsApp, etc.).");
       return;
     }
 
@@ -100,20 +155,24 @@ export function NewReminderModal({
           patientId,
           appointmentId: selectedAppointmentId || null,
           reminderType,
-          channel,
+          channels: selectedChannels,
           scheduledAt: scheduledDateTime,
           subject,
           message,
           patientName,
           patientPhone,
           patientEmail,
+          patientTelegramChatId,
           sendImmediately,
         }),
       });
 
       const data = await res.json();
       if (data.success) {
-        alert(sendImmediately ? "Recordatorio enviado correctamente" : "Recordatorio programado correctamente");
+        const count = data.count || 1;
+        alert(sendImmediately 
+          ? `¡${count} recordatorio(s) enviado(s) de inmediato!` 
+          : `¡${count} recordatorio(s) programado(s) exitosamente!`);
         onOpenChange(false);
         if (onSuccess) onSuccess();
       } else {
@@ -153,70 +212,63 @@ export function NewReminderModal({
 
         {/* Body Form */}
         <div className="p-6 overflow-y-auto space-y-5 flex-1">
-          {/* Channel Selector */}
+          {/* Multi-Channel Selector */}
           <div className="space-y-2">
-            <Label className="text-xs font-bold text-foreground uppercase tracking-wider">Canal de Envío</Label>
-            <div className="grid grid-cols-3 gap-2">
-              <button
-                type="button"
-                onClick={() => setChannel("whatsapp")}
-                className={`flex items-center justify-center gap-2 p-3 rounded-2xl border text-xs font-bold transition-all ${
-                  channel === "whatsapp"
-                    ? "bg-success/10 border-success text-success ring-2 ring-success/20 shadow-xs"
-                    : "bg-card border-border text-muted-foreground hover:bg-muted"
-                }`}
-              >
-                <MessageSquare className="h-4 w-4 text-success" /> WhatsApp
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setChannel("email")}
-                className={`flex items-center justify-center gap-2 p-3 rounded-2xl border text-xs font-bold transition-all ${
-                  channel === "email"
-                    ? "bg-info/10 border-info text-info ring-2 ring-info/20 shadow-xs"
-                    : "bg-card border-border text-muted-foreground hover:bg-muted"
-                }`}
-              >
-                <Mail className="h-4 w-4 text-info" /> Email
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setChannel("sms")}
-                className={`flex items-center justify-center gap-2 p-3 rounded-2xl border text-xs font-bold transition-all ${
-                  channel === "sms"
-                    ? "bg-primary/10 border-primary/60 text-primary ring-2 ring-primary/20 shadow-xs"
-                    : "bg-card border-border text-muted-foreground hover:bg-muted"
-                }`}
-              >
-                <Send className="h-4 w-4 text-primary" /> SMS
-              </button>
+            <div className="flex items-center justify-between">
+              <Label className="text-xs font-bold text-foreground uppercase tracking-wider">
+                Canales de Envío ({selectedChannels.length} seleccionados)
+              </Label>
+              <span className="text-[11px] text-muted-foreground">Puedes marcar varios simultáneamente</span>
             </div>
-            {channel === "whatsapp" && (
-              <p className="text-[11px] text-success font-medium bg-success/10 p-2 rounded-xl border border-success/30 flex items-center gap-1.5">
-                💬 Destinatario: {patientPhone || "Teléfono no registrado"} (Webhook n8n WhatsApp)
-              </p>
-            )}
-            {channel === "email" && (
-              <p className="text-[11px] text-info font-medium bg-info/10 p-2 rounded-xl border border-info/30 flex items-center gap-1.5">
-                📧 Destinatario: {patientEmail || "Email no registrado"} (Webhook n8n Email)
-              </p>
-            )}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              {[
+                { id: "telegram", label: "Telegram", icon: Send, color: "text-sky-400", activeBg: "bg-sky-500/15 border-sky-500 text-sky-400" },
+                { id: "whatsapp", label: "WhatsApp", icon: MessageSquare, color: "text-success", activeBg: "bg-success/15 border-success text-success" },
+                { id: "email", label: "Email", icon: Mail, color: "text-info", activeBg: "bg-info/15 border-info text-info" },
+                { id: "sms", label: "SMS", icon: Smartphone, color: "text-primary", activeBg: "bg-primary/15 border-primary text-primary" },
+              ].map((ch) => {
+                const isSelected = selectedChannels.includes(ch.id);
+                const Icon = ch.icon;
+                return (
+                  <button
+                    key={ch.id}
+                    type="button"
+                    onClick={() => toggleChannel(ch.id)}
+                    className={`flex items-center justify-between p-3 rounded-2xl border text-xs font-bold transition-all ${
+                      isSelected
+                        ? `${ch.activeBg} ring-2 ring-primary/20 shadow-xs`
+                        : "bg-card border-border text-muted-foreground hover:bg-muted"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <Icon className={`h-4 w-4 ${ch.color}`} />
+                      <span>{ch.label}</span>
+                    </div>
+                    {isSelected && <Check className="h-3.5 w-3.5 shrink-0" />}
+                  </button>
+                );
+              })}
+            </div>
+            {/* Destinatarios informativos */}
+            <div className="flex flex-wrap gap-2 pt-1 text-[11px] text-muted-foreground">
+              {patientPhone && (
+                <span className="px-2 py-0.5 rounded-lg bg-muted/60 border border-border/50">
+                  📱 Teléfono: <strong className="text-foreground">{patientPhone}</strong>
+                </span>
+              )}
+              {patientEmail && (
+                <span className="px-2 py-0.5 rounded-lg bg-muted/60 border border-border/50">
+                  📧 Email: <strong className="text-foreground">{patientEmail}</strong>
+                </span>
+              )}
+            </div>
           </div>
 
-          {/* Quick Template Presets */}
+          {/* Quick Template Presets (5 unificados) */}
           <div className="space-y-2">
             <Label className="text-xs font-bold text-foreground uppercase tracking-wider">Plantilla Automática</Label>
             <div className="flex flex-wrap gap-1.5">
-              {[
-                { id: "recordatorio_cita", label: "📅 Recordatorio Cita" },
-                { id: "confirmar_cita", label: "✅ Confirmar Cita" },
-                { id: "cambio_alineador", label: "🦷 Cambio Alineador" },
-                { id: "seguimiento", label: "🩺 Seguimiento Post-Cita" },
-                { id: "pago_pendiente", label: "💳 Aviso de Pago" },
-                { id: "personalizado", label: "📝 Personalizado" },
-              ].map((tmpl) => (
+              {PRESET_TEMPLATES.map((tmpl) => (
                 <button
                   key={tmpl.id}
                   type="button"
@@ -235,6 +287,31 @@ export function NewReminderModal({
               ))}
             </div>
           </div>
+
+          {/* Dynamic Field: Cambio Alineador */}
+          {reminderType === "cambio_alineador" && (
+            <div className="p-3.5 bg-sky-500/10 rounded-2xl border border-sky-500/25 space-y-2 animate-in fade-in">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="aligner-number" className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                  <span>🦷</span> Número o Etapa del Alineador
+                </Label>
+                <span className="text-[10px] text-muted-foreground">Se actualiza en vivo en el texto</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Input
+                  id="aligner-number"
+                  type="text"
+                  placeholder="Ej: 4 (o 4 de 14)"
+                  value={alignerNumber}
+                  onChange={(e) => handleAlignerNumberChange(e.target.value)}
+                  className="h-9 text-xs rounded-xl bg-card border-border/80 max-w-[140px] font-mono font-bold text-center"
+                />
+                <span className="text-xs text-muted-foreground">
+                  {treatmentPlan ? `Plan del paciente: "${treatmentPlan.slice(0, 35)}..."` : "Configuración manual"}
+                </span>
+              </div>
+            </div>
+          )}
 
           {/* Associated Appointment & Schedule Date */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -285,59 +362,62 @@ export function NewReminderModal({
           {/* Subject & Message Textarea */}
           <div className="space-y-3">
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-foreground">Asunto del Mensaje</Label>
+              <Label className="text-xs font-semibold text-foreground">Asunto / Título</Label>
               <Input
+                type="text"
                 value={subject}
                 onChange={(e) => setSubject(e.target.value)}
-                placeholder="Asunto o título del aviso"
-                className="h-10 text-xs rounded-xl"
+                placeholder="Asunto del recordatorio"
+                className="h-10 text-xs rounded-xl font-medium"
               />
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-foreground">Cuerpo del Mensaje</Label>
+              <div className="flex items-center justify-between">
+                <Label className="text-xs font-semibold text-foreground">Mensaje al Paciente</Label>
+                <span className="text-[10px] text-muted-foreground">Puedes editar el texto libremente</span>
+              </div>
               <Textarea
+                rows={5}
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
-                rows={4}
-                placeholder="Escribe el mensaje que se enviará al paciente..."
-                className="text-xs rounded-xl leading-relaxed p-3 bg-muted/40"
+                className="text-xs rounded-xl p-3 leading-relaxed"
               />
             </div>
           </div>
         </div>
 
-        {/* Footer Actions */}
-        <div className="px-6 py-4 bg-muted/40 border-t border-border/60 flex items-center justify-between gap-3">
+        {/* Footer Buttons */}
+        <div className="px-6 py-4 bg-muted/30 border-t border-border flex items-center justify-end gap-2.5">
           <Button
             type="button"
-            variant="outline"
+            variant="ghost"
             onClick={() => onOpenChange(false)}
-            className="rounded-xl text-xs font-semibold text-muted-foreground border-border"
+            className="text-xs rounded-xl h-9"
           >
             Cancelar
           </Button>
 
-          <div className="flex items-center gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              disabled={loading}
-              onClick={() => handleCreate(true)}
-              className="rounded-xl text-xs font-bold border-success/40 text-success hover:bg-success/10 gap-1.5 cursor-pointer"
-            >
-              {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />} Enviar Ahora
-            </Button>
+          <Button
+            type="button"
+            variant="outline"
+            disabled={loading}
+            onClick={() => handleCreate(true)}
+            className="text-xs rounded-xl h-9 font-bold gap-1.5 border-primary/40 hover:bg-primary/10 text-primary"
+          >
+            {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
+            Enviar de Inmediato ({selectedChannels.length})
+          </Button>
 
-            <Button
-              type="button"
-              disabled={loading}
-              onClick={() => handleCreate(false)}
-              className="rounded-xl text-xs font-bold bg-sidebar-accent hover:bg-sidebar-border text-sidebar-foreground gap-1.5 shadow-md cursor-pointer"
-            >
-              {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Calendar className="h-3.5 w-3.5" />} Programar Envío
-            </Button>
-          </div>
+          <Button
+            type="button"
+            disabled={loading}
+            onClick={() => handleCreate(false)}
+            className="text-xs rounded-xl h-9 font-bold gap-1.5 bg-sidebar-accent text-sidebar-foreground hover:bg-sidebar-accent/90"
+          >
+            {loading && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+            Programar Recordatorio ({selectedChannels.length})
+          </Button>
         </div>
       </div>
     </div>

@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS public.messaging_settings (
   whatsapp_template_name text,
   telegram_enabled boolean DEFAULT false,
   telegram_bot_token text,
+  telegram_phone text,
   email_enabled boolean DEFAULT false,
   smtp_host text,
   smtp_port integer DEFAULT 587,

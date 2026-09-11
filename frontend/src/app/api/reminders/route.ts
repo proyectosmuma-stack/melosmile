@@ -45,26 +45,53 @@ export async function GET(req: Request) {
 export async function PATCH(req: Request) {
   try {
     const body = await req.json();
-    const { id, status } = body;
+    const { id, status, channel, message, subject, scheduled_at } = body;
 
-    if (!id || !status) {
+    if (!id) {
       return NextResponse.json(
-        { error: 'id and status are required', status: 400 },
+        { error: 'id is required', status: 400 },
         { status: 400 }
       );
     }
 
-    const allowedStatuses = ['pendiente', 'enviado', 'error', 'leido', 'cancelado'];
-    if (!allowedStatuses.includes(status)) {
+    const updateData: Record<string, any> = {};
+
+    if (status !== undefined) {
+      const allowedStatuses = ['pendiente', 'enviado', 'error', 'leido', 'cancelado'];
+      if (!allowedStatuses.includes(status)) {
+        return NextResponse.json(
+          { error: 'Invalid status. Permitted values: pendiente, enviado, error, leido, cancelado', status: 400 },
+          { status: 400 }
+        );
+      }
+      updateData.status = status;
+    }
+
+    if (channel !== undefined) {
+      const allowedChannels = ['whatsapp', 'telegram', 'email', 'sms'];
+      if (!allowedChannels.includes(channel)) {
+        return NextResponse.json(
+          { error: 'Invalid channel. Permitted values: whatsapp, telegram, email, sms', status: 400 },
+          { status: 400 }
+        );
+      }
+      updateData.channel = channel;
+    }
+
+    if (message !== undefined) updateData.message = message;
+    if (subject !== undefined) updateData.subject = subject;
+    if (scheduled_at !== undefined) updateData.scheduled_at = scheduled_at;
+
+    if (Object.keys(updateData).length === 0) {
       return NextResponse.json(
-        { error: 'Invalid status. Permitted values: pendiente, enviado, error, leido, cancelado', status: 400 },
+        { error: 'No fields to update provided', status: 400 },
         { status: 400 }
       );
     }
 
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await (supabaseAdmin as any)
       .from('reminders')
-      .update({ status })
+      .update(updateData)
       .eq('id', id)
       .select()
       .single();
@@ -79,13 +106,51 @@ export async function PATCH(req: Request) {
     // Insert reminder_event for auditing
     await supabaseAdmin.from('reminder_events').insert({
       reminder_id: id,
-      event_type: 'status_changed',
-      description: `Estado cambiado manualmente a: ${status}`,
+      event_type: 'updated',
+      description: `Recordatorio modificado: ${Object.keys(updateData).join(', ')}`,
     });
 
-    return NextResponse.json(data);
+    return NextResponse.json({ success: true, data });
   } catch (error: any) {
     console.error('Error in PATCH /api/reminders:', error);
+    return NextResponse.json(
+      { error: error.message || 'Internal server error', status: 500 },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(req: Request) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const id = searchParams.get('id');
+
+    if (!id) {
+      return NextResponse.json(
+        { error: 'id query parameter is required', status: 400 },
+        { status: 400 }
+      );
+    }
+
+    // First remove child events to avoid foreign key conflicts
+    await supabaseAdmin.from('reminder_events').delete().eq('reminder_id', id);
+
+    const { error } = await supabaseAdmin
+      .from('reminders')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      console.error('Error deleting reminder:', error);
+      return NextResponse.json(
+        { error: 'Error al eliminar recordatorio', status: 500, details: error.message },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (error: any) {
+    console.error('Error in DELETE /api/reminders:', error);
     return NextResponse.json(
       { error: error.message || 'Internal server error', status: 500 },
       { status: 500 }

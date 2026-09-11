@@ -20,6 +20,12 @@ export const GET = async () => {
   if (maskedData.telegram_bot_token) {
     maskedData.telegram_bot_token = '****' + maskedData.telegram_bot_token.slice(-4);
   }
+  if (maskedData.telegram_api_hash) {
+    maskedData.telegram_api_hash = '****' + maskedData.telegram_api_hash.slice(-4);
+  }
+  if (maskedData.telegram_session_string) {
+    maskedData.telegram_session_string = '****' + maskedData.telegram_session_string.slice(-4);
+  }
   if (maskedData.smtp_password) {
     maskedData.smtp_password = '****' + maskedData.smtp_password.slice(-4);
   }
@@ -44,20 +50,33 @@ export const PUT = async (req: Request) => {
     return NextResponse.json({ error: fetchError.message }, { status: 500 });
   }
 
-  const updateData: Record<string, any> = { updated_at: new Date().toISOString() };
+  // Only allow actual DB columns — reject UI fields like 'loading', 'saving'
+  const ALLOWED_COLUMNS = new Set([
+    'whatsapp_enabled', 'whatsapp_phone', 'whatsapp_api_token', 'whatsapp_template_name',
+    'telegram_enabled', 'telegram_bot_token', 'telegram_phone',
+    'telegram_api_id', 'telegram_api_hash', 'telegram_session_string',
+    'email_enabled', 'smtp_host', 'smtp_port', 'smtp_user', 'smtp_password', 'smtp_secure',
+    'email_from', 'email_from_name',
+  ]);
+
+  const updateData: Record<string, any> = { id: 1, updated_at: new Date().toISOString() };
   for (const key in body) {
-    if (Object.prototype.hasOwnProperty.call(body, key)) {
+    if (Object.prototype.hasOwnProperty.call(body, key) && ALLOWED_COLUMNS.has(key)) {
       const value = body[key];
-      if (key.includes('token') || key.includes('password')) {
-        if (value === '****' + (currentSettings?.[key]?.slice(-4) || '')) {
-          // If masked value comes back, don't update the secret
+      if (key.includes('token') || key.includes('password') || key.includes('hash') || key.includes('session')) {
+        // Skip if the masked placeholder value came back unchanged
+        const maskedPlaceholder = currentSettings?.[key]
+          ? '****' + currentSettings[key].slice(-4)
+          : '';
+        if (value === maskedPlaceholder && maskedPlaceholder !== '') {
           continue;
-        } else if (value === '') {
-          // If value is empty, set to null
+        } else if (value === '' || value === null) {
           updateData[key] = null;
         } else {
           updateData[key] = value;
         }
+      } else if (key === 'smtp_port') {
+        updateData[key] = value === null || value === '' ? 587 : Number(value);
       } else if (value === '') {
         updateData[key] = null;
       } else {
@@ -69,7 +88,6 @@ export const PUT = async (req: Request) => {
   const { data, error } = await (supabase as any).from('messaging_settings')
     .upsert(updateData, { onConflict: 'id' })
     .select('*')
-    .eq('id', 1)
     .single();
 
   if (error) {
@@ -83,6 +101,12 @@ export const PUT = async (req: Request) => {
   }
   if (maskedData.telegram_bot_token) {
     maskedData.telegram_bot_token = '****' + maskedData.telegram_bot_token.slice(-4);
+  }
+  if (maskedData.telegram_api_hash) {
+    maskedData.telegram_api_hash = '****' + maskedData.telegram_api_hash.slice(-4);
+  }
+  if (maskedData.telegram_session_string) {
+    maskedData.telegram_session_string = '****' + maskedData.telegram_session_string.slice(-4);
   }
   if (maskedData.smtp_password) {
     maskedData.smtp_password = '****' + maskedData.smtp_password.slice(-4);
