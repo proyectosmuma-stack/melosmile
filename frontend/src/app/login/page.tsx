@@ -2,14 +2,13 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { 
-  Activity, 
   Lock, 
   User, 
   Eye, 
   EyeOff, 
   ArrowRight, 
-  Sparkles, 
   AlertCircle,
   CheckCircle2,
   ShieldCheck
@@ -66,16 +65,29 @@ export default function LoginPage() {
       <div className="w-full max-w-md z-10 space-y-6">
         {/* Brand Header */}
         <div className="text-center space-y-3">
-          <div className="inline-flex items-center justify-center h-16 w-16 rounded-2xl bg-gradient-to-tr from-primary via-primary to-primary/70 shadow-xl shadow-primary/20 ring-1 ring-white/20 mb-2">
-            <Activity className="h-9 w-9 text-white" />
+          {/* Isotipo MeloSmile oficial */}
+          <div className="inline-flex items-center justify-center h-20 w-20 rounded-2xl bg-white/10 shadow-xl shadow-primary/20 ring-1 ring-white/15 mb-2 p-3 backdrop-blur-sm">
+            <Image
+              src="/brand/logo-color.svg"
+              alt="MeloSmile"
+              width={60}
+              height={60}
+              className="h-full w-full object-contain"
+              priority
+            />
           </div>
           <div>
-            <h1 className="text-3xl font-black tracking-tight text-white flex items-center justify-center gap-2">
-              MeloSmile
-              <span className="text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-primary/20 text-primary/80 border border-primary/30">
-                PRO
-              </span>
-            </h1>
+            {/* Logotipo completo oficial */}
+            <div className="flex items-center justify-center mb-1">
+              <Image
+                src="/brand/full-logo-color.svg"
+                alt="MeloSmile"
+                width={200}
+                height={48}
+                className="object-contain max-h-12"
+                priority
+              />
+            </div>
             <p className="text-sm text-sidebar-muted-foreground mt-1">
               Plataforma de Gestión Clínica Odontológica
             </p>
