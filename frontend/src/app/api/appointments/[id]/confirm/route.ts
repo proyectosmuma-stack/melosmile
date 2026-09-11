@@ -20,7 +20,7 @@ export async function GET(
       .select(`
         id, appointment_date, reason, status, notes,
         patients ( id, first_name, last_name ),
-        clinics ( name )
+        clinics ( name, address, google_maps_url )
       `)
       .eq("id", appointmentId)
       .single();
@@ -32,6 +32,15 @@ export async function GET(
     const apptDate = new Date(appt.appointment_date);
     const isExpired = apptDate.getTime() < Date.now();
 
+    const clinic = appt.clinics;
+    let mapsUrl: string | null = null;
+    if (clinic?.google_maps_url && clinic.google_maps_url.trim() !== "") {
+      mapsUrl = clinic.google_maps_url.trim();
+    } else if (clinic?.name || clinic?.address) {
+      const query = [clinic.name, clinic.address].filter(Boolean).join(", ");
+      mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
+    }
+
     return NextResponse.json({
       success: true,
       appointment: {
@@ -40,7 +49,9 @@ export async function GET(
         reason: appt.reason || "Consulta Odontológica",
         status: appt.status || "Pendiente",
         patientName: appt.patients ? `${appt.patients.first_name || ""} ${appt.patients.last_name || ""}`.trim() : "Paciente",
-        clinicName: appt.clinics?.name || "Clínica Dental Melosmile",
+        clinicName: clinic?.name || "Clínica Dental Melosmile",
+        clinicAddress: clinic?.address || null,
+        mapsUrl,
         isExpired,
       },
     });

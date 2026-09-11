@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { 
   Calendar, 
@@ -13,7 +14,6 @@ import {
   ChevronRight,
   Stethoscope,
   FlaskConical,
-  Activity,
   PanelLeftClose,
   PanelLeftOpen,
   LogOut,
@@ -83,17 +83,28 @@ export function Sidebar() {
         {!isCollapsed ? (
           <>
             <div className="flex items-center gap-3 overflow-hidden">
-              <div className="h-10 w-10 rounded-xl bg-gradient-to-tr from-primary via-primary to-primary/70 flex items-center justify-center shadow-lg shadow-primary/25 ring-1 ring-white/20 shrink-0">
-                <Activity className="h-6 w-6 text-white" />
+              {/* Isotipo MeloSmile */}
+              <div className="h-10 w-10 rounded-xl bg-white/10 flex items-center justify-center shadow-lg ring-1 ring-white/20 shrink-0 p-1.5">
+                <Image
+                  src="/brand/logo-color.svg"
+                  alt="MeloSmile"
+                  width={32}
+                  height={32}
+                  className="h-full w-full object-contain"
+                  priority
+                />
               </div>
               <div className="animate-in fade-in duration-200 truncate">
-                <h1 className="text-lg font-bold tracking-tight text-white flex items-center gap-1.5">
-                  Melosmile
-                  <span className="inline-block text-[10px] uppercase font-black px-1.5 py-0.5 rounded bg-primary/20 text-primary-foreground border border-primary/30">
-                    PRO
-                  </span>
-                </h1>
-                <p className="text-xs text-sidebar-muted-foreground font-medium truncate">Gestión Odontológica</p>
+                {/* Logotipo completo */}
+                <Image
+                  src="/brand/full-logo-color.svg"
+                  alt="MeloSmile"
+                  width={140}
+                  height={36}
+                  className="object-contain max-h-9"
+                  priority
+                />
+                <p className="text-xs text-sidebar-muted-foreground font-medium truncate mt-0.5">Gestión Odontológica</p>
               </div>
             </div>
 
@@ -108,10 +119,17 @@ export function Sidebar() {
         ) : (
           <button
             onClick={() => setIsCollapsed(false)}
-            className="h-10 w-10 rounded-xl bg-sidebar-accent hover:bg-sidebar-muted border border-sidebar-border text-primary-foreground hover:text-primary-foreground flex items-center justify-center transition-colors cursor-pointer shadow-md"
+            className="h-10 w-10 rounded-xl bg-white/10 hover:bg-white/20 border border-white/10 flex items-center justify-center transition-colors cursor-pointer shadow-md p-2"
             title="Expandir menú sidebar"
           >
-            <PanelLeftOpen className="h-5 w-5" />
+            <Image
+              src="/brand/logo-color.svg"
+              alt="MeloSmile"
+              width={28}
+              height={28}
+              className="object-contain"
+              priority
+            />
           </button>
         )}
       </div>

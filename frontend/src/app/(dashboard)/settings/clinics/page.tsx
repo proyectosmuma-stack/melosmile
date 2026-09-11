@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/dialog";
 import {
   Building2, Plus, Edit2, Trash2, Loader2, Save, Phone, Mail,
-  MapPin, Percent, ChevronDown, ChevronUp, AlertCircle
+  MapPin, Percent, ChevronDown, ChevronUp, AlertCircle, Navigation
 } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
 
@@ -18,6 +18,7 @@ type Clinic = {
   id: string;
   name: string;
   address: string | null;
+  google_maps_url: string | null;
   phone: string | null;
   email: string | null;
   color_hex: string | null;
@@ -65,6 +66,7 @@ export default function ClinicsSettingsPage() {
   // Form fields
   const [fName, setFName] = useState("");
   const [fAddress, setFAddress] = useState("");
+  const [fGoogleMapsUrl, setFGoogleMapsUrl] = useState("");
   const [fPhone, setFPhone] = useState("");
   const [fEmail, setFEmail] = useState("");
   const [fColor, setFColor] = useState("#3b82f6");
@@ -78,7 +80,7 @@ export default function ClinicsSettingsPage() {
     setLoading(true);
     try {
       const [{ data: cData }, { data: fData }, { data: rData }] = await Promise.all([
-        (supabase as any).from("clinics").select("id, name, address, phone, email, color_hex, base_commission_pct, odoo_pricelist_id").order("name"),
+        (supabase as any).from("clinics").select("id, name, address, google_maps_url, phone, email, color_hex, base_commission_pct, odoo_pricelist_id").order("name"),
         (supabase as any).from("treatment_families").select("id, name, color_hex").order("sort_order"),
         (supabase as any).from("clinic_commission_rules").select("id, clinic_id, family_id, commission_pct, lab_discount_pct"),
       ]);
@@ -103,13 +105,13 @@ export default function ClinicsSettingsPage() {
 
   const openAdd = () => {
     setEditingClinic(null);
-    setFName(""); setFAddress(""); setFPhone(""); setFEmail(""); setFColor("#3b82f6"); setFBaseCommission("40"); setFOdooPricelist("");
+    setFName(""); setFAddress(""); setFGoogleMapsUrl(""); setFPhone(""); setFEmail(""); setFColor("#3b82f6"); setFBaseCommission("40"); setFOdooPricelist("");
     setDialogOpen(true);
   };
 
   const openEdit = (c: Clinic) => {
     setEditingClinic(c);
-    setFName(c.name); setFAddress(c.address || ""); setFPhone(c.phone || "");
+    setFName(c.name); setFAddress(c.address || ""); setFGoogleMapsUrl(c.google_maps_url || ""); setFPhone(c.phone || "");
     setFEmail(c.email || ""); setFColor(c.color_hex || "#3b82f6");
     setFBaseCommission(String(c.base_commission_pct || 40));
     setFOdooPricelist(c.odoo_pricelist_id ? String(c.odoo_pricelist_id) : "");
@@ -123,6 +125,7 @@ export default function ClinicsSettingsPage() {
       const payload = {
         name: fName,
         address: fAddress || null,
+        google_maps_url: fGoogleMapsUrl ? fGoogleMapsUrl.trim() : null,
         phone: fPhone || null,
         email: fEmail || null,
         color_hex: fColor,
@@ -413,6 +416,21 @@ export default function ClinicsSettingsPage() {
                 <MapPin className="h-3.5 w-3.5 text-muted-foreground" /> Dirección
               </Label>
               <Input value={fAddress} onChange={(e) => setFAddress(e.target.value)} placeholder="Ej: Calle de Goya 47, Madrid" className="rounded-lg" />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                <Navigation className="h-3.5 w-3.5 text-muted-foreground" /> Enlace Google Maps (Opcional)
+              </Label>
+              <Input
+                value={fGoogleMapsUrl}
+                onChange={(e) => setFGoogleMapsUrl(e.target.value)}
+                placeholder="https://maps.app.goo.gl/... o dejar vacío para búsqueda automática"
+                className="rounded-lg text-xs"
+              />
+              <p className="text-[11px] text-muted-foreground">
+                Si lo dejas vacío, el sistema generará automáticamente el enlace de búsqueda por nombre y dirección.
+              </p>
             </div>
 
             <div className="grid grid-cols-2 gap-3">

@@ -22,7 +22,7 @@ export async function dispatchReminder(reminderId: string): Promise<DispatchRemi
       .select(`
         *,
         patients ( first_name, last_name, phone, email, historia_id, telegram_chat_id ),
-        appointments ( appointment_date, reason, clinics(name) )
+        appointments ( appointment_date, reason, status, clinics(name) )
       `)
       .eq("id", reminderId)
       .single();
@@ -31,8 +31,23 @@ export async function dispatchReminder(reminderId: string): Promise<DispatchRemi
       return { success: false, error: "Recordatorio no encontrado en la base de datos." };
     }
 
+    if (reminder.status === "cancelado") {
+      return { success: false, error: "El recordatorio ya está cancelado." };
+    }
+
     const patient = reminder.patients;
     const appointment = reminder.appointments;
+
+    if (appointment?.status === "Cancelada") {
+      await (supabase as any)
+        .from("reminders")
+        .update({ status: "cancelado", error_message: "Cita cancelada previamente" })
+        .eq("id", reminder.id);
+      return {
+        success: false,
+        error: "La cita asociada ha sido cancelada, por lo que el recordatorio fue cancelado y no se enviará.",
+      };
+    }
 
     const { data: msg } = await (supabase as any)
       .from("messaging_settings")
@@ -92,9 +107,44 @@ export async function dispatchReminder(reminderId: string): Promise<DispatchRemi
     let n8nExecutionId = null;
     let dispatchError: string | null = null;
 
-    // Despacho directo vía Telegram MTProto (cuenta clínica a teléfono de paciente)
     const hasTelegramSession = Boolean(msg?.telegram_session_string || process.env.TELEGRAM_SESSION_STRING);
-    if (reminder.channel === "telegram" && hasTelegramSession) {
+
+    // Despacho directo vía WhatsApp (Evolution API v2)
+    if (reminder.channel === "whatsapp") {
+      const { sendWhatsAppMessage } = await import("@/lib/whatsapp/evolution");
+      const waResult = await sendWhatsAppMessage({
+        phone: patient?.phone || "",
+        message: reminder.message,
+      });
+
+      if (waResult.success) {
+        const nowIso = new Date().toISOString();
+        await (supabase as any)
+          .from("reminders")
+          .update({
+            status: "enviado",
+            sent_at: nowIso,
+            error_message: null,
+          })
+          .eq("id", reminder.id);
+
+        await (supabase as any).from("reminder_events").insert({
+          reminder_id: reminder.id,
+          event_type: "sent",
+          description: `Recordatorio enviado directamente por WhatsApp (Evolution API) al teléfono ${patient?.phone}`,
+          metadata: { messageId: waResult.messageId, status: waResult.status },
+        });
+
+        return {
+          success: true,
+          message: `Recordatorio enviado directamente a WhatsApp del paciente (${patient?.phone})`,
+        };
+      } else {
+        dispatchError = waResult.error || "Fallo en el despacho de WhatsApp";
+      }
+    }
+    // Despacho directo vía Telegram MTProto (cuenta clínica a teléfono de paciente)
+    else if (reminder.channel === "telegram" && hasTelegramSession) {
       const { sendTelegramDirectMessage } = await import("@/lib/telegram/mtproto");
       const mtprotoResult = await sendTelegramDirectMessage({
         phone: patient?.phone || "",

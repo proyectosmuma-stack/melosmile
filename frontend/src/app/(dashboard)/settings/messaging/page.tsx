@@ -1,12 +1,13 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { MessageCircle, Loader2, QrCode, Unlink, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { TelegramQrModal } from "@/components/settings/TelegramQrModal";
+import { WhatsAppQrModal } from "@/components/settings/WhatsAppQrModal";
 
 type Settings = {
   loading: boolean;
@@ -15,6 +16,9 @@ type Settings = {
   whatsapp_phone: string;
   whatsapp_api_token: string;
   whatsapp_template_name: string;
+  evolution_api_url: string;
+  evolution_api_key: string;
+  evolution_instance: string;
   telegram_enabled: boolean;
   telegram_bot_token: string;
   telegram_phone: string;
@@ -38,6 +42,9 @@ function sanitizeSettings(data: any): Partial<Settings> {
     whatsapp_phone: data.whatsapp_phone ?? "",
     whatsapp_api_token: data.whatsapp_api_token ?? "",
     whatsapp_template_name: data.whatsapp_template_name ?? "",
+    evolution_api_url: data.evolution_api_url ?? "https://evolution.mumaweb.com",
+    evolution_api_key: data.evolution_api_key ?? "",
+    evolution_instance: data.evolution_instance ?? "melosmile",
     telegram_enabled: Boolean(data.telegram_enabled),
     telegram_bot_token: data.telegram_bot_token ?? "",
     telegram_phone: data.telegram_phone ?? "",
@@ -63,6 +70,9 @@ export default function MessagingSettingsPage() {
     whatsapp_phone: "",
     whatsapp_api_token: "",
     whatsapp_template_name: "",
+    evolution_api_url: "https://evolution.mumaweb.com",
+    evolution_api_key: "",
+    evolution_instance: "melosmile",
     telegram_enabled: false,
     telegram_bot_token: "",
     telegram_phone: "",
@@ -78,6 +88,23 @@ export default function MessagingSettingsPage() {
     email_from: "",
     email_from_name: "",
   });
+
+  const [isTelegramQrModalOpen, setIsTelegramQrModalOpen] = useState(false);
+  const [isUnlinkingTelegram, setIsUnlinkingTelegram] = useState(false);
+
+  const [isWhatsAppQrModalOpen, setIsWhatsAppQrModalOpen] = useState(false);
+  const [isUnlinkingWhatsApp, setIsUnlinkingWhatsApp] = useState(false);
+  const [whatsAppConnected, setWhatsAppConnected] = useState<boolean | null>(null);
+
+  const checkWhatsAppStatus = useCallback(async () => {
+    try {
+      const res = await fetch("/api/whatsapp/status");
+      const data = await res.json();
+      setWhatsAppConnected(Boolean(data.isConnected || data.state === "open"));
+    } catch {
+      setWhatsAppConnected(false);
+    }
+  }, []);
 
   useEffect(() => {
     async function fetchSettings() {
@@ -96,13 +123,29 @@ export default function MessagingSettingsPage() {
       }
     }
     fetchSettings();
-  }, []);
-
-  const [isTelegramQrModalOpen, setIsTelegramQrModalOpen] = useState(false);
-  const [isUnlinkingTelegram, setIsUnlinkingTelegram] = useState(false);
+    checkWhatsAppStatus();
+  }, [checkWhatsAppStatus]);
 
   const updateSetting = (field: keyof Settings, value: any) => {
     setSettings((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleUnlinkWhatsApp = async () => {
+    if (!confirm("¿Seguro que deseas desvincular la sesión de WhatsApp actual? Los recordatorios por WhatsApp se pausarán hasta que vincules un nuevo teléfono.")) return;
+    setIsUnlinkingWhatsApp(true);
+    try {
+      const res = await fetch("/api/whatsapp/unlink", { method: "POST" });
+      const json = await res.json();
+      if (json.success) {
+        setWhatsAppConnected(false);
+      } else {
+        alert("Error al desvincular: " + (json.error || "Error desconocido"));
+      }
+    } catch (err: any) {
+      alert("Error de red al desvincular: " + err.message);
+    } finally {
+      setIsUnlinkingWhatsApp(false);
+    }
   };
 
   const handleUnlinkTelegram = async () => {
@@ -133,6 +176,9 @@ export default function MessagingSettingsPage() {
         whatsapp_phone: settings.whatsapp_phone,
         whatsapp_api_token: settings.whatsapp_api_token,
         whatsapp_template_name: settings.whatsapp_template_name,
+        evolution_api_url: settings.evolution_api_url,
+        evolution_api_key: settings.evolution_api_key,
+        evolution_instance: settings.evolution_instance,
         telegram_enabled: settings.telegram_enabled,
         telegram_bot_token: settings.telegram_bot_token,
         telegram_phone: settings.telegram_phone,
@@ -202,7 +248,7 @@ export default function MessagingSettingsPage() {
           <CardHeader>
             <CardTitle>WhatsApp</CardTitle>
             <CardDescription>
-              Envía recordatorios y confirmaciones automáticas vía WhatsApp.
+              Envía recordatorios y confirmaciones automáticas vía WhatsApp vinculando el teléfono de la clínica con Código QR.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -219,39 +265,122 @@ export default function MessagingSettingsPage() {
 
             {settings.whatsapp_enabled && (
               <div className="space-y-4">
-                <div className="grid gap-2">
-                  <Label htmlFor="whatsapp-phone">Número de Teléfono</Label>
-                  <Input
-                    id="whatsapp-phone"
-                    type="text"
-                    placeholder="+34 600 000 000"
-                    value={settings.whatsapp_phone ?? ""}
-                    onChange={(e) => updateSetting("whatsapp_phone", e.target.value)}
-                    className="bg-muted rounded-xl focus-visible:ring-offset-0 focus-visible:ring-primary/60"
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="whatsapp-api-token">Token de API</Label>
-                  <Input
-                    id="whatsapp-api-token"
-                    type="password"
-                    placeholder="Token de Meta Cloud API"
-                    value={settings.whatsapp_api_token ?? ""}
-                    onChange={(e) => updateSetting("whatsapp_api_token", e.target.value)}
-                    className="bg-muted rounded-xl focus-visible:ring-offset-0 focus-visible:ring-primary/60"
-                  />
-                </div>
-                <div className="grid gap-2">
-                  <Label htmlFor="whatsapp-template-name">Nombre de Plantilla (Opcional)</Label>
-                  <Input
-                    id="whatsapp-template-name"
-                    type="text"
-                    placeholder="template_recordatorio_cita"
-                    value={settings.whatsapp_template_name ?? ""}
-                    onChange={(e) => updateSetting("whatsapp_template_name", e.target.value)}
-                    className="bg-muted rounded-xl focus-visible:ring-offset-0 focus-visible:ring-primary/60"
-                  />
-                </div>
+                {whatsAppConnected ? (
+                  <div className="p-4 bg-emerald-500/10 border border-emerald-500/25 rounded-2xl text-emerald-600 dark:text-emerald-400 text-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+                    <div className="space-y-1">
+                      <div className="font-semibold flex items-center gap-1.5 text-base">
+                        <span>✅</span> Conectado a WhatsApp (Evolution API v2)
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Instancia activa: <strong className="text-foreground font-mono">{settings.evolution_instance || "melosmile"}</strong>
+                        {settings.whatsapp_phone ? ` (${settings.whatsapp_phone})` : ""}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Los recordatorios saldrán directamente desde la línea vinculada de WhatsApp hacia tus pacientes.
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 self-end sm:self-center">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setIsWhatsAppQrModalOpen(true)}
+                        className="gap-1.5 h-8 text-xs rounded-xl border-emerald-500/30 hover:bg-emerald-500/15"
+                      >
+                        <RefreshCw className="w-3.5 h-3.5" />
+                        Re-vincular QR
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        disabled={isUnlinkingWhatsApp}
+                        onClick={handleUnlinkWhatsApp}
+                        className="gap-1.5 h-8 text-xs rounded-xl text-destructive hover:bg-destructive/10 hover:text-destructive"
+                      >
+                        {isUnlinkingWhatsApp ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        ) : (
+                          <Unlink className="w-3.5 h-3.5" />
+                        )}
+                        Desvincular
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-5 bg-amber-500/10 border border-amber-500/25 rounded-2xl text-amber-600 dark:text-amber-400 text-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs">
+                    <div className="space-y-1">
+                      <div className="font-semibold flex items-center gap-1.5 text-base">
+                        <span>⚠️</span> Sin sesión de WhatsApp vinculada
+                      </div>
+                      <p className="text-xs text-amber-700/80 dark:text-amber-300/80 max-w-md">
+                        Escanea el código QR desde WhatsApp en el teléfono de la clínica (Dispositivos vinculados) para activar el envío de recordatorios.
+                      </p>
+                    </div>
+                    <Button
+                      type="button"
+                      onClick={() => setIsWhatsAppQrModalOpen(true)}
+                      className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-sm self-start sm:self-center shrink-0 h-10 px-4 font-medium"
+                    >
+                      <QrCode className="w-4 h-4" />
+                      Vincular con Código QR
+                    </Button>
+                  </div>
+                )}
+
+                {/* Configuración técnica avanzada (colapsada) */}
+                <details className="pt-2 text-xs text-muted-foreground group">
+                  <summary className="cursor-pointer font-medium hover:text-foreground list-none flex items-center gap-1.5">
+                    <span className="text-muted-foreground group-open:rotate-90 transition-transform">▸</span>
+                    Configuración técnica avanzada (Evolution API / VPS)
+                  </summary>
+                  <div className="mt-4 p-4 border border-border/40 rounded-xl space-y-4 bg-muted/20">
+                    <div className="grid gap-2">
+                      <Label htmlFor="evolution-api-url">URL Servidor Evolution API</Label>
+                      <Input
+                        id="evolution-api-url"
+                        type="text"
+                        placeholder="https://evolution.mumaweb.com"
+                        value={settings.evolution_api_url ?? ""}
+                        onChange={(e) => updateSetting("evolution_api_url", e.target.value)}
+                        className="bg-muted rounded-xl focus-visible:ring-offset-0 focus-visible:ring-primary/60 font-mono text-xs"
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="evolution-instance">Nombre de Instancia</Label>
+                      <Input
+                        id="evolution-instance"
+                        type="text"
+                        placeholder="melosmile"
+                        value={settings.evolution_instance ?? ""}
+                        onChange={(e) => updateSetting("evolution_instance", e.target.value)}
+                        className="bg-muted rounded-xl focus-visible:ring-offset-0 focus-visible:ring-primary/60 font-mono text-xs"
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="evolution-api-key">Evolution API Key</Label>
+                      <Input
+                        id="evolution-api-key"
+                        type="password"
+                        placeholder="7cb3d919..."
+                        value={settings.evolution_api_key ?? ""}
+                        onChange={(e) => updateSetting("evolution_api_key", e.target.value)}
+                        className="bg-muted rounded-xl focus-visible:ring-offset-0 focus-visible:ring-primary/60 font-mono text-xs"
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="whatsapp-phone">Número de Teléfono de la Clínica (Opcional)</Label>
+                      <Input
+                        id="whatsapp-phone"
+                        type="text"
+                        placeholder="+34 600 000 000"
+                        value={settings.whatsapp_phone ?? ""}
+                        onChange={(e) => updateSetting("whatsapp_phone", e.target.value)}
+                        className="bg-muted rounded-xl focus-visible:ring-offset-0 focus-visible:ring-primary/60"
+                      />
+                    </div>
+                  </div>
+                </details>
               </div>
             )}
           </CardContent>
@@ -527,6 +656,19 @@ export default function MessagingSettingsPage() {
               telegram_phone: userData.phone || prev.telegram_phone,
               telegram_session_string: "session_active",
             }));
+          }}
+        />
+
+        <WhatsAppQrModal
+          isOpen={isWhatsAppQrModalOpen}
+          onClose={() => setIsWhatsAppQrModalOpen(false)}
+          onSuccess={() => {
+            setWhatsAppConnected(true);
+            setSettings((prev) => ({
+              ...prev,
+              whatsapp_enabled: true,
+            }));
+            checkWhatsAppStatus();
           }}
         />
       </form>
