@@ -11,6 +11,7 @@ import { AppointmentDetailDrawer } from "@/components/calendar/appointment-detai
 import { triggerNewAppointmentModal } from "@/components/calendar/new-appointment-modal";
 import { AttachmentBadges } from "@/components/calendar/attachment-badges";
 import { isImageDocument } from "@/lib/utils/document-utils";
+import { getCleanNotesPreview } from "@/lib/appointments/notes-parser";
 
 export interface Clinic {
   id: string;
@@ -201,17 +202,21 @@ function DraggableEvent({
           <span className="text-[9px] opacity-80 shrink-0 font-medium">{event.startTime}</span>
         </div>
       </div>
-      <p className="text-[10px] opacity-90 truncate pointer-events-none">{event.title} · {clinic.name}</p>
-      {(event.previousNotes || event.notes) && (
-        <>
-          {event.previousNotes && (
-            <p className="text-[9px] opacity-80 truncate pointer-events-none">↩ {event.previousNotes}</p>
-          )}
-          {event.notes && (
-            <p className="text-[9px] opacity-80 truncate pointer-events-none">→ {event.notes}</p>
-          )}
-        </>
-      )}
+      {(event.previousNotes || event.notes) && (() => {
+        const cleanPrev = getCleanNotesPreview(event.previousNotes);
+        const cleanCurr = getCleanNotesPreview(event.notes);
+        if (!cleanPrev && !cleanCurr) return null;
+        return (
+          <div className="mt-1 space-y-0.5 border-t border-current/20 pt-1">
+            {cleanPrev && (
+              <p className="text-[9px] opacity-80 truncate pointer-events-none">↩ {cleanPrev}</p>
+            )}
+            {cleanCurr && (
+              <p className="text-[9px] opacity-90 truncate pointer-events-none">→ {cleanCurr}</p>
+            )}
+          </div>
+        );
+      })()}
     </div>
   );
 }

@@ -33,6 +33,7 @@ import {
   DOC_TYPE_LABELS,
 } from "@/lib/utils/document-utils";
 import { PhotoLightbox } from "@/components/patients/photo-lightbox";
+import { parseAppointmentNotes } from "@/lib/appointments/notes-parser";
 
 type AppointmentDetailDrawerProps = {
   event: AppointmentEvent | null;
@@ -156,6 +157,9 @@ export function AppointmentDetailDrawer({
   const formattedDateStr = format(event.date, "EEEE, d 'de' MMMM", { locale: es });
   const statusMeta = getStatusMeta(event.status);
 
+  const prevParsed = parseAppointmentNotes(event.previousNotes);
+  const currentParsed = parseAppointmentNotes(event.notes);
+
   // Fotos para lightbox: solo imagenes con url
   const imageDocs = docs.filter((d) => d.is_image && !!d.url);
   const photosForLightbox = imageDocs.map((d) => ({
@@ -197,7 +201,7 @@ export function AppointmentDetailDrawer({
   return (
     <>
       <Dialog open={isOpen} onOpenChange={handleOpenChange}>
-        <DialogContent className="sm:max-w-md rounded-3xl p-6 bg-background border border-border/90 shadow-2xl text-foreground max-h-[92vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-md rounded-3xl p-6 bg-background border border-border/90 shadow-2xl text-foreground max-h-[92vh] overflow-y-auto overflow-x-hidden w-full max-w-[calc(100vw-2rem)] min-w-0">
           {/* Top Header Action Buttons */}
           <div className="flex items-center justify-end gap-1 pr-6 mb-2">
             <button
@@ -325,29 +329,63 @@ export function AppointmentDetailDrawer({
           </div>
 
           {/* Sección Resumen de Sesiones */}
-          <div className="space-y-3.5 pt-4 mt-4 border-t border-border/60 text-xs text-muted-foreground">
+          <div className="space-y-3.5 pt-4 mt-4 border-t border-border/60 text-xs text-muted-foreground min-w-0 max-w-full overflow-hidden">
             <div className="flex items-center gap-2">
               <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
               <h4 className="font-bold text-foreground">📋 Resumen de Sesiones</h4>
             </div>
 
             {/* Sesión Anterior */}
-            <div className="pl-7 space-y-1">
-              <p className="font-semibold text-foreground">Sesión Anterior: {event.previousDate ? format(new Date(event.previousDate), "d MMM yyyy", { locale: es }) : "Sin sesión anterior registrada"}</p>
-              {event.previousNotes ? (
-                <p className="text-muted-foreground whitespace-pre-wrap">{event.previousNotes}</p>
-              ) : (
+            <div className="pl-6 space-y-1.5 min-w-0 max-w-full">
+              <p className="font-semibold text-foreground break-words">
+                Sesión Anterior: {event.previousDate ? format(new Date(event.previousDate), "d MMM yyyy", { locale: es }) : "Sin sesión anterior registrada"}
+              </p>
+              {prevParsed.clinicalNotes ? (
+                <p className="text-muted-foreground whitespace-pre-wrap break-words [overflow-wrap:anywhere] leading-relaxed">
+                  {prevParsed.clinicalNotes}
+                </p>
+              ) : prevParsed.procedures.length === 0 ? (
                 <p className="text-muted-foreground italic">No hay notas para la sesión anterior.</p>
+              ) : null}
+
+              {prevParsed.procedures.length > 0 && (
+                <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                  <span className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Procedimientos:</span>
+                  {prevParsed.procedures.map((proc, idx) => (
+                    <span
+                      key={idx}
+                      className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium bg-primary/10 text-primary border border-primary/20 max-w-full break-words"
+                    >
+                      {proc.name}{proc.toothRef ? ` (${proc.toothRef})` : ""}
+                    </span>
+                  ))}
+                </div>
               )}
             </div>
 
             {/* Sesión Actual / Plan */}
-            <div className="pl-7 space-y-1">
-              <p className="font-semibold text-foreground">Sesión Actual / Plan:</p>
-              {event.notes ? (
-                <p className="text-muted-foreground whitespace-pre-wrap">{event.notes}</p>
-              ) : (
-                <p className="text-muted-foreground italic">{event.title}</p>
+            <div className="pl-6 space-y-1.5 min-w-0 max-w-full">
+              <p className="font-semibold text-foreground break-words">Sesión Actual / Plan:</p>
+              {currentParsed.clinicalNotes ? (
+                <p className="text-muted-foreground whitespace-pre-wrap break-words [overflow-wrap:anywhere] leading-relaxed">
+                  {currentParsed.clinicalNotes}
+                </p>
+              ) : currentParsed.procedures.length === 0 ? (
+                <p className="text-muted-foreground italic break-words">{event.title}</p>
+              ) : null}
+
+              {currentParsed.procedures.length > 0 && (
+                <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                  <span className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Procedimientos:</span>
+                  {currentParsed.procedures.map((proc, idx) => (
+                    <span
+                      key={idx}
+                      className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium bg-primary/10 text-primary border border-primary/20 max-w-full break-words"
+                    >
+                      {proc.name}{proc.toothRef ? ` (${proc.toothRef})` : ""}
+                    </span>
+                  ))}
+                </div>
               )}
             </div>
           </div>
