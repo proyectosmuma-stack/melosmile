@@ -1,14 +1,22 @@
-# 🏥 ESTADO DEL PROYECTO MELOSMILE — SESIÓN 10/09/2026: BUGFIX + GESTIÓN NOTION
+# 🏥 ESTADO DEL PROYECTO MELOSMILE — SESIÓN 11/09/2026: CATÁLOGO 2026 + BRANDING + DEPLOY
 
 ## 🎯 OBJETIVO ACTUAL
-**Sesión en curso (10/09/2026):** Dos frentes:
-1. **Bugfix mensajería**: Corregir la página `/settings/messaging` (Frente 3 Mensajería) que no permitía guardar tokens de Telegram/Email en `localhost:3028`.
-2. **Gestión Notion**: Buscar el proyecto MeloSmile en Notion, crear/actualizar tareas pendientes, reorganizar el calendario por prioridad y actualizar el estado del proyecto.
+**Sesión 11/09/2026:**
+1. **Catálogo de Tratamientos 2026**: Integrar y consolidar los 53 tratamientos activos en 10 familias clínicas según la documentación oficial 2026 (NAS: `/Volumes/mumaec.synology.me/.../documentos`). Mantener 41 tratamientos legacy desactivados (`is_active=false`). Migración ejecutada con éxito en BD Local y Cloud.
+2. **Identidad Visual Corporativa (Branding)**:
+   - Color corporativo MeloSmile Purple `#85348c` fijado como `--primary` en `globals.css`.
+   - Extracción de logotipos oficiales en SVG desde NAS (`logo-color.svg`, `full-logo-color.svg`, `logo-mono.svg`, `full-logo-mono.svg`) e integración en `/public/brand/`.
+   - Reemplazo de logos e isotipos en Login (`/login`), Sidebar (`sidebar.tsx`) y Confirmación de Cita (`/c/[token]`).
+3. **Despliegue y Git**:
+   - Commits `c03e6eb` y `4b8ccdb` en `develop` pusheados a `origin/develop`.
+   - Merge `5fc431d` y `2700c12` en `main` pusheados a `origin/main` (producción Vercel).
+4. **Notion**: Tareas `Deploy a producción` (`3d7b6518-1657-8190-88cd-d604a8e3b5fc`) y Bloque medio día (`3c3b6518-1657-81ca-9ea0-e4585b034ba4`) actualizadas al 100% (Completadas).
 
 **Estado:**
-- ✅ **Bugfix de mensajería aplicado** (4 bugs encadenados corregidos) — server reiniciado, API verificada
-- ✅ **Notion gestionado**: 4 tareas creadas, 15 tareas reorganizadas por prioridad, estado del proyecto → "En curso"
-- ⏳ **Pendiente**: validación en navegador del bugfix + commit/deploy a staging
+- ✅ **Catálogo 2026 consolidado y activo** en Local (54321) y Cloud (`amhfdzfcmpastmlsosou`).
+- ✅ **Branding oficial aplicado** en toda la aplicación.
+- ✅ **Git develop y main sincronizados y pusheados**.
+- ✅ **Notion actualizado** y estado guardado en RAG.
 
 ## 🐛 BUG FIX — messaging_settings (CRÍTICO)
 
