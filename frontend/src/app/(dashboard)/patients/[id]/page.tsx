@@ -24,6 +24,7 @@ import { EditReminderModal } from "@/components/reminders/edit-reminder-modal";
 import { addSystemNotification } from "@/components/layout/notification-center";
 import { PhotoGallery } from "@/components/patients/photo-gallery";
 import { isImageDocument } from "@/lib/utils/document-utils";
+import { getCleanNotesPreview } from "@/lib/appointments/notes-parser";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -1372,7 +1373,7 @@ function toTitleCase(text: string): string {
                               <span className="flex items-center gap-1"><Building2 className="h-3 w-3" />{app.clinicName}</span>
                               <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{d.time}</span>
                             </p>
-                            {app.notes && <p className="text-[11px] text-muted-foreground mt-1 italic truncate max-w-md">{app.notes}</p>}
+                            {app.notes && <p className="text-[11px] text-muted-foreground mt-1 italic truncate max-w-md">{getCleanNotesPreview(app.notes)}</p>}
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
