@@ -98,17 +98,40 @@ export async function POST(
       );
     }
 
+    let reminderId: string | null = null;
+    try {
+      const { data: reminderRow } = await (supabase as any)
+        .from("reminders")
+        .select("id")
+        .eq("appointment_id", appointmentId)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (reminderRow?.id) {
+        reminderId = reminderRow.id;
+      }
+    } catch (e) {
+      console.warn("Aviso: no se pudo consultar reminder_id previo:", e);
+    }
+
     if (action === "confirm") {
       await (supabase as any)
         .from("appointments")
         .update({ status: "Confirmada" })
         .eq("id", appointmentId);
 
-      // Registrar evento
-      await (supabase as any).from("reminder_events").insert({
-        description: "Cita confirmada por el paciente vía enlace web rápido",
-        event_type: "confirmed",
-      });
+      // Registrar evento de auditoría de forma segura (solo si existe reminder_id)
+      if (reminderId) {
+        try {
+          await (supabase as any).from("reminder_events").insert({
+            reminder_id: reminderId,
+            description: "Cita confirmada por el paciente vía enlace web rápido",
+            event_type: "confirmed",
+          });
+        } catch (eventErr) {
+          console.warn("Aviso: no se pudo registrar en reminder_events:", eventErr);
+        }
+      }
 
       return NextResponse.json({ success: true, status: "Confirmada" });
     } else if (action === "cancel") {
@@ -124,11 +147,18 @@ export async function POST(
         })
         .eq("id", appointmentId);
 
-      // Registrar evento
-      await (supabase as any).from("reminder_events").insert({
-        description: `Cita cancelada por el paciente vía web${notes ? `: ${notes}` : ""}`,
-        event_type: "cancelled_by_patient",
-      });
+      // Registrar evento de auditoría de forma segura (solo si existe reminder_id)
+      if (reminderId) {
+        try {
+          await (supabase as any).from("reminder_events").insert({
+            reminder_id: reminderId,
+            description: `Cita cancelada por el paciente vía web${notes ? `: ${notes}` : ""}`,
+            event_type: "cancelled_by_patient",
+          });
+        } catch (eventErr) {
+          console.warn("Aviso: no se pudo registrar en reminder_events:", eventErr);
+        }
+      }
 
       return NextResponse.json({ success: true, status: "Cancelada" });
     }
