@@ -184,13 +184,15 @@ function DraggableEvent({
       onClick={(e) => onClick(event, e)}
       onDoubleClick={() => onDoubleClick?.(event)}
       className={cn(
-        "w-full rounded-lg px-2 py-1 flex flex-col justify-between text-white transition-all shadow-xs hover:shadow-md cursor-grab active:cursor-grabbing text-left select-none overflow-hidden",
+        "w-full rounded-lg px-2.5 py-1.5 flex flex-col justify-start text-white transition-all shadow-xs hover:shadow-md cursor-grab active:cursor-grabbing text-left select-none overflow-hidden",
         clinic.color
       )}
     >
-      <div className="flex items-center justify-between gap-1">
-        <span className="font-bold text-[11px] leading-tight truncate">{event.patient}</span>
-        <div className="flex items-center gap-1 shrink-0">
+      <div className="flex items-center justify-between gap-1.5 shrink-0">
+        <span className="font-bold text-xs sm:text-[13px] leading-tight truncate drop-shadow-xs">
+          {event.patient}
+        </span>
+        <div className="flex items-center gap-1.5 shrink-0">
           {hasAnyBadge && (
             <AttachmentBadges
               photoCount={event.photoCount}
@@ -199,20 +201,42 @@ function DraggableEvent({
               size="sm"
             />
           )}
-          <span className="text-[9px] opacity-80 shrink-0 font-medium">{event.startTime}</span>
+          <span className="text-[11px] opacity-90 shrink-0 font-semibold">{event.startTime}</span>
         </div>
       </div>
-      {(event.previousNotes || event.notes) && (() => {
+      {(() => {
         const cleanPrev = getCleanNotesPreview(event.previousNotes);
         const cleanCurr = getCleanNotesPreview(event.notes);
-        if (!cleanPrev && !cleanCurr) return null;
+        if (!cleanPrev && !cleanCurr) {
+          if (event.title && event.title !== "Consulta") {
+            return (
+              <p className="text-[11px] text-white/80 truncate mt-1 pointer-events-none font-medium">
+                {event.title}
+              </p>
+            );
+          }
+          return null;
+        }
         return (
-          <div className="mt-1 space-y-0.5 border-t border-current/20 pt-1">
+          <div className="mt-1 space-y-1 border-t border-white/25 pt-1 overflow-hidden">
             {cleanPrev && (
-              <p className="text-[9px] opacity-80 truncate pointer-events-none">↩ {cleanPrev}</p>
+              <p className="text-[11px] sm:text-xs text-white/85 leading-snug truncate pointer-events-none flex items-center gap-1">
+                <span className="font-bold opacity-80 shrink-0">↩</span>
+                <span className="truncate">{cleanPrev}</span>
+              </p>
             )}
             {cleanCurr && (
-              <p className="text-[9px] opacity-90 truncate pointer-events-none">→ {cleanCurr}</p>
+              <p
+                className={cn(
+                  "text-[11px] sm:text-xs text-white leading-snug font-medium pointer-events-none flex items-start gap-1",
+                  heightPx >= 70 && !cleanPrev ? "line-clamp-3" : heightPx >= 70 ? "line-clamp-2" : "truncate"
+                )}
+              >
+                <span className="font-bold text-white shrink-0 mt-0.5">→</span>
+                <span className={cn(heightPx >= 70 && !cleanPrev ? "line-clamp-3" : heightPx >= 70 ? "line-clamp-2" : "truncate")}>
+                  {cleanCurr}
+                </span>
+              </p>
             )}
           </div>
         );
