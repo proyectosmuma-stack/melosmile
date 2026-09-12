@@ -55,7 +55,9 @@ export default function AppointmentConfirmationPage({
         return;
       }
       try {
-        const res = await fetch(`/api/appointments/${appointmentId}/confirm`);
+        const res = await fetch(`/api/appointments/${appointmentId}/confirm`, {
+          cache: "no-store",
+        });
         const data = await res.json();
         if (data.success && data.appointment) {
           setAppointment(data.appointment);
@@ -85,8 +87,8 @@ export default function AppointmentConfirmationPage({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action, notes: cancelNotes }),
       });
-      const data = await res.json();
-      if (data.success) {
+      const data = await res.json().catch(() => ({}));
+      if (data.success || res.ok) {
         if (action === "confirm") {
           setConfirmedSuccess(true);
           setCancelledSuccess(false);
@@ -94,13 +96,15 @@ export default function AppointmentConfirmationPage({
           setCancelledSuccess(true);
           setConfirmedSuccess(false);
         }
-      } else {
-        alert(data.error || "Hubo un problema al procesar tu respuesta.");
       }
+      // Recarga automática de la página para refrescar el estado oficial en WhatsApp / móvil
+      window.location.reload();
     } catch (err: any) {
-      alert("Error de red. Por favor intenta nuevamente.");
+      console.error("Error procesando acción de cita:", err);
+      // Forzar recarga automática incluso ante problemas de conexión en el webview
+      window.location.reload();
     } finally {
-      setSubmitting(false);
+      // Si el reload tarda unos ms, asegurarse de mantener submitting
     }
   };
 
