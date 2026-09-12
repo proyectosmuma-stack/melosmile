@@ -144,6 +144,74 @@ function DroppableCell({
   );
 }
 
+function getEventStatusMeta(rawStatus?: string) {
+  const s = (rawStatus ?? "Pendiente").trim();
+  const lower = s.toLowerCase();
+
+  if (lower === "confirmada" || lower === "confirmed") {
+    return {
+      label: "Confirmada",
+      shortLabel: "Conf.",
+      icon: "✓",
+      dotCls: "bg-emerald-300",
+      badgeCls: "bg-emerald-950/40 text-emerald-200 border border-emerald-400/40",
+    };
+  }
+  if (lower === "pendiente" || lower === "pending") {
+    return {
+      label: "Pendiente",
+      shortLabel: "Pend.",
+      icon: "⏳",
+      dotCls: "bg-amber-300",
+      badgeCls: "bg-amber-950/40 text-amber-200 border border-amber-300/40 font-semibold",
+    };
+  }
+  if (lower === "cancelada" || lower === "cancelled" || lower === "canceled") {
+    return {
+      label: "Cancelada",
+      shortLabel: "Canc.",
+      icon: "✕",
+      dotCls: "bg-rose-400",
+      badgeCls: "bg-red-950/50 text-red-200 border border-red-400/50 font-semibold line-through decoration-red-300/60",
+    };
+  }
+  if (lower === "realizada" || lower === "completada" || lower === "completed" || lower === "done") {
+    return {
+      label: "Realizada",
+      shortLabel: "Realiz.",
+      icon: "✓",
+      dotCls: "bg-sky-300",
+      badgeCls: "bg-blue-950/40 text-blue-200 border border-blue-400/40",
+    };
+  }
+  if (lower === "en proceso" || lower === "in progress") {
+    return {
+      label: "En Proceso",
+      shortLabel: "Proceso",
+      icon: "⚡",
+      dotCls: "bg-purple-300",
+      badgeCls: "bg-purple-950/40 text-purple-200 border border-purple-400/40 font-semibold",
+    };
+  }
+  if (lower === "no presentado" || lower === "no show") {
+    return {
+      label: "No Presentado",
+      shortLabel: "No Asistió",
+      icon: "—",
+      dotCls: "bg-zinc-400",
+      badgeCls: "bg-zinc-900/50 text-zinc-300 border border-zinc-500/40",
+    };
+  }
+
+  return {
+    label: s || "Pendiente",
+    shortLabel: s ? s.slice(0, 5) : "Pend.",
+    icon: "•",
+    dotCls: "bg-white/70",
+    badgeCls: "bg-white/20 text-white border border-white/30",
+  };
+}
+
 // Draggable Event Box
 function DraggableEvent({
   event,
@@ -174,6 +242,7 @@ function DraggableEvent({
   };
 
   const hasAnyBadge = event.photoCount > 0 || event.docCount > 0 || event.hasNotes;
+  const statusMeta = getEventStatusMeta(event.status);
 
   return (
     <div
@@ -188,6 +257,7 @@ function DraggableEvent({
         clinic.color
       )}
     >
+      {/* Fila 1: Paciente + Badges + Hora */}
       <div className="flex items-center justify-between gap-1.5 shrink-0">
         <span className="font-bold text-xs sm:text-[13px] leading-tight truncate drop-shadow-xs">
           {event.patient}
@@ -204,19 +274,31 @@ function DraggableEvent({
           <span className="text-[11px] opacity-90 shrink-0 font-semibold">{event.startTime}</span>
         </div>
       </div>
+
+      {/* Fila 2: Píldora de Estado de la Cita + Tratamiento */}
+      <div className="flex items-center gap-1.5 mt-1 overflow-hidden shrink-0">
+        <span
+          className={cn(
+            "inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] sm:text-[11px] leading-none select-none shrink-0 shadow-xs",
+            statusMeta.badgeCls
+          )}
+          title={`Estado de la cita: ${statusMeta.label}`}
+        >
+          <span className="text-[9px] leading-none font-bold">{statusMeta.icon}</span>
+          <span>{statusMeta.label}</span>
+        </span>
+        {event.title && event.title !== "Consulta" && (
+          <span className="text-[11px] text-white/85 truncate pointer-events-none font-medium">
+            · {event.title}
+          </span>
+        )}
+      </div>
+
+      {/* Fila 3: Notas de evolución clínica (anteriores y actuales) */}
       {(() => {
         const cleanPrev = getCleanNotesPreview(event.previousNotes);
         const cleanCurr = getCleanNotesPreview(event.notes);
-        if (!cleanPrev && !cleanCurr) {
-          if (event.title && event.title !== "Consulta") {
-            return (
-              <p className="text-[11px] text-white/80 truncate mt-1 pointer-events-none font-medium">
-                {event.title}
-              </p>
-            );
-          }
-          return null;
-        }
+        if (!cleanPrev && !cleanCurr) return null;
         return (
           <div className="mt-1 space-y-1 border-t border-white/25 pt-1 overflow-hidden">
             {cleanPrev && (
@@ -638,12 +720,16 @@ export function CalendarView({ selectedClinicId = "all" }: { selectedClinicId?: 
                     {dayEvents.slice(0, 2).map((evt) => {
                       const cl = getClinic(evt.clinicId);
                       const showMonthBadges = evt.photoCount > 0 || evt.docCount > 0 || evt.hasNotes;
+                      const stMeta = getEventStatusMeta(evt.status);
                       return (
                         <div
                           key={evt.id}
                           className={cn("text-[10px] px-1.5 py-0.5 rounded font-medium text-white flex items-center justify-between gap-1 overflow-hidden", cl.color)}
                         >
-                          <span className="truncate">{evt.startTime} {evt.patient}</span>
+                          <div className="flex items-center gap-1 truncate">
+                            <span className={cn("h-1.5 w-1.5 rounded-full shrink-0 shadow-xs", stMeta.dotCls)} title={stMeta.label} />
+                            <span className="truncate">{evt.startTime} {evt.patient}</span>
+                          </div>
                           {showMonthBadges && (
                             <span className="shrink-0 flex items-center">
                               <AttachmentBadges
