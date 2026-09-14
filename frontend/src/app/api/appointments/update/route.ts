@@ -195,7 +195,7 @@ export async function POST(req: Request) {
         .select("id, appointment_date, patients(first_name, last_name)")
         .gte("appointment_date", sourceDay + "T00:00:00")
         .lte("appointment_date", sourceDay + "T23:59:59.999")
-        .not("status", "in", "(Cancelada,Realizada,No asiste)");
+        .not("status", "in", "(Cancelada,Realizada)");
 
       if (clinicFilterId) bulkQuery = bulkQuery.eq("clinic_id", clinicFilterId);
 
