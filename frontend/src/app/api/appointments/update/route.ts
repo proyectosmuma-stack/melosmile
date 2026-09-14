@@ -153,6 +153,7 @@ export async function POST(req: Request) {
       const sourceDateStr = findFirstNonEmpty(body.source_date, searchParams.get("source_date"));
       const targetDateStr = findFirstNonEmpty(body.target_date, searchParams.get("target_date"));
       const rawClinicBulk = findFirstNonEmpty(body.clinic, searchParams.get("clinic"));
+      const rawSourceClinicBulk = findFirstNonEmpty(body.source_clinic, searchParams.get("source_clinic"));
 
       if (!sourceDateStr || !targetDateStr) {
         return NextResponse.json(
@@ -172,32 +173,44 @@ export async function POST(req: Request) {
 
       const sourceDay = resolvedSourceDate.substring(0, 10);
       const targetDay = resolvedTargetDate.substring(0, 10);
-      if (sourceDay === targetDay) {
-        return NextResponse.json(
-          { error: "source_date y target_date no pueden ser iguales para la re-agenda masiva." },
-          { status: 400 }
-        );
+
+      let sourceClinicId: string | null = null;
+      if (rawSourceClinicBulk) {
+        const { data: matchedSourceClinic } = await dbClient
+          .from("clinics")
+          .select("id")
+          .or(`name.ilike.%${rawSourceClinicBulk}%,address.ilike.%${rawSourceClinicBulk}%`)
+          .limit(1)
+          .maybeSingle();
+        if (matchedSourceClinic) sourceClinicId = matchedSourceClinic.id;
       }
 
-      let clinicFilterId: string | null = null;
+      let destClinicId: string | null = null;
       if (rawClinicBulk) {
-        const { data: matchedClinic } = await dbClient
+        const { data: matchedDestClinic } = await dbClient
           .from("clinics")
           .select("id")
           .or(`name.ilike.%${rawClinicBulk}%,address.ilike.%${rawClinicBulk}%`)
           .limit(1)
           .maybeSingle();
-        if (matchedClinic) clinicFilterId = matchedClinic.id;
+        if (matchedDestClinic) destClinicId = matchedDestClinic.id;
+      }
+
+      if (sourceDay === targetDay && !destClinicId) {
+        return NextResponse.json(
+          { error: "source_date y target_date no pueden ser iguales para la re-agenda masiva, salvo que se indique la clínica de destino (clinic)." },
+          { status: 400 }
+        );
       }
 
       let bulkQuery = dbClient
         .from("appointments")
-        .select("id, appointment_date, patients(first_name, last_name)")
+        .select("id, appointment_date, clinic_id, patients(first_name, last_name)")
         .gte("appointment_date", sourceDay + "T00:00:00")
         .lte("appointment_date", sourceDay + "T23:59:59.999")
         .not("status", "in", "(Cancelada,Realizada)");
 
-      if (clinicFilterId) bulkQuery = bulkQuery.eq("clinic_id", clinicFilterId);
+      if (sourceClinicId) bulkQuery = bulkQuery.eq("clinic_id", sourceClinicId);
 
       const { data: bulkAppointments, error: bulkFetchErr } = await bulkQuery;
       if (bulkFetchErr) {
@@ -212,14 +225,21 @@ export async function POST(req: Request) {
         try {
           const original = String(appt.appointment_date);
           const originalDay = original.substring(0, 10);
-          if (originalDay === targetDay) continue;
+          const needsDateChange = originalDay !== targetDay;
+          const needsClinicChange = Boolean(destClinicId) && String(appt.clinic_id) !== destClinicId;
+
+          if (!needsDateChange && !needsClinicChange) continue;
 
           const timePart = original.includes("T") ? original.substring(original.indexOf("T")) : "T00:00:00";
           const nuevaISO = targetDay + timePart;
 
+          const payload: Record<string, any> = {};
+          if (needsDateChange) payload.appointment_date = nuevaISO;
+          if (needsClinicChange) payload.clinic_id = destClinicId;
+
           const { error: bulkUpdErr } = await dbClient
             .from("appointments")
-            .update({ appointment_date: nuevaISO })
+            .update(payload)
             .eq("id", appt.id);
 
           if (bulkUpdErr) throw bulkUpdErr;
@@ -228,8 +248,9 @@ export async function POST(req: Request) {
           citasMovidas.push({
             id: appt.id,
             patient: nombre || "n/a",
+            clinic_id: destClinicId || appt.clinic_id,
             hora_original: original.includes("T") ? original.substring(original.indexOf("T") + 1, original.indexOf("T") + 6) : "",
-            hora_nueva: nuevaISO.includes("T") ? nuevaISO.substring(nuevaISO.indexOf("T") + 1, nuevaISO.indexOf("T") + 6) : "",
+            hora_nueva: nuevaISO.includes("T") ? nuevaISO.substring(nuevaISO.indexOf("T") + 1, nuevaISO.indexOf("T") + 6) : original.includes("T") ? original.substring(original.indexOf("T") + 1, original.indexOf("T") + 6) : "",
           });
         } catch (e: any) {
           errores.push({ id: appt.id, error: e.message });
@@ -579,7 +600,19 @@ export async function POST(req: Request) {
     if (notes) updates.notes = notes;
     if (treatment_id) updates.treatment_id = treatment_id;
     if (professional_id) updates.professional_id = professional_id;
-    if (clinic_id) updates.clinic_id = clinic_id;
+
+    // Resolver clínica por nombre (campo `clinic`) en la rama de actualización
+    let resolvedClinicId = clinic_id && UUID_REGEX.test(clinic_id) ? clinic_id : null;
+    if (!resolvedClinicId && rawClinic) {
+      const { data: matchedClinic } = await dbClient
+        .from("clinics")
+        .select("id")
+        .or(`name.ilike.%${rawClinic}%,address.ilike.%${rawClinic}%`)
+        .limit(1)
+        .maybeSingle();
+      if (matchedClinic) resolvedClinicId = matchedClinic.id;
+    }
+    if (resolvedClinicId) updates.clinic_id = resolvedClinicId;
 
     if (Object.keys(updates).length === 0) {
       return NextResponse.json(
