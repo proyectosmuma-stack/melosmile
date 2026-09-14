@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Plus } from "lucide-react";
+import { Plus, Megaphone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ReminderList } from "@/components/reminders/ReminderList";
 import { GlobalNewReminderModal } from "@/components/reminders/global-new-reminder-modal";
@@ -15,13 +15,18 @@ export default function GlobalRemindersPage() {
     <div className="flex flex-col h-full overflow-hidden bg-background">
       {/* Header */}
       <div className="flex-none p-6 border-b border-border bg-card shadow-xs z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">
-            Centro de Notificaciones
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Gestiona los recordatorios y notificaciones pendientes de todos los pacientes.
-          </p>
+        <div className="flex items-center gap-3">
+          <div className="p-2.5 bg-primary/10 text-primary rounded-xl">
+            <Megaphone className="h-6 w-6" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-foreground">
+              Centro de Notificaciones
+            </h1>
+            <p className="text-sm text-muted-foreground mt-0.5">
+              Gestiona los recordatorios y notificaciones pendientes de todos los pacientes.
+            </p>
+          </div>
         </div>
         
         <Button 

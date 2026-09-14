@@ -5,7 +5,7 @@ import {
   User, Phone, Mail, FileText, Calendar as CalendarIcon, CreditCard,
   Activity, Upload, CheckCircle2, AlertCircle, ShieldAlert, Pill,
   Stethoscope, ArrowLeft, Clock, MapPin, Loader2, Building2, Edit3,
-  Bell, Plus, Receipt, ChevronRight, X, UserCheck, Baby,
+  Megaphone, Plus, Receipt, ChevronRight, X, UserCheck, Baby,
   BadgeCheck, Sparkles, ExternalLink, Tag as TagIcon, Save, Smile, MessageSquare,
   Trash2, CheckSquare, Square, Image as ImageIcon, Camera, Send, Send as SendIcon, RefreshCw
 } from "lucide-react";
@@ -1210,7 +1210,7 @@ function toTitleCase(text: string): string {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
           { label: "Visitas totales", value: appointments.length, icon: CalendarIcon, color: "text-info bg-info/10 border-info/20" },
-          { label: "Recordatorios", value: reminders.length, icon: Bell, color: "text-warning bg-warning/10 border-warning/20" },
+          { label: "Recordatorios", value: reminders.length, icon: Megaphone, color: "text-warning bg-warning/10 border-warning/20" },
           { label: "Total cobrado", value: `${totalPaid.toFixed(0)} €`, icon: CheckCircle2, color: "text-success bg-success/10 border-success/20" },
           { label: "Pendiente cobro", value: `${totalPending.toFixed(0)} €`, icon: CreditCard, color: "text-primary bg-primary/10 border-primary/20" },
         ].map(stat => (
@@ -1234,7 +1234,7 @@ function toTitleCase(text: string): string {
             { id: "historial", label: `Historial de Citas${appointments.length > 0 ? ` (${appointments.length})` : ""}`, icon: CalendarIcon },
             { id: "galeria", label: `Fotografías${photoCount > 0 ? ` (${photoCount})` : ""}`, icon: ImageIcon },
             { id: "facturacion", label: `Facturación y Pagos${billing.length > 0 ? ` (${billing.length})` : ""}`, icon: Receipt },
-            { id: "recordatorios", label: `Recordatorios${reminders.length > 0 ? ` (${reminders.length})` : ""}`, icon: Bell },
+            { id: "recordatorios", label: `Recordatorios${reminders.length > 0 ? ` (${reminders.length})` : ""}`, icon: Megaphone },
           ] as const).map(tab => (
             <button
               key={tab.id}
@@ -1727,7 +1727,7 @@ function toTitleCase(text: string): string {
             </div>
             {reminders.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-16 text-muted-foreground space-y-3">
-                <Bell className="h-10 w-10 text-muted-foreground" />
+                <Megaphone className="h-10 w-10 text-muted-foreground" />
                 <div className="text-center">
                   <p className="font-bold text-foreground text-sm">Sin recordatorios programados</p>
                   <p className="text-xs text-muted-foreground mt-0.5">Programa notificaciones por WhatsApp o Email para el paciente</p>
@@ -1759,7 +1759,7 @@ function toTitleCase(text: string): string {
                           isTelegram ? "bg-sky-500/10 border-sky-500/20 text-sky-400" :
                           "bg-purple-50 border-purple-100 text-purple-600"
                         }`}>
-                          {isWhatsapp ? <MessageSquare className="h-5 w-5" /> : isEmail ? <Mail className="h-5 w-5" /> : isTelegram ? <Send className="h-5 w-5" /> : <Bell className="h-5 w-5" />}
+                          {isWhatsapp ? <MessageSquare className="h-5 w-5" /> : isEmail ? <Mail className="h-5 w-5" /> : isTelegram ? <Send className="h-5 w-5" /> : <Megaphone className="h-5 w-5" />}
                         </div>
                         <div>
                           <div className="flex items-center gap-2">
