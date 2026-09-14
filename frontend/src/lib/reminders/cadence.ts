@@ -9,7 +9,7 @@ export interface CreateCadenceOptions {
   appointmentDate: string; // ISO string
   reason?: string;
   isConfirmed?: boolean;
-  channels?: string[]; // e.g. ["telegram", "whatsapp"]
+  channels?: string[]; // Por defecto ["whatsapp"]
 }
 
 /**
@@ -26,7 +26,7 @@ export async function createAutomaticAppointmentReminders(options: CreateCadence
     appointmentDate,
     reason = "Consulta Odontológica",
     isConfirmed = false,
-    channels = ["telegram"],
+    channels = ["whatsapp"],
   } = options;
 
   const apptDateObj = new Date(appointmentDate);

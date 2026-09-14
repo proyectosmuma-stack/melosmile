@@ -24,10 +24,10 @@ export async function POST(req: Request) {
       );
     }
 
-    // Acepta selección múltiple de canales (array) o canal único
+    // Acepta selección múltiple de canales (array) o canal único (por defecto WhatsApp)
     const channelList: string[] = Array.isArray(channels) && channels.length > 0
       ? channels
-      : [channel || "telegram"];
+      : [channel || "whatsapp"];
 
     const createdReminders = [];
 

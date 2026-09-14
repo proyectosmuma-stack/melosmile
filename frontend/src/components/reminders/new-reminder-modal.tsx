@@ -43,8 +43,8 @@ export function NewReminderModal({
   onSuccess,
 }: NewReminderModalProps) {
   const [loading, setLoading] = useState(false);
-  // Selección múltiple de canales
-  const [selectedChannels, setSelectedChannels] = useState<string[]>(["telegram"]);
+  // Selección de canal (por defecto únicamente WhatsApp)
+  const [selectedChannels, setSelectedChannels] = useState<string[]>(["whatsapp"]);
   const [reminderType, setReminderType] = useState<string>("recordatorio_cita");
   const [selectedAppointmentId, setSelectedAppointmentId] = useState<string>("");
   const [scheduledDate, setScheduledDate] = useState<string>("");
