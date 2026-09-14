@@ -8,6 +8,9 @@
     "db:sync": "node scripts/sync_db.js",
     "telegram:auth": "node scripts/telegram_auth.js",
     "telegram:qr": "node scripts/telegram_auth_qr.js",
+    "reports": "node ../scripts/sync_reports.js",
+    "reports:all": "node ../scripts/sync_reports.js --list",
+    "reports:sync": "node ../scripts/sync_reports.js --sync",
     "build": "next build",
     "start": "next start",
     "lint": "eslint"

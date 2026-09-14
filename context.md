@@ -396,3 +396,24 @@ El test de verificación reveló que **`google/gemini-3.1-pro-preview` tiene quo
      - **Telegram MTProto (GramJS/Telethon)**: Conectar una sesión oficial con `api_id` y `api_hash` de la línea telefónica de la clínica para enviar directamente al número del paciente (+34...).
      - **WhatsApp Business API (Cloud API)**: Envío directo de plantillas de recordatorio al número de WhatsApp del paciente.
    - Tarea agendada en Notion para 2026-09-11 bajo el proyecto *Sistema Melosmile*.
+
+---
+
+## 🩺 Fix Musly: cambio de clínica en citas CONFIRMADO E2E (14/09/2026)
+
+**Incidente**: Musly confirmaba "Todas las citas han sido modificadas exitosamente" al mover citas a otra clínica, pero la clínica no cambiaba en Supabase producción (`xylqytpudbdcsbuuwqpi`).
+
+**Causa raíz** en `frontend/src/app/api/appointments/update/route.ts`:
+1. `bulk_reschedule` solo escribía `appointment_date`; `clinic` se usaba como filtro del día origen (nunca como destino).
+2. `bulk_reschedule` rechazaba `source_date == target_date` (400) → "mover a Goya en el mismo día" era imposible.
+3. Rama `update` ignoraba el campo `clinic` (nombre): solo aceptaba `clinic_id` UUID.
+
+**Fix (commit `e2ac083`, develop — pendiente push/merge a `main`)**:
+- `bulk_reschedule`: `clinic` = clínica **destino** (persiste `clinic_id`), permite misma fecha con cambio de clínica, añade `source_clinic` para filtrar origen, y omite citas que ya están en la clínica destino.
+- `update`: resuelve clínica por nombre → `clinic_id`.
+- n8n PROD (`d74hAW8IkmmCqoh5`): `Tool_Bulk_Reschedule` con descripción de destino + campo `source_clinic`.
+
+**Despliegue y verificación**:
+- Deploy directo a Vercel `melosmile-production` (`agenda.melosmile.com`) desde copia limpia de `develop`.
+- Test: revert de las 4 citas (Ronald, Kami, Richard, Emma) a Daniel Bustamante → Musly (dispatcher real n8n, ejecución `4919`) las movió a Goya con `bulk_reschedule(2026-09-22, 2026-09-22, clinic=Goya)` → DB producción confirmó **6/6 citas del 22/09 en Goya**.
+- Regla operativa refrendada: **la base de datos es la verdad absoluta, no la respuesta del LLM** (Musly debe verificarse contra la agenda antes de afirmar éxito).

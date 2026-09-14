@@ -370,7 +370,7 @@ export default function EditPatientPage({ params }: { params: Promise<{ id: stri
             const odooRes = await fetch('/api/odoo/partner', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(newValues),
+              body: JSON.stringify({ ...newValues, odoo_partner_id: pData?.odoo_partner_id }),
             });
             
             if (!odooRes.ok) {

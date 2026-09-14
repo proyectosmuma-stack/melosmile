@@ -17,6 +17,7 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   LogOut,
+  Bell,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -27,6 +28,7 @@ import { cn } from "@/lib/utils";
 const mainNavigation = [
   { name: "Agenda & Citas", href: "/", icon: Calendar },
   { name: "Fichas Pacientes", href: "/patients", icon: Users },
+  { name: "Notificaciones", href: "/reminders", icon: Bell },
   { name: "Cálculo Facturación", href: "/billing", icon: Receipt },
 ];
 

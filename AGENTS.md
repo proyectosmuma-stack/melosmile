@@ -80,6 +80,14 @@ Cuando el usuario diga **/stop-monitor**, **"Deten monitoreo"**, **"Pausa monito
 2. **Cancelación**: Ejecutar `manage_task(Action='kill', TaskId=...)`.
 3. **Confirmación**: Notificar la detención y emitir un resumen de 3 líneas del estado del sistema.
 
+### Protocolo de Auditoría y Reportes de Musly ("Revisa reportes", "Fallos de Musly", "Log de Musly")
+Cuando el usuario diga **"Revisa los reportes"**, **"Fallos de Musly"**, **"Log de errores de Musly"** o similar:
+1. **Identidad de Musly**: Musly es el **asistente de IA integrado en el sistema MeloSmile** (barra y modal `⌘K` del dashboard), que orquesta los subagentes de agendamiento (`03`), historial clínico (`02`), facturación (`07`) y notas clínicas (`05`). NUNCA confundir con librerías externas ni buscar fuera del proyecto.
+2. **Fuente de Verdad Única (SSOT)**: La tabla **`ai_agent_reports` en Supabase Cloud** es la fuente centralizada de todos los reportes emitidos desde localhost, staging o producción.
+3. **Comando de Consulta Rápida**: Ejecutar `npm run reports` (o `node scripts/sync_reports.js`) para ver los reportes pendientes directamente desde Supabase sin gastar tokens.
+4. **Sincronización Canónica de Archivo**: Ejecutar `npm run reports:sync` para descargar y regenerar `logs/agent_reports.log` con el historial 100% fiel de Supabase.
+5. **Cierre de Incidencias**: Una vez resuelto el bug con el CTO/programador, marcar el reporte como resuelto con `node scripts/sync_reports.js --resolve <id> --notes "Fix aplicado en..."`.
+
 ---
 
 

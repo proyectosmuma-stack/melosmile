@@ -3,8 +3,8 @@ import { upsertOdooPartner } from '@/lib/odoo/client';
 
 export async function POST(request: Request) {
   try {
-    const data = await request.json();
-    const partnerId = await upsertOdooPartner(data);
+    const { odoo_partner_id, ...rest } = await request.json();
+    const partnerId = await upsertOdooPartner({ ...rest, odoo_partner_id: odoo_partner_id || undefined });
     
     return NextResponse.json({ success: true, partnerId });
   } catch (error: any) {

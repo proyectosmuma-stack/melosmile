@@ -30,6 +30,17 @@ export async function POST(req: Request) {
     }
 
     // 1. Upsert Partner in Odoo
+    // Target the already-mapped partner (patient.odoo_partner_id) when it exists
+    // so address/fiscal updates land on the correct record instead of a
+    // re-search that could hit the wrong partner or create a duplicate.
+    let mappedPartnerId: number | null = null;
+    const { data: patientRow } = await (supabase as any)
+      .from("patients")
+      .select("odoo_partner_id")
+      .eq("id", patientId)
+      .maybeSingle();
+    if (patientRow?.odoo_partner_id) mappedPartnerId = patientRow.odoo_partner_id;
+
     const partnerId = await upsertOdooPartner({
       full_name: (patientDetails.firstName || "") + " " + (patientDetails.lastName || ""),
       nif_cif: patientDetails.nifCif,
@@ -39,6 +50,7 @@ export async function POST(req: Request) {
       billing_postal_code: patientDetails.billingPostalCode,
       email: patientDetails.email,
       phone: patientDetails.phone,
+      odoo_partner_id: mappedPartnerId || undefined,
     });
 
     // 2. Prepare Invoice Lines & References

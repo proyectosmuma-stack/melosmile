@@ -127,14 +127,15 @@ export async function POST(req: NextRequest) {
       console.error("Excepción guardando reporte en Supabase:", err);
     }
 
-    // 2. Safe file log append
-    const logDirectories = [
-      path.join(process.cwd(), "logs"),
-      path.join(process.cwd(), "..", "logs"),
-      "/tmp",
-    ];
+    // 2. Safe file log append to canonical locations
+    const possibleRoots = [process.cwd(), path.resolve(process.cwd(), "..")];
+    const targetLogDirs = new Set<string>(["/tmp"]);
+    for (const r of possibleRoots) {
+      targetLogDirs.add(path.join(r, "logs"));
+      targetLogDirs.add(path.join(r, "frontend", "logs"));
+    }
 
-    for (const dirPath of logDirectories) {
+    for (const dirPath of targetLogDirs) {
       try {
         if (!fs.existsSync(dirPath)) {
           fs.mkdirSync(dirPath, { recursive: true });
@@ -142,7 +143,7 @@ export async function POST(req: NextRequest) {
         const logFilePath = path.join(dirPath, "agent_reports.log");
         fs.appendFileSync(logFilePath, fullLogEntry, "utf-8");
       } catch (fileErr) {
-        // Ignore read-only filesystem errors in Vercel root
+        // Ignore read-only filesystem errors in Vercel serverless environment
       }
     }
 
