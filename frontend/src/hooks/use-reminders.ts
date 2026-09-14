@@ -1,7 +1,18 @@
 import useSWR from 'swr';
 import { Database } from '@/lib/supabase/types';
 
-type Reminder = Database['public']['Tables']['reminders']['Row'];
+export type ReminderWithPatient = Database['public']['Tables']['reminders']['Row'] & {
+  patient?: {
+    id: string;
+    first_name: string;
+    last_name: string;
+    phone?: string | null;
+  } | null;
+  appointment?: {
+    id: string;
+    appointment_date: string;
+  } | null;
+};
 
 const fetcher = (url: string) => fetch(url).then((res) => {
   if (!res.ok) throw new Error('Failed to fetch data');
@@ -10,7 +21,7 @@ const fetcher = (url: string) => fetch(url).then((res) => {
 
 export function useReminders(patientId?: string) {
   const queryParam = patientId ? `?patientId=${patientId}` : '';
-  const { data, error, isLoading, mutate } = useSWR<Reminder[]>(
+  const { data, error, isLoading, mutate } = useSWR<ReminderWithPatient[]>(
     `/api/reminders${queryParam}`,
     fetcher
   );

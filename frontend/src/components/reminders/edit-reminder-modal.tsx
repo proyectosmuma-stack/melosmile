@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import {
-  Bell, Calendar, Clock, Mail, MessageSquare, Send, X, Loader2,
+  Megaphone, Calendar, Clock, Mail, MessageSquare, Send, X, Loader2,
   Trash2, Save, Smartphone, AlertCircle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -143,7 +143,7 @@ export function EditReminderModal({
         <div className="px-6 py-5 bg-gradient-to-r from-slate-900 to-slate-800 text-white flex items-center justify-between border-b border-slate-700/60">
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-2xl bg-primary/20 border border-primary/40 flex items-center justify-center text-primary">
-              <Bell className="h-5 w-5" />
+              <Megaphone className="h-5 w-5" />
             </div>
             <div>
               <h2 className="text-base font-bold text-white">Editar Recordatorio</h2>

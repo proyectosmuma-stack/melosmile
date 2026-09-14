@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import {
-  Bell, Calendar, Clock, Mail, MessageSquare, Send, X, Loader2, Sparkles, Check, Smartphone
+  Megaphone, Calendar, Clock, Mail, MessageSquare, Send, X, Loader2, Sparkles, Check, Smartphone
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -195,7 +195,7 @@ ${confirmLink}
         <div className="px-6 py-5 bg-gradient-to-r from-sidebar-accent to-sidebar-border text-sidebar-foreground flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-2xl bg-primary/20 border border-primary/30 flex items-center justify-center text-primary/80">
-              <Bell className="h-5 w-5" />
+              <Megaphone className="h-5 w-5" />
             </div>
             <div>
               <h2 className="text-base font-bold">Programar Recordatorio para el Paciente</h2>

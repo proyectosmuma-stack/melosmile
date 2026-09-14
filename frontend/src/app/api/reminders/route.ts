@@ -7,19 +7,14 @@ export async function GET(req: Request) {
     const patientId = searchParams.get('patientId');
 
     const now = new Date();
-    const nextWeek = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
 
     let query = supabaseAdmin
       .from('reminders')
-      .select('id, patient_id, reminder_type, status, scheduled_at, message, subject, channel')
-      .order('scheduled_at', { ascending: true });
+      .select('id, patient_id, appointment_id, reminder_type, status, scheduled_at, sent_at, message, subject, channel, patient:patients(id, first_name, last_name, phone), appointment:appointments(id, appointment_date)')
+      .order('scheduled_at', { ascending: false });
 
     if (patientId) {
       query = query.eq('patient_id', patientId);
-    } else {
-      query = query
-        .gte('scheduled_at', now.toISOString())
-        .lte('scheduled_at', nextWeek.toISOString());
     }
 
     const { data, error } = await query;
