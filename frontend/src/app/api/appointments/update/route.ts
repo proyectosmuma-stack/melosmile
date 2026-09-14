@@ -146,6 +146,105 @@ export async function POST(req: Request) {
 
     const dbClient = supabaseAdmin as any;
 
+    // BULK RESCHEDULE OPERATION (action: "bulk_reschedule") - mueve TODAS las citas de un día a otro preservando la hora local
+    const isBulkReschedule = rawAction === "bulk_reschedule";
+
+    if (isBulkReschedule) {
+      const sourceDateStr = findFirstNonEmpty(body.source_date, searchParams.get("source_date"));
+      const targetDateStr = findFirstNonEmpty(body.target_date, searchParams.get("target_date"));
+      const rawClinicBulk = findFirstNonEmpty(body.clinic, searchParams.get("clinic"));
+
+      if (!sourceDateStr || !targetDateStr) {
+        return NextResponse.json(
+          { error: "source_date y target_date son requeridos para la re-agenda masiva." },
+          { status: 400 }
+        );
+      }
+
+      let resolvedSourceDate: string;
+      let resolvedTargetDate: string;
+      try {
+        resolvedSourceDate = parseAppointmentDate(sourceDateStr);
+        resolvedTargetDate = parseAppointmentDate(targetDateStr);
+      } catch (error: any) {
+        return NextResponse.json({ error: `Error al parsear fechas: ${error.message}` }, { status: 400 });
+      }
+
+      const sourceDay = resolvedSourceDate.substring(0, 10);
+      const targetDay = resolvedTargetDate.substring(0, 10);
+      if (sourceDay === targetDay) {
+        return NextResponse.json(
+          { error: "source_date y target_date no pueden ser iguales para la re-agenda masiva." },
+          { status: 400 }
+        );
+      }
+
+      let clinicFilterId: string | null = null;
+      if (rawClinicBulk) {
+        const { data: matchedClinic } = await dbClient
+          .from("clinics")
+          .select("id")
+          .or(`name.ilike.%${rawClinicBulk}%,address.ilike.%${rawClinicBulk}%`)
+          .limit(1)
+          .maybeSingle();
+        if (matchedClinic) clinicFilterId = matchedClinic.id;
+      }
+
+      let bulkQuery = dbClient
+        .from("appointments")
+        .select("id, appointment_date, patients(first_name, last_name)")
+        .gte("appointment_date", sourceDay + "T00:00:00")
+        .lte("appointment_date", sourceDay + "T23:59:59.999")
+        .not("status", "in", "(Cancelada,Realizada,No asiste)");
+
+      if (clinicFilterId) bulkQuery = bulkQuery.eq("clinic_id", clinicFilterId);
+
+      const { data: bulkAppointments, error: bulkFetchErr } = await bulkQuery;
+      if (bulkFetchErr) {
+        console.error("Bulk reschedule fetch error:", bulkFetchErr);
+        return NextResponse.json({ error: "Error al obtener citas para re-agendar." }, { status: 500 });
+      }
+
+      const citasMovidas: Array<any> = [];
+      const errores: Array<any> = [];
+
+      for (const appt of bulkAppointments || []) {
+        try {
+          const original = String(appt.appointment_date);
+          const originalDay = original.substring(0, 10);
+          if (originalDay === targetDay) continue;
+
+          const timePart = original.includes("T") ? original.substring(original.indexOf("T")) : "T00:00:00";
+          const nuevaISO = targetDay + timePart;
+
+          const { error: bulkUpdErr } = await dbClient
+            .from("appointments")
+            .update({ appointment_date: nuevaISO })
+            .eq("id", appt.id);
+
+          if (bulkUpdErr) throw bulkUpdErr;
+
+          const nombre = appt.patients ? `${appt.patients.first_name || ""} ${appt.patients.last_name || ""}`.trim() : "n/a";
+          citasMovidas.push({
+            id: appt.id,
+            patient: nombre || "n/a",
+            hora_original: original.includes("T") ? original.substring(original.indexOf("T") + 1, original.indexOf("T") + 6) : "",
+            hora_nueva: nuevaISO.includes("T") ? nuevaISO.substring(nuevaISO.indexOf("T") + 1, nuevaISO.indexOf("T") + 6) : "",
+          });
+        } catch (e: any) {
+          errores.push({ id: appt.id, error: e.message });
+        }
+      }
+
+      return NextResponse.json({
+        success: true,
+        action: "bulk_reschedule",
+        count: citasMovidas.length,
+        citas_movidas: citasMovidas,
+        errores: errores,
+      });
+    }
+
     // 1. Resolve Patient ID if text or name is passed
     if (rawPatient && !String(rawPatient).toLowerCase().includes("todas") && !String(rawPatient).toLowerCase().includes("todo")) {
       if (UUID_REGEX.test(rawPatient)) {
