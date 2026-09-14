@@ -17,8 +17,12 @@ try {
   console.log('\n3️⃣ Inyectando base de conocimiento de agentes (Local Only)...');
   execSync('docker exec -i supabase_db_melosmile psql -U postgres < supabase/local_scripts/agent_learnings.sql', { cwd: rootDir, stdio: 'inherit' });
 
+  // 4. Sincronizar reportes de Musly (SSOT)
+  console.log('\n4️⃣ Sincronizando reportes de errores de Musly (ai_agent_reports)...');
+  execSync('node scripts/sync_reports.js --sync', { cwd: rootDir, stdio: 'inherit' });
+
   console.log('\n🎉 ¡Sincronización y Redundancia completada con éxito!');
-  console.log('Tu base de datos local ahora contiene la copia exacta de todos los datos procesados por n8n y los agentes en la nube.');
+  console.log('Tu base de datos local y los logs de reportes ahora contienen la copia exacta de la nube.');
 } catch (error) {
   console.error('\n❌ Error durante la sincronización:', error.message);
   process.exit(1);

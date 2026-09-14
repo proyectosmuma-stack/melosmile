@@ -227,12 +227,20 @@ export async function upsertOdooPartner(patient: {
   billing_postal_code?: string;
   email?: string;
   phone?: string;
+  odoo_partner_id?: number;
 }) {
   const name = patient.billing_name || patient.full_name;
 
-  // Search by VAT/NIF first
+  // Direct write to an already-mapped partner (SSOT: patient.odoo_partner_id)
+  // Avoids re-searching by VAT/email/name, which could hit the wrong partner
+  // or create a duplicate — leaving the mapped partner's address stale.
   let existingIds: number[] = [];
-  if (patient.nif_cif) {
+  if (patient.odoo_partner_id) {
+    existingIds = [patient.odoo_partner_id];
+  }
+
+  // Search by VAT/NIF first
+  if (existingIds.length === 0 && patient.nif_cif) {
     existingIds = await odooExecute('res.partner', 'search', [
       [['vat', '=', patient.nif_cif]],
     ]);
@@ -259,25 +267,36 @@ export async function upsertOdooPartner(patient: {
     ]);
   }
 
-  const vals: Record<string, unknown> = {
-    name,
-    vat: patient.nif_cif || false,
-    street: patient.billing_address || false,
-    city: patient.billing_city || false,
-    zip: patient.billing_postal_code || false,
-    country_id: 67, // Spain in Odoo
-    email: patient.email || false,
-    phone: patient.phone || false,
-    customer_rank: 1,
-    is_company: false,
-    lang: 'es_ES',
-  };
+  // Only write fields the caller actually provided. This prevents a partial
+  // payload (e.g. payment flow without billing address) from wiping existing
+  // street/city/zip/vat on the mapped partner.
+  const providedVals: Record<string, unknown> = { name };
+  if (patient.nif_cif) providedVals.vat = patient.nif_cif;
+  if (patient.billing_address) providedVals.street = patient.billing_address;
+  if (patient.billing_city) providedVals.city = patient.billing_city;
+  if (patient.billing_postal_code) providedVals.zip = patient.billing_postal_code;
+  if (patient.email) providedVals.email = patient.email;
+  if (patient.phone) providedVals.phone = patient.phone;
 
   if (existingIds.length > 0) {
-    await odooExecute('res.partner', 'write', [[existingIds[0]], vals]);
+    await odooExecute('res.partner', 'write', [[existingIds[0]], providedVals]);
     return existingIds[0];
   } else {
-    return odooExecute('res.partner', 'create', [vals]);
+    // Create needs all defaults + provided values
+    const createVals: Record<string, unknown> = {
+      ...providedVals,
+      vat: patient.nif_cif || false,
+      street: patient.billing_address || false,
+      city: patient.billing_city || false,
+      zip: patient.billing_postal_code || false,
+      country_id: 67, // Spain in Odoo
+      email: patient.email || false,
+      phone: patient.phone || false,
+      customer_rank: 1,
+      is_company: false,
+      lang: 'es_ES',
+    };
+    return odooExecute('res.partner', 'create', [createVals]);
   }
 }
 

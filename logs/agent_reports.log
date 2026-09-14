@@ -1,10 +1,178 @@
-================================================================ LOG DE REPORTES DE ERRORES - AGENTE MUSLY
-================================================================
-[REPORTE DE ERROR / CONTEXTO IA - viernes, 24 de julio de 2026, 3:02:10]
-ID Sesión          : nyptzweoffakq921qf7md
-Fecha y Hora       : viernes, 24 de julio de 2026, 3:02:10 (2026-07-24T01:02:10.273Z)
-Agentes Involucrados: Musly Router, Agente General / QA (01-melosmile-agent-qa)
-Comentario Usuario : "Le ha costado seguir las instrucciones que se le pide"
+# ARCHIVO DE REGISTRO DE REPORTES DE ERROR IA (MELOSMILE)
+# Fuente de Verdad Canónica (SSOT): Supabase Cloud (tabla: ai_agent_reports)
+# Generado automáticamente por: node scripts/sync_reports.js --sync
+# Total reportes sincronizados: 17
+# Fecha de sincronización: 2026-09-14T15:41:37.128Z
+
+================================================================================
+[REPORTE DE ERROR / CONTEXTO IA - viernes, 24 de julio de 2026, 2:00:26]
+ID Reporte         : 3983f534-6293-4936-9e03-759446780aca
+ID Sesión          : e07yk3ku3khe2byk3onsw
+Fecha y Hora       : viernes, 24 de julio de 2026, 2:00:26 (2026-07-24T00:00:26.024+00:00)
+Agentes Involucrados: Musly Router, Agente de Agendamiento (03-melosmile-agent-appointment)
+Comentario Usuario : "vuelve a decirme que no hay citas esta semana"
+Estado             : ✅ RESUELTO (2026-07-24T00:37:22.826+00:00)
+Notas Resolución   : Añadida regla de entrenamiento de vocabulario y diccionario dinámico de modismos en n8n y Supabase. Verificado que responde la agenda real de la semana.
+
+------------------- HISTORIAL DE LA CONVERSACIÓN -------------------
+[1] ASISTENTE (Musly) [Intención: general_query]:
+Hola 👋 Soy Musly, tu asistente IA. Puedo agendar citas, consultar la agenda del día, gestionar pacientes y facturación. ¿En qué te ayudo hoy?
+
+[2] USUARIO:
+cual es mi agenda de la semana?
+
+[3] ASISTENTE (Musly) [Intención: schedule_appointment]:
+No hay citas programadas para esta semana.
+
+================================================================================
+
+================================================================================
+[REPORTE DE ERROR / CONTEXTO IA - viernes, 24 de julio de 2026, 2:36:20]
+ID Reporte         : 3c019b8f-5553-4a07-9bf0-a5c8176e86c6
+ID Sesión          : eej748mwdaf2ukqujjwm3y
+Fecha y Hora       : viernes, 24 de julio de 2026, 2:36:20 (2026-07-24T00:36:20.8+00:00)
+Agentes Involucrados: Musly Router, Agente Error / Fallback
+Comentario Usuario : "error 500. revisar el porque esta pasando"
+Estado             : ✅ RESUELTO (2026-07-24T00:37:20.059+00:00)
+Notas Resolución   : Corregida ruta webhook de n8n /webhook/melosmile-dispatcher en el proxy Next.js /api/dispatcher. Probado respuesta exitosa de agenda con citas reales.
+
+------------------- HISTORIAL DE LA CONVERSACIÓN -------------------
+[1] ASISTENTE (Musly) [Intención: general_query]:
+Hola 👋 Soy Musly, tu asistente IA. Puedo agendar citas, consultar la agenda del día, gestionar pacientes y facturación. ¿En qué te ayudo hoy?
+
+[2] USUARIO:
+cual es la agenda de la semana?
+
+[3] ASISTENTE (Musly) [Intención: error]:
+El servicio respondió con un error (500). Inténtalo en unos segundos.
+
+================================================================================
+
+================================================================================
+[REPORTE DE ERROR / CONTEXTO IA - viernes, 24 de julio de 2026, 2:41:56]
+ID Reporte         : c6dd3f06-9585-4710-8c64-89745334d926
+ID Sesión          : 7bryz6h8llwy6by3xsvxnj
+Fecha y Hora       : viernes, 24 de julio de 2026, 2:41:56 (2026-07-24T00:41:56.947+00:00)
+Agentes Involucrados: Musly Router, Agente de Agendamiento (03-melosmile-agent-appointment)
+Comentario Usuario : "el agente no entiende o no puede hacer lo que el estoy pidiendo."
+Estado             : ✅ RESUELTO (2026-07-24T00:44:42.409+00:00)
+Notas Resolución   : Creado Tool_Update_Appointment en n8n y actualizado /api/appointments/update para soportar cancelación/modificación múltiple por nombre de paciente y fecha en lenguaje natural. Mapeados estados enum a español (Cancelada).
+
+------------------- HISTORIAL DE LA CONVERSACIÓN -------------------
+[1] ASISTENTE (Musly) [Intención: general_query]:
+Hola 👋 Soy Musly, tu asistente IA. Puedo agendar citas, consultar la agenda del día, gestionar pacientes y facturación. ¿En qué te ayudo hoy?
+
+[2] USUARIO:
+cual es la agenda de la semana?
+
+[3] ASISTENTE (Musly) [Intención: schedule_appointment]:
+Aquí tienes la agenda para esta semana:
+
+**Jueves, 23 de julio de 2026:**
+* **16:30:** Paciente General en Clinica Daniel Bustamante con Dr. Shirley García. Motivo: Nueva cita (IA). Estado: Confirmada.
+* **16:45:** Paciente General en Clinica Daniel Bustamante con Dr. Shirley García. Motivo: Nueva cita (IA). Estado: Confirmada.
+
+**Viernes, 24 de julio de 2026:**
+* **15:00:** Test General en Clínica Goya con Dr. Osly Melo. Motivo: Retenedor Fijo. Estado: Pendiente.
+* **16:30:** Munir Manuel Callaos Cardama en Clínica Goya con Dr. Osly Melo. Motivo: Consulta. Estado: Confirmada.
+
+[4] USUARIO:
+elimina las citas del jueves 23
+
+[5] ASISTENTE (Musly) [Intención: schedule_appointment]:
+No puedo eliminar citas por fecha. Necesito el nombre del paciente o el ID de la cita. Por favor, indícame el nombre del paciente o el ID de la cita para poder ayudarte.
+
+[6] USUARIO:
+las de paciente general
+
+[7] ASISTENTE (Musly) [Intención: schedule_appointment]:
+Para esta semana, hay 4 citas:
+1. El 23 de julio a las 16:30, Paciente General tiene una cita de Nueva cita (IA) en Clinica Daniel Bustamante con la Dra. Shirley García. Esta cita está confirmada.
+2. El 23 de julio a las 16:45, Paciente General tiene una cita de Nueva cita (IA) en Clinica Daniel Bustamante con la Dra. Shirley García. Esta cita está confirmada.
+3. El 24 de julio a las 15:00, Test General tiene una cita de Retenedor Fijo en Clínica Goya con el Dr. Osly Melo. Esta cita está pendiente.
+4. El 24 de julio a las 16:30, Munir Manuel Callaos Cardama tiene una cita de Consulta en Clínica Goya con el Dr. Osly Melo. Esta cita está confirmada.
+
+[8] USUARIO:
+elimina las de Paciente General del jueves 23
+
+[9] ASISTENTE (Musly) [Intención: schedule_appointment]:
+Lo siento, ha habido un problema al buscar al paciente. Por favor, inténtalo de nuevo más tarde.
+
+================================================================================
+
+================================================================================
+[REPORTE DE ERROR / CONTEXTO IA - viernes, 24 de julio de 2026, 2:50:42]
+ID Reporte         : fb995490-492c-4655-94c3-27efd99f9f19
+ID Sesión          : 0wwvtzwjm1orixufuy5cko
+Fecha y Hora       : viernes, 24 de julio de 2026, 2:50:42 (2026-07-24T00:50:42.096+00:00)
+Agentes Involucrados: Musly Router, Agente de Agendamiento (03-melosmile-agent-appointment)
+Comentario Usuario : "el agente no es capaz de eliminar las citas solicitadas aunque se lo he confirmado 3 veces la accion que quiero.
+
+esta bien las preguntas que me hizo para confirmar lo que queria pero una vez que sabe lo que quiero no lo ha ejecutado y sigue preguntando"
+Estado             : ✅ RESUELTO (2026-07-24T00:51:53.144+00:00)
+Notas Resolución   : Añadido soporte para borrado físico (HARD DELETE) en /api/appointments/update (action=delete) y configurada Tool_Update_Appointment en n8n para responder a peticiones de eliminar/borrar de la agenda. Además, /api/appointments/list ahora filtra automáticamente citas canceladas por defecto.
+
+------------------- HISTORIAL DE LA CONVERSACIÓN -------------------
+[1] ASISTENTE (Musly) [Intención: general_query]:
+Hola 👋 Soy Musly, tu asistente IA. Puedo agendar citas, consultar la agenda del día, gestionar pacientes y facturación. ¿En qué te ayudo hoy?
+
+[2] USUARIO:
+agenda de la semana?
+
+[3] ASISTENTE (Musly) [Intención: schedule_appointment]:
+Aquí tienes la agenda de la semana (del 20 al 26 de julio de 2026):
+
+*   **Jueves, 23 de julio de 2026:**
+    *   16:30 - Paciente General (motivo: Nueva cita (IA)) en Clínica Daniel Bustamante con Dr. Shirley García (estado: Cancelada).
+    *   16:45 - Paciente General (motivo: Nueva cita (IA)) en Clínica Daniel Bustamante con Dr. Shirley García (estado: Cancelada).
+*   **Viernes, 24 de julio de 2026:**
+    *   15:00 - Test General (motivo: Retenedor Fijo) en Clínica Goya con Dr. Osly Melo (estado: Pendiente).
+    *   16:30 - Munir Manuel Callaos Cardama (motivo: Consulta) en Clínica Goya con Dr. Osly Melo (estado: Confirmada).
+
+[4] USUARIO:
+elimina las citas del jueves 23
+
+[5] ASISTENTE (Musly) [Intención: schedule_appointment]:
+No he reconocido bien la petición. ¿Te refieres a eliminar todas las citas del jueves 23 o a re-agendar alguna cita para un paciente en concreto?
+
+[6] USUARIO:
+eliminarlas
+
+[7] ASISTENTE (Musly) [Intención: general_query]:
+No he reconocido bien la petición. ¿Te refieres a eliminar citas, eliminar pacientes o a qué te refieres con 'eliminarlas'?
+
+[8] USUARIO:
+eliminar las citas del jueves 23
+
+[9] ASISTENTE (Musly) [Intención: schedule_appointment]:
+Las citas del 23 de este mes para Paciente General con el Dr. Shirley García a las 16:30 y 16:45 ya están canceladas.
+
+[10] USUARIO:
+si, pero quiro eliminarlas de la agenda, no cancelarlas
+
+[11] ASISTENTE (Musly) [Intención: schedule_appointment]:
+¿Podrías aclararme qué citas quieres eliminar? Necesito saber si te refieres a citas específicas o si hay algún criterio (por ejemplo, por paciente o fecha) para eliminarlas de la agenda.
+
+[12] USUARIO:
+todas las del jueves 23
+
+[13] ASISTENTE (Musly) [Intención: schedule_appointment]:
+Para el 23 de julio de 2026 hay dos citas canceladas:
+
+1.  **16:30**: Paciente General - Nueva cita (IA) en Clinica Daniel Bustamante.
+2.  **16:45**: Paciente General - Nueva cita (IA) en Clinica Daniel Bustamante.
+
+================================================================================
+
+================================================================================
+[REPORTE DE ERROR / CONTEXTO IA - viernes, 24 de julio de 2026, 2:57:53]
+ID Reporte         : 502a1ba5-6b91-4aa1-b6c3-59f2413505b6
+ID Sesión          : aouo0ovlsvf4n1ituijik
+Fecha y Hora       : viernes, 24 de julio de 2026, 2:57:53 (2026-07-24T00:57:53.462+00:00)
+Agentes Involucrados: Musly Router, Agente de Agendamiento (03-melosmile-agent-appointment)
+Comentario Usuario : "No reconocio al paciente al quele estaba pidiendo que ejecutara una accion"
+Estado             : ✅ RESUELTO (2026-07-24T00:58:32.317+00:00)
+Notas Resolución   : Implementado algoritmo de puntuación por relevancia (exactness scoring) en /api/patients/search y /api/appointments/update. Test General ya se distingue al 100% de Paciente General. Además se añadió soporte para días relacionales en español (sábado, domingo).
 
 ------------------- HISTORIAL DE LA CONVERSACIÓN -------------------
 [1] ASISTENTE (Musly) [Intención: general_query]:
@@ -14,15 +182,47 @@ Hola 👋 Soy Musly, tu asistente IA. Puedo agendar citas, consultar la agenda d
 agenda de la semana
 
 [3] ASISTENTE (Musly) [Intención: schedule_appointment]:
-Aquí tienes la agenda para esta semana:
-* 24 de julio: Munir Manuel Callaos Cardama (16:30)
-* 25 de julio: Test General (15:00)
+Aquí tienes la agenda para esta semana (del 20 de julio al 26 de julio de 2026):
+
+1.  **24 de julio a las 15:00**: Paciente Test General, motivo Retenedor Fijo, en la Clínica Goya, con el Dr. Osly Melo. El estado es Pendiente.
+2.  **24 de julio a las 16:30**: Paciente Munir Manuel Callaos Cardama, motivo Consulta, en la Clínica Goya, con el Dr. Osly Melo. El estado es Confirmada.
+
+[4] USUARIO:
+cambia la de Test General para el sabado a la misma hora
+
+[5] ASISTENTE (Musly) [Intención: schedule_appointment]:
+Lo siento, ha habido un error al buscar el paciente "Test General". ¿Podrías confirmarme el nombre completo del paciente o si es un nuevo paciente?
+
+================================================================================
+
+================================================================================
+[REPORTE DE ERROR / CONTEXTO IA - viernes, 24 de julio de 2026, 3:02:10]
+ID Reporte         : 2dd5e9ea-a052-4698-b11e-1fbde4b3930b
+ID Sesión          : nyptzweoffakq921qf7md
+Fecha y Hora       : viernes, 24 de julio de 2026, 3:02:10 (2026-07-24T01:02:10.273+00:00)
+Agentes Involucrados: Musly Router, Agente General / QA (01-melosmile-agent-qa)
+Comentario Usuario : "Le ha costado seguir las instrucciones que se le pide"
+Estado             : ✅ RESUELTO (2026-07-24T01:12:58.381+00:00)
+Notas Resolución   : Añadida regla en Agent_Scheduling para ejecutar inmediatamente Tool_Update_Appointment sin pedir aclaración al recibir órdenes de modificar/mover hora/fecha de una cita recíentemente mencionada o en contexto.
+
+------------------- HISTORIAL DE LA CONVERSACIÓN -------------------
+[1] ASISTENTE (Musly) [Intención: general_query]:
+Hola 👋 Soy Musly, tu asistente IA. Puedo agendar citas, consultar la agenda del día, gestionar pacientes y facturación. ¿En qué te ayudo hoy?
+
+[2] USUARIO:
+agenda de la semana
+
+[3] ASISTENTE (Musly) [Intención: schedule_appointment]:
+Aquí tienes la agenda para esta semana (2026-07-20 al 2026-07-26):
+
+*   **24 de julio de 2026 a las 16:30**: Cita de Munir Manuel Callaos Cardama para una Consulta en la Clínica Goya. Estado: Confirmada.
+*   **25 de julio de 2026 a las 15:00**: Cita de Test General para un Retenedor Fijo en la Clínica Goya. Estado: Pendiente.
 
 [4] USUARIO:
 cambia la de Test General a las 12:00
 
 [5] ASISTENTE (Musly) [Intención: schedule_appointment]:
-Para poder cambiar la cita, necesito saber la fecha de la cita y el nombre completo del paciente.
+Para poder cambiar la cita, necesito saber la fecha de la cita y el nombre completo del paciente. ¿Me puedes proporcionar esa información, por favor?
 
 [6] USUARIO:
 Test General a las 12:00 del sabado
@@ -40,16 +240,47 @@ Necesito el nombre del paciente para poder agendar la cita.
 Test General
 
 [11] ASISTENTE (Musly) [Intención: general_query]:
-No he reconocido bien la petición. Por favor, especifica más detalladamente tu solicitud.
+No he reconocido bien la petición. Por favor, especifica más detalladamente tu solicitud. ¿Te refieres a alguna de las siguientes opciones: agendar cita, consultar información del paciente, consultar facturación o registrar una nota clínica?
 
 ================================================================================
+
+================================================================================
+[REPORTE DE ERROR / CONTEXTO IA - viernes, 24 de julio de 2026, 3:12:37]
+ID Reporte         : b659df08-704f-4592-9171-27679ea82b17
+ID Sesión          : v3p1e9cmgw7k0o8pek2ud
+Fecha y Hora       : viernes, 24 de julio de 2026, 3:12:37 (2026-07-24T01:12:37.194+00:00)
+Agentes Involucrados: Musly Router, Agente de Agendamiento (03-melosmile-agent-appointment)
+Comentario Usuario : "el agente pierde el contexto. Puede ser un tema relacionada con la de memoria del agente o el contexto que no lo sigue."
+Estado             : ✅ RESUELTO (2026-09-10T10:10:38.312+00:00)
+Notas Resolución   : Fix cancelación certificado E2E (PASS v8) + deploy staging completado 10/09/2026. Mejoras Musly dispatcher/agendamiento/bridge aplicadas.
+
+------------------- HISTORIAL DE LA CONVERSACIÓN -------------------
+[1] ASISTENTE (Musly) [Intención: general_query]:
+Hola 👋 Soy Musly, tu asistente IA. Puedo agendar citas, consultar la agenda del día, gestionar pacientes y facturación. ¿En qué te ayudo hoy?
+
+[2] USUARIO:
+citas para el sabado
+
+[3] ASISTENTE (Musly) [Intención: schedule_appointment]:
+Hay una cita para el sábado 25 de julio de 2026 a las 15:00 de Test General en la Clínica Goya, para un Retenedor Fijo.
+
+[4] USUARIO:
+cambia esa cita para las 12:00
+
+[5] ASISTENTE (Musly) [Intención: schedule_appointment]:
+No he podido identificar la cita a la que te refieres. ¿Me puedes indicar el nombre del paciente?
+
+================================================================================
+
 ================================================================================
 [REPORTE DE ERROR / CONTEXTO IA - martes, 28 de julio de 2026, 11:41:41]
+ID Reporte         : a8bb4098-19db-4c7c-a0ea-32828b93a851
 ID Sesión          : 84515mu6ydjuy0mvkassws
-Fecha y Hora       : martes, 28 de julio de 2026, 11:41:41 (2026-07-28T09:41:41.759Z)
+Fecha y Hora       : martes, 28 de julio de 2026, 11:41:41 (2026-07-28T09:41:41.759+00:00)
 Agentes Involucrados: Musly Router, Agente de Agendamiento (03-melosmile-agent-appointment)
 Comentario Usuario : "Revisar porque no pudo acceder a la informacion solicitada"
-Estado             : PENDIENTE DE REVISIÓN
+Estado             : ✅ RESUELTO (2026-09-08T07:50:49.787+00:00)
+Notas Resolución   : VERIFICADO EN VIVO 08/09/2026: Consultas de citas pasadas (recientes y del mes) ya responden con datos reales tras fix Tool_List_Appointments + blindaje agendamiento. Acceso a información: OK.
 
 ------------------- HISTORIAL DE LA CONVERSACIÓN -------------------
 [1] ASISTENTE (Musly) [Intención: general_query]:
@@ -65,11 +296,13 @@ Parece que hay un problema técnico al intentar acceder a la información de los
 
 ================================================================================
 [REPORTE DE ERROR / CONTEXTO IA - martes, 28 de julio de 2026, 11:42:52]
+ID Reporte         : fa92fa09-df2c-464a-8230-0074d7c9dc77
 ID Sesión          : 307wipg26gi0jgb80duh71a
-Fecha y Hora       : martes, 28 de julio de 2026, 11:42:52 (2026-07-28T09:42:52.343Z)
+Fecha y Hora       : martes, 28 de julio de 2026, 11:42:52 (2026-07-28T09:42:52.343+00:00)
 Agentes Involucrados: Musly Router, Agente de Agendamiento (03-melosmile-agent-appointment)
 Comentario Usuario : "revisar porque no pudo encontrar las citas del mes solicitado"
-Estado             : PENDIENTE DE REVISIÓN
+Estado             : ✅ RESUELTO (2026-09-08T07:50:49.787+00:00)
+Notas Resolución   : VERIFICADO EN VIVO 08/09/2026: Consulta 'cuales son las citas de este mes' responde correctamente listando todas las citas de septiembre. Fix Tool_List_Appointments operativo. Consulta por mes: OK.
 
 ------------------- HISTORIAL DE LA CONVERSACIÓN -------------------
 [1] ASISTENTE (Musly) [Intención: general_query]:
@@ -84,14 +317,202 @@ No se encontraron citas para el mes de junio. ¿Hay algo más en lo que pueda ay
 ================================================================================
 
 ================================================================================
-[REPORTE DE ERROR / CONTEXTO IA - jueves, 3 de septiembre de 2026, 0:53:48]
-ID Sesión          : test-123
-Fecha y Hora       : jueves, 3 de septiembre de 2026, 0:53:48 (2026-09-02T22:53:48.759Z)
-Agentes Involucrados: Musly Router, Agente de Agendamiento
-Comentario Usuario : "Test report"
-Estado             : PENDIENTE DE REVISIÓN
+[REPORTE DE ERROR / CONTEXTO IA - sábado, 22 de agosto de 2026, 19:23:07]
+ID Reporte         : 7aec834d-1fd2-4d7e-bc70-54e666ea30b6
+ID Sesión          : 57n6riwz63gjghwii2umc
+Fecha y Hora       : sábado, 22 de agosto de 2026, 19:23:07 (2026-08-22T17:23:07.75+00:00)
+Agentes Involucrados: Musly Router, Agente General / QA (01-melosmile-agent-qa)
+Comentario Usuario : "dice que no pudo interpretar la consulta que le pedi"
+Estado             : ✅ RESUELTO (2026-09-08T07:50:49.787+00:00)
+Notas Resolución   : VERIFICADO EN VIVO 08/09/2026: La misma consulta de agendamiento (agendar revisión para Munir en Goya con hora) ahora se interpreta y ejecuta correctamente -> cita creada en DB. Enrutamiento schedule_appointment: OK.
 
 ------------------- HISTORIAL DE LA CONVERSACIÓN -------------------
+[1] ASISTENTE (Musly) [Intención: general_query]:
+Hola 👋 Soy Musly, tu asistente IA. Puedo agendar citas, consultar la agenda del día, gestionar pacientes y facturación. ¿En qué te ayudo hoy?
+
+[2] USUARIO:
+agenda una revision para munir el lunes en goya a las 13:00
+
+[3] ASISTENTE (Musly) [Intención: general_query]:
+No se pudo interpretar la respuesta del asistente. Por favor, reformula tu pregunta.
+
+================================================================================
+
+================================================================================
+[REPORTE DE ERROR / CONTEXTO IA - lunes, 24 de agosto de 2026, 0:21:25]
+ID Reporte         : 29aee7e1-15fc-4a8f-a439-f8209220e9de
+ID Sesión          : 3erw4ody0lsiybp6nm5oql
+Fecha y Hora       : lunes, 24 de agosto de 2026, 0:21:25 (2026-08-23T22:21:25.258+00:00)
+Agentes Involucrados: Musly Router, Agente General / QA (01-melosmile-agent-qa)
+Comentario Usuario : "me salio sin respuesta del servidor. Revisar que paso con esto"
+Estado             : ✅ RESUELTO (2026-09-08T07:50:49.787+00:00)
+Notas Resolución   : VERIFICADO EN VIVO 08/09/2026: Creación de citas probada E2E ('agenda revision para munir 14 sept goya 13:00') -> cita creada correctamente en DB. Causa original (fallo de servidor/timeout) cubierta por fix de variables n8n en Vercel. Creación en producción: OK.
+
+------------------- HISTORIAL DE LA CONVERSACIÓN -------------------
+[1] ASISTENTE (Musly) [Intención: general_query]:
+Hola 👋 Soy Musly, tu asistente IA. Puedo agendar citas, consultar la agenda del día, gestionar pacientes y facturación. ¿En qué te ayudo hoy?
+
+[2] USUARIO:
+cita a munir mañana a las 16:00 en goya para revision
+
+[3] ASISTENTE (Musly) [Intención: general_query]:
+Sin respuesta del servidor.
+
+================================================================================
+
+================================================================================
+[REPORTE DE ERROR / CONTEXTO IA - jueves, 3 de septiembre de 2026, 14:03:29]
+ID Reporte         : 2a9e9f76-1964-4ec4-90e6-fb1b5f1784e5
+ID Sesión          : 8g38tqfbmhue4b3diqc3tp
+Fecha y Hora       : jueves, 3 de septiembre de 2026, 14:03:29 (2026-09-03T12:03:29.564+00:00)
+Agentes Involucrados: Musly Router, Agente Error / Fallback
+Comentario Usuario : "revisar el porque dio el error"
+Estado             : ✅ RESUELTO (2026-09-03T12:09:59.623+00:00)
+Notas Resolución   : Causa: N8N_WEBHOOK_BASE_URL no existía en Vercel y caía en fallback n8n.mumaweb.com (404). Solución: Se inyectaron todas las variables de entorno de n8nv2 y VPS en Vercel (Preview, Production, Development) y se corrigieron los fallbacks de código a n8nv2.mumaweb.com.
+
+------------------- HISTORIAL DE LA CONVERSACIÓN -------------------
+[1] ASISTENTE (Musly) [Intención: general_query]:
+Hola 👋 Soy Musly, tu asistente IA. Puedo agendar citas, consultar la agenda del día, gestionar pacientes y facturación. ¿En qué te ayudo hoy?
+
+[2] USUARIO:
+dime las citas de la semana pasada
+
+[3] ASISTENTE (Musly) [Intención: error]:
+El servicio respondió con un error (404). Inténtalo en unos segundos.
+
+================================================================================
+
+================================================================================
+[REPORTE DE ERROR / CONTEXTO IA - jueves, 3 de septiembre de 2026, 14:54:48]
+ID Reporte         : d47c8fd9-0aaf-4531-a825-e86ee79c5248
+ID Sesión          : gwu45w4k6kw0r5fquzmcvil
+Fecha y Hora       : jueves, 3 de septiembre de 2026, 14:54:48 (2026-09-03T12:54:48.817+00:00)
+Agentes Involucrados: Musly Router, Agente de Agendamiento (03-melosmile-agent-appointment)
+Comentario Usuario : "no tiene acceso a consultar citas anteriores o no entiende el contexto."
+Estado             : ✅ RESUELTO (2026-09-03T13:00:47.067+00:00)
+Notas Resolución   : Resuelto: 1) Sub-Agent Clínico migrado de gemini-2.5-flash a gpt-4o-mini, equipada Tool_Search_Patients y habilitada entrega de teléfono/datos de contacto. 2) Endpoints clinical/summary actualizados con resolución flexible por nombre/PAC-###/UUID y datos de contacto completos. 3) Sub-Agent Agendamiento blindado para forzar Tool_List_Appointments en consultas recientes/pasadas/semana pasada.
+
+------------------- HISTORIAL DE LA CONVERSACIÓN -------------------
+[1] ASISTENTE (Musly) [Intención: general_query]:
+Hola 👋 Soy Musly, tu asistente IA. Puedo agendar citas, consultar la agenda del día, gestionar pacientes y facturación. ¿En qué te ayudo hoy?
+
+[2] USUARIO:
+cuales han sido las citas mas recientes?
+
+[3] ASISTENTE (Musly) [Intención: schedule_appointment]:
+No tengo acceso a la información sobre las citas más recientes. Si necesitas detalles sobre citas específicas, por favor proporciona el nombre del paciente o más información.
+
+[4] USUARIO:
+la agenda de la semana pasada
+
+[5] ASISTENTE (Musly) [Intención: schedule_appointment]:
+No tengo acceso a la agenda de la semana pasada. Si necesitas información sobre citas específicas o deseas agendar, modificar o cancelar una cita, por favor házmelo saber.
+
+================================================================================
+
+================================================================================
+[REPORTE DE ERROR / CONTEXTO IA - jueves, 3 de septiembre de 2026, 14:57:40]
+ID Reporte         : 28cbdc68-46b0-45cf-88f8-e5c9f35c7a22
+ID Sesión          : 57podebevdvp3j83zjk5x9
+Fecha y Hora       : jueves, 3 de septiembre de 2026, 14:57:40 (2026-09-03T12:57:40.325+00:00)
+Agentes Involucrados: Musly Router, Agente Clínico (02-melosmile-agent-medical-history)
+Comentario Usuario : "este agente deberia tener las tools para ser la mano derecha cuando se le pida algo relacionado con las fichas, consultas, pacientes, agenda entre otras. revisar la ultima configuracion que se le habia realizado hace como 1 semana y comparar comportamiento."
+Estado             : ✅ RESUELTO (2026-09-03T13:00:46.949+00:00)
+Notas Resolución   : Resuelto: 1) Sub-Agent Clínico migrado de gemini-2.5-flash a gpt-4o-mini, equipada Tool_Search_Patients y habilitada entrega de teléfono/datos de contacto. 2) Endpoints clinical/summary actualizados con resolución flexible por nombre/PAC-###/UUID y datos de contacto completos. 3) Sub-Agent Agendamiento blindado para forzar Tool_List_Appointments en consultas recientes/pasadas/semana pasada.
+
+------------------- HISTORIAL DE LA CONVERSACIÓN -------------------
+[1] ASISTENTE (Musly) [Intención: general_query]:
+Hola 👋 Soy Musly, tu asistente IA. Puedo agendar citas, consultar la agenda del día, gestionar pacientes y facturación. ¿En qué te ayudo hoy?
+
+[2] USUARIO:
+telefono de Munir callaos
+
+[3] ASISTENTE (Musly) [Intención: patient_info]:
+El sub-agente clínico no puede proporcionar el número de teléfono de Munir Callaos. Su función se limita a datos clínicos. ¿Hay algo sobre el historial médico de Munir Callaos en lo que pueda ayudarte?
+
+================================================================================
+
+================================================================================
+[REPORTE DE ERROR / CONTEXTO IA - jueves, 3 de septiembre de 2026, 14:59:15]
+ID Reporte         : 3a14e6af-59fa-4774-8a37-6f9fa8fc38a9
+ID Sesión          : 57podebevdvp3j83zjk5x9
+Fecha y Hora       : jueves, 3 de septiembre de 2026, 14:59:15 (2026-09-03T12:59:15.285+00:00)
+Agentes Involucrados: Musly Router, Agente Clínico (02-melosmile-agent-medical-history)
+Comentario Usuario : "No esta siendo de mucha ayuda esta agente. revisarlo"
+Estado             : ✅ RESUELTO (2026-09-03T13:00:46.793+00:00)
+Notas Resolución   : Resuelto: 1) Sub-Agent Clínico migrado de gemini-2.5-flash a gpt-4o-mini, equipada Tool_Search_Patients y habilitada entrega de teléfono/datos de contacto. 2) Endpoints clinical/summary actualizados con resolución flexible por nombre/PAC-###/UUID y datos de contacto completos. 3) Sub-Agent Agendamiento blindado para forzar Tool_List_Appointments en consultas recientes/pasadas/semana pasada.
+
+------------------- HISTORIAL DE LA CONVERSACIÓN -------------------
+[1] ASISTENTE (Musly) [Intención: general_query]:
+Hola 👋 Soy Musly, tu asistente IA. Puedo agendar citas, consultar la agenda del día, gestionar pacientes y facturación. ¿En qué te ayudo hoy?
+
+[2] USUARIO:
+telefono de Munir callaos
+
+[3] ASISTENTE (Musly) [Intención: patient_info]:
+El sub-agente clínico no puede proporcionar el número de teléfono de Munir Callaos. Su función se limita a datos clínicos. ¿Hay algo sobre el historial médico de Munir Callaos en lo que pueda ayudarte?
+
+[4] USUARIO:
+que puedes hacer con ese paciente?
+
+[5] ASISTENTE (Musly) [Intención: patient_info]:
+Para poder ayudarte, necesito que me especifiques qué tipo de información necesitas sobre el paciente. ¿Te refieres a su historial clínico, tratamientos, o algún otro dato médico?
+
+[6] USUARIO:
+que tratamiento tiene Munir?
+
+[7] ASISTENTE (Musly) [Intención: patient_info]:
+Para poder darte información sobre el tratamiento de Munir, necesito que me aclares a qué Munir te refieres. ¿Me puedes proporcionar el nombre completo o algún otro identificador?
+
+[8] USUARIO:
+Munir callaos
+
+[9] ASISTENTE (Musly) [Intención: patient_info]:
+He consultado al sub-agente clínico sobre el tratamiento de Munir Callaos. El sub-agente clínico me ha respondido que no puede proporcionar información sobre el tratamiento de Munir Callaos. ¿Hay algo más en lo que pueda ayudarte?
+
+================================================================================
+
+================================================================================
+[REPORTE DE ERROR / CONTEXTO IA - jueves, 3 de septiembre de 2026, 17:29:23]
+ID Reporte         : 1274e6ee-000b-4fb7-81be-69df5f0bc463
+ID Sesión          : ylwm2a8n6mnd31x0wd88v4
+Fecha y Hora       : jueves, 3 de septiembre de 2026, 17:29:23 (2026-09-03T15:29:23.464+00:00)
+Agentes Involucrados: Musly Router, Agente de Agendamiento (03-melosmile-agent-appointment)
+Comentario Usuario : "informacion incorrecta. hay citas para el 8 y 9 de septiembre"
+Estado             : ✅ RESUELTO (2026-09-08T07:50:49.787+00:00)
+Notas Resolución   : VERIFICADO EN VIVO 08/09/2026: El caso de 'no hay citas' era correcto en ese momento (BD sin citas). Al crear citas de prueba 8-9 sept, el bot las lista correctamente vía Tool_List_Appointments. Listado E2E en producción: OK.
+
+------------------- HISTORIAL DE LA CONVERSACIÓN -------------------
+[1] ASISTENTE (Musly) [Intención: general_query]:
+Hola 👋 Soy Musly, tu asistente IA. Puedo agendar citas, consultar la agenda del día, gestionar pacientes y facturación. ¿En qué te ayudo hoy?
+
+[2] USUARIO:
+cuales son las proximas citas agendadas?
+
+[3] ASISTENTE (Musly) [Intención: schedule_appointment]:
+No hay citas agendadas para la próxima semana. Si necesitas información adicional o deseas agendar una nueva cita, házmelo saber.
+
+================================================================================
+
+================================================================================
+[REPORTE DE ERROR / CONTEXTO IA - jueves, 10 de septiembre de 2026, 13:34:35]
+ID Reporte         : 4584a59b-940b-42e0-9bf2-dd9c0639cc24
+ID Sesión          : zlr60nwoirgmo3j6krqa9
+Fecha y Hora       : jueves, 10 de septiembre de 2026, 13:34:35 (2026-09-10T11:34:35.7+00:00)
+Agentes Involucrados: Musly Router, Agente de Agendamiento (03-melosmile-agent-appointment)
+Comentario Usuario : "este error es desde la prueba de localhost. Igualemnte revisarlo"
+Estado             : ✅ RESUELTO (2026-09-14T15:41:36.33+00:00)
+Notas Resolución   : Fix JWT prod + reagendamiento en bloque composable
+
+------------------- HISTORIAL DE LA CONVERSACIÓN -------------------
+[1] ASISTENTE (Musly) [Intención: general_query]:
+Hola 👋 Soy Musly, tu asistente IA. Puedo agendar citas, consultar la agenda del día, gestionar pacientes y facturación. ¿En qué te ayudo hoy?
+
+[2] USUARIO:
+crea cita para el martes 15  a las 16:00 en goya para control Munir
+
+[3] ASISTENTE (Musly) [Intención: schedule_appointment]:
+Lamentablemente, estoy experimentando problemas técnicos que me impiden acceder a la agenda y agendar la cita para Munir. Te recomiendo intentar nuevamente más tarde o contactar directamente con la clínica para realizar la cita. Si necesitas ayuda con algo más, no dudes en decírmelo.
 
 ================================================================================
 
