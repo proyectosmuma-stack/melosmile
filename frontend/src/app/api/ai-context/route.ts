@@ -128,6 +128,7 @@ export async function GET() {
         clinic_price: "Use clinic_treatments[clinic_id][treatment_id] if exists, otherwise treatment.default_price",
         commission_priority: "Use clinic_commission_rules if exists for the family, otherwise use clinic.base_commission_pct",
         invoicing_status: "Check billing_summary.facturados_odoo for already invoiced records and billing_summary.por_facturar for items awaiting Odoo invoice generation.",
+        reminders_policy: "REGLA OBLIGATORIA DE NOTIFICACIONES Y RECORDATORIOS: Por defecto, todas las notificaciones y recordatorios se envían ÚNICAMENTE por WhatsApp. NUNCA crear recordatorios duplicados en varias plataformas (Telegram, Email, SMS) a la vez a menos que el usuario o doctor lo indique explícitamente.",
       },
     };
 

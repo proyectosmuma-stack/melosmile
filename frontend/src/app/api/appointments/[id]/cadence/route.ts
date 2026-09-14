@@ -39,18 +39,14 @@ export async function POST(
     const patient = appt.patients;
     const patientName = patient ? `${patient.first_name || ""} ${patient.last_name || ""}`.trim() : "Paciente";
 
-    // Canales por defecto según los datos disponibles del paciente
-    const channels: string[] = [];
-    if (patient?.phone) {
-      channels.push("telegram");
-      channels.push("whatsapp");
-    }
-    if (patient?.email) {
-      channels.push("email");
-    }
-    if (channels.length === 0) {
-      channels.push("telegram");
-    }
+    // Canal por defecto: Únicamente WhatsApp (a menos que se especifique lo contrario en la petición)
+    let channels: string[] = ["whatsapp"];
+    try {
+      const body = await req.json().catch(() => null);
+      if (body?.channels && Array.isArray(body.channels) && body.channels.length > 0) {
+        channels = body.channels;
+      }
+    } catch (_) {}
 
     const created = await createAutomaticAppointmentReminders({
       appointmentId: appt.id,

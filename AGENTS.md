@@ -22,6 +22,11 @@ Este proyecto utiliza el agente `melosmile-backend`, con acceso a código base, 
   2. **Si existen varios pacientes** con el mismo nombre de pila (ej: "Lucas Pérez" y "Lucas Callaos"), la cita SE CREA igualmente, pero se marca con estado/nota de **Pendiente de Revisión** para que el usuario pueda seleccionar manualmente el paciente correcto.
   3. **Si no existe ningún paciente** con ese nombre de pila, se crea la ficha inicial del paciente.
 
+## Regla de Notificaciones y Recordatorios (Canal por Defecto: WhatsApp)
+- **Canal Único por Defecto**: Todas las notificaciones y recordatorios (incluida la cadencia automática de citas de 1 semana, 2 días y día de la cita) deben programarse **exclusivamente por WhatsApp**.
+- **Prohibición de Duplicación Multicanal**: Queda estrictamente prohibido crear recordatorios duplicados en varias plataformas a la vez (Telegram, Email, SMS). Solo se utilizarán otros canales si el usuario, doctor o paciente lo pide explícitamente.
+- **Instrucción para Musly (Asistente IA)**: Cuando Musly procese solicitudes de agendamiento, confirmación o recordatorios, debe asignar siempre `channel: "whatsapp"` a menos que el usuario indique otro medio expresamente.
+
 ## Flujo de Trabajo de Sesión del Agente (Comandos de Chat)
 
 ### Comando: "Inicia Sesión"
