@@ -78,6 +78,62 @@ export async function dispatchReminder(reminderId: string): Promise<DispatchRemi
       }
     }
 
+    // Resolve JIT copy if stage is present
+    let finalMessage = reminder.message;
+    
+    if (reminder.stage) {
+      // Check if it's the first message
+      const { count: previousMessages } = await (supabase as any)
+        .from("reminders")
+        .select("*", { count: 'exact', head: true })
+        .eq("patient_id", reminder.patient_id)
+        .eq("status", "enviado");
+        
+      const isFirstMessage = previousMessages === 0;
+      
+      const apptDateObj = appointment?.appointment_date ? new Date(appointment.appointment_date) : new Date();
+      const dateStr = apptDateObj.toLocaleDateString("es-ES", {
+        timeZone: "Europe/Madrid",
+        weekday: "long",
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      });
+      const timeStr = apptDateObj.toLocaleTimeString("es-ES", {
+        timeZone: "Europe/Madrid",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+      });
+      const fullDateLabel = `${dateStr} a las ${timeStr}`;
+      
+      const dayOfWeek = apptDateObj.toLocaleDateString("es-ES", {
+        timeZone: "Europe/Madrid",
+        weekday: "long"
+      });
+      
+      const rawUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "https://agenda.melosmile.com");
+      const baseUrl = (rawUrl.includes("localhost") || rawUrl.includes("127.0.0.1")) ? "https://agenda.melosmile.com" : rawUrl;
+      const confirmUrl = `${baseUrl.replace(/\\/$/, '')}/c/${reminder.appointment_id}`;
+      
+      const { resolveReminderCopy } = await import("./copies");
+      
+      finalMessage = resolveReminderCopy({
+        stage: reminder.stage as 1 | 2 | 3,
+        isConfirmed: appointment?.status === "Confirmada",
+        isFirstMessage,
+        firstName: patient?.first_name ? patient.first_name.split(" ")[0] : "Paciente",
+        fullDateLabel,
+        timeStr,
+        reason: appointment?.reason || "Consulta Odontológica",
+        confirmUrl,
+        dayOfWeek
+      });
+      
+      // Save the generated message so there's an audit trail
+      await (supabase as any).from("reminders").update({ message: finalMessage }).eq("id", reminder.id);
+    }
+
     const payload = {
       reminder_id: reminder.id,
       patient_id: reminder.patient_id,
@@ -88,7 +144,7 @@ export async function dispatchReminder(reminderId: string): Promise<DispatchRemi
       channel: reminder.channel,
       reminder_type: reminder.reminder_type,
       subject: reminder.subject,
-      message: reminder.message,
+      message: finalMessage,
       appointment_date: appointment?.appointment_date || null,
       appointment_reason: appointment?.reason || null,
       clinic_name: appointment?.clinics?.name || null,
@@ -114,7 +170,7 @@ export async function dispatchReminder(reminderId: string): Promise<DispatchRemi
       const { sendWhatsAppMessage } = await import("@/lib/whatsapp/evolution");
       const waResult = await sendWhatsAppMessage({
         phone: patient?.phone || "",
-        message: reminder.message,
+        message: finalMessage,
       });
 
       if (waResult.success) {
@@ -150,7 +206,7 @@ export async function dispatchReminder(reminderId: string): Promise<DispatchRemi
         phone: patient?.phone || "",
         firstName: patient?.first_name || "",
         lastName: patient?.last_name || "",
-        message: reminder.message,
+        message: finalMessage,
       });
 
       if (mtprotoResult.success) {

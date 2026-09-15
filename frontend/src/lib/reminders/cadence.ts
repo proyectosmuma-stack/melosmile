@@ -53,57 +53,44 @@ export async function createAutomaticAppointmentReminders(options: CreateCadence
 
   const stages = [];
 
-  // Etapa 1: 1 semana antes (7 días antes a las 09:00)
+  // Etapa 1: 1 semana antes (7 días antes a las 10:00)
   const weekBefore = new Date(apptDateObj.getTime() - 7 * 24 * 60 * 60 * 1000);
-  weekBefore.setHours(9, 0, 0, 0);
+  weekBefore.setHours(10, 0, 0, 0);
   if (weekBefore > now) {
     stages.push({
+      stage: 1,
       scheduledAt: weekBefore.toISOString(),
       subject: `Recordatorio de tu cita en Melosmile — ${dateStr}`,
-      message: `Hola ${firstName}, te recordamos que tienes una cita programada para ${reason} el día ${fullDateLabel}.
-
-Por favor, confirma o gestiona tu asistencia con un clic aquí:
-${confirmUrl}
-
-¡Te esperamos en Melosmile!`,
+      message: `[Mensaje dinámico que se generará al momento del envío]`,
     });
   }
 
-  // Etapa 2: 2 días antes (48 horas antes a las 09:00)
+  // Etapa 2: 2 días antes (48 horas antes a las 10:00)
   const twoDaysBefore = new Date(apptDateObj.getTime() - 2 * 24 * 60 * 60 * 1000);
-  twoDaysBefore.setHours(9, 0, 0, 0);
+  twoDaysBefore.setHours(10, 0, 0, 0);
   if (twoDaysBefore > now) {
-    const twoDaysMessage = isConfirmed
-      ? `Hola ${firstName}, te recordamos que tu cita confirmada para ${reason} es dentro de 2 días (${fullDateLabel}). Si necesitas cualquier información antes de venir, avísanos. ¡Nos vemos pronto!`
-      : `Hola ${firstName}, te recordamos que tu cita para ${reason} es en 2 días (${fullDateLabel}).
-
-Aún no tenemos tu confirmación. Por favor confírmala en un segundo aquí:
-${confirmUrl}
-
-¡Gracias por tu colaboración!`;
-
     stages.push({
+      stage: 2,
       scheduledAt: twoDaysBefore.toISOString(),
-      subject: isConfirmed
-        ? `Tu cita confirmada en Melosmile es en 2 días`
-        : `Por favor confirma tu cita en Melosmile (en 2 días)`,
-      message: twoDaysMessage,
+      subject: `Tu cita en Melosmile es en 2 días`,
+      message: `[Mensaje dinámico que se generará al momento del envío]`,
     });
   }
 
-  // Etapa 3: El día de la cita (a las 08:30)
+  // Etapa 3: El día de la cita (a las 10:00 o 1h antes si es antes de las 11:00)
   const sameDay = new Date(apptDateObj);
-  sameDay.setHours(8, 30, 0, 0);
-  // Si la cita es antes de las 09:30, ponerlo 1 hora antes de la cita
-  if (apptDateObj.getHours() < 9) {
-    sameDay.setTime(apptDateObj.getTime() - 60 * 60 * 1000);
+  if (apptDateObj.getHours() < 11) {
+    sameDay.setTime(apptDateObj.getTime() - 60 * 60 * 1000); // 1 hora antes
+  } else {
+    sameDay.setHours(10, 0, 0, 0);
   }
 
   if (sameDay > now && sameDay < apptDateObj) {
     stages.push({
+      stage: 3,
       scheduledAt: sameDay.toISOString(),
       subject: `¡Hoy es tu cita en Melosmile! (${timeStr})`,
-      message: `Hola ${firstName}, ¡hoy es tu cita en Melosmile para ${reason} a las ${timeStr}! Te esperamos en la clínica. Recuerda avisarnos si tienes cualquier imprevisto.`,
+      message: `[Mensaje dinámico que se generará al momento del envío]`,
     });
   }
 
@@ -121,6 +108,7 @@ ${confirmUrl}
           scheduled_at: stage.scheduledAt,
           subject: stage.subject,
           message: stage.message,
+          stage: stage.stage,
           status: "pendiente",
           created_by: "auto_cadence",
         })
