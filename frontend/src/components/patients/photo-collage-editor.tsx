@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useCallback, useEffect } from "react";
-import { X, Download, LayoutTemplate, Palette, Loader2, Image as ImageIcon, Plus, ArrowRightLeft, RotateCcw, RotateCw, ZoomIn } from "lucide-react";
+import { X, Download, LayoutTemplate, Palette, Loader2, Image as ImageIcon, ArrowRightLeft, ZoomIn, RotateCcw, GripHorizontal } from "lucide-react";
 import Cropper from "react-easy-crop";
 import * as htmlToImage from "html-to-image";
 import { Button } from "@/components/ui/button";
@@ -74,6 +74,15 @@ export function PhotoCollageEditor({ photos: initialPhotos, onClose }: Props) {
   const [loadingBlobs, setLoadingBlobs] = useState(true);
   const [selectedPhotoId, setSelectedPhotoId] = useState<string | null>(null);
 
+  // Panel de controles arrastrable: posición relativa dentro de la celda de la foto
+  const [panelOffset, setPanelOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [isDraggingPanel, setIsDraggingPanel] = useState(false);
+  const dragStart = useRef<{ mx: number; my: number; ox: number; oy: number } | null>(null);
+
+  // Indicador de ajuste activo
+  const [isAdjusting, setIsAdjusting] = useState(false);
+  const adjustingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   // Configuraciones de Diseño
   const photoCount = Math.min(Math.max(initialPhotos.length, 2), 4) as 2 | 3 | 4;
   const availableLayouts = LAYOUTS[photoCount] || LAYOUTS[2];
@@ -86,6 +95,13 @@ export function PhotoCollageEditor({ photos: initialPhotos, onClose }: Props) {
 
   const [exporting, setExporting] = useState(false);
   const collageRef = useRef<HTMLDivElement>(null);
+
+  /** Dispara el pulso de "ajustando" durante 800 ms */
+  const triggerAdjusting = useCallback(() => {
+    setIsAdjusting(true);
+    if (adjustingTimer.current) clearTimeout(adjustingTimer.current);
+    adjustingTimer.current = setTimeout(() => setIsAdjusting(false), 800);
+  }, []);
 
   // Transformar URLs remotas a Base64 locales para evitar CORS al exportar con canvas
   useEffect(() => {
@@ -129,11 +145,42 @@ export function PhotoCollageEditor({ photos: initialPhotos, onClose }: Props) {
   };
 
   const handleZoomChange = (id: string, zoom: number) => {
+    triggerAdjusting();
     setPhotos(prev => prev.map(p => p.id === id ? { ...p, zoom } : p));
   };
 
-  const handleRotate = (id: string, degrees: number) => {
-    setPhotos(prev => prev.map(p => p.id === id ? { ...p, rotation: ((p.rotation || 0) + degrees) % 360 } : p));
+  const handleRotationChange = (id: string, rotation: number) => {
+    triggerAdjusting();
+    setPhotos(prev => prev.map(p => p.id === id ? { ...p, rotation } : p));
+  };
+
+  /** Cuando cambia la foto seleccionada, resetear la posición del panel */
+  const selectPhoto = (id: string) => {
+    if (selectedPhotoId !== id) {
+      setPanelOffset({ x: 0, y: 0 });
+      setSelectedPhotoId(id);
+    }
+  };
+
+  /** Drag handlers para el panel de controles */
+  const onPanelPointerDown = (e: React.PointerEvent) => {
+    e.stopPropagation();
+    dragStart.current = { mx: e.clientX, my: e.clientY, ox: panelOffset.x, oy: panelOffset.y };
+    setIsDraggingPanel(true);
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+  };
+
+  const onPanelPointerMove = (e: React.PointerEvent) => {
+    if (!dragStart.current) return;
+    const dx = e.clientX - dragStart.current.mx;
+    const dy = e.clientY - dragStart.current.my;
+    setPanelOffset({ x: dragStart.current.ox + dx, y: dragStart.current.oy + dy });
+  };
+
+  const onPanelPointerUp = (e: React.PointerEvent) => {
+    dragStart.current = null;
+    setIsDraggingPanel(false);
+    (e.target as HTMLElement).releasePointerCapture(e.pointerId);
   };
 
   const handleWatermarkUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -381,7 +428,7 @@ export function PhotoCollageEditor({ photos: initialPhotos, onClose }: Props) {
                     <div 
                       key={photo.id} 
                       className={`relative overflow-hidden ${specialClass} bg-zinc-800 w-full h-full min-h-[10px] group`}
-                      onPointerDownCapture={() => setSelectedPhotoId(photo.id)}
+                      onPointerDownCapture={() => selectPhoto(photo.id)}
                     >
                       <Cropper
                         image={photo.url}
@@ -400,30 +447,88 @@ export function PhotoCollageEditor({ photos: initialPhotos, onClose }: Props) {
                       />
                       
                       {isSelected && (
-                        <div 
-                          className="absolute bottom-2 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 bg-black/80 backdrop-blur-md rounded-xl p-2 border border-white/20 animate-in fade-in slide-in-from-bottom-2 pointer-events-auto"
+                        <div
+                          className="absolute z-50 select-none animate-in fade-in duration-150"
+                          style={{
+                            bottom: `calc(50% + ${panelOffset.y}px)`,
+                            left: `calc(50% + ${panelOffset.x}px)`,
+                            transform: 'translateX(-50%)',
+                          }}
                           onPointerDownCapture={(e) => e.stopPropagation()}
                         >
-                          <button type="button" onClick={() => handleRotate(photo.id, -90)} className="h-8 w-8 rounded-lg flex items-center justify-center text-white/70 hover:text-white hover:bg-white/20 transition-colors">
-                            <RotateCcw className="h-4 w-4" />
-                          </button>
-                          <div className="w-px h-5 bg-white/20 mx-1" />
-                          <div className="flex items-center gap-2 px-2">
-                            <ZoomIn className="h-4 w-4 text-white/50" />
-                            <input 
-                              type="range" 
-                              min={1} 
-                              max={3} 
-                              step={0.05} 
-                              value={photo.zoom || 1} 
-                              onChange={(e) => handleZoomChange(photo.id, Number(e.target.value))} 
-                              className="w-24 accent-primary"
-                            />
+                          {/* Indicador de ajuste */}
+                          {isAdjusting && (
+                            <div className="flex items-center justify-center gap-1.5 mb-1.5">
+                              <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+                              <span className="text-[10px] text-white/70 font-medium tracking-wide">Ajustando...</span>
+                            </div>
+                          )}
+
+                          {/* Panel arrastrable */}
+                          <div
+                            className={`flex items-center gap-3 bg-black/85 backdrop-blur-md rounded-2xl px-3 py-2.5 border border-white/15 shadow-xl pointer-events-auto ${
+                              isDraggingPanel ? 'cursor-grabbing ring-1 ring-primary/50' : ''
+                            }`}
+                          >
+                            {/* Drag handle */}
+                            <div
+                              className="cursor-grab active:cursor-grabbing text-white/30 hover:text-white/60 transition-colors flex-shrink-0 touch-none"
+                              onPointerDown={onPanelPointerDown}
+                              onPointerMove={onPanelPointerMove}
+                              onPointerUp={onPanelPointerUp}
+                              title="Arrastrar panel"
+                            >
+                              <GripHorizontal className="h-4 w-4" />
+                            </div>
+
+                            <div className="w-px h-5 bg-white/15" />
+
+                            {/* Zoom slider */}
+                            <div className="flex items-center gap-2">
+                              <ZoomIn className="h-3.5 w-3.5 text-white/40 flex-shrink-0" />
+                              <input
+                                type="range"
+                                min={1}
+                                max={3}
+                                step={0.02}
+                                value={photo.zoom || 1}
+                                onChange={(e) => handleZoomChange(photo.id, Number(e.target.value))}
+                                className="w-20 accent-primary cursor-pointer"
+                                title={`Zoom: ${((photo.zoom || 1) * 100).toFixed(0)}%`}
+                              />
+                              <span className="text-[10px] text-white/40 w-8 tabular-nums">{((photo.zoom || 1) * 100).toFixed(0)}%</span>
+                            </div>
+
+                            <div className="w-px h-5 bg-white/15" />
+
+                            {/* Rotation slider */}
+                            <div className="flex items-center gap-2">
+                              <RotateCcw className="h-3.5 w-3.5 text-white/40 flex-shrink-0" />
+                              <input
+                                type="range"
+                                min={-45}
+                                max={45}
+                                step={0.5}
+                                value={photo.rotation || 0}
+                                onChange={(e) => handleRotationChange(photo.id, Number(e.target.value))}
+                                className="w-20 accent-primary cursor-pointer"
+                                title={`Rotación: ${photo.rotation || 0}°`}
+                              />
+                              <span className="text-[10px] text-white/40 w-8 tabular-nums">{(photo.rotation || 0).toFixed(0)}°</span>
+                            </div>
+
+                            <div className="w-px h-5 bg-white/15" />
+
+                            {/* Reset button */}
+                            <button
+                              type="button"
+                              onClick={() => { handleZoomChange(photo.id, 1); handleRotationChange(photo.id, 0); }}
+                              className="text-[10px] text-white/30 hover:text-white/70 transition-colors flex-shrink-0 px-1"
+                              title="Restablecer"
+                            >
+                              ↺
+                            </button>
                           </div>
-                          <div className="w-px h-5 bg-white/20 mx-1" />
-                          <button type="button" onClick={() => handleRotate(photo.id, 90)} className="h-8 w-8 rounded-lg flex items-center justify-center text-white/70 hover:text-white hover:bg-white/20 transition-colors">
-                            <RotateCw className="h-4 w-4" />
-                          </button>
                         </div>
                       )}
                     </div>
