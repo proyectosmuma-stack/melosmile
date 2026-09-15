@@ -44,6 +44,13 @@ type AppointmentData = {
   patientAllergies: string | null;
   patientDiseases: string | null;
   patientMedication: string | null;
+  patientBillingName: string | null;
+  patientBillingAddress: string | null;
+  patientBillingAddress2: string | null;
+  patientBillingCity: string | null;
+  patientBillingPostalCode: string | null;
+  patientBillingProvince: string | null;
+  patientBillingCountry: string | null;
   billingId: string | null;
   customPrice: number;
   actualLabCost: number;
@@ -241,7 +248,7 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
           clinics ( name ),
           professionals ( first_name, last_name ),
           treatments ( id, service_name, default_price, lab_cost ),
-          patients ( id, first_name, last_name, historia_id, dob, phone, email, nif_cif, allergies, important_diseases, current_medication, billing_name, billing_address, billing_city, billing_postal_code )
+          patients ( id, first_name, last_name, historia_id, dob, phone, email, nif_cif, allergies, important_diseases, current_medication, billing_name, billing_address, billing_address_2, billing_city, billing_postal_code, billing_province, billing_country )
         `)
         .eq("id", targetId)
         .limit(1)
@@ -312,6 +319,13 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
           patientAllergies: p?.allergies ?? null,
           patientDiseases: p?.important_diseases ?? null,
           patientMedication: p?.current_medication ?? null,
+          patientBillingName: p?.billing_name ?? null,
+          patientBillingAddress: p?.billing_address ?? null,
+          patientBillingAddress2: p?.billing_address_2 ?? null,
+          patientBillingCity: p?.billing_city ?? null,
+          patientBillingPostalCode: p?.billing_postal_code ?? null,
+          patientBillingProvince: p?.billing_province ?? null,
+          patientBillingCountry: p?.billing_country ?? null,
           billingId: bData?.id ?? null,
           customPrice: bData?.custom_price ?? (a.treatment_id && clinicPricesMap.has(a.treatment_id) ? clinicPricesMap.get(a.treatment_id)! : trt?.default_price) ?? 0,
           actualLabCost: bData?.actual_lab_cost ?? trt?.lab_cost ?? 0,
@@ -706,6 +720,13 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
             nifCif: appt.patientNif,
             email: appt.patientEmail,
             phone: appt.patientPhone,
+            billingName: appt.patientBillingName || appt.patientName,
+            billingAddress: appt.patientBillingAddress,
+            billingAddress2: appt.patientBillingAddress2,
+            billingCity: appt.patientBillingCity,
+            billingPostalCode: appt.patientBillingPostalCode,
+            billingProvince: appt.patientBillingProvince,
+            billingCountry: appt.patientBillingCountry,
           },
           treatmentName: appt.reason,
           price: totals.totalPrice,
