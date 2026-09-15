@@ -120,6 +120,7 @@ export function PhotoEditor({ src, fileName, onClose, onSave, isSaving }: Props)
   const [completedCrop, setCompletedCrop] = React.useState<PixelCrop>();
   const [activePanel, setActivePanel] = React.useState<"adjust" | "crop">("adjust");
   const [showGuides, setShowGuides] = React.useState(false);
+  const [currentSrc, setCurrentSrc] = React.useState(src);
 
   const imgRef = React.useRef<HTMLImageElement>(null);
 
@@ -152,13 +153,12 @@ export function PhotoEditor({ src, fileName, onClose, onSave, isSaving }: Props)
       0, 0, canvas.width, canvas.height
     );
     const dataUrl = canvas.toDataURL("image/jpeg", 0.92);
-    const a = document.createElement("a");
-    a.href = dataUrl;
-    a.download = `editada_${fileName}`;
-    a.click();
+    setCurrentSrc(dataUrl); // update local src with cropped image
     setCropMode(false);
     setActivePanel("adjust");
     setCompletedCrop(undefined);
+    // Reset filters after crop so they are not applied twice
+    setAdj(DEFAULT_ADJ);
   }
 
   function exportFinal() {
@@ -273,7 +273,7 @@ export function PhotoEditor({ src, fileName, onClose, onSave, isSaving }: Props)
             >
               <img
                 ref={imgRef}
-                src={src}
+                src={currentSrc}
                 alt={fileName}
                 onLoad={onImageLoad}
                 style={{
@@ -289,7 +289,7 @@ export function PhotoEditor({ src, fileName, onClose, onSave, isSaving }: Props)
           ) : (
             <img
               ref={imgRef}
-              src={src}
+              src={currentSrc}
               alt={fileName}
               style={{
                 maxHeight: "75vh",
