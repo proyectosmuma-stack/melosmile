@@ -55,6 +55,7 @@ export async function POST(req: Request) {
       phone: patientDetails.phone,
       odoo_partner_id: mappedPartnerId || undefined,
       patient_id: patientId,
+      force_create: true,
     });
 
     // 2. Prepare Invoice Lines & References
