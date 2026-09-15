@@ -388,3 +388,60 @@ Se reestructuró profundamente la lógica de sincronización de pacientes con Od
 
 ## 4. UI/UX: Tooltips de Ayuda
 Se añadió un tooltip explicativo (`<Tooltip>`) en la sección de Documentos e Informes de la ficha del paciente para educar al usuario sobre cómo los PDFs subidos son vectorizados y seccionados en N8N para ser consultables privadamente mediante el agente de Inteligencia Artificial Musly.
+
+## 5. Editor de Collage Fotográfico — Controles por Imagen y Panel Flotante
+
+### Problema resuelto
+Los botones de rotación de ±90° no permitían un ajuste fino del encuadre de cada foto dentro del collage. Además, el panel de controles estaba anclado dentro del div con `overflow:hidden` de la celda de la foto, impidiendo que se pudiera mover para no tapar la imagen.
+
+### Solución implementada en `photo-collage-editor.tsx`
+
+**a) Sliders de control por imagen (en vez de botones de ±90°)**
+- Slider de **Zoom** continuo: rango 100% → 300%, paso 0.02.
+- Slider de **Rotación fina**: rango -45° → +45°, paso 0.5° (no saltos bruscos de 90°).
+- Botón **↺ Reset** que devuelve zoom=100% y rotación=0° de un click.
+- Contador numérico en tiempo real junto a cada slider (ej. "147%" o "-12°").
+
+**b) Panel flotante arrastrable (`position: fixed`)**
+- El panel se renderiza **fuera del árbol de overflow:hidden**, directamente en el componente raíz (al nivel del modal).
+- Usa `position: fixed` con coordenadas `left/top` absolutas en pantalla.
+- El drag usa listeners globales en `window` (`pointermove` / `pointerup`) para que el seguimiento funcione aunque el cursor se mueva rápido fuera del handle.
+- Al seleccionar una foto nueva, el panel se centra automáticamente en la parte inferior de la pantalla (`window.innerWidth/2 - 200, window.innerHeight - 100`).
+- Botón `✕` para cerrar/deseleccionar el panel.
+
+**c) Indicador de ajuste activo**
+- Burbuja con texto "● Ajustando..." que aparece 800 ms al mover cualquier slider, usando un timer con `clearTimeout` para debounce correcto.
+
+**d) Resaltado de foto seleccionada**
+- Borde `ring-2 ring-primary/60` sobre la celda de la foto activa, para identificar cuál se está editando cuando el panel está desplazado.
+
+### Lección aprendida — Bug: panel clippeado por overflow:hidden
+**Causa raíz:** Cualquier elemento `position: absolute` con cualquier valor de `z-index` queda clippeado si algún ancestro tiene `overflow: hidden`. En este componente, las celdas del grid tenían `overflow-hidden` para que el Cropper no se derramase.
+
+**Solución correcta:** Para un panel arrastrable que deba salir de cualquier contenedor con overflow restrictivo, usar **`position: fixed`** y renderizarlo en el nivel más alto del árbol del componente (o en un Portal de React). El drag debe capturar eventos en `window` globalmente, no con `setPointerCapture` local.
+
+---
+
+## 6. Reparación de Rutas de Archivos en Producción (VPS FTP)
+
+### Problema detectado
+Una paciente en producción (`PAC-022`) tenía 2 PDFs (`frenulopasltia remision.pdf`) cuyos `file_path` en Supabase apuntaban a `/opt/melosmile/docs/{patient_id}/{timestamp}_{file}` — una ruta **interna del servidor** (generada por n8n en el agent de document cleaner), no accesible públicamente vía HTTP ni FTP.
+
+Además, 5 fotografías subidas el 25-ago tenían `file_path` con una barra inicial (`/melosmile.com/...`) que rompía la construcción de la URL pública.
+
+### Acciones correctivas
+
+**En `document-utils.ts` (resolución de URL):**
+- Se corrigió el bloque de normalización para detectar el prefijo `opt/melosmile/docs/{id}/{file}` y remapearlo a `https://melosmile.com/pacientes/{id}/docs/{file}`.
+- Las rutas con prefijo `mumaweb.com/` ahora se redirigen silenciosamente a `melosmile.com` (bug histórico del primer despliegue).
+- Las rutas relativas limpias (sin prefijo de dominio conocido) usan `NEXT_PUBLIC_VPS_FILES_BASE` como base.
+
+**En Supabase producción (SQL directo):**
+- Se actualizaron los `file_path` de los 5 JPEGs (IDs: `c2b300ad`, `c1f801c7`, `4aa3a19c`, `7e33468a`, `52ee363d`) eliminando la barra inicial.
+- Los 2 PDFs (`54fc2699`, `e70f31da`) fueron borrados de la DB por el usuario (los archivos físicos en `/opt/melosmile/docs/` no son recuperables vía FTP público — n8n los guardó en una ruta interna del sistema).
+
+### Lección aprendida — Bug: rutas internas del servidor guardadas en DB
+**Causa raíz:** El agente n8n de vectorización tenía hardcodeada la ruta interna `/opt/melosmile/docs/` en lugar de usar la ruta pública del FTP (`melosmile.com/pacientes/...`). El `upload route` de Next.js sí usaba la ruta correcta, pero el n8n no.
+
+**Regla a seguir:** Todo `file_path` guardado en la tabla `documents` debe ser siempre la **ruta relativa dentro del FTP público**, comenzando por el dominio sin barra inicial (ej. `melosmile.com/pacientes/{id}/docs/{file}`). Nunca rutas absolutas del sistema de archivos del servidor.
+

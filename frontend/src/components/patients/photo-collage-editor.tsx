@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useCallback, useEffect } from "react";
-import { X, Download, LayoutTemplate, Palette, Loader2, Image as ImageIcon, Plus, ArrowRightLeft } from "lucide-react";
+import { X, Download, LayoutTemplate, Palette, Loader2, Image as ImageIcon, ArrowRightLeft, ZoomIn, RotateCcw, GripHorizontal } from "lucide-react";
 import Cropper from "react-easy-crop";
 import * as htmlToImage from "html-to-image";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,7 @@ export type CollagePhoto = {
   url: string;
   crop?: { x: number; y: number };
   zoom?: number;
+  rotation?: number;
 };
 
 type Props = {
@@ -71,6 +72,25 @@ export function PhotoCollageEditor({ photos: initialPhotos, onClose }: Props) {
   // Estado local para evitar mutar props directamente
   const [photos, setPhotos] = useState<CollagePhoto[]>([]);
   const [loadingBlobs, setLoadingBlobs] = useState(true);
+  const [selectedPhotoId, setSelectedPhotoId] = useState<string | null>(null);
+
+  // Panel de controles arrastrable: posición fija en pantalla
+  const [panelPos, setPanelPos] = useState<{ x: number; y: number }>({ x: -9999, y: -9999 }); // offscreen until mounted
+  const [isDraggingPanel, setIsDraggingPanel] = useState(false);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const dragStart = useRef<{ mx: number; my: number; px: number; py: number } | null>(null);
+
+  // Indicador de ajuste activo
+  const [isAdjusting, setIsAdjusting] = useState(false);
+  const adjustingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  /** Centra el panel en la parte inferior de la pantalla al montar / cambiar foto seleccionada */
+  const centerPanel = useCallback(() => {
+    setPanelPos({
+      x: window.innerWidth / 2 - 200, // estimamos ~400px de ancho
+      y: window.innerHeight - 100,
+    });
+  }, []);
 
   // Configuraciones de Diseño
   const photoCount = Math.min(Math.max(initialPhotos.length, 2), 4) as 2 | 3 | 4;
@@ -84,6 +104,13 @@ export function PhotoCollageEditor({ photos: initialPhotos, onClose }: Props) {
 
   const [exporting, setExporting] = useState(false);
   const collageRef = useRef<HTMLDivElement>(null);
+
+  /** Dispara el pulso de "ajustando" durante 800 ms */
+  const triggerAdjusting = useCallback(() => {
+    setIsAdjusting(true);
+    if (adjustingTimer.current) clearTimeout(adjustingTimer.current);
+    adjustingTimer.current = setTimeout(() => setIsAdjusting(false), 800);
+  }, []);
 
   // Transformar URLs remotas a Base64 locales para evitar CORS al exportar con canvas
   useEffect(() => {
@@ -110,7 +137,7 @@ export function PhotoCollageEditor({ photos: initialPhotos, onClose }: Props) {
           loaded.push({ id: p.id, url: base64, crop: { x: 0, y: 0 }, zoom: 1 });
         } catch (e) {
           console.warn("CORS/Fetch error para la imagen:", p.url, e);
-          loaded.push({ id: p.id, url: p.url, crop: { x: 0, y: 0 }, zoom: 1 });
+          loaded.push({ id: p.id, url: p.url, crop: { x: 0, y: 0 }, zoom: 1, rotation: 0 });
         }
       }
       if (active) {
@@ -127,8 +154,52 @@ export function PhotoCollageEditor({ photos: initialPhotos, onClose }: Props) {
   };
 
   const handleZoomChange = (id: string, zoom: number) => {
+    triggerAdjusting();
     setPhotos(prev => prev.map(p => p.id === id ? { ...p, zoom } : p));
   };
+
+  const handleRotationChange = (id: string, rotation: number) => {
+    triggerAdjusting();
+    setPhotos(prev => prev.map(p => p.id === id ? { ...p, rotation } : p));
+  };
+
+  /** Cuando cambia la foto seleccionada, centrar el panel */
+  const selectPhoto = (id: string) => {
+    if (selectedPhotoId !== id) {
+      centerPanel();
+      setSelectedPhotoId(id);
+    }
+  };
+
+  /** Iniciar arrastre del panel (position: fixed en toda la pantalla) */
+  const onPanelPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragStart.current = { mx: e.clientX, my: e.clientY, px: panelPos.x, py: panelPos.y };
+    setIsDraggingPanel(true);
+  };
+
+  /** Seguimiento de arrastre global via window */
+  useEffect(() => {
+    if (!isDraggingPanel) return;
+    const onMove = (e: PointerEvent) => {
+      if (!dragStart.current) return;
+      setPanelPos({
+        x: dragStart.current.px + (e.clientX - dragStart.current.mx),
+        y: dragStart.current.py + (e.clientY - dragStart.current.my),
+      });
+    };
+    const onUp = () => {
+      dragStart.current = null;
+      setIsDraggingPanel(false);
+    };
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
+    return () => {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+    };
+  }, [isDraggingPanel]);
 
   const handleWatermarkUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -369,12 +440,19 @@ export function PhotoCollageEditor({ photos: initialPhotos, onClose }: Props) {
               >
                 {photos.map((photo, idx) => {
                   const specialClass = (currentLayoutObj.specials && currentLayoutObj.specials[idx as keyof typeof currentLayoutObj.specials]) || "";
+                  const isSelected = selectedPhotoId === photo.id;
+                  
                   return (
-                    <div key={photo.id} className={`relative overflow-hidden ${specialClass} bg-zinc-800 w-full h-full min-h-[10px]`}>
+                    <div 
+                      key={photo.id} 
+                      className={`relative overflow-hidden ${specialClass} bg-zinc-800 w-full h-full min-h-[10px] group`}
+                      onPointerDownCapture={() => selectPhoto(photo.id)}
+                    >
                       <Cropper
                         image={photo.url}
                         crop={photo.crop || { x: 0, y: 0 }}
                         zoom={photo.zoom || 1}
+                        rotation={photo.rotation || 0}
                         aspect={undefined}
                         onCropChange={(c) => handleCropChange(photo.id, c)}
                         onZoomChange={(z) => handleZoomChange(photo.id, z)}
@@ -385,6 +463,11 @@ export function PhotoCollageEditor({ photos: initialPhotos, onClose }: Props) {
                           cropAreaStyle: { border: 'none', boxShadow: 'none', width: '100%', height: '100%' },
                         }}
                       />
+                      
+                      {/* Ring highlight on selected photo */}
+                      {isSelected && (
+                        <div className="absolute inset-0 ring-2 ring-primary/60 pointer-events-none z-10 rounded-none" />
+                      )}
                     </div>
                   );
                 })}
@@ -400,6 +483,93 @@ export function PhotoCollageEditor({ photos: initialPhotos, onClose }: Props) {
         )}
 
       </div>
+
+      {/* ─── PANEL DE CONTROLES FLOTANTE (fixed — fuera de overflow:hidden) ─── */}
+      {selectedPhotoId && !loadingBlobs && (() => {
+        const photo = photos.find(p => p.id === selectedPhotoId);
+        if (!photo) return null;
+        return (
+          <div
+            ref={panelRef}
+            className="fixed z-[200] select-none"
+            style={{ left: panelPos.x, top: panelPos.y }}
+          >
+            {/* Indicador de ajuste */}
+            {isAdjusting && (
+              <div className="flex items-center justify-center gap-1.5 mb-1.5">
+                <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+                <span className="text-[10px] text-white/70 font-medium tracking-wide">Ajustando...</span>
+              </div>
+            )}
+
+            {/* Panel arrastrable */}
+            <div
+              className={`flex items-center gap-3 bg-black/90 backdrop-blur-md rounded-2xl px-3 py-2.5 border shadow-2xl ${
+                isDraggingPanel
+                  ? 'cursor-grabbing border-primary/60 ring-1 ring-primary/30'
+                  : 'border-white/15'
+              }`}
+            >
+              {/* Drag handle — toda la barra salvo los controles */}
+              <div
+                className="cursor-grab active:cursor-grabbing text-white/30 hover:text-white/70 transition-colors flex-shrink-0 py-1 px-0.5"
+                onPointerDown={onPanelPointerDown}
+                title="Arrastrar panel"
+              >
+                <GripHorizontal className="h-4 w-4" />
+              </div>
+
+              <div className="w-px h-5 bg-white/15" />
+
+              {/* Zoom */}
+              <div className="flex items-center gap-2">
+                <ZoomIn className="h-3.5 w-3.5 text-white/40 flex-shrink-0" />
+                <input
+                  type="range" min={1} max={3} step={0.02}
+                  value={photo.zoom || 1}
+                  onChange={(e) => handleZoomChange(photo.id, Number(e.target.value))}
+                  className="w-20 accent-primary cursor-pointer"
+                />
+                <span className="text-[10px] text-white/40 w-8 tabular-nums">{((photo.zoom || 1) * 100).toFixed(0)}%</span>
+              </div>
+
+              <div className="w-px h-5 bg-white/15" />
+
+              {/* Rotación fina */}
+              <div className="flex items-center gap-2">
+                <RotateCcw className="h-3.5 w-3.5 text-white/40 flex-shrink-0" />
+                <input
+                  type="range" min={-45} max={45} step={0.5}
+                  value={photo.rotation || 0}
+                  onChange={(e) => handleRotationChange(photo.id, Number(e.target.value))}
+                  className="w-20 accent-primary cursor-pointer"
+                />
+                <span className="text-[10px] text-white/40 w-8 tabular-nums">{(photo.rotation || 0).toFixed(0)}°</span>
+              </div>
+
+              <div className="w-px h-5 bg-white/15" />
+
+              {/* Reset */}
+              <button
+                type="button"
+                onClick={() => { handleZoomChange(photo.id, 1); handleRotationChange(photo.id, 0); }}
+                className="text-[10px] text-white/30 hover:text-white/80 transition-colors flex-shrink-0 px-1"
+                title="Restablecer"
+              >↺</button>
+
+              {/* Cerrar selección */}
+              <button
+                type="button"
+                onClick={() => setSelectedPhotoId(null)}
+                className="ml-1 text-white/20 hover:text-white/60 transition-colors flex-shrink-0"
+                title="Cerrar controles"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          </div>
+        );
+      })()}
 
     </div>
   );
