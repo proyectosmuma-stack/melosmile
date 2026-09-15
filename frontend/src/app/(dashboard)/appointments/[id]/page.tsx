@@ -1858,6 +1858,24 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
           </div>
         </DialogContent>
       </Dialog>
+      
+      {/* Modal Confirmar Borrado */}
+      <Dialog open={!!deleteConfirmDocId} onOpenChange={(open) => { if (!open) setDeleteConfirmDocId(null); }}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>Eliminar documento</DialogTitle>
+            <DialogDescription>
+              ¿Seguro que quieres eliminar este documento? Esta acción no se puede deshacer.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="mt-4">
+            <Button variant="outline" onClick={() => setDeleteConfirmDocId(null)}>Cancelar</Button>
+            <Button variant="destructive" onClick={() => {
+              if (deleteConfirmDocId) executeDeleteDocument(deleteConfirmDocId);
+            }}>Eliminar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
