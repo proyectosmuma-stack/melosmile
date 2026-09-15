@@ -313,7 +313,7 @@ export function PaymentRegistrationModal({
           if (!odooResponse.ok) {
             const errorData = await odooResponse.json();
             console.error("⚠️  Error Odoo:", errorData);
-            alert(`⚠️  Pago registrado en Supabase, pero hubo un error al generar la factura en Odoo: ${errorData.message}. Por favor, genera la factura manualmente.`);
+            alert(`⚠️  Pago registrado en Supabase, pero hubo un error al generar la factura en Odoo: ${errorData.error || errorData.message || 'Error desconocido'}. Por favor, genera la factura manualmente.`);
           } else {
             const odooData = await odooResponse.json();
             console.log("✅ Factura Odoo generada:", odooData);
@@ -321,7 +321,7 @@ export function PaymentRegistrationModal({
           }
         } catch (odooErr: any) {
           console.error("⚠️  Error al generar factura de Odoo:", odooErr);
-          alert(`⚠️  Pago registrado en Supabase, pero hubo un error al generar la factura en Odoo: ${odooErr.message}. Por favor, genera la factura manualmente.`);
+          alert(`⚠️  Pago registrado en Supabase, pero hubo un error al generar la factura en Odoo: ${odooErr.message || odooErr.error || 'Error desconocido'}. Por favor, genera la factura manualmente.`);
         }
       }
 
