@@ -149,6 +149,13 @@ export function PhotoCollageEditor({ photos: initialPhotos, onClose }: Props) {
     }
   };
 
+  // Force layout reset if photo count changes and layout is not available
+  useEffect(() => {
+    if (!availableLayouts.find(l => l.id === activeLayout)) {
+      setActiveLayout(availableLayouts[0].id);
+    }
+  }, [availableLayouts, activeLayout]);
+
   const currentLayoutObj = availableLayouts.find(l => l.id === activeLayout) || availableLayouts[0];
 
   return (
@@ -309,6 +316,8 @@ export function PhotoCollageEditor({ photos: initialPhotos, onClose }: Props) {
                 aspectRatio: `${activeRatio.width} / ${activeRatio.height}`,
                 maxHeight: '100%',
                 maxWidth: '100%',
+                width: activeRatio.width >= activeRatio.height ? '100%' : 'auto',
+                height: activeRatio.width < activeRatio.height ? '100%' : 'auto',
                 backgroundColor: bgColor,
               }}
             >
@@ -324,7 +333,7 @@ export function PhotoCollageEditor({ photos: initialPhotos, onClose }: Props) {
                 {photos.map((photo, idx) => {
                   const specialClass = (currentLayoutObj.specials && currentLayoutObj.specials[idx as keyof typeof currentLayoutObj.specials]) || "";
                   return (
-                    <div key={photo.id} className={`relative overflow-hidden ${specialClass} bg-zinc-800`}>
+                    <div key={photo.id} className={`relative overflow-hidden ${specialClass} bg-zinc-800 w-full h-full min-h-[100px]`}>
                       <Cropper
                         image={photo.url}
                         crop={photo.crop || { x: 0, y: 0 }}
@@ -335,7 +344,7 @@ export function PhotoCollageEditor({ photos: initialPhotos, onClose }: Props) {
                         objectFit="cover"
                         showGrid={false}
                         style={{
-                          containerStyle: { width: '100%', height: '100%' },
+                          containerStyle: { width: '100%', height: '100%', position: 'absolute', top: 0, left: 0 },
                         }}
                       />
                     </div>
