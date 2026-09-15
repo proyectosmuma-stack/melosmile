@@ -93,7 +93,13 @@ export function PhotoCollageEditor({ photos: initialPhotos, onClose }: Props) {
       const loaded: CollagePhoto[] = [];
       for (const p of initialPhotos.slice(0, 4)) {
         try {
-          const res = await fetch(p.url, { mode: "cors" });
+          let res = await fetch(p.url, { mode: "cors" }).catch(() => null);
+          
+          if (!res || !res.ok) {
+            res = await fetch(`/api/proxy-image?url=${encodeURIComponent(p.url)}`);
+            if (!res.ok) throw new Error("Fallo en proxy y fetch");
+          }
+
           const blob = await res.blob();
           const base64 = await new Promise<string>((resolve, reject) => {
             const reader = new FileReader();
