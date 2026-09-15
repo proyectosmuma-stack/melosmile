@@ -231,6 +231,7 @@ export async function upsertOdooPartner(patient: {
   email?: string;
   phone?: string;
   odoo_partner_id?: number;
+  patient_id?: string; // Supabase patient UUID — used to self-heal the stale link
 }) {
   const name = patient.billing_name || patient.full_name;
 
@@ -306,20 +307,38 @@ export async function upsertOdooPartner(patient: {
       await odooExecute('res.partner', 'write', [[existingIds[0]], providedVals]);
       return existingIds[0];
     } catch (error: any) {
-      if ((error.message && error.message.toLowerCase().includes('eliminado')) || (error.message && error.message.toLowerCase().includes('exist'))) {
-        console.warn(`Partner ID ${existingIds[0]} missing in Odoo. Falling back to search.`);
-        // The mapped ID was deleted or doesn't exist. Search for a matching partner instead!
-        existingIds = await performSearch();
-        
-        if (existingIds.length > 0) {
-          // Found an alternative matching partner. Let's update that one instead.
-          await odooExecute('res.partner', 'write', [[existingIds[0]], providedVals]);
-          return existingIds[0];
+      const errMsg = (error.message || '').toLowerCase();
+      const isStaleId = errMsg.includes('eliminado') || errMsg.includes('exist') || errMsg.includes('deleted');
+      if (isStaleId) {
+        console.warn(`[Odoo] Stored partner ID ${existingIds[0]} is stale. Running deep search…`);
+        const foundIds = await performSearch();
+
+        if (foundIds.length > 0) {
+          const recoveredId = foundIds[0];
+          console.info(`[Odoo] Recovered partner ID ${recoveredId}. Updating Supabase reference…`);
+          await odooExecute('res.partner', 'write', [[recoveredId], providedVals]);
+
+          // Self-heal: update the stale odoo_partner_id in Supabase so this never happens again
+          if (patient.patient_id) {
+            const { createClient } = await import('@supabase/supabase-js');
+            const supa = createClient(
+              process.env.NEXT_PUBLIC_SUPABASE_URL!,
+              process.env.SUPABASE_SERVICE_ROLE_KEY!
+            );
+            await supa.from('patients').update({ odoo_partner_id: recoveredId }).eq('id', patient.patient_id);
+            console.info(`[Odoo] Self-healed: patients.odoo_partner_id updated to ${recoveredId}`);
+          }
+
+          return recoveredId;
         }
-        // If still 0, it falls through to create below.
-      } else {
-        throw error;
+
+        // No match anywhere — tell the user, don't silently create a duplicate
+        throw new Error(
+          `La ficha de este paciente (ID Odoo: ${existingIds[0]}) ya no existe en Odoo y no se encontró ninguna alternativa por NIF/email/nombre. ` +
+          `Por favor, crea o vincula manualmente el contacto del paciente en Odoo antes de sincronizar.`
+        );
       }
+      throw error;
     }
   }
   

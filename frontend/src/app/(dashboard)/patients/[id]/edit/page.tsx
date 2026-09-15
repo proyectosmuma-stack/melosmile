@@ -375,8 +375,12 @@ export default function EditPatientPage({ params }: { params: Promise<{ id: stri
               phone: newValues.phone || "",
               nif_cif: newValues.billing_same_as_contact ? newValues.dni_nie : newValues.nif_cif,
               billing_address: newValues.billing_same_as_contact ? newValues.address : newValues.billing_address,
+              billing_address_2: newValues.billing_same_as_contact ? newValues.address_2 : newValues.billing_address_2,
               billing_city: newValues.billing_same_as_contact ? newValues.city : newValues.billing_city,
               billing_postal_code: newValues.billing_same_as_contact ? newValues.postal_code : newValues.billing_postal_code,
+              billing_province: newValues.billing_same_as_contact ? newValues.province : newValues.billing_province,
+              billing_country: newValues.billing_same_as_contact ? newValues.country : newValues.billing_country,
+              patient_id: patientId,
             };
 
             const odooRes = await fetch('/api/odoo/partner', {
