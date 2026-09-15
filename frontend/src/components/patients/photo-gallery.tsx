@@ -309,6 +309,47 @@ export function PhotoGallery({ patientId, appointments = [] }: Props) {
     });
   };
 
+  const uploadModal = uploadFiles.length > 0 && (
+    <div className="fixed inset-0 z-[100] bg-black/70 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in">
+      <div className="bg-card rounded-3xl shadow-2xl border border-border w-full max-w-md overflow-hidden flex flex-col">
+        <div className="px-6 py-5 bg-primary/10 text-primary flex items-center justify-between border-b border-border">
+          <h2 className="text-base font-bold">Vincular {uploadFiles.length} foto(s)</h2>
+          <button
+            type="button"
+            onClick={() => setUploadFiles([])}
+            className="hover:bg-primary/20 p-1.5 rounded-xl transition-colors"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+        <div className="p-6 space-y-4">
+          <p className="text-sm text-muted-foreground">Selecciona a qué cita corresponden estas imágenes clínicas:</p>
+          <select
+            value={selectedApt}
+            onChange={(e) => setSelectedApt(e.target.value)}
+            className="w-full h-10 px-3 border border-border rounded-xl text-sm font-medium bg-card"
+          >
+            <option value="" disabled>Selecciona una cita...</option>
+            {appointments.map((a: any) => (
+              <option key={a.id} value={a.id}>
+                {new Date(a.appointment_date).toLocaleDateString()} - {a.reason || 'Cita'}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="px-6 py-4 bg-muted/40 border-t border-border flex items-center justify-end gap-2">
+          <Button type="button" variant="ghost" size="sm" disabled={isUploading} onClick={() => setUploadFiles([])} className="rounded-xl">
+            Cancelar
+          </Button>
+          <Button type="button" size="sm" disabled={isUploading || !selectedApt} onClick={handleConfirmUpload} className="rounded-xl font-bold">
+            {isUploading ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" /> : <Upload className="h-3.5 w-3.5 mr-1.5" />}
+            Subir y Vincular
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+
   if (loading) {
     return (
       <div className="p-5 space-y-6">
@@ -325,6 +366,7 @@ export function PhotoGallery({ patientId, appointments = [] }: Props) {
             </div>
           </div>
         ))}
+        {uploadModal}
       </div>
     );
   }
@@ -340,12 +382,12 @@ export function PhotoGallery({ patientId, appointments = [] }: Props) {
         <Button variant="outline" size="sm" onClick={() => fetchPage(0, false)} className="rounded-xl gap-1.5 mt-1">
           <RefreshCw className="h-3.5 w-3.5" /> Reintentar
         </Button>
+        {uploadModal}
       </div>
     );
   }
 
   if (groups.length === 0) {
-    
     return (
       <div className="flex flex-col items-center justify-center py-16 px-6 text-center gap-3">
         <div className="h-14 w-14 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center">
@@ -359,12 +401,11 @@ export function PhotoGallery({ patientId, appointments = [] }: Props) {
           <Upload className="h-4 w-4 mr-2" /> Subir Fotografías
         </Button>
         <input ref={fileInputRef} type="file" multiple accept="image/*" className="hidden" onChange={handleFileSelect} />
+        {uploadModal}
       </div>
     );
-
   }
 
-  
   return (
     <div className="p-5 space-y-6">
       <div className="flex justify-end">
@@ -374,46 +415,7 @@ export function PhotoGallery({ patientId, appointments = [] }: Props) {
         <input ref={fileInputRef} type="file" multiple accept="image/*" className="hidden" onChange={handleFileSelect} />
       </div>
 
-      {uploadFiles.length > 0 && (
-        <div className="fixed inset-0 z-[100] bg-black/70 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in">
-          <div className="bg-card rounded-3xl shadow-2xl border border-border w-full max-w-md overflow-hidden flex flex-col">
-            <div className="px-6 py-5 bg-primary/10 text-primary flex items-center justify-between border-b border-border">
-              <h2 className="text-base font-bold">Vincular {uploadFiles.length} foto(s)</h2>
-              <button
-                type="button"
-                onClick={() => setUploadFiles([])}
-                className="hover:bg-primary/20 p-1.5 rounded-xl transition-colors"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-            <div className="p-6 space-y-4">
-              <p className="text-sm text-muted-foreground">Selecciona a qué cita corresponden estas imágenes clínicas:</p>
-              <select
-                value={selectedApt}
-                onChange={(e) => setSelectedApt(e.target.value)}
-                className="w-full h-10 px-3 border border-border rounded-xl text-sm font-medium bg-card"
-              >
-                <option value="" disabled>Selecciona una cita...</option>
-                {appointments.map((a: any) => (
-                  <option key={a.id} value={a.id}>
-                    {new Date(a.appointment_date).toLocaleDateString()} - {a.reason || 'Cita'}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="px-6 py-4 bg-muted/40 border-t border-border flex items-center justify-end gap-2">
-              <Button type="button" variant="ghost" size="sm" disabled={isUploading} onClick={() => setUploadFiles([])} className="rounded-xl">
-                Cancelar
-              </Button>
-              <Button type="button" size="sm" disabled={isUploading || !selectedApt} onClick={handleConfirmUpload} className="rounded-xl font-bold">
-                {isUploading ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" /> : <Upload className="h-3.5 w-3.5 mr-1.5" />}
-                Subir y Vincular
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+      {uploadModal}
 
       {groups.map((group) => {
         const isSinCita = group.key === "sin-cita";
