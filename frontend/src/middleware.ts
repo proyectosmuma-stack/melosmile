@@ -12,6 +12,7 @@ export function middleware(request: NextRequest) {
     pathname.startsWith("/_next") ||
     pathname.startsWith("/api/auth/login") ||
     pathname.startsWith("/api/ai-context") ||
+    pathname.startsWith("/api/cron") ||
     pathname.startsWith("/api/dispatcher") ||
     pathname.startsWith("/api/billing/document-cleaner") ||
     pathname.startsWith("/api/calendar/ical") ||
