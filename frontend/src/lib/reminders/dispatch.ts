@@ -114,7 +114,7 @@ export async function dispatchReminder(reminderId: string): Promise<DispatchRemi
       
       const rawUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "https://agenda.melosmile.com");
       const baseUrl = (rawUrl.includes("localhost") || rawUrl.includes("127.0.0.1")) ? "https://agenda.melosmile.com" : rawUrl;
-      const confirmUrl = `${baseUrl.replace(/\\/$/, '')}/c/${reminder.appointment_id}`;
+      const confirmUrl = `${baseUrl.replace(/\/$/, '')}/c/${reminder.appointment_id}`;
       
       const { resolveReminderCopy } = await import("./copies");
       
