@@ -52,6 +52,9 @@ type PatientDetails = {
   zip_code?: string | null;
   vat?: string | null;
   billing_name?: string; // Optional: separate billing name from contact name
+  street2?: string | null;
+  province?: string | null;
+  country?: string | null;
 };
 
 type PaymentRegistrationModalProps = {
@@ -93,6 +96,9 @@ type OdooPatientDetails = {
   billingAddress?: string | null;
   billingCity?: string | null;
   billingPostalCode?: string | null;
+  billingAddress2?: string | null;
+  billingProvince?: string | null;
+  billingCountry?: string | null;
   email?: string | null;
   phone?: string | null;
 };
@@ -275,8 +281,11 @@ export function PaymentRegistrationModal({
             nifCif: selectedRep ? selectedRep.dni_nie : patientDetails.vat,
             billingName: selectedRep ? selectedRep.full_name : (patientDetails.billing_name || `${patientDetails.first_name} ${patientDetails.last_name}`),
             billingAddress: patientDetails.street,
+            billingAddress2: patientDetails.street2,
             billingCity: patientDetails.city,
             billingPostalCode: patientDetails.zip_code,
+            billingProvince: patientDetails.province,
+            billingCountry: patientDetails.country,
             email: selectedRep ? selectedRep.email : patientDetails.email,
             phone: selectedRep ? selectedRep.phone : patientDetails.phone,
           };

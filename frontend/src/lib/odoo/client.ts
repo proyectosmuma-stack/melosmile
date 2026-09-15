@@ -223,8 +223,11 @@ export async function upsertOdooPartner(patient: {
   nif_cif?: string;
   billing_name?: string;
   billing_address?: string;
+  billing_address_2?: string;
   billing_city?: string;
   billing_postal_code?: string;
+  billing_province?: string;
+  billing_country?: string;
   email?: string;
   phone?: string;
   odoo_partner_id?: number;
@@ -273,10 +276,35 @@ export async function upsertOdooPartner(patient: {
   const providedVals: Record<string, unknown> = { name };
   if (patient.nif_cif) providedVals.vat = patient.nif_cif;
   if (patient.billing_address) providedVals.street = patient.billing_address;
+  if (patient.billing_address_2) providedVals.street2 = patient.billing_address_2;
   if (patient.billing_city) providedVals.city = patient.billing_city;
   if (patient.billing_postal_code) providedVals.zip = patient.billing_postal_code;
   if (patient.email) providedVals.email = patient.email;
   if (patient.phone) providedVals.phone = patient.phone;
+
+  // Resolve Country ID
+  let countryId = 68; // Default: 68 is España in Odoo
+  if (patient.billing_country) {
+    const countries = await odooExecute('res.country', 'search_read', [
+      [['name', 'ilike', patient.billing_country]],
+      ['id']
+    ]);
+    if (countries && countries.length > 0) {
+      countryId = countries[0].id;
+    }
+  }
+  providedVals.country_id = countryId;
+
+  // Resolve State ID
+  if (patient.billing_province) {
+    const states = await odooExecute('res.country.state', 'search_read', [
+      [['name', 'ilike', patient.billing_province], ['country_id', '=', countryId]],
+      ['id']
+    ]);
+    if (states && states.length > 0) {
+      providedVals.state_id = states[0].id;
+    }
+  }
 
   if (existingIds.length > 0) {
     await odooExecute('res.partner', 'write', [[existingIds[0]], providedVals]);
@@ -289,7 +317,7 @@ export async function upsertOdooPartner(patient: {
       street: patient.billing_address || false,
       city: patient.billing_city || false,
       zip: patient.billing_postal_code || false,
-      country_id: 67, // Spain in Odoo
+      // country_id and state_id are already in providedVals
       email: patient.email || false,
       phone: patient.phone || false,
       customer_rank: 1,
