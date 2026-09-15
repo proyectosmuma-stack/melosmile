@@ -1,7 +1,9 @@
 "use client";
 
+import Link from "next/link";
+
 import * as React from "react";
-import { Camera, ImageOff, ChevronDown, Loader2, AlertCircle, RefreshCw, Upload, X, LayoutTemplate } from "lucide-react";
+import { Camera, ImageOff, ChevronDown, Loader2, AlertCircle, RefreshCw, Upload, X, LayoutTemplate, ExternalLink } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { PhotoLightbox } from "./photo-lightbox";
@@ -517,9 +519,19 @@ export function PhotoGallery({ patientId, appointments = [] }: Props) {
                 <div className="h-8 w-8 rounded-xl bg-primary/10 border border-primary/15 flex items-center justify-center shrink-0 group-hover:bg-primary/15 transition-colors">
                   <Camera className="h-4 w-4 text-primary" />
                 </div>
-                <div className="min-w-0">
-                  <p className="text-sm font-bold text-foreground leading-none truncate">{headerDate}</p>
-                  <p className="text-xs font-medium text-muted-foreground truncate">{sub}</p>
+                <div className="min-w-0 flex-1">
+                  {!isSinCita ? (
+                    <Link 
+                      href={`/appointments/${group.appointment_id}`} 
+                      onClick={(e) => e.stopPropagation()} 
+                      className="text-sm font-bold text-primary hover:underline leading-none truncate flex items-center gap-1.5"
+                    >
+                      {headerDate} <ExternalLink className="h-3 w-3 opacity-70 shrink-0" />
+                    </Link>
+                  ) : (
+                    <p className="text-sm font-bold text-foreground leading-none truncate">{headerDate}</p>
+                  )}
+                  <p className="text-xs font-medium text-muted-foreground truncate mt-1">{sub}</p>
                 </div>
               </div>
               <div className="flex items-center gap-2 shrink-0">
