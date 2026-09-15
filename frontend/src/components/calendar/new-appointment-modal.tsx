@@ -248,8 +248,9 @@ export function NewAppointmentModalGlobal() {
         }
       }
 
-      // 2. Build appointment timestamp
-      const fullDateStr = `${appointmentDate}T${selectedStartTime}:00`;
+      // 2. Build appointment timestamp (Parse as local time, convert to UTC string for Supabase)
+      const localDate = new Date(`${appointmentDate}T${selectedStartTime}:00`);
+      const fullDateStr = localDate.toISOString();
 
       // 3. Insert Appointment into Supabase
       const finalNotes = guestDoctor.trim()
