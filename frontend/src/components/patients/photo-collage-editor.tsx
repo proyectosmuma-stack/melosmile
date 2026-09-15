@@ -74,14 +74,23 @@ export function PhotoCollageEditor({ photos: initialPhotos, onClose }: Props) {
   const [loadingBlobs, setLoadingBlobs] = useState(true);
   const [selectedPhotoId, setSelectedPhotoId] = useState<string | null>(null);
 
-  // Panel de controles arrastrable: posición relativa dentro de la celda de la foto
-  const [panelOffset, setPanelOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  // Panel de controles arrastrable: posición fija en pantalla
+  const [panelPos, setPanelPos] = useState<{ x: number; y: number }>({ x: -9999, y: -9999 }); // offscreen until mounted
   const [isDraggingPanel, setIsDraggingPanel] = useState(false);
-  const dragStart = useRef<{ mx: number; my: number; ox: number; oy: number } | null>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const dragStart = useRef<{ mx: number; my: number; px: number; py: number } | null>(null);
 
   // Indicador de ajuste activo
   const [isAdjusting, setIsAdjusting] = useState(false);
   const adjustingTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  /** Centra el panel en la parte inferior de la pantalla al montar / cambiar foto seleccionada */
+  const centerPanel = useCallback(() => {
+    setPanelPos({
+      x: window.innerWidth / 2 - 200, // estimamos ~400px de ancho
+      y: window.innerHeight - 100,
+    });
+  }, []);
 
   // Configuraciones de Diseño
   const photoCount = Math.min(Math.max(initialPhotos.length, 2), 4) as 2 | 3 | 4;
@@ -154,34 +163,43 @@ export function PhotoCollageEditor({ photos: initialPhotos, onClose }: Props) {
     setPhotos(prev => prev.map(p => p.id === id ? { ...p, rotation } : p));
   };
 
-  /** Cuando cambia la foto seleccionada, resetear la posición del panel */
+  /** Cuando cambia la foto seleccionada, centrar el panel */
   const selectPhoto = (id: string) => {
     if (selectedPhotoId !== id) {
-      setPanelOffset({ x: 0, y: 0 });
+      centerPanel();
       setSelectedPhotoId(id);
     }
   };
 
-  /** Drag handlers para el panel de controles */
-  const onPanelPointerDown = (e: React.PointerEvent) => {
+  /** Iniciar arrastre del panel (position: fixed en toda la pantalla) */
+  const onPanelPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    e.preventDefault();
     e.stopPropagation();
-    dragStart.current = { mx: e.clientX, my: e.clientY, ox: panelOffset.x, oy: panelOffset.y };
+    dragStart.current = { mx: e.clientX, my: e.clientY, px: panelPos.x, py: panelPos.y };
     setIsDraggingPanel(true);
-    (e.target as HTMLElement).setPointerCapture(e.pointerId);
   };
 
-  const onPanelPointerMove = (e: React.PointerEvent) => {
-    if (!dragStart.current) return;
-    const dx = e.clientX - dragStart.current.mx;
-    const dy = e.clientY - dragStart.current.my;
-    setPanelOffset({ x: dragStart.current.ox + dx, y: dragStart.current.oy + dy });
-  };
-
-  const onPanelPointerUp = (e: React.PointerEvent) => {
-    dragStart.current = null;
-    setIsDraggingPanel(false);
-    (e.target as HTMLElement).releasePointerCapture(e.pointerId);
-  };
+  /** Seguimiento de arrastre global via window */
+  useEffect(() => {
+    if (!isDraggingPanel) return;
+    const onMove = (e: PointerEvent) => {
+      if (!dragStart.current) return;
+      setPanelPos({
+        x: dragStart.current.px + (e.clientX - dragStart.current.mx),
+        y: dragStart.current.py + (e.clientY - dragStart.current.my),
+      });
+    };
+    const onUp = () => {
+      dragStart.current = null;
+      setIsDraggingPanel(false);
+    };
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
+    return () => {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+    };
+  }, [isDraggingPanel]);
 
   const handleWatermarkUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -446,90 +464,9 @@ export function PhotoCollageEditor({ photos: initialPhotos, onClose }: Props) {
                         }}
                       />
                       
+                      {/* Ring highlight on selected photo */}
                       {isSelected && (
-                        <div
-                          className="absolute z-50 select-none animate-in fade-in duration-150"
-                          style={{
-                            bottom: `calc(50% + ${panelOffset.y}px)`,
-                            left: `calc(50% + ${panelOffset.x}px)`,
-                            transform: 'translateX(-50%)',
-                          }}
-                          onPointerDownCapture={(e) => e.stopPropagation()}
-                        >
-                          {/* Indicador de ajuste */}
-                          {isAdjusting && (
-                            <div className="flex items-center justify-center gap-1.5 mb-1.5">
-                              <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
-                              <span className="text-[10px] text-white/70 font-medium tracking-wide">Ajustando...</span>
-                            </div>
-                          )}
-
-                          {/* Panel arrastrable */}
-                          <div
-                            className={`flex items-center gap-3 bg-black/85 backdrop-blur-md rounded-2xl px-3 py-2.5 border border-white/15 shadow-xl pointer-events-auto ${
-                              isDraggingPanel ? 'cursor-grabbing ring-1 ring-primary/50' : ''
-                            }`}
-                          >
-                            {/* Drag handle */}
-                            <div
-                              className="cursor-grab active:cursor-grabbing text-white/30 hover:text-white/60 transition-colors flex-shrink-0 touch-none"
-                              onPointerDown={onPanelPointerDown}
-                              onPointerMove={onPanelPointerMove}
-                              onPointerUp={onPanelPointerUp}
-                              title="Arrastrar panel"
-                            >
-                              <GripHorizontal className="h-4 w-4" />
-                            </div>
-
-                            <div className="w-px h-5 bg-white/15" />
-
-                            {/* Zoom slider */}
-                            <div className="flex items-center gap-2">
-                              <ZoomIn className="h-3.5 w-3.5 text-white/40 flex-shrink-0" />
-                              <input
-                                type="range"
-                                min={1}
-                                max={3}
-                                step={0.02}
-                                value={photo.zoom || 1}
-                                onChange={(e) => handleZoomChange(photo.id, Number(e.target.value))}
-                                className="w-20 accent-primary cursor-pointer"
-                                title={`Zoom: ${((photo.zoom || 1) * 100).toFixed(0)}%`}
-                              />
-                              <span className="text-[10px] text-white/40 w-8 tabular-nums">{((photo.zoom || 1) * 100).toFixed(0)}%</span>
-                            </div>
-
-                            <div className="w-px h-5 bg-white/15" />
-
-                            {/* Rotation slider */}
-                            <div className="flex items-center gap-2">
-                              <RotateCcw className="h-3.5 w-3.5 text-white/40 flex-shrink-0" />
-                              <input
-                                type="range"
-                                min={-45}
-                                max={45}
-                                step={0.5}
-                                value={photo.rotation || 0}
-                                onChange={(e) => handleRotationChange(photo.id, Number(e.target.value))}
-                                className="w-20 accent-primary cursor-pointer"
-                                title={`Rotación: ${photo.rotation || 0}°`}
-                              />
-                              <span className="text-[10px] text-white/40 w-8 tabular-nums">{(photo.rotation || 0).toFixed(0)}°</span>
-                            </div>
-
-                            <div className="w-px h-5 bg-white/15" />
-
-                            {/* Reset button */}
-                            <button
-                              type="button"
-                              onClick={() => { handleZoomChange(photo.id, 1); handleRotationChange(photo.id, 0); }}
-                              className="text-[10px] text-white/30 hover:text-white/70 transition-colors flex-shrink-0 px-1"
-                              title="Restablecer"
-                            >
-                              ↺
-                            </button>
-                          </div>
-                        </div>
+                        <div className="absolute inset-0 ring-2 ring-primary/60 pointer-events-none z-10 rounded-none" />
                       )}
                     </div>
                   );
@@ -546,6 +483,93 @@ export function PhotoCollageEditor({ photos: initialPhotos, onClose }: Props) {
         )}
 
       </div>
+
+      {/* ─── PANEL DE CONTROLES FLOTANTE (fixed — fuera de overflow:hidden) ─── */}
+      {selectedPhotoId && !loadingBlobs && (() => {
+        const photo = photos.find(p => p.id === selectedPhotoId);
+        if (!photo) return null;
+        return (
+          <div
+            ref={panelRef}
+            className="fixed z-[200] select-none"
+            style={{ left: panelPos.x, top: panelPos.y }}
+          >
+            {/* Indicador de ajuste */}
+            {isAdjusting && (
+              <div className="flex items-center justify-center gap-1.5 mb-1.5">
+                <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+                <span className="text-[10px] text-white/70 font-medium tracking-wide">Ajustando...</span>
+              </div>
+            )}
+
+            {/* Panel arrastrable */}
+            <div
+              className={`flex items-center gap-3 bg-black/90 backdrop-blur-md rounded-2xl px-3 py-2.5 border shadow-2xl ${
+                isDraggingPanel
+                  ? 'cursor-grabbing border-primary/60 ring-1 ring-primary/30'
+                  : 'border-white/15'
+              }`}
+            >
+              {/* Drag handle — toda la barra salvo los controles */}
+              <div
+                className="cursor-grab active:cursor-grabbing text-white/30 hover:text-white/70 transition-colors flex-shrink-0 py-1 px-0.5"
+                onPointerDown={onPanelPointerDown}
+                title="Arrastrar panel"
+              >
+                <GripHorizontal className="h-4 w-4" />
+              </div>
+
+              <div className="w-px h-5 bg-white/15" />
+
+              {/* Zoom */}
+              <div className="flex items-center gap-2">
+                <ZoomIn className="h-3.5 w-3.5 text-white/40 flex-shrink-0" />
+                <input
+                  type="range" min={1} max={3} step={0.02}
+                  value={photo.zoom || 1}
+                  onChange={(e) => handleZoomChange(photo.id, Number(e.target.value))}
+                  className="w-20 accent-primary cursor-pointer"
+                />
+                <span className="text-[10px] text-white/40 w-8 tabular-nums">{((photo.zoom || 1) * 100).toFixed(0)}%</span>
+              </div>
+
+              <div className="w-px h-5 bg-white/15" />
+
+              {/* Rotación fina */}
+              <div className="flex items-center gap-2">
+                <RotateCcw className="h-3.5 w-3.5 text-white/40 flex-shrink-0" />
+                <input
+                  type="range" min={-45} max={45} step={0.5}
+                  value={photo.rotation || 0}
+                  onChange={(e) => handleRotationChange(photo.id, Number(e.target.value))}
+                  className="w-20 accent-primary cursor-pointer"
+                />
+                <span className="text-[10px] text-white/40 w-8 tabular-nums">{(photo.rotation || 0).toFixed(0)}°</span>
+              </div>
+
+              <div className="w-px h-5 bg-white/15" />
+
+              {/* Reset */}
+              <button
+                type="button"
+                onClick={() => { handleZoomChange(photo.id, 1); handleRotationChange(photo.id, 0); }}
+                className="text-[10px] text-white/30 hover:text-white/80 transition-colors flex-shrink-0 px-1"
+                title="Restablecer"
+              >↺</button>
+
+              {/* Cerrar selección */}
+              <button
+                type="button"
+                onClick={() => setSelectedPhotoId(null)}
+                className="ml-1 text-white/20 hover:text-white/60 transition-colors flex-shrink-0"
+                title="Cerrar controles"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          </div>
+        );
+      })()}
 
     </div>
   );
