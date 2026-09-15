@@ -16,6 +16,7 @@ export function middleware(request: NextRequest) {
     pathname.startsWith("/api/dispatcher") ||
     pathname.startsWith("/api/billing/document-cleaner") ||
     pathname.startsWith("/api/calendar/ical") ||
+    pathname.startsWith("/api/mobile-upload") ||
     pathname.startsWith("/c/") ||
     pathname.includes("/confirm") ||
     pathname.includes(".") || // static files like favicon.ico, images, etc.
