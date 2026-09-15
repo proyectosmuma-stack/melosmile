@@ -42,9 +42,28 @@ export default function MobileUploadPage() {
 
     let successCount = 0;
     
+    let imageCompression: any = null;
+    try {
+      const mod = await import('browser-image-compression');
+      imageCompression = mod.default || mod;
+    } catch (e) {
+      console.warn("Image compression module not found", e);
+    }
+
     try {
       for (let i = 0; i < files.length; i++) {
-        const file = files[i];
+        let file = files[i];
+        
+        if (imageCompression && file.type.startsWith('image/')) {
+          try {
+            const options = { maxSizeMB: 1.5, maxWidthOrHeight: 2048, useWebWorker: true };
+            const compressedBlob = await imageCompression(file, options);
+            file = new File([compressedBlob], file.name, { type: file.type });
+          } catch (e) {
+            console.warn("Error compressing image:", e);
+          }
+        }
+
         const formData = new FormData();
         formData.append("file", file);
         formData.append("token", token);

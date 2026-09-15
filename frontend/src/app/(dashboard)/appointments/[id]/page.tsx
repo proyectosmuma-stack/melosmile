@@ -728,8 +728,28 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
   const handleFileUpload = async (files: FileList | null, forceImage = false) => {
     if (!files || files.length === 0 || !appt) return;
     setUploadingDoc(true);
+    
+    // Importar dinámicamente si no está al nivel superior para evitar SSR issues, o usar require si ya está
+    let imageCompression: any = null;
     try {
-      for (const file of Array.from(files)) {
+      const mod = await import('browser-image-compression');
+      imageCompression = mod.default || mod;
+    } catch (e) {
+      console.warn("Image compression module not found", e);
+    }
+
+    try {
+      for (let file of Array.from(files)) {
+        if (imageCompression && file.type.startsWith('image/')) {
+          try {
+            const options = { maxSizeMB: 1.5, maxWidthOrHeight: 2048, useWebWorker: true };
+            const compressedBlob = await imageCompression(file, options);
+            file = new File([compressedBlob], file.name, { type: file.type });
+          } catch (e) {
+            console.warn("Error compressing image:", e);
+          }
+        }
+
         const formData = new FormData();
         formData.append("file", file);
         formData.append("patientId", appt.patientId);

@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Camera, ImageOff, ChevronDown, Loader2, AlertCircle, RefreshCw } from "lucide-react";
+import { Camera, ImageOff, ChevronDown, Loader2, AlertCircle, RefreshCw, Upload, X } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { PhotoLightbox } from "./photo-lightbox";
@@ -43,6 +43,7 @@ type Group = {
 
 type Props = {
   patientId: string;
+  appointments?: any[];
 };
 
 function formatLongDateEs(dateStr: string | null): string {
@@ -120,7 +121,7 @@ function Thumbnail({
   );
 }
 
-export function PhotoGallery({ patientId }: Props) {
+export function PhotoGallery({ patientId, appointments = [] }: Props) {
   const [docs, setDocs] = React.useState<ApiDocument[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [loadingMore, setLoadingMore] = React.useState(false);
@@ -131,6 +132,67 @@ export function PhotoGallery({ patientId }: Props) {
 
   const [collapsedKeys, setCollapsedKeys] = React.useState<Set<string>>(new Set());
   const [lightbox, setLightbox] = React.useState<{ groupKey: string; index: number } | null>(null);
+
+  const [uploadFiles, setUploadFiles] = React.useState<File[]>([]);
+  const [selectedApt, setSelectedApt] = React.useState<string>("");
+  const [isUploading, setIsUploading] = React.useState(false);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      setUploadFiles(Array.from(e.target.files));
+      if (appointments.length > 0) {
+        setSelectedApt(appointments[0].id);
+      }
+    }
+  };
+
+  const handleConfirmUpload = async () => {
+    if (uploadFiles.length === 0 || !selectedApt) return;
+    setIsUploading(true);
+    let imageCompression: any = null;
+    try {
+      const mod = await import('browser-image-compression');
+      imageCompression = mod.default || mod;
+    } catch (e) {}
+
+    const aptObj = appointments.find(a => a.id === selectedApt);
+    const aptDate = aptObj?.appointment_date || new Date().toISOString().split('T')[0];
+
+    try {
+      for (let file of uploadFiles) {
+        if (imageCompression && file.type.startsWith('image/')) {
+          try {
+            const options = { maxSizeMB: 1.5, maxWidthOrHeight: 2048, useWebWorker: true };
+            const compressedBlob = await imageCompression(file, options);
+            file = new File([compressedBlob], file.name, { type: file.type });
+          } catch (e) {}
+        }
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("patientId", patientId);
+        formData.append("appointmentId", selectedApt);
+        formData.append("appointmentDate", aptDate);
+        formData.append("documentType", "foto_clinica");
+
+        await fetch("/api/documents/upload", {
+          method: "POST",
+          body: formData,
+        });
+      }
+      setUploadFiles([]);
+      setSelectedApt("");
+      fetchPage(0, false);
+    } catch (e) {
+      console.error(e);
+      alert("Error subiendo imágenes");
+    } finally {
+      setIsUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+
 
   const fetchPage = React.useCallback(
     async (nextOffset: number, append: boolean) => {
@@ -283,22 +345,76 @@ export function PhotoGallery({ patientId }: Props) {
   }
 
   if (groups.length === 0) {
+    
     return (
       <div className="flex flex-col items-center justify-center py-16 px-6 text-center gap-3">
         <div className="h-14 w-14 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center">
           <Camera className="h-7 w-7 text-primary" />
         </div>
         <p className="text-sm font-bold text-foreground">Sin fotografías clínicas aún</p>
-        <p className="text-xs text-muted-foreground max-w-sm">
-          Las fotografías clínicas asociadas a citas aparecerán aquí agrupadas cronológicamente. Usa la zona de
-          documentos para subir las primeras imágenes.
+        <p className="text-xs text-muted-foreground max-w-sm mb-4">
+          Las fotografías clínicas asociadas a citas aparecerán aquí agrupadas cronológicamente.
         </p>
+        <Button onClick={() => fileInputRef.current?.click()} className="rounded-xl font-bold shadow-sm">
+          <Upload className="h-4 w-4 mr-2" /> Subir Fotografías
+        </Button>
+        <input ref={fileInputRef} type="file" multiple accept="image/*" className="hidden" onChange={handleFileSelect} />
       </div>
     );
+
   }
 
+  
   return (
     <div className="p-5 space-y-6">
+      <div className="flex justify-end">
+        <Button onClick={() => fileInputRef.current?.click()} size="sm" className="rounded-xl font-bold shadow-sm">
+          <Upload className="h-3.5 w-3.5 mr-2" /> Añadir Fotos
+        </Button>
+        <input ref={fileInputRef} type="file" multiple accept="image/*" className="hidden" onChange={handleFileSelect} />
+      </div>
+
+      {uploadFiles.length > 0 && (
+        <div className="fixed inset-0 z-[100] bg-black/70 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in">
+          <div className="bg-card rounded-3xl shadow-2xl border border-border w-full max-w-md overflow-hidden flex flex-col">
+            <div className="px-6 py-5 bg-primary/10 text-primary flex items-center justify-between border-b border-border">
+              <h2 className="text-base font-bold">Vincular {uploadFiles.length} foto(s)</h2>
+              <button
+                type="button"
+                onClick={() => setUploadFiles([])}
+                className="hover:bg-primary/20 p-1.5 rounded-xl transition-colors"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <p className="text-sm text-muted-foreground">Selecciona a qué cita corresponden estas imágenes clínicas:</p>
+              <select
+                value={selectedApt}
+                onChange={(e) => setSelectedApt(e.target.value)}
+                className="w-full h-10 px-3 border border-border rounded-xl text-sm font-medium bg-card"
+              >
+                <option value="" disabled>Selecciona una cita...</option>
+                {appointments.map((a: any) => (
+                  <option key={a.id} value={a.id}>
+                    {new Date(a.appointment_date).toLocaleDateString()} - {a.reason || 'Cita'}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="px-6 py-4 bg-muted/40 border-t border-border flex items-center justify-end gap-2">
+              <Button type="button" variant="ghost" size="sm" disabled={isUploading} onClick={() => setUploadFiles([])} className="rounded-xl">
+                Cancelar
+              </Button>
+              <Button type="button" size="sm" disabled={isUploading || !selectedApt} onClick={handleConfirmUpload} className="rounded-xl font-bold">
+                {isUploading ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" /> : <Upload className="h-3.5 w-3.5 mr-1.5" />}
+                Subir y Vincular
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {groups.map((group) => {
         const isSinCita = group.key === "sin-cita";
         const collapsed = collapsedKeys.has(group.key);
