@@ -458,8 +458,13 @@ export function PhotoGallery({ patientId, appointments = [] }: Props) {
               <span className="text-sm font-bold text-primary px-3 py-1 bg-primary/10 rounded-full border border-primary/20">
                 {selectedPhotoIds.size} seleccionadas
               </span>
+              {selectedPhotoIds.size > 0 && (
+                <Button variant="ghost" size="sm" onClick={() => setSelectedPhotoIds(new Set())} className="h-8 rounded-xl text-xs text-red-500 hover:text-red-600 hover:bg-red-50">
+                  Deseleccionar todo
+                </Button>
+              )}
               <Button variant="ghost" size="sm" onClick={cancelSelection} className="h-8 rounded-xl text-xs">
-                Cancelar
+                Cancelar modo
               </Button>
             </div>
           )}

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useCallback, useEffect } from "react";
-import { X, Download, LayoutTemplate, Palette, Loader2, Image as ImageIcon, Plus } from "lucide-react";
+import { X, Download, LayoutTemplate, Palette, Loader2, Image as ImageIcon, Plus, ArrowRightLeft } from "lucide-react";
 import Cropper from "react-easy-crop";
 import * as htmlToImage from "html-to-image";
 import { Button } from "@/components/ui/button";
@@ -133,7 +133,19 @@ export function PhotoCollageEditor({ photos: initialPhotos, onClose }: Props) {
     }
   };
 
+
+  const handleRotateOrder = () => {
+    setPhotos(prev => {
+      if (prev.length <= 1) return prev;
+      const copy = [...prev];
+      const first = copy.shift();
+      if (first) copy.push(first);
+      return copy;
+    });
+  };
+
   const handleExport = async () => {
+
     if (!collageRef.current) return;
     setExporting(true);
     
@@ -184,9 +196,14 @@ export function PhotoCollageEditor({ photos: initialPhotos, onClose }: Props) {
             <LayoutTemplate className="h-5 w-5 text-white" />
             <h2 className="text-white font-bold text-sm">Creador de Collage</h2>
           </div>
-          <button onClick={onClose} className="p-2 text-zinc-400 hover:text-white rounded-full hover:bg-zinc-800">
-            <X className="h-5 w-5" />
-          </button>
+          <div className="flex items-center gap-1">
+            <button onClick={handleRotateOrder} title="Intercambiar / Reordenar fotos" className="p-2 text-zinc-400 hover:text-white rounded-full hover:bg-zinc-800">
+              <ArrowRightLeft className="h-5 w-5" />
+            </button>
+            <button onClick={onClose} title="Cerrar" className="p-2 text-zinc-400 hover:text-white rounded-full hover:bg-zinc-800">
+              <X className="h-5 w-5" />
+            </button>
+          </div>
         </div>
 
         <div className="flex-1 overflow-y-auto p-4 space-y-6 text-sm">
