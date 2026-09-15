@@ -111,18 +111,30 @@ export function resolveDocumentUrl(
   if (!basePath || !filePath) return null;
 
   let normalizedPath = filePath.replace(/^\/+/, "");
-  
-  let finalBase = basePath;
-  if (normalizedPath.toLowerCase().startsWith("melosmile.com/")) {
-    finalBase = "https://melosmile.com";
+
+  let finalBase = "https://melosmile.com";
+
+  // Rutas legacy: /opt/melosmile/docs/{patient_id}/{file} → pacientes/{patient_id}/docs/{file}
+  if (normalizedPath.toLowerCase().startsWith("opt/melosmile/docs/")) {
+    normalizedPath = normalizedPath.substring("opt/melosmile/docs/".length);
+    // normalizedPath ahora es: {patient_id}/{timestamp_file}
+    const slashIdx = normalizedPath.indexOf("/");
+    if (slashIdx !== -1) {
+      const patientSegment = normalizedPath.substring(0, slashIdx);
+      const fileName = normalizedPath.substring(slashIdx + 1);
+      normalizedPath = `pacientes/${patientSegment}/docs/${fileName}`;
+    }
+  } else if (normalizedPath.toLowerCase().startsWith("melosmile.com/")) {
     normalizedPath = normalizedPath.substring("melosmile.com/".length);
   } else if (normalizedPath.toLowerCase().startsWith("mumaweb.com/")) {
-    finalBase = "https://mumaweb.com";
+    // Ruta errónea apuntando a mumaweb — redirigir a melosmile
     normalizedPath = normalizedPath.substring("mumaweb.com/".length);
+  } else {
+    // Ruta relativa limpia (ej: pacientes/... o melosmile.com sin prefijo https)
+    // Usar basePath del entorno como base si no empieza por ningún dominio conocido
+    finalBase = basePath ?? "https://melosmile.com";
   }
 
-  // Soporte para rutas antiguas
-  normalizedPath = normalizedPath.replace(/^opt\/melosmile\/docs\/([^/]+)\/(.+)$/i, "pacientes/$1/docs/$2");
   if (!normalizedPath) return null;
 
   return `${finalBase.replace(/\/+$/, "")}/${normalizedPath}`;

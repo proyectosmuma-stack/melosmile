@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useCallback, useEffect } from "react";
-import { X, Download, LayoutTemplate, Palette, Loader2, Image as ImageIcon, Plus, ArrowRightLeft } from "lucide-react";
+import { X, Download, LayoutTemplate, Palette, Loader2, Image as ImageIcon, Plus, ArrowRightLeft, RotateCcw, RotateCw, ZoomIn } from "lucide-react";
 import Cropper from "react-easy-crop";
 import * as htmlToImage from "html-to-image";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,7 @@ export type CollagePhoto = {
   url: string;
   crop?: { x: number; y: number };
   zoom?: number;
+  rotation?: number;
 };
 
 type Props = {
@@ -71,6 +72,7 @@ export function PhotoCollageEditor({ photos: initialPhotos, onClose }: Props) {
   // Estado local para evitar mutar props directamente
   const [photos, setPhotos] = useState<CollagePhoto[]>([]);
   const [loadingBlobs, setLoadingBlobs] = useState(true);
+  const [selectedPhotoId, setSelectedPhotoId] = useState<string | null>(null);
 
   // Configuraciones de Diseño
   const photoCount = Math.min(Math.max(initialPhotos.length, 2), 4) as 2 | 3 | 4;
@@ -110,7 +112,7 @@ export function PhotoCollageEditor({ photos: initialPhotos, onClose }: Props) {
           loaded.push({ id: p.id, url: base64, crop: { x: 0, y: 0 }, zoom: 1 });
         } catch (e) {
           console.warn("CORS/Fetch error para la imagen:", p.url, e);
-          loaded.push({ id: p.id, url: p.url, crop: { x: 0, y: 0 }, zoom: 1 });
+          loaded.push({ id: p.id, url: p.url, crop: { x: 0, y: 0 }, zoom: 1, rotation: 0 });
         }
       }
       if (active) {
@@ -128,6 +130,10 @@ export function PhotoCollageEditor({ photos: initialPhotos, onClose }: Props) {
 
   const handleZoomChange = (id: string, zoom: number) => {
     setPhotos(prev => prev.map(p => p.id === id ? { ...p, zoom } : p));
+  };
+
+  const handleRotate = (id: string, degrees: number) => {
+    setPhotos(prev => prev.map(p => p.id === id ? { ...p, rotation: ((p.rotation || 0) + degrees) % 360 } : p));
   };
 
   const handleWatermarkUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -369,12 +375,19 @@ export function PhotoCollageEditor({ photos: initialPhotos, onClose }: Props) {
               >
                 {photos.map((photo, idx) => {
                   const specialClass = (currentLayoutObj.specials && currentLayoutObj.specials[idx as keyof typeof currentLayoutObj.specials]) || "";
+                  const isSelected = selectedPhotoId === photo.id;
+                  
                   return (
-                    <div key={photo.id} className={`relative overflow-hidden ${specialClass} bg-zinc-800 w-full h-full min-h-[10px]`}>
+                    <div 
+                      key={photo.id} 
+                      className={`relative overflow-hidden ${specialClass} bg-zinc-800 w-full h-full min-h-[10px] group`}
+                      onPointerDownCapture={() => setSelectedPhotoId(photo.id)}
+                    >
                       <Cropper
                         image={photo.url}
                         crop={photo.crop || { x: 0, y: 0 }}
                         zoom={photo.zoom || 1}
+                        rotation={photo.rotation || 0}
                         aspect={undefined}
                         onCropChange={(c) => handleCropChange(photo.id, c)}
                         onZoomChange={(z) => handleZoomChange(photo.id, z)}
@@ -385,6 +398,34 @@ export function PhotoCollageEditor({ photos: initialPhotos, onClose }: Props) {
                           cropAreaStyle: { border: 'none', boxShadow: 'none', width: '100%', height: '100%' },
                         }}
                       />
+                      
+                      {isSelected && (
+                        <div 
+                          className="absolute bottom-2 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 bg-black/80 backdrop-blur-md rounded-xl p-2 border border-white/20 animate-in fade-in slide-in-from-bottom-2 pointer-events-auto"
+                          onPointerDownCapture={(e) => e.stopPropagation()}
+                        >
+                          <button type="button" onClick={() => handleRotate(photo.id, -90)} className="h-8 w-8 rounded-lg flex items-center justify-center text-white/70 hover:text-white hover:bg-white/20 transition-colors">
+                            <RotateCcw className="h-4 w-4" />
+                          </button>
+                          <div className="w-px h-5 bg-white/20 mx-1" />
+                          <div className="flex items-center gap-2 px-2">
+                            <ZoomIn className="h-4 w-4 text-white/50" />
+                            <input 
+                              type="range" 
+                              min={1} 
+                              max={3} 
+                              step={0.05} 
+                              value={photo.zoom || 1} 
+                              onChange={(e) => handleZoomChange(photo.id, Number(e.target.value))} 
+                              className="w-24 accent-primary"
+                            />
+                          </div>
+                          <div className="w-px h-5 bg-white/20 mx-1" />
+                          <button type="button" onClick={() => handleRotate(photo.id, 90)} className="h-8 w-8 rounded-lg flex items-center justify-center text-white/70 hover:text-white hover:bg-white/20 transition-colors">
+                            <RotateCw className="h-4 w-4" />
+                          </button>
+                        </div>
+                      )}
                     </div>
                   );
                 })}
