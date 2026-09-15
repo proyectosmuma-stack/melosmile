@@ -6,8 +6,9 @@ import {
   User, Calendar as CalendarIcon, Clock, Building2, Stethoscope, FileText, Upload,
   CreditCard, MessageSquare, CheckCircle2, Save, Loader2, AlertCircle, ArrowLeft, Receipt,
   TrendingDown, TrendingUp, AlertTriangle, FlaskConical, Plus, Sparkles, ExternalLink,
-  Pill, Activity, ShieldAlert, ChevronRight, Check, Euro, Settings2, Trash2, Camera, Image as ImageIcon, UserCheck, Pencil, Bell, Send
+  Pill, Activity, ShieldAlert, ChevronRight, Check, Euro, Settings2, Trash2, Camera, Image as ImageIcon, UserCheck, Pencil, Bell, Send, Smartphone
 } from "lucide-react";
+import { QRCodeCanvas } from "qrcode.react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,6 +21,7 @@ import { PaymentRegistrationModal } from "@/components/billing/payment-registrat
 import { Odontogram, OdontogramData } from "@/components/appointments/odontogram";
 import { resolveDocumentUrl } from "@/lib/utils/document-utils";
 import { NewReminderModal } from "@/components/reminders/new-reminder-modal";
+import { PhotoLightbox } from "@/components/patients/photo-lightbox";
 
 type AppointmentData = {
   id: string;
@@ -67,6 +69,8 @@ type ApptDocument = {
   file_url?: string;
   description: string | null;
   created_at: string;
+  file_size_bytes?: number | null;
+  mime_type?: string | null;
 };
 
 export type ProcedureItem = {
@@ -123,6 +127,24 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
   const [editProfessionalId, setEditProfessionalId] = useState("");
   const [editReason, setEditReason] = useState("");
   const [reminderModalOpen, setReminderModalOpen] = useState(false);
+  
+  // Bug 2 y 3 state
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const [isDraggingPhoto, setIsDraggingPhoto] = useState(false);
+  const [qrModalOpen, setQrModalOpen] = useState(false);
+  const [qrUrl, setQrUrl] = useState("");
+  const [qrGenerating, setQrGenerating] = useState(false);
+
+  useEffect(() => {
+    const handleDragOver = (e: DragEvent) => e.preventDefault();
+    const handleDrop = (e: DragEvent) => e.preventDefault();
+    window.addEventListener("dragover", handleDragOver);
+    window.addEventListener("drop", handleDrop);
+    return () => {
+      window.removeEventListener("dragover", handleDragOver);
+      window.removeEventListener("drop", handleDrop);
+    };
+  }, []);
 
   function getStatusBadgeClass(st: string) {
     switch (st) {
@@ -258,7 +280,7 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
 
         const { data: dData } = await (supabase as any)
           .from("documents")
-          .select("id, file_name, document_type, file_path, file_url, description, created_at")
+          .select("id, file_name, document_type, file_path, file_url, description, created_at, file_size_bytes, mime_type")
           .eq("appointment_id", a.id)
           .order("created_at", { ascending: false });
         if (dData) setApptDocs(dData);
@@ -725,6 +747,45 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
       console.error("Error subiendo archivo al VPS:", err);
     } finally {
       setUploadingDoc(false);
+    }
+  };
+
+  const handleGenerateQR = async () => {
+    if (!appt) return;
+    setQrGenerating(true);
+    try {
+      const res = await fetch("/api/mobile-upload/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          appointmentId: appt.id,
+          patientId: appt.patientId,
+          appointmentDate: appt.appointment_date,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      setQrUrl(data.url);
+      setQrModalOpen(true);
+    } catch (err: any) {
+      console.error(err);
+      alert("Error generando código QR: " + err.message);
+    } finally {
+      setQrGenerating(false);
+    }
+  };
+
+  const handleDeleteDocument = async (docId: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!confirm("¿Seguro que quieres eliminar este documento? Esta acción no se puede deshacer.")) return;
+    try {
+      const res = await fetch(`/api/documents/${docId}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Error al eliminar");
+      await fetchAppointment();
+    } catch (err) {
+      console.error("Error eliminando documento:", err);
+      alert("No se pudo eliminar el documento");
     }
   };
 
@@ -1263,18 +1324,40 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
               <CardTitle className="text-base font-bold text-foreground flex items-center gap-2">
                 <Camera className="h-5 w-5 text-primary" /> Registro Fotográfico (Almacenado en VPS)
               </CardTitle>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => imageInputRef.current?.click()}
-                disabled={uploadingDoc}
-                className="gap-1.5 rounded-xl text-xs font-semibold text-primary border-primary/30 hover:bg-primary/10"
-              >
-                {uploadingDoc ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />} Subir Fotografías
-              </Button>
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleGenerateQR}
+                  disabled={qrGenerating || uploadingDoc}
+                  className="gap-1.5 rounded-xl text-xs font-semibold text-emerald-600 border-emerald-600/30 hover:bg-emerald-50"
+                >
+                  {qrGenerating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Smartphone className="h-3.5 w-3.5" />} Subir desde Móvil
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => imageInputRef.current?.click()}
+                  disabled={uploadingDoc || qrGenerating}
+                  className="gap-1.5 rounded-xl text-xs font-semibold text-primary border-primary/30 hover:bg-primary/10"
+                >
+                  {uploadingDoc ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />} Subir en PC
+                </Button>
+              </div>
             </CardHeader>
 
-            <CardContent className="p-6 space-y-4">
+            <CardContent 
+              className={`p-6 space-y-4 transition-all ${isDraggingPhoto ? "bg-primary/5 border-2 border-primary border-dashed rounded-b-2xl" : ""}`}
+              onDragOver={(e) => { e.preventDefault(); setIsDraggingPhoto(true); }}
+              onDragLeave={(e) => { e.preventDefault(); setIsDraggingPhoto(false); }}
+              onDrop={(e) => {
+                e.preventDefault();
+                setIsDraggingPhoto(false);
+                if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                  handleFileUpload(e.dataTransfer.files, true);
+                }
+              }}
+            >
               <input
                 ref={imageInputRef}
                 type="file"
@@ -1302,12 +1385,17 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
                     <span className="text-[10px] bg-muted text-muted-foreground px-2 py-0.5 rounded-full">{images.length} foto(s)</span>
                   </div>
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                    {images.map((img) => {
+                    {images.map((img, idx) => {
                       const imgUrl = img.file_url || resolveDocumentUrl({ file_url: img.file_url, file_path: img.file_path });
                       return (
-                        <div key={img.id} className="relative group rounded-xl border border-border overflow-hidden bg-muted aspect-square flex items-center justify-center">
+                        <button
+                          key={img.id}
+                          type="button"
+                          onClick={() => setLightboxIndex(idx)}
+                          className="relative group rounded-xl border border-border overflow-hidden bg-muted aspect-square flex items-center justify-center cursor-zoom-in hover:border-primary/50 transition-colors"
+                        >
                           {imgUrl ? (
-                            <img src={imgUrl} alt={img.file_name} className="w-full h-full object-cover" />
+                            <img src={imgUrl} alt={img.file_name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
                           ) : (
                             <div className="flex flex-col items-center p-2 text-center text-muted-foreground">
                               <ImageIcon className="h-6 w-6 text-muted-foreground mb-1" />
@@ -1317,10 +1405,25 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
                           <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center p-2">
                             <span className="text-[10px] text-white font-bold truncate text-center">{img.file_name}</span>
                           </div>
-                        </div>
+                        </button>
                       );
                     })}
                   </div>
+                  
+                  <PhotoLightbox
+                    photos={images.map(d => ({
+                      id: d.id,
+                      url: d.file_url || resolveDocumentUrl({ file_url: d.file_url, file_path: d.file_path }),
+                      file_name: d.file_name,
+                      document_type: d.document_type,
+                      file_size_bytes: d.file_size_bytes ?? null,
+                      mime_type: d.mime_type ?? null,
+                      description: d.description,
+                      created_at: d.created_at
+                    }))}
+                    index={lightboxIndex}
+                    onIndexChange={setLightboxIndex}
+                  />
                 </div>
               )}
             </CardContent>
@@ -1355,18 +1458,34 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
 
               {nonImageDocs.length > 0 && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {nonImageDocs.map((doc) => (
-                    <div key={doc.id} className="flex items-center gap-3 p-3 rounded-xl border border-border/60 bg-muted/40">
-                      <FileText className="h-5 w-5 text-primary shrink-0" />
-                      <div className="min-w-0 flex-1">
-                        <p className="text-xs font-bold text-foreground truncate">{doc.file_name}</p>
-                        <p className="text-[10px] text-muted-foreground">{doc.description || "Vectorizado 🧠"}</p>
+                  {nonImageDocs.map((doc) => {
+                    const docUrl = doc.file_url || resolveDocumentUrl({ file_url: doc.file_url, file_path: doc.file_path });
+                    return (
+                      <div key={doc.id} className="flex items-center gap-3 p-3 rounded-xl border border-border/60 bg-muted/40 hover:border-primary/40 transition-colors">
+                        <FileText className="h-5 w-5 text-primary shrink-0" />
+                        <div className="min-w-0 flex-1">
+                          {docUrl ? (
+                            <a href={docUrl} target="_blank" rel="noopener noreferrer" className="text-xs font-bold text-foreground truncate hover:text-primary transition-colors block">
+                              {doc.file_name}
+                            </a>
+                          ) : (
+                            <p className="text-xs font-bold text-foreground truncate">{doc.file_name}</p>
+                          )}
+                          <p className="text-[10px] text-muted-foreground truncate">{doc.description || "Vectorizado 🧠"}</p>
+                        </div>
+                        <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-violet-100 text-violet-700 border border-violet-200 shrink-0">
+                          {doc.description && doc.description.includes("Error") ? "Error ❌" : "IA 🧠"}
+                        </span>
+                        <button
+                          onClick={(e) => handleDeleteDocument(doc.id, e)}
+                          className="p-1.5 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors shrink-0"
+                          title="Eliminar documento"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
                       </div>
-                      <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-violet-100 text-violet-700 border border-violet-200">
-                        IA 🧠
-                      </span>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </CardContent>
@@ -1650,6 +1769,60 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
           }}
         />
       )}
+
+      {/* QR Code Modal for Mobile Upload */}
+      <Dialog open={qrModalOpen} onOpenChange={setQrModalOpen}>
+        <DialogContent className="sm:max-w-md rounded-3xl p-6 bg-white border-0 shadow-2xl">
+          <DialogHeader className="mb-4">
+            <DialogTitle className="text-xl font-bold text-center flex flex-col items-center gap-3">
+              <div className="w-12 h-12 bg-emerald-100 rounded-2xl flex items-center justify-center">
+                <Smartphone className="w-6 h-6 text-emerald-600" />
+              </div>
+              Subir desde Móvil
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="flex flex-col items-center justify-center space-y-6">
+            <p className="text-sm text-center text-slate-500 font-medium px-4">
+              Escanea este código con la cámara de tu teléfono para subir fotos directamente a esta cita.
+            </p>
+            
+            <div className="p-4 bg-white rounded-2xl shadow-sm border border-slate-100">
+              {qrUrl ? (
+                <QRCodeCanvas 
+                  value={qrUrl} 
+                  size={200} 
+                  level="H" 
+                  fgColor="#0f172a" 
+                  bgColor="#ffffff"
+                />
+              ) : (
+                <div className="w-[200px] h-[200px] flex items-center justify-center bg-slate-50 rounded-xl">
+                  <Loader2 className="h-8 w-8 animate-spin text-slate-300" />
+                </div>
+              )}
+            </div>
+
+            <div className="w-full flex items-center gap-2 p-3 bg-blue-50/50 rounded-xl border border-blue-100/50">
+              <Loader2 className="h-4 w-4 animate-spin text-blue-500 shrink-0" />
+              <p className="text-xs text-blue-700 font-medium">
+                Esperando a que subas las fotos... El código expira en 15 minutos.
+              </p>
+            </div>
+            
+            <Button 
+              variant="outline" 
+              className="w-full h-12 rounded-xl font-semibold mt-2"
+              onClick={() => {
+                setQrModalOpen(false);
+                fetchAppointment();
+              }}
+            >
+              Cerrar y Actualizar Fotos
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

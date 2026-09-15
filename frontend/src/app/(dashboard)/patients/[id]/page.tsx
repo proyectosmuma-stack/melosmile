@@ -673,7 +673,12 @@ function toTitleCase(text: string): string {
     }
   }, [targetId]);
 
-  useEffect(() => { fetchAll(); }, [fetchAll]);
+  useEffect(() => { 
+    fetchAll();
+    const handleApptCreated = () => fetchAll();
+    window.addEventListener("appointment-created", handleApptCreated);
+    return () => window.removeEventListener("appointment-created", handleApptCreated);
+  }, [fetchAll]);
 
   if (loading) {
     return (
