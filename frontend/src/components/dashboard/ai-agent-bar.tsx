@@ -586,6 +586,17 @@ export function AIAgentBar({ fullHeight = false }: { fullHeight?: boolean }) {
         })));
       }
 
+      let activeContext = undefined;
+      if (typeof window !== "undefined") {
+        const path = window.location.pathname;
+        if (path.startsWith("/patients/")) {
+          const parts = path.split("/");
+          if (parts.length >= 3 && parts[2] !== "create") {
+            activeContext = { patient_id: parts[2] };
+          }
+        }
+      }
+
       const response = await fetch("/api/dispatcher", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -593,6 +604,7 @@ export function AIAgentBar({ fullHeight = false }: { fullHeight?: boolean }) {
           message: trimmed,
           session_id: sessionId,
           history: historySnapshot,
+          active_context: activeContext,
         }),
       });
 

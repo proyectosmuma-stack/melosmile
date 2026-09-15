@@ -40,9 +40,17 @@ function extractCleanText(raw: any): { intent: string; entities: any; summary: s
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { session_id, message } = body;
+    const { session_id, message, active_context } = body;
+    
+    // Inject Context & Guardrail
+    let finalMessage = message;
+    if (active_context?.patient_id) {
+       finalMessage = `${message}\n\n[SYSTEM CONTEXT INVISIBLE: El usuario está viendo actualmente la ficha del paciente con ID de base de datos: ${active_context.patient_id}. Si el usuario pide resumir, buscar, facturar o gestionar algo y no menciona un nombre, asume implícitamente que se refiere a este paciente y filtra tus búsquedas con este patient_id.]`;
+    } else {
+       finalMessage = `${message}\n\n[SYSTEM GUARDRAIL ESTRICTO: El usuario NO está en la ficha de ningún paciente (está en el menú global). Si la solicitud del usuario implica leer historiales, buscar documentos, generar facturas o acceder a datos personales y NO ha mencionado claramente el nombre de un paciente, TIENES PROHIBIDO realizar búsquedas ciegas. Debes detenerte y preguntarle al usuario: "¿De qué paciente estamos hablando?" antes de continuar.]`;
+    }
 
-    // Log user message asynchronously
+    // Log user message asynchronously (keep the original visual message for the UI logs)
     if (session_id && message) {
       try {
         await (supabase as any).from("ai_conversation_history").insert({
@@ -62,7 +70,7 @@ export async function POST(req: NextRequest) {
         "Content-Type": "application/json",
         ...(process.env.N8N_API_KEY ? { "X-N8N-API-KEY": process.env.N8N_API_KEY } : {}),
       },
-      body: JSON.stringify(body),
+      body: JSON.stringify({ ...body, message: finalMessage }), // Send the injected message to Musly
       signal: AbortSignal.timeout(30_000),
     });
 
