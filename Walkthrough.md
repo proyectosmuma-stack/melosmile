@@ -357,3 +357,34 @@ Durante esta sesión, tanto Antigravity como Mumabot (OpenCode) colaboraron en u
 ### E. Despacho In-Process Confiable (`dispatchReminder`)
 * Desacoplado el despacho a un módulo independiente en servidor (`frontend/src/lib/reminders/dispatch.ts`), resolviendo el error 401 que dejaba los recordatorios en estado pendiente al pulsar "Enviar de Inmediato".
 
+
+---
+
+# Resumen de Desarrollos (15 Septiembre 2026)
+
+## 1. Módulo de Recorte y Edición de Fotografías Clínicas
+Se implementó un editor integrado en la plataforma (componente `photo-editor.tsx`) que permite a los profesionales:
+- Previsualizar y recortar fotografías subidas antes de guardarlas.
+- Aplicar rotación libre y hacer zoom.
+- Ajustar aspect ratios (16:9, 4:3, libre, y próximamente 1:1 en collage).
+- Optimización y guardado integrado con la base de datos de pacientes.
+
+## 2. Guardarraíl de Privacidad para el Agente Musly (HIPAA/RGPD)
+Se blindó al asistente virtual Musly contra la exposición de datos cruzados entre pacientes:
+- **Detección de Contexto Activo:** El orquestador (`/api/dispatcher/route.ts`) ahora detecta si Musly se abre desde la ficha de un paciente específico leyendo la URL (`window.location.pathname`).
+- **Inyección de Prompt de Seguridad:**
+  - Si el usuario está en la ficha de un paciente, Musly ancla automáticamente sus búsquedas al ID de ese paciente, impidiendo que busque historial de terceros.
+  - Si Musly se abre desde el entorno global (Dashboard general) y el usuario pide un resumen clínico, el sistema bloquea la acción exigiendo que mencione explícitamente el nombre y apellido del paciente.
+
+## 3. Sincronización con Odoo: Sistema de Auto-Sanado (Self-Healing)
+Se reestructuró profundamente la lógica de sincronización de pacientes con Odoo para garantizar resiliencia ante bases de datos desincronizadas (común entre Staging y Producción):
+- **Soporte de Campos Extendidos:** Mapeo correcto de `Dirección 2`, `Provincia` y `País` hacia el modelo de Odoo resolviendo los IDs geográficos mediante XMLRPC.
+- **Deep Search & Auto-Sanado:** Si el `odoo_partner_id` guardado en Supabase fue eliminado en Odoo, el sistema intercepta el error `res.partner(ID) deleted`. 
+  - Ejecuta una búsqueda profunda (NIF → Email → Nombre).
+  - Si encuentra un ID alternativo, redirige la ficha a ese ID y **actualiza silenciosamente Supabase** para sanar la base de datos de forma permanente.
+- **Prevención de Duplicados (Soft 409 Error):** Si un paciente tiene un ID roto y no se le encuentra bajo ningún otro parámetro, el backend arroja un error controlado `OdooPartnerNotFoundError`.
+  - El frontend lo atrapa y despliega un diálogo interactivo: *"¿Es la primera vez que vas a facturarle?"*.
+  - Si el usuario acepta, se invoca la ruta con `force_create: true` para crear una ficha limpia, preservando el histórico y evitando duplicaciones ciegas.
+
+## 4. UI/UX: Tooltips de Ayuda
+Se añadió un tooltip explicativo (`<Tooltip>`) en la sección de Documentos e Informes de la ficha del paciente para educar al usuario sobre cómo los PDFs subidos son vectorizados y seccionados en N8N para ser consultables privadamente mediante el agente de Inteligencia Artificial Musly.
