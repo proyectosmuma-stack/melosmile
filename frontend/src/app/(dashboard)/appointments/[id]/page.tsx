@@ -1413,6 +1413,7 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                     {images.map((img, idx) => {
                       const imgUrl = img.file_url || resolveDocumentUrl({ file_url: img.file_url, file_path: img.file_path });
+                      const finalImgUrl = imgUrl ? `${imgUrl}?cb=${img.file_size_bytes || img.id}` : null;
                       return (
                         <div key={img.id} className="relative group rounded-xl border border-border overflow-hidden bg-muted aspect-square">
                           <button
@@ -1420,8 +1421,8 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
                             onClick={() => setLightboxIndex(idx)}
                             className="w-full h-full flex items-center justify-center cursor-zoom-in hover:opacity-90 transition-opacity"
                           >
-                            {imgUrl ? (
-                              <img src={imgUrl} alt={img.file_name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                            {finalImgUrl ? (
+                              <img src={finalImgUrl} alt={img.file_name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
                             ) : (
                               <div className="flex flex-col items-center p-2 text-center text-muted-foreground">
                                 <ImageIcon className="h-6 w-6 text-muted-foreground mb-1" />
@@ -1446,16 +1447,19 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
                   </div>
                   
                   <PhotoLightbox
-                    photos={images.map(d => ({
-                      id: d.id,
-                      url: d.file_url || resolveDocumentUrl({ file_url: d.file_url, file_path: d.file_path }),
-                      file_name: d.file_name,
-                      document_type: d.document_type,
-                      file_size_bytes: d.file_size_bytes ?? null,
-                      mime_type: d.mime_type ?? null,
-                      description: d.description,
-                      created_at: d.created_at
-                    }))}
+                    photos={images.map(d => {
+                      const base = d.file_url || resolveDocumentUrl({ file_url: d.file_url, file_path: d.file_path });
+                      return {
+                        id: d.id,
+                        url: base ? `${base}?cb=${d.file_size_bytes || d.id}` : null,
+                        file_name: d.file_name,
+                        document_type: d.document_type,
+                        file_size_bytes: d.file_size_bytes ?? null,
+                        mime_type: d.mime_type ?? null,
+                        description: d.description,
+                        created_at: d.created_at
+                      };
+                    })}
                     index={lightboxIndex}
                     onIndexChange={setLightboxIndex}
                   />
