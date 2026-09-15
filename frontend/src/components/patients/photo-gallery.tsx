@@ -1,10 +1,12 @@
 "use client";
 
 import * as React from "react";
-import { Camera, ImageOff, ChevronDown, Loader2, AlertCircle, RefreshCw, Upload, X } from "lucide-react";
+import { Camera, ImageOff, ChevronDown, Loader2, AlertCircle, RefreshCw, Upload, X, LayoutTemplate } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { PhotoLightbox } from "./photo-lightbox";
+import { PhotoCollageEditor } from "./photo-collage-editor";
+import { CheckSquare, Square, CheckCircle2 } from "lucide-react";
 import { isImageDocument } from "@/lib/utils/document-utils";
 
 type ApiDocument = {
@@ -72,52 +74,55 @@ function toLightboxPhoto(doc: ApiDocument): LightboxPhoto {
   };
 }
 
+
 function Thumbnail({
   photo,
   onClick,
+  selectionMode,
+  isSelected,
+  onToggleSelect,
 }: {
   photo: LightboxPhoto;
   onClick: () => void;
+  selectionMode?: boolean;
+  isSelected?: boolean;
+  onToggleSelect?: () => void;
 }) {
   const [error, setError] = React.useState(false);
 
   if (error || !photo.url) {
     return (
-      <button
-        type="button"
-        onClick={onClick}
-        aria-label={`Ver ${photo.file_name}`}
-        className="group relative aspect-square w-full overflow-hidden rounded-md bg-muted border border-border flex flex-col items-center justify-center gap-1.5 cursor-zoom-in hover:bg-muted/80 transition-colors"
-      >
+      <button type="button" onClick={onClick} className="group relative aspect-square w-full bg-muted flex items-center justify-center">
         <ImageOff className="h-6 w-6 text-muted-foreground" />
-        <span className="text-[10px] font-medium text-muted-foreground px-2 text-center leading-tight line-clamp-2">
-          {photo.file_name}
-        </span>
       </button>
     );
   }
 
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-label={`Ver ${photo.file_name}`}
-      className="group relative aspect-square w-full overflow-hidden rounded-md bg-muted border border-border cursor-zoom-in"
-    >
-      <img
-        src={photo.url}
-        alt={photo.file_name}
-        loading="lazy"
-        decoding="async"
-        onError={() => setError(true)}
-        className="aspect-square w-full object-cover rounded-md group-hover:opacity-90 transition-opacity"
-      />
-      <div className="pointer-events-none absolute inset-0 rounded-md ring-1 ring-black/5 group-hover:ring-primary/20 transition-all" />
-      <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-      <span className="pointer-events-none absolute bottom-1 left-1 right-1 text-[10px] font-bold text-white leading-tight line-clamp-1 opacity-0 group-hover:opacity-100 transition-opacity drop-shadow">
-        {photo.file_name}
-      </span>
-    </button>
+    <div className="relative aspect-square w-full rounded-md border border-border group overflow-hidden bg-muted">
+      <button
+        type="button"
+        onClick={selectionMode ? onToggleSelect : onClick}
+        className="absolute inset-0 w-full h-full cursor-pointer focus:outline-none"
+      >
+        <img
+          src={photo.url}
+          alt={photo.file_name}
+          loading="lazy"
+          className={`w-full h-full object-cover transition-opacity ${selectionMode && !isSelected ? 'opacity-50' : 'group-hover:opacity-90'}`}
+        />
+        <div className={`pointer-events-none absolute inset-0 ${isSelected ? 'ring-2 ring-primary ring-inset bg-primary/20' : 'group-hover:bg-black/10'}`} />
+      </button>
+      
+      {selectionMode && (
+        <button 
+          onClick={(e) => { e.stopPropagation(); if (onToggleSelect) onToggleSelect(); }}
+          className="absolute top-2 left-2 z-10 text-white drop-shadow-md"
+        >
+          {isSelected ? <CheckSquare className="h-5 w-5 text-primary bg-white rounded-sm" /> : <Square className="h-5 w-5 opacity-70 hover:opacity-100" />}
+        </button>
+      )}
+    </div>
   );
 }
 
@@ -130,8 +135,15 @@ export function PhotoGallery({ patientId, appointments = [] }: Props) {
   const [offset, setOffset] = React.useState(0);
   const limit = 200;
 
+
   const [collapsedKeys, setCollapsedKeys] = React.useState<Set<string>>(new Set());
   const [lightbox, setLightbox] = React.useState<{ groupKey: string; index: number } | null>(null);
+
+  // Seleccion
+  const [selectionMode, setSelectionMode] = React.useState(false);
+  const [selectedPhotoIds, setSelectedPhotoIds] = React.useState<Set<string>>(new Set());
+  const [showCollageEditor, setShowCollageEditor] = React.useState(false);
+
 
   const [uploadFiles, setUploadFiles] = React.useState<File[]>([]);
   const [selectedApt, setSelectedApt] = React.useState<string>("");
@@ -300,6 +312,36 @@ export function PhotoGallery({ patientId, appointments = [] }: Props) {
     else if (lightbox) setLightbox({ ...lightbox, index: i });
   };
 
+
+  const toggleSelectPhoto = (photoId: string) => {
+    setSelectedPhotoIds(prev => {
+      const next = new Set(prev);
+      if (next.has(photoId)) next.delete(photoId);
+      else {
+        if (next.size >= 4) {
+          alert("Máximo 4 fotografías para comparar a la vez.");
+          return prev;
+        }
+        next.add(photoId);
+      }
+      return next;
+    });
+  };
+
+  const cancelSelection = () => {
+    setSelectionMode(false);
+    setSelectedPhotoIds(new Set());
+  };
+
+  const getSelectedPhotosObjects = () => {
+    const flat = groups.flatMap(g => g.photos);
+    return flat.filter(p => selectedPhotoIds.has(p.id)).map(p => ({
+      id: p.id,
+      url: p.url || "",
+      file_name: p.file_name
+    }));
+  };
+
   const toggleCollapse = (key: string) => {
     setCollapsedKeys((prev) => {
       const next = new Set(prev);
@@ -408,12 +450,43 @@ export function PhotoGallery({ patientId, appointments = [] }: Props) {
 
   return (
     <div className="p-5 space-y-6">
-      <div className="flex justify-end">
-        <Button onClick={() => fileInputRef.current?.click()} size="sm" className="rounded-xl font-bold shadow-sm">
-          <Upload className="h-3.5 w-3.5 mr-2" /> Añadir Fotos
-        </Button>
-        <input ref={fileInputRef} type="file" multiple accept="image/*" className="hidden" onChange={handleFileSelect} />
+      
+      <div className="flex items-center justify-between">
+        <div>
+          {selectionMode && (
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-bold text-primary px-3 py-1 bg-primary/10 rounded-full border border-primary/20">
+                {selectedPhotoIds.size} seleccionadas
+              </span>
+              <Button variant="ghost" size="sm" onClick={cancelSelection} className="h-8 rounded-xl text-xs">
+                Cancelar
+              </Button>
+            </div>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          {!selectionMode ? (
+            <Button onClick={() => setSelectionMode(true)} variant="outline" size="sm" className="rounded-xl shadow-sm border-zinc-200">
+              <CheckSquare className="h-4 w-4 mr-2 text-zinc-500" /> Seleccionar
+            </Button>
+          ) : (
+            <Button 
+              onClick={() => setShowCollageEditor(true)} 
+              size="sm" 
+              className="rounded-xl font-bold shadow-sm"
+              disabled={selectedPhotoIds.size < 2}
+            >
+              <LayoutTemplate className="h-4 w-4 mr-2" /> Comparar ({selectedPhotoIds.size}/4)
+            </Button>
+          )}
+
+          <Button onClick={() => fileInputRef.current?.click()} size="sm" className="rounded-xl font-bold shadow-sm bg-primary text-primary-foreground hover:bg-primary/90">
+            <Upload className="h-3.5 w-3.5 mr-2" /> Añadir Fotos
+          </Button>
+          <input ref={fileInputRef} type="file" multiple accept="image/*" className="hidden" onChange={handleFileSelect} />
+        </div>
       </div>
+
 
       {uploadModal}
 
@@ -459,7 +532,7 @@ export function PhotoGallery({ patientId, appointments = [] }: Props) {
             {!collapsed && (
               <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2 animate-in fade-in-0 duration-200">
                 {group.photos.map((photo, idx) => (
-                  <Thumbnail key={photo.id} photo={photo} onClick={() => handleThumbClick(group.key, idx)} />
+                  <Thumbnail key={photo.id} photo={photo} onClick={() => handleThumbClick(group.key, idx)} selectionMode={selectionMode} isSelected={selectedPhotoIds.has(photo.id)} onToggleSelect={() => toggleSelectPhoto(photo.id)} />
                 ))}
               </div>
             )}
@@ -483,6 +556,12 @@ export function PhotoGallery({ patientId, appointments = [] }: Props) {
       )}
 
       <PhotoLightbox photos={activeGroupPhotos} index={activeIndex} onIndexChange={handleLightboxChange} />
+      {showCollageEditor && selectedPhotoIds.size >= 2 && (
+        <PhotoCollageEditor 
+          photos={getSelectedPhotosObjects()}
+          onClose={() => setShowCollageEditor(false)}
+        />
+      )}
     </div>
   );
 }
