@@ -247,7 +247,7 @@ export function PhotoLightbox({ photos, index, onIndexChange }: Props) {
                 <button
                   type="button"
                   aria-label="Editar imagen"
-                  onClick={() => setEditingPhoto({ id: current.id, src: `/api/images/proxy?url=${encodeURIComponent(current.url!)}`, fileName: current.file_name })}
+                  onClick={() => setEditingPhoto({ id: current.id, src: `/api/proxy-image?url=${encodeURIComponent(current.url!)}`, fileName: current.file_name })}
                   className="h-9 w-9 inline-flex items-center justify-center rounded-xl bg-white/10 hover:bg-white/15 border border-white/10 text-white transition-colors"
                   title="Editar imagen"
                 >

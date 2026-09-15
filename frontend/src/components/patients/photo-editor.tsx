@@ -15,6 +15,7 @@ import {
   Download,
   X,
   Check,
+  Grid3x3,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -118,6 +119,7 @@ export function PhotoEditor({ src, fileName, onClose, onSave, isSaving }: Props)
   const [crop, setCrop] = React.useState<Crop>();
   const [completedCrop, setCompletedCrop] = React.useState<PixelCrop>();
   const [activePanel, setActivePanel] = React.useState<"adjust" | "crop">("adjust");
+  const [showGuides, setShowGuides] = React.useState(false);
 
   const imgRef = React.useRef<HTMLImageElement>(null);
 
@@ -214,6 +216,18 @@ export function PhotoEditor({ src, fileName, onClose, onSave, isSaving }: Props)
         <div className="flex items-center gap-2">
           <button
             type="button"
+            onClick={() => setShowGuides((p) => !p)}
+            className={cn(
+              "h-8 w-8 inline-flex items-center justify-center rounded-lg transition-colors",
+              showGuides ? "bg-primary text-white" : "bg-white/10 text-white/70 hover:bg-white/15 hover:text-white"
+            )}
+            title="Mostrar guías"
+          >
+            <Grid3x3 className="h-4 w-4" />
+          </button>
+          <div className="w-px h-5 bg-white/10 mx-1" />
+          <button
+            type="button"
             onClick={exportFinal}
             disabled={isSaving}
             className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg bg-primary text-white text-xs font-bold hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
@@ -235,7 +249,20 @@ export function PhotoEditor({ src, fileName, onClose, onSave, isSaving }: Props)
       {/* Main */}
       <div className="flex flex-1 min-h-0 overflow-hidden">
         {/* Image area */}
-        <div className="flex-1 flex items-center justify-center p-6 overflow-hidden bg-[#08080f]">
+        <div className="flex-1 relative flex items-center justify-center p-6 overflow-hidden bg-[#08080f]">
+          {showGuides && (
+            <div className="pointer-events-none absolute inset-6 z-10 flex items-center justify-center mix-blend-difference">
+              <div className="absolute inset-y-0 left-1/2 w-[1px] bg-white -translate-x-1/2" />
+              <div className="absolute inset-x-0 top-1/2 h-[1px] bg-white -translate-y-1/2" />
+              <div className="absolute inset-y-0 left-1/3 w-[1px] border-l border-dashed border-white/50 -translate-x-1/2" />
+              <div className="absolute inset-y-0 left-2/3 w-[1px] border-l border-dashed border-white/50 -translate-x-1/2" />
+              <div className="absolute inset-x-0 top-1/3 h-[1px] border-t border-dashed border-white/50 -translate-y-1/2" />
+              <div className="absolute inset-x-0 top-2/3 h-[1px] border-t border-dashed border-white/50 -translate-y-1/2" />
+              {/* Centering circle */}
+              <div className="absolute w-8 h-8 border border-white rounded-full" />
+            </div>
+          )}
+          
           {cropMode ? (
             <ReactCrop
               crop={crop}
