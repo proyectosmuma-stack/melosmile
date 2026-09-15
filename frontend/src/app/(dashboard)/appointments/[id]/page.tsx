@@ -1388,24 +1388,33 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
                     {images.map((img, idx) => {
                       const imgUrl = img.file_url || resolveDocumentUrl({ file_url: img.file_url, file_path: img.file_path });
                       return (
-                        <button
-                          key={img.id}
-                          type="button"
-                          onClick={() => setLightboxIndex(idx)}
-                          className="relative group rounded-xl border border-border overflow-hidden bg-muted aspect-square flex items-center justify-center cursor-zoom-in hover:border-primary/50 transition-colors"
-                        >
-                          {imgUrl ? (
-                            <img src={imgUrl} alt={img.file_name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-                          ) : (
-                            <div className="flex flex-col items-center p-2 text-center text-muted-foreground">
-                              <ImageIcon className="h-6 w-6 text-muted-foreground mb-1" />
-                              <span className="text-[10px] font-bold truncate max-w-[100px]">{img.file_name}</span>
+                        <div key={img.id} className="relative group rounded-xl border border-border overflow-hidden bg-muted aspect-square">
+                          <button
+                            type="button"
+                            onClick={() => setLightboxIndex(idx)}
+                            className="w-full h-full flex items-center justify-center cursor-zoom-in hover:opacity-90 transition-opacity"
+                          >
+                            {imgUrl ? (
+                              <img src={imgUrl} alt={img.file_name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                            ) : (
+                              <div className="flex flex-col items-center p-2 text-center text-muted-foreground">
+                                <ImageIcon className="h-6 w-6 text-muted-foreground mb-1" />
+                                <span className="text-[10px] font-bold truncate max-w-[100px]">{img.file_name}</span>
+                              </div>
+                            )}
+                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center p-2 pointer-events-none">
+                              <span className="text-[10px] text-white font-bold truncate text-center">{img.file_name}</span>
                             </div>
-                          )}
-                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center p-2">
-                            <span className="text-[10px] text-white font-bold truncate text-center">{img.file_name}</span>
-                          </div>
-                        </button>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) => handleDeleteDocument(img.id, e)}
+                            className="absolute top-1.5 right-1.5 bg-black/60 hover:bg-destructive text-white p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-all z-20 shadow-sm backdrop-blur-sm"
+                            title="Eliminar imagen"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
                       );
                     })}
                   </div>
