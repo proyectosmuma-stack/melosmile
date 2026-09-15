@@ -23,13 +23,15 @@ type Props = {
   fileName: string;
   onClose: () => void;
   onSave?: (dataUrl: string, fileName: string) => void;
+  isSaving?: boolean;
 };
 
 type Adjustments = {
   brightness: number;
   contrast: number;
   saturation: number;
-  rotation: number;
+  rotation90: number;
+  rotationFine: number;
   flipH: boolean;
   flipV: boolean;
 };
@@ -38,7 +40,8 @@ const DEFAULT_ADJ: Adjustments = {
   brightness: 100,
   contrast: 100,
   saturation: 100,
-  rotation: 0,
+  rotation90: 0,
+  rotationFine: 0,
   flipH: false,
   flipV: false,
 };
@@ -50,7 +53,8 @@ function buildFilter(adj: Adjustments): string {
 function buildTransform(adj: Adjustments): string {
   const scaleX = adj.flipH ? -1 : 1;
   const scaleY = adj.flipV ? -1 : 1;
-  return `rotate(${adj.rotation}deg) scale(${scaleX}, ${scaleY})`;
+  const totalRotation = adj.rotation90 + adj.rotationFine;
+  return `rotate(${totalRotation}deg) scale(${scaleX}, ${scaleY})`;
 }
 
 function Slider({
@@ -108,7 +112,7 @@ function Slider({
   );
 }
 
-export function PhotoEditor({ src, fileName, onClose, onSave }: Props) {
+export function PhotoEditor({ src, fileName, onClose, onSave, isSaving }: Props) {
   const [adj, setAdj] = React.useState<Adjustments>(DEFAULT_ADJ);
   const [cropMode, setCropMode] = React.useState(false);
   const [crop, setCrop] = React.useState<Crop>();
@@ -161,13 +165,18 @@ export function PhotoEditor({ src, fileName, onClose, onSave }: Props) {
     const canvas = document.createElement("canvas");
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-    const isRotated = adj.rotation === 90 || adj.rotation === 270;
+    const isRotated = adj.rotation90 === 90 || adj.rotation90 === 270;
+    
+    // For fine rotation, we might need a larger canvas to not crop the corners,
+    // but for simplicity we keep the original dimensions based on rotation90.
     canvas.width = isRotated ? img.naturalHeight : img.naturalWidth;
     canvas.height = isRotated ? img.naturalWidth : img.naturalHeight;
     ctx.save();
     ctx.filter = buildFilter(adj);
     ctx.translate(canvas.width / 2, canvas.height / 2);
-    ctx.rotate((adj.rotation * Math.PI) / 180);
+    
+    const totalRotation = adj.rotation90 + adj.rotationFine;
+    ctx.rotate((totalRotation * Math.PI) / 180);
     ctx.scale(adj.flipH ? -1 : 1, adj.flipV ? -1 : 1);
     ctx.drawImage(img, -img.naturalWidth / 2, -img.naturalHeight / 2);
     ctx.restore();
@@ -185,7 +194,7 @@ export function PhotoEditor({ src, fileName, onClose, onSave }: Props) {
   function rotate(dir: "cw" | "ccw") {
     setAdj((prev) => ({
       ...prev,
-      rotation: (prev.rotation + (dir === "cw" ? 90 : 270)) % 360,
+      rotation90: (prev.rotation90 + (dir === "cw" ? 90 : 270)) % 360,
     }));
   }
 
@@ -206,14 +215,17 @@ export function PhotoEditor({ src, fileName, onClose, onSave }: Props) {
           <button
             type="button"
             onClick={exportFinal}
-            className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg bg-primary text-white text-xs font-bold hover:bg-primary/90 transition-colors"
+            disabled={isSaving}
+            className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg bg-primary text-white text-xs font-bold hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <Download className="h-3.5 w-3.5" /> Guardar imagen
+            <Download className="h-3.5 w-3.5" />
+            {isSaving ? "Guardando..." : "Guardar imagen"}
           </button>
           <button
             type="button"
             onClick={onClose}
-            className="h-8 w-8 inline-flex items-center justify-center rounded-lg bg-white/10 hover:bg-white/15 transition-colors"
+            disabled={isSaving}
+            className="h-8 w-8 inline-flex items-center justify-center rounded-lg bg-white/10 hover:bg-white/15 transition-colors disabled:opacity-50"
           >
             <X className="h-4 w-4" />
           </button>
@@ -338,6 +350,18 @@ export function PhotoEditor({ src, fileName, onClose, onSave }: Props) {
                     >
                       <FlipVertical className="h-3.5 w-3.5" /> Vertical
                     </button>
+                  </div>
+                  
+                  <div className="mt-4">
+                    <Slider
+                      label="Inclinación (Fina)"
+                      icon={CropIcon}
+                      value={adj.rotationFine}
+                      min={-45}
+                      max={45}
+                      defaultValue={0}
+                      onChange={(v) => setAdj((p) => ({ ...p, rotationFine: v }))}
+                    />
                   </div>
                 </div>
 
