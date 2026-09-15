@@ -85,7 +85,7 @@ export function PhotoCollageEditor({ photos: initialPhotos, onClose }: Props) {
   const [exporting, setExporting] = useState(false);
   const collageRef = useRef<HTMLDivElement>(null);
 
-  // Transformar URLs remotas a Blobs locales para evitar CORS al exportar con canvas
+  // Transformar URLs remotas a Base64 locales para evitar CORS al exportar con canvas
   useEffect(() => {
     let active = true;
     const fetchBlobs = async () => {
@@ -95,8 +95,13 @@ export function PhotoCollageEditor({ photos: initialPhotos, onClose }: Props) {
         try {
           const res = await fetch(p.url, { mode: "cors" });
           const blob = await res.blob();
-          const localUrl = URL.createObjectURL(blob);
-          loaded.push({ id: p.id, url: localUrl, crop: { x: 0, y: 0 }, zoom: 1 });
+          const base64 = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+          });
+          loaded.push({ id: p.id, url: base64, crop: { x: 0, y: 0 }, zoom: 1 });
         } catch (e) {
           console.warn("CORS/Fetch error para la imagen:", p.url, e);
           loaded.push({ id: p.id, url: p.url, crop: { x: 0, y: 0 }, zoom: 1 });
@@ -122,8 +127,9 @@ export function PhotoCollageEditor({ photos: initialPhotos, onClose }: Props) {
   const handleWatermarkUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
-      const url = URL.createObjectURL(file);
-      setWatermarkUrl(url);
+      const reader = new FileReader();
+      reader.onloadend = () => setWatermarkUrl(reader.result as string);
+      reader.readAsDataURL(file);
     }
   };
 
@@ -142,9 +148,16 @@ export function PhotoCollageEditor({ photos: initialPhotos, onClose }: Props) {
       link.download = `comparativa-paciente-${Date.now()}.jpg`;
       link.href = dataUrl;
       link.click();
-    } catch (e) {
-      console.error("Error al exportar:", e);
-      alert("Hubo un error al generar la imagen. Intenta cambiar el layout o revisar las fotos.");
+    } catch (e: any) {
+      console.error("Error completo al exportar:", e);
+      let errorMsg = "Desconocido";
+      if (e instanceof Error) {
+        errorMsg = e.message;
+      } else if (typeof e === "object" && e !== null) {
+        // En DOMExceptions a veces e.message no es enumerable en un JSON.stringify normal
+        errorMsg = e.message || JSON.stringify(e);
+      }
+      alert(`Hubo un error al generar la imagen. Motivo: ${errorMsg}. \nIntenta refrescar la página o contacta al administrador para habilitar CORS en Storage.`);
     } finally {
       setExporting(false);
     }
