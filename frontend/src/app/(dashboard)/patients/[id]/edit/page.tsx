@@ -388,12 +388,36 @@ export default function EditPatientPage({ params }: { params: Promise<{ id: stri
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify(odooPayload),
             });
-            
-            if (!odooRes.ok) {
+
+            if (odooRes.status === 409) {
+              const confirmData = await odooRes.json();
+              // Ask if it's a first-time billing patient
+              const confirmed = window.confirm(
+                `⚠️ No encontramos a este paciente en el sistema de facturación (Odoo).\n\n` +
+                `¿Es la primera vez que vas a facturarle?\n\n` +
+                `• Pulsa ACEPTAR para crear su ficha en Odoo ahora.\n` +
+                `• Pulsa CANCELAR si crees que puede ser un error (tiene facturas previas).`
+              );
+              if (confirmed) {
+                const retryRes = await fetch('/api/odoo/partner', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ ...odooPayload, force_create: true }),
+                });
+                if (!retryRes.ok) {
+                  const errData = await retryRes.json();
+                  throw new Error(errData.error || `Error creando en Odoo`);
+                }
+                alert("✅ Ficha creada en Odoo y datos de facturación sincronizados correctamente.");
+              } else {
+                alert("ℹ️ Los datos se guardaron en Melosmile. La sincronización con Odoo se ha pospuesto.");
+              }
+            } else if (!odooRes.ok) {
               const errData = await odooRes.json();
               throw new Error(errData.error || `HTTP error ${odooRes.status}`);
+            } else {
+              alert("✅ Sincronización Odoo exitosa: Los datos de facturación del paciente se han sincronizado con Odoo.");
             }
-            alert("Sincronización Odoo exitosa: Los datos de facturación del paciente se han sincronizado con Odoo.");
           }
         } catch (odooError: any) {
           console.error("Error sincronizando con Odoo:", odooError);

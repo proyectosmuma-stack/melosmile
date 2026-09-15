@@ -218,6 +218,15 @@ export async function updatePricelistItem(pricelistId: number, productTmplId: nu
 /**
  * Search or create a customer (res.partner) in Odoo from a patient record
  */
+export class OdooPartnerNotFoundError extends Error {
+  code = 'PARTNER_NOT_FOUND';
+  odoo_partner_id?: number;
+  constructor(odooId: number) {
+    super(`No se encontró al paciente en el sistema de facturación (ID guardado: ${odooId}).`);
+    this.odoo_partner_id = odooId;
+  }
+}
+
 export async function upsertOdooPartner(patient: {
   full_name: string;
   nif_cif?: string;
@@ -232,6 +241,7 @@ export async function upsertOdooPartner(patient: {
   phone?: string;
   odoo_partner_id?: number;
   patient_id?: string; // Supabase patient UUID — used to self-heal the stale link
+  force_create?: boolean; // When true, create a new partner even if odoo_partner_id was previously set
 }) {
   const name = patient.billing_name || patient.full_name;
 
@@ -332,13 +342,16 @@ export async function upsertOdooPartner(patient: {
           return recoveredId;
         }
 
-        // No match anywhere — tell the user, don't silently create a duplicate
-        throw new Error(
-          `La ficha de este paciente (ID Odoo: ${existingIds[0]}) ya no existe en Odoo y no se encontró ninguna alternativa por NIF/email/nombre. ` +
-          `Por favor, crea o vincula manualmente el contacto del paciente en Odoo antes de sincronizar.`
-        );
+        // Not found anywhere. If force_create is set, fall through to create.
+        // Otherwise surface a typed error so the UI can ask the user.
+        if (!patient.force_create) {
+          throw new OdooPartnerNotFoundError(existingIds[0]);
+        }
+        // force_create=true: reset existingIds so the create block below runs.
+        existingIds = [];
+      } else {
+        throw error;
       }
-      throw error;
     }
   }
   
