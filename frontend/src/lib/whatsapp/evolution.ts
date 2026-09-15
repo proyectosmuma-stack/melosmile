@@ -34,10 +34,25 @@ export async function getEvolutionConfig() {
       .eq("id", 1)
       .maybeSingle();
 
+    let instance = data?.evolution_instance || EVOLUTION_DEFAULT_INSTANCE;
+
+    // FAILSAFE DE SEGURIDAD: Evitar enviar mensajes a pacientes reales desde entornos de prueba.
+    // Como `npm run db:sync` clona la DB de producción a local, el valor de "evolution_instance" 
+    // en la base de datos local suele ser "melosmile". Forzamos "melosmile-dev" si no es producción real.
+    const isVercelProd = process.env.NEXT_PUBLIC_VERCEL_ENV === "production" || process.env.VERCEL_ENV === "production";
+    const isLocal = process.env.NODE_ENV === "development";
+    
+    if (isLocal || process.env.VERCEL_ENV === "preview" || process.env.NEXT_PUBLIC_VERCEL_ENV === "preview") {
+      instance = "melosmile-dev";
+    } else if (!isVercelProd && process.env.FORCE_PRODUCTION_EVOLUTION !== "true") {
+      // Fallback estricto por si falla la detección de entorno
+      instance = "melosmile-dev";
+    }
+
     return {
       apiUrl: data?.evolution_api_url || EVOLUTION_DEFAULT_URL,
       apiKey: data?.evolution_api_key || EVOLUTION_DEFAULT_KEY,
-      instance: data?.evolution_instance || EVOLUTION_DEFAULT_INSTANCE,
+      instance,
       phone: data?.whatsapp_phone || null,
     };
   } catch {
