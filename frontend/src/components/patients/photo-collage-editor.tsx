@@ -45,10 +45,11 @@ const LAYOUTS: Record<number, LayoutConfig[]> = {
 };
 
 const RATIOS = [
-  { id: "1:1", label: "Cuadrado (Instagram)", width: 1080, height: 1080 },
-  { id: "4:5", label: "Vertical (Retrato)", width: 1080, height: 1350 },
-  { id: "9:16", label: "Historia / Reels", width: 1080, height: 1920 },
-  { id: "16:9", label: "Horizontal (TV)", width: 1920, height: 1080 },
+  { id: "1:1", label: "Cuadrado 1:1", width: 1080, height: 1080 },
+  { id: "4:5", label: "Retrato (Vertical)", width: 1080, height: 1350 },
+  { id: "9:16", label: "Vertical 9:16", width: 1080, height: 1920 },
+  { id: "16:9", label: "Horizontal 16:9", width: 1920, height: 1080 },
+  { id: "monitor", label: "Pantalla Ancha", width: 2560, height: 1440 },
 ];
 
 const BG_COLORS = [
@@ -76,7 +77,7 @@ export function PhotoCollageEditor({ photos: initialPhotos, onClose }: Props) {
   const availableLayouts = LAYOUTS[photoCount] || LAYOUTS[2];
   
   const [activeLayout, setActiveLayout] = useState(availableLayouts[0].id);
-  const [activeRatio, setActiveRatio] = useState(RATIOS[1]); // 4:5 default
+  const [activeRatio, setActiveRatio] = useState(RATIOS[0]); // 1:1 default
   const [gapSize, setGapSize] = useState(GAPS[2].value);
   const [bgColor, setBgColor] = useState(BG_COLORS[0].hex);
   const [watermarkUrl, setWatermarkUrl] = useState<string | null>(null);
@@ -157,6 +158,7 @@ export function PhotoCollageEditor({ photos: initialPhotos, onClose }: Props) {
   }, [availableLayouts, activeLayout]);
 
   const currentLayoutObj = availableLayouts.find(l => l.id === activeLayout) || availableLayouts[0];
+  const ratioNum = activeRatio.width / activeRatio.height;
 
   return (
     <div className="fixed inset-0 z-[100] bg-black/95 flex flex-col md:flex-row overflow-hidden animate-in fade-in zoom-in-95 duration-200">
@@ -313,11 +315,10 @@ export function PhotoCollageEditor({ photos: initialPhotos, onClose }: Props) {
             <div 
               className="relative shadow-2xl overflow-hidden ring-1 ring-zinc-800 transition-all duration-300 pointer-events-auto"
               style={{
-                aspectRatio: `${activeRatio.width} / ${activeRatio.height}`,
+                width: '100%',
                 maxHeight: '100%',
-                maxWidth: '100%',
-                width: activeRatio.width >= activeRatio.height ? '100%' : 'auto',
-                height: activeRatio.width < activeRatio.height ? '100%' : 'auto',
+                maxWidth: `calc(100vh * ${ratioNum})`, // El aspecto nunca permitirá desbordarse
+                aspectRatio: `${activeRatio.width} / ${activeRatio.height}`,
                 backgroundColor: bgColor,
               }}
             >
@@ -333,7 +334,7 @@ export function PhotoCollageEditor({ photos: initialPhotos, onClose }: Props) {
                 {photos.map((photo, idx) => {
                   const specialClass = (currentLayoutObj.specials && currentLayoutObj.specials[idx as keyof typeof currentLayoutObj.specials]) || "";
                   return (
-                    <div key={photo.id} className={`relative overflow-hidden ${specialClass} bg-zinc-800 w-full h-full min-h-[100px]`}>
+                    <div key={photo.id} className={`relative overflow-hidden ${specialClass} bg-zinc-800 w-full h-full min-h-[10px]`}>
                       <Cropper
                         image={photo.url}
                         crop={photo.crop || { x: 0, y: 0 }}
