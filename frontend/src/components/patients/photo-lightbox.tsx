@@ -10,9 +10,11 @@ import {
   ZoomIn,
   ZoomOut,
   RotateCcw,
+  Pencil,
 } from "lucide-react";
 import { DOC_TYPE_LABELS, formatBytes } from "@/lib/utils/document-utils";
 import { cn } from "@/lib/utils";
+import { PhotoEditor } from "@/components/patients/photo-editor";
 
 type LightboxPhoto = {
   id: string;
@@ -49,6 +51,7 @@ export function PhotoLightbox({ photos, index, onIndexChange }: Props) {
   const [scale, setScale] = React.useState(1);
   const [translate, setTranslate] = React.useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = React.useState(false);
+  const [editingPhoto, setEditingPhoto] = React.useState<{ src: string; fileName: string } | null>(null);
   const dragStart = React.useRef({ x: 0, y: 0, tx: 0, ty: 0 });
 
   const imageRef = React.useRef<HTMLImageElement>(null);
@@ -146,6 +149,17 @@ export function PhotoLightbox({ photos, index, onIndexChange }: Props) {
   const total = photos.length;
   const currentIndex = index!;
 
+  // Show photo editor overlay
+  if (editingPhoto) {
+    return (
+      <PhotoEditor
+        src={editingPhoto.src}
+        fileName={editingPhoto.fileName}
+        onClose={() => setEditingPhoto(null)}
+      />
+    );
+  }
+
   return (
     <DialogPrimitive.Root open={isOpen} onOpenChange={(open) => !open && handleClose()}>
       <DialogPrimitive.Portal>
@@ -195,6 +209,17 @@ export function PhotoLightbox({ photos, index, onIndexChange }: Props) {
                 <RotateCcw className="h-4 w-4" />
               </button>
               <div className="w-px h-6 bg-white/15 mx-1 hidden sm:block" />
+              {current.url && (
+                <button
+                  type="button"
+                  aria-label="Editar imagen"
+                  onClick={() => setEditingPhoto({ src: current.url!, fileName: current.file_name })}
+                  className="h-9 w-9 inline-flex items-center justify-center rounded-xl bg-white/10 hover:bg-white/15 border border-white/10 text-white transition-colors"
+                  title="Editar imagen"
+                >
+                  <Pencil className="h-4 w-4" />
+                </button>
+              )}
               <DialogPrimitive.Close
                 aria-label="Cerrar visor"
                 className="h-9 w-9 inline-flex items-center justify-center rounded-xl bg-white text-black hover:bg-white/90 transition-colors"

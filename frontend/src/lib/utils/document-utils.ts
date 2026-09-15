@@ -110,9 +110,9 @@ export function resolveDocumentUrl(
   const filePath = doc.file_path?.trim();
   if (!basePath || !filePath) return null;
 
-  const normalizedPath = filePath
-    .replace(/^melosmile\.com\//i, "")
-    .replace(/^\/+/, "");
+  let normalizedPath = filePath.replace(/^\/+/, "");
+  normalizedPath = normalizedPath.replace(/^melosmile\.com\//i, "");
+  normalizedPath = normalizedPath.replace(/^opt\/melosmile\/docs\/([^/]+)\/(.+)$/i, "pacientes/$1/docs/$2");
   if (!normalizedPath) return null;
 
   return `${basePath.replace(/\/+$/, "")}/${normalizedPath}`;

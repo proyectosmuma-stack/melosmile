@@ -23,7 +23,7 @@ import { NewReminderModal } from "@/components/reminders/new-reminder-modal";
 import { EditReminderModal } from "@/components/reminders/edit-reminder-modal";
 import { addSystemNotification } from "@/components/layout/notification-center";
 import { PhotoGallery } from "@/components/patients/photo-gallery";
-import { isImageDocument } from "@/lib/utils/document-utils";
+import { isImageDocument, resolveDocumentUrl } from "@/lib/utils/document-utils";
 import { getCleanNotesPreview } from "@/lib/appointments/notes-parser";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -182,42 +182,35 @@ function DocumentDropZone({ patientId, onUpload }: { patientId: string; onUpload
   const handleFiles = useCallback(async (files: FileList | null) => {
     if (!files || files.length === 0) return;
     setUploading(true);
-    for (const file of Array.from(files)) {
-      const ext = file.name.split(".").pop()?.toLowerCase() || "";
-      let docType: string = "otro";
-      if (["pdf"].includes(ext) && file.name.toLowerCase().includes("consentimiento")) docType = "consentimiento";
-      else if (["jpg","jpeg","png","webp"].includes(ext)) docType = "foto_clinica";
-      else if (["pdf"].includes(ext)) docType = "informe";
+    try {
+      for (const file of Array.from(files)) {
+        const ext = file.name.split(".").pop()?.toLowerCase() || "";
+        let docType: string = "otro";
+        if (["pdf"].includes(ext) && file.name.toLowerCase().includes("consentimiento")) docType = "consentimiento";
+        else if (["jpg", "jpeg", "png", "webp"].includes(ext)) docType = "foto_clinica";
+        else if (["pdf"].includes(ext)) docType = "informe";
 
-      const filePath = `/opt/melosmile/docs/${patientId}/${Date.now()}_${file.name}`;
-      const { data: newDoc, error } = await (supabase as any).from("documents").insert({
-        patient_id: patientId,
-        document_type: docType,
-        file_name: file.name,
-        file_path: filePath,
-        file_size_bytes: file.size,
-        mime_type: file.type,
-        uploaded_by: "Dra. Melo",
-        description: "Enviado a IA vectorizadora ⏳",
-      }).select("id").single();
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("patientId", patientId);
+        formData.append("documentType", docType);
 
-      if (newDoc && !error) {
-        // Trigger n8n vectorization
-        fetch("/api/documents/vectorize", {
+        const res = await fetch("/api/documents/upload", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            documentId: newDoc.id,
-            patientId,
-            fileName: file.name,
-            filePath,
-            documentType: docType,
-          }),
-        }).catch((e) => console.warn("Error enviando vectorización:", e));
+          body: formData,
+        });
+
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          console.error("Error al subir archivo:", errData.error || res.statusText);
+        }
       }
+    } catch (err) {
+      console.error("Error subiendo documentos:", err);
+    } finally {
+      setUploading(false);
+      onUpload();
     }
-    setUploading(false);
-    onUpload();
   }, [patientId, onUpload]);
 
   return (
@@ -1996,20 +1989,41 @@ function toTitleCase(text: string): string {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {nonImageDocs.map((doc) => {
                 const d = formatDate(doc.created_at);
+                const docUrl = resolveDocumentUrl({ file_url: doc.file_url, file_path: doc.file_path });
                 return (
-                  <div key={doc.id} className="flex items-center gap-3 p-3 rounded-xl border border-border/60 hover:border-primary/30 hover:bg-primary/10 transition-all cursor-pointer group">
+                  <div key={doc.id} className="flex items-center gap-3 p-3 rounded-xl border border-border/60 hover:border-primary/30 hover:bg-primary/10 transition-all group">
                     <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center shrink-0">
                       <FileText className="h-5 w-5 text-muted-foreground" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs font-bold text-foreground truncate group-hover:text-primary">{doc.file_name}</p>
+                      {docUrl ? (
+                        <a href={docUrl} target="_blank" rel="noopener noreferrer" className="text-xs font-bold text-foreground truncate group-hover:text-primary block hover:underline">
+                          {doc.file_name}
+                        </a>
+                      ) : (
+                        <p className="text-xs font-bold text-foreground truncate">{doc.file_name}</p>
+                      )}
                       <p className="text-[11px] text-muted-foreground">{DOC_TYPE_LABELS[doc.document_type] ?? doc.document_type} · {d.full}</p>
                     </div>
-                    {doc.file_url && (
-                      <a href={doc.file_url} target="_blank" rel="noopener noreferrer">
-                        <ExternalLink className="h-3.5 w-3.5 text-muted-foreground group-hover:text-primary" />
-                      </a>
-                    )}
+                    <div className="flex items-center gap-1 shrink-0">
+                      {docUrl && (
+                        <a href={docUrl} target="_blank" rel="noopener noreferrer" className="p-1.5 rounded-md hover:bg-primary/10 text-muted-foreground hover:text-primary transition-colors" title="Abrir documento">
+                          <ExternalLink className="h-3.5 w-3.5" />
+                        </a>
+                      )}
+                      <button
+                        onClick={async () => {
+                          if (!confirm("¿Eliminar este documento? Esta acción no se puede deshacer.")) return;
+                          const res = await fetch(`/api/documents/${doc.id}`, { method: "DELETE" });
+                          if (res.ok) fetchAll();
+                          else alert("No se pudo eliminar el documento");
+                        }}
+                        className="p-1.5 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+                        title="Eliminar documento"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
                   </div>
                 );
               })}
