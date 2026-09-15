@@ -369,13 +369,14 @@ export default function EditPatientPage({ params }: { params: Promise<{ id: stri
           } else {
             const odooPayload = {
               odoo_partner_id: pData?.odoo_partner_id,
-              name: newValues.billing_same_as_contact ? `${newValues.first_name} ${newValues.last_name}` : newValues.billing_name,
+              full_name: `${newValues.first_name} ${newValues.last_name}`,
+              billing_name: newValues.billing_same_as_contact ? `${newValues.first_name} ${newValues.last_name}` : newValues.billing_name,
               email: newValues.email || "",
               phone: newValues.phone || "",
-              vat: newValues.billing_same_as_contact ? newValues.dni_nie : newValues.nif_cif,
-              street: newValues.billing_same_as_contact ? newValues.address : newValues.billing_address,
-              city: newValues.billing_same_as_contact ? newValues.city : newValues.billing_city,
-              zip: newValues.billing_same_as_contact ? newValues.postal_code : newValues.billing_postal_code,
+              nif_cif: newValues.billing_same_as_contact ? newValues.dni_nie : newValues.nif_cif,
+              billing_address: newValues.billing_same_as_contact ? newValues.address : newValues.billing_address,
+              billing_city: newValues.billing_same_as_contact ? newValues.city : newValues.billing_city,
+              billing_postal_code: newValues.billing_same_as_contact ? newValues.postal_code : newValues.billing_postal_code,
             };
 
             const odooRes = await fetch('/api/odoo/partner', {
