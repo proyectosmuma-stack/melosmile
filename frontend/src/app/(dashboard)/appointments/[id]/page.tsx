@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import {
   User, Calendar as CalendarIcon, Clock, Building2, Stethoscope, FileText, Upload,
   CreditCard, MessageSquare, CheckCircle2, Save, Loader2, AlertCircle, ArrowLeft, Receipt,
@@ -134,6 +134,7 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
   const [qrModalOpen, setQrModalOpen] = useState(false);
   const [qrUrl, setQrUrl] = useState("");
   const [qrGenerating, setQrGenerating] = useState(false);
+  const [deleteConfirmDocId, setDeleteConfirmDocId] = useState<string | null>(null);
 
   useEffect(() => {
     const handleDragOver = (e: DragEvent) => e.preventDefault();
@@ -795,10 +796,7 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
     }
   };
 
-  const handleDeleteDocument = async (docId: string, e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (!confirm("¿Seguro que quieres eliminar este documento? Esta acción no se puede deshacer.")) return;
+  const executeDeleteDocument = async (docId: string) => {
     try {
       const res = await fetch(`/api/documents/${docId}`, { method: "DELETE" });
       if (!res.ok) throw new Error("Error al eliminar");
@@ -806,7 +804,15 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
     } catch (err) {
       console.error("Error eliminando documento:", err);
       alert("No se pudo eliminar el documento");
+    } finally {
+      setDeleteConfirmDocId(null);
     }
+  };
+
+  const handleDeleteDocument = (docId: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDeleteConfirmDocId(docId);
   };
 
   if (loading) {

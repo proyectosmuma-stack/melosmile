@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/lib/supabase/client";
@@ -247,6 +248,7 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
 
   const [activeTab, setActiveTab] = useState<ActiveTab>("historial");
   const [loading, setLoading] = useState(true);
+  const [deleteConfirmDocId, setDeleteConfirmDocId] = useState<string | null>(null);
   const [patient, setPatient] = useState<Patient | null>(null);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [billing, setBilling] = useState<BillingRecord[]>([]);
@@ -672,6 +674,18 @@ function toTitleCase(text: string): string {
     window.addEventListener("appointment-created", handleApptCreated);
     return () => window.removeEventListener("appointment-created", handleApptCreated);
   }, [fetchAll]);
+
+  const executeDeleteDocument = async (docId: string) => {
+    try {
+      const res = await fetch(`/api/documents/${docId}`, { method: "DELETE" });
+      if (res.ok) fetchAll();
+      else alert("No se pudo eliminar el documento");
+    } catch (e) {
+      alert("Error eliminando documento");
+    } finally {
+      setDeleteConfirmDocId(null);
+    }
+  };
 
   if (loading) {
     return (
@@ -2012,11 +2026,10 @@ function toTitleCase(text: string): string {
                         </a>
                       )}
                       <button
-                        onClick={async () => {
-                          if (!confirm("¿Eliminar este documento? Esta acción no se puede deshacer.")) return;
-                          const res = await fetch(`/api/documents/${doc.id}`, { method: "DELETE" });
-                          if (res.ok) fetchAll();
-                          else alert("No se pudo eliminar el documento");
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setDeleteConfirmDocId(doc.id);
                         }}
                         className="p-1.5 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
                         title="Eliminar documento"
@@ -2269,6 +2282,24 @@ function toTitleCase(text: string): string {
           </div>
         </div>
       )}
+
+      {/* Modal Confirmar Borrado Documento */}
+      <Dialog open={!!deleteConfirmDocId} onOpenChange={(open) => { if (!open) setDeleteConfirmDocId(null); }}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>Eliminar documento</DialogTitle>
+            <DialogDescription>
+              ¿Seguro que quieres eliminar este documento? Esta acción no se puede deshacer.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="mt-4">
+            <Button variant="outline" onClick={() => setDeleteConfirmDocId(null)}>Cancelar</Button>
+            <Button variant="destructive" onClick={() => {
+              if (deleteConfirmDocId) executeDeleteDocument(deleteConfirmDocId);
+            }}>Eliminar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
