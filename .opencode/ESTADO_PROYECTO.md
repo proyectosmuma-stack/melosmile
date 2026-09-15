@@ -61,6 +61,11 @@ Que Musly pueda mover TODAS las citas de un día a otra fecha/clínica en una so
 
 
 ## 📦 HISTÓRICO CLAVE (resumen)
+- 15/09: Auditoría y corrección integral del sistema de recordatorios de citas WhatsApp:
+  - Implementado cron Vercel `/api/cron/process-reminders` (cada 15 min) y bypass en middleware.
+  - Aislamiento de entornos con failsafe `melosmile-dev` para evitar envíos cruzados a pacientes reales desde localhost/staging. Instancia creada en Evolution Manager.
+  - Corrección de timezone `Europe/Madrid` en `cadence.ts` y actualización de los 12 recordatorios pendientes en Supabase Producción para coincidir exactamente con la hora clínica local.
+  - Desplegado a `develop` y `main` (Vercel Producción).
 - 14/09 tarde: bugfix 401 Musly N8N (JWT prod vs fallback) + reagendamiento en bloque + auditoría credenciales/entornos. RAG actualizado (5 lecciones nuevas + save-session).
 - 11/09: Catálogo Tratamientos 2026 (53 activos), branding MeloSmile Purple `#85348c`, deploy develop/main + Notion.
 - 10/09: Bugfix messaging_settings (PUT vs POST, `...data.data`, whitelist ALLOWED_COLUMNS).
