@@ -33,14 +33,17 @@ export async function createAutomaticAppointmentReminders(options: CreateCadence
   const now = new Date();
   const firstName = patientName ? patientName.split(" ")[0] : "Paciente";
   const dateStr = apptDateObj.toLocaleDateString("es-ES", {
+    timeZone: "Europe/Madrid",
     weekday: "long",
     day: "numeric",
     month: "long",
     year: "numeric",
   });
   const timeStr = apptDateObj.toLocaleTimeString("es-ES", {
+    timeZone: "Europe/Madrid",
     hour: "2-digit",
     minute: "2-digit",
+    hour12: false,
   });
   const fullDateLabel = `${dateStr} a las ${timeStr}`;
 

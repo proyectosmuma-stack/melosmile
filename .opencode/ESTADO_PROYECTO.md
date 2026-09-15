@@ -57,6 +57,8 @@ Que Musly pueda mover TODAS las citas de un día a otra fecha/clínica en una so
 6. **Calendario Notion**: Frente 4 Cuestionario de primera visita (tabla `patient_intake_forms`, link público `/intake/[token]` 48h, webhook n8n). Luego Telegram, Contexto largo Musly.
 7. **Subagentes locales** (env-writer/coder-local) pueden estar caídos (Ollama MBP 2012 cold-start) → fallback determinista con scripts locales sin exponer secretos.
 8. Mantenimiento RAG: embeddings pendientes por cold-start (lecciones ya insertadas texto).
+9. **Configuración de credenciales de producción de Odoo**: Cargar y verificar las variables de producción (`ODOO_URL`, `ODOO_DB`, `ODOO_USER`, `ODOO_PASSWORD`/`ODOO_API_KEY`) en el proyecto Vercel `melosmile-production` para emisión real y sincronización contable/facturación.
+
 
 ## 📦 HISTÓRICO CLAVE (resumen)
 - 14/09 tarde: bugfix 401 Musly N8N (JWT prod vs fallback) + reagendamiento en bloque + auditoría credenciales/entornos. RAG actualizado (5 lecciones nuevas + save-session).

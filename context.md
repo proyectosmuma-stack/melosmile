@@ -417,3 +417,18 @@ El test de verificación reveló que **`google/gemini-3.1-pro-preview` tiene quo
 - Deploy directo a Vercel `melosmile-production` (`agenda.melosmile.com`) desde copia limpia de `develop`.
 - Test: revert de las 4 citas (Ronald, Kami, Richard, Emma) a Daniel Bustamante → Musly (dispatcher real n8n, ejecución `4919`) las movió a Goya con `bulk_reschedule(2026-09-22, 2026-09-22, clinic=Goya)` → DB producción confirmó **6/6 citas del 22/09 en Goya**.
 - Regla operativa refrendada: **la base de datos es la verdad absoluta, no la respuesta del LLM** (Musly debe verificarse contra la agenda antes de afirmar éxito).
+
+---
+
+## 💬 WhatsApp / Evolution API & Sistema Anti-Ban (15/09/2026)
+
+1. **Topología de Conexión Única**:
+   - Actualmente, este sistema (**Melosmile** / `agenda.melosmile.com`) es el **ÚNICO** conectado a la instancia de Evolution API y su número de WhatsApp.
+   - No existen bots externos, flujos ajenos ni scripts paralelos conectados al número.
+
+2. **Arquitectura de Protección Anti-Ban (`evolution.ts`)**:
+   - **Capa 1 (Typing Indicator)**: Parámetro `delay: 2000` en llamada a Evolution API (`/message/sendText`) para simular presencia ("escribiendo...") durante 2 segundos antes de liberar el mensaje.
+   - **Capa 2 (Cola Serializada)**: `dispatchQueuePromise` (singleton Promise chain) en el servidor Next.js que encola y serializa todas las peticiones salientes. Ningún mensaje se despacha en paralelo.
+   - **Capa 3 (Retardo Humano)**: `getRandomHumanDelayMs(30, 60)` aplica una pausa aleatoria de 30 a 60 segundos entre mensajes consecutivos calculada contra `lastWhatsAppSentTimestamp`.
+   - **Canal por defecto**: Todas las notificaciones y cadencia automática se configuran exclusivamente en `channel: "whatsapp"`.
+
