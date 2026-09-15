@@ -1,10 +1,14 @@
 "use client";
 
+import Link from "next/link";
+
 import * as React from "react";
-import { Camera, ImageOff, ChevronDown, Loader2, AlertCircle, RefreshCw } from "lucide-react";
+import { Camera, ImageOff, ChevronDown, Loader2, AlertCircle, RefreshCw, Upload, X, LayoutTemplate, ExternalLink } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { PhotoLightbox } from "./photo-lightbox";
+import { PhotoCollageEditor } from "./photo-collage-editor";
+import { CheckSquare, Square, CheckCircle2 } from "lucide-react";
 import { isImageDocument } from "@/lib/utils/document-utils";
 
 type ApiDocument = {
@@ -43,6 +47,7 @@ type Group = {
 
 type Props = {
   patientId: string;
+  appointments?: any[];
 };
 
 function formatLongDateEs(dateStr: string | null): string {
@@ -71,56 +76,59 @@ function toLightboxPhoto(doc: ApiDocument): LightboxPhoto {
   };
 }
 
+
 function Thumbnail({
   photo,
   onClick,
+  selectionMode,
+  isSelected,
+  onToggleSelect,
 }: {
   photo: LightboxPhoto;
   onClick: () => void;
+  selectionMode?: boolean;
+  isSelected?: boolean;
+  onToggleSelect?: () => void;
 }) {
   const [error, setError] = React.useState(false);
 
   if (error || !photo.url) {
     return (
-      <button
-        type="button"
-        onClick={onClick}
-        aria-label={`Ver ${photo.file_name}`}
-        className="group relative aspect-square w-full overflow-hidden rounded-md bg-muted border border-border flex flex-col items-center justify-center gap-1.5 cursor-zoom-in hover:bg-muted/80 transition-colors"
-      >
+      <button type="button" onClick={onClick} className="group relative aspect-square w-full bg-muted flex items-center justify-center">
         <ImageOff className="h-6 w-6 text-muted-foreground" />
-        <span className="text-[10px] font-medium text-muted-foreground px-2 text-center leading-tight line-clamp-2">
-          {photo.file_name}
-        </span>
       </button>
     );
   }
 
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-label={`Ver ${photo.file_name}`}
-      className="group relative aspect-square w-full overflow-hidden rounded-md bg-muted border border-border cursor-zoom-in"
-    >
-      <img
-        src={photo.url}
-        alt={photo.file_name}
-        loading="lazy"
-        decoding="async"
-        onError={() => setError(true)}
-        className="aspect-square w-full object-cover rounded-md group-hover:opacity-90 transition-opacity"
-      />
-      <div className="pointer-events-none absolute inset-0 rounded-md ring-1 ring-black/5 group-hover:ring-primary/20 transition-all" />
-      <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-      <span className="pointer-events-none absolute bottom-1 left-1 right-1 text-[10px] font-bold text-white leading-tight line-clamp-1 opacity-0 group-hover:opacity-100 transition-opacity drop-shadow">
-        {photo.file_name}
-      </span>
-    </button>
+    <div className="relative aspect-square w-full rounded-md border border-border group overflow-hidden bg-muted">
+      <button
+        type="button"
+        onClick={selectionMode ? onToggleSelect : onClick}
+        className="absolute inset-0 w-full h-full cursor-pointer focus:outline-none"
+      >
+        <img
+          src={photo.url}
+          alt={photo.file_name}
+          loading="lazy"
+          className={`w-full h-full object-cover transition-opacity ${selectionMode && !isSelected ? 'opacity-50' : 'group-hover:opacity-90'}`}
+        />
+        <div className={`pointer-events-none absolute inset-0 ${isSelected ? 'ring-2 ring-primary ring-inset bg-primary/20' : 'group-hover:bg-black/10'}`} />
+      </button>
+      
+      {selectionMode && (
+        <button 
+          onClick={(e) => { e.stopPropagation(); if (onToggleSelect) onToggleSelect(); }}
+          className="absolute top-2 left-2 z-10 text-white drop-shadow-md"
+        >
+          {isSelected ? <CheckSquare className="h-5 w-5 text-primary bg-white rounded-sm" /> : <Square className="h-5 w-5 opacity-70 hover:opacity-100" />}
+        </button>
+      )}
+    </div>
   );
 }
 
-export function PhotoGallery({ patientId }: Props) {
+export function PhotoGallery({ patientId, appointments = [] }: Props) {
   const [docs, setDocs] = React.useState<ApiDocument[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [loadingMore, setLoadingMore] = React.useState(false);
@@ -129,8 +137,76 @@ export function PhotoGallery({ patientId }: Props) {
   const [offset, setOffset] = React.useState(0);
   const limit = 200;
 
+
   const [collapsedKeys, setCollapsedKeys] = React.useState<Set<string>>(new Set());
   const [lightbox, setLightbox] = React.useState<{ groupKey: string; index: number } | null>(null);
+
+  // Seleccion
+  const [selectionMode, setSelectionMode] = React.useState(false);
+  const [selectedPhotoIds, setSelectedPhotoIds] = React.useState<Set<string>>(new Set());
+  const [showCollageEditor, setShowCollageEditor] = React.useState(false);
+
+
+  const [uploadFiles, setUploadFiles] = React.useState<File[]>([]);
+  const [selectedApt, setSelectedApt] = React.useState<string>("");
+  const [isUploading, setIsUploading] = React.useState(false);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      setUploadFiles(Array.from(e.target.files));
+      if (appointments.length > 0) {
+        setSelectedApt(appointments[0].id);
+      }
+    }
+  };
+
+  const handleConfirmUpload = async () => {
+    if (uploadFiles.length === 0 || !selectedApt) return;
+    setIsUploading(true);
+    let imageCompression: any = null;
+    try {
+      const mod = await import('browser-image-compression');
+      imageCompression = mod.default || mod;
+    } catch (e) {}
+
+    const aptObj = appointments.find(a => a.id === selectedApt);
+    const aptDate = aptObj?.appointment_date || new Date().toISOString().split('T')[0];
+
+    try {
+      for (let file of uploadFiles) {
+        if (imageCompression && file.type.startsWith('image/')) {
+          try {
+            const options = { maxSizeMB: 1.5, maxWidthOrHeight: 2048, useWebWorker: true };
+            const compressedBlob = await imageCompression(file, options);
+            file = new File([compressedBlob], file.name, { type: file.type });
+          } catch (e) {}
+        }
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("patientId", patientId);
+        formData.append("appointmentId", selectedApt);
+        formData.append("appointmentDate", aptDate);
+        formData.append("documentType", "foto_clinica");
+
+        await fetch("/api/documents/upload", {
+          method: "POST",
+          body: formData,
+        });
+      }
+      setUploadFiles([]);
+      setSelectedApt("");
+      fetchPage(0, false);
+    } catch (e) {
+      console.error(e);
+      alert("Error subiendo imágenes");
+    } finally {
+      setIsUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+
 
   const fetchPage = React.useCallback(
     async (nextOffset: number, append: boolean) => {
@@ -238,6 +314,36 @@ export function PhotoGallery({ patientId }: Props) {
     else if (lightbox) setLightbox({ ...lightbox, index: i });
   };
 
+
+  const toggleSelectPhoto = (photoId: string) => {
+    setSelectedPhotoIds(prev => {
+      const next = new Set(prev);
+      if (next.has(photoId)) next.delete(photoId);
+      else {
+        if (next.size >= 4) {
+          alert("Máximo 4 fotografías para comparar a la vez.");
+          return prev;
+        }
+        next.add(photoId);
+      }
+      return next;
+    });
+  };
+
+  const cancelSelection = () => {
+    setSelectionMode(false);
+    setSelectedPhotoIds(new Set());
+  };
+
+  const getSelectedPhotosObjects = () => {
+    const flat = groups.flatMap(g => g.photos);
+    return flat.filter(p => selectedPhotoIds.has(p.id)).map(p => ({
+      id: p.id,
+      url: p.url || "",
+      file_name: p.file_name
+    }));
+  };
+
   const toggleCollapse = (key: string) => {
     setCollapsedKeys((prev) => {
       const next = new Set(prev);
@@ -246,6 +352,47 @@ export function PhotoGallery({ patientId }: Props) {
       return next;
     });
   };
+
+  const uploadModal = uploadFiles.length > 0 && (
+    <div className="fixed inset-0 z-[100] bg-black/70 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in">
+      <div className="bg-card rounded-3xl shadow-2xl border border-border w-full max-w-md overflow-hidden flex flex-col">
+        <div className="px-6 py-5 bg-primary/10 text-primary flex items-center justify-between border-b border-border">
+          <h2 className="text-base font-bold">Vincular {uploadFiles.length} foto(s)</h2>
+          <button
+            type="button"
+            onClick={() => setUploadFiles([])}
+            className="hover:bg-primary/20 p-1.5 rounded-xl transition-colors"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+        <div className="p-6 space-y-4">
+          <p className="text-sm text-muted-foreground">Selecciona a qué cita corresponden estas imágenes clínicas:</p>
+          <select
+            value={selectedApt}
+            onChange={(e) => setSelectedApt(e.target.value)}
+            className="w-full h-10 px-3 border border-border rounded-xl text-sm font-medium bg-card"
+          >
+            <option value="" disabled>Selecciona una cita...</option>
+            {appointments.map((a: any) => (
+              <option key={a.id} value={a.id}>
+                {new Date(a.appointment_date).toLocaleDateString()} - {a.reason || 'Cita'}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="px-6 py-4 bg-muted/40 border-t border-border flex items-center justify-end gap-2">
+          <Button type="button" variant="ghost" size="sm" disabled={isUploading} onClick={() => setUploadFiles([])} className="rounded-xl">
+            Cancelar
+          </Button>
+          <Button type="button" size="sm" disabled={isUploading || !selectedApt} onClick={handleConfirmUpload} className="rounded-xl font-bold">
+            {isUploading ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" /> : <Upload className="h-3.5 w-3.5 mr-1.5" />}
+            Subir y Vincular
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
 
   if (loading) {
     return (
@@ -263,6 +410,7 @@ export function PhotoGallery({ patientId }: Props) {
             </div>
           </div>
         ))}
+        {uploadModal}
       </div>
     );
   }
@@ -278,6 +426,7 @@ export function PhotoGallery({ patientId }: Props) {
         <Button variant="outline" size="sm" onClick={() => fetchPage(0, false)} className="rounded-xl gap-1.5 mt-1">
           <RefreshCw className="h-3.5 w-3.5" /> Reintentar
         </Button>
+        {uploadModal}
       </div>
     );
   }
@@ -289,16 +438,65 @@ export function PhotoGallery({ patientId }: Props) {
           <Camera className="h-7 w-7 text-primary" />
         </div>
         <p className="text-sm font-bold text-foreground">Sin fotografías clínicas aún</p>
-        <p className="text-xs text-muted-foreground max-w-sm">
-          Las fotografías clínicas asociadas a citas aparecerán aquí agrupadas cronológicamente. Usa la zona de
-          documentos para subir las primeras imágenes.
+        <p className="text-xs text-muted-foreground max-w-sm mb-4">
+          Las fotografías clínicas asociadas a citas aparecerán aquí agrupadas cronológicamente.
         </p>
+        <Button onClick={() => fileInputRef.current?.click()} className="rounded-xl font-bold shadow-sm">
+          <Upload className="h-4 w-4 mr-2" /> Subir Fotografías
+        </Button>
+        <input ref={fileInputRef} type="file" multiple accept="image/*" className="hidden" onChange={handleFileSelect} />
+        {uploadModal}
       </div>
     );
   }
 
   return (
     <div className="p-5 space-y-6">
+      
+      <div className="flex items-center justify-between">
+        <div>
+          {selectionMode && (
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-bold text-primary px-3 py-1 bg-primary/10 rounded-full border border-primary/20">
+                {selectedPhotoIds.size} seleccionadas
+              </span>
+              {selectedPhotoIds.size > 0 && (
+                <Button variant="ghost" size="sm" onClick={() => setSelectedPhotoIds(new Set())} className="h-8 rounded-xl text-xs text-red-500 hover:text-red-600 hover:bg-red-50">
+                  Deseleccionar todo
+                </Button>
+              )}
+              <Button variant="ghost" size="sm" onClick={cancelSelection} className="h-8 rounded-xl text-xs">
+                Cancelar modo
+              </Button>
+            </div>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          {!selectionMode ? (
+            <Button onClick={() => setSelectionMode(true)} variant="outline" size="sm" className="rounded-xl shadow-sm border-zinc-200">
+              <CheckSquare className="h-4 w-4 mr-2 text-zinc-500" /> Seleccionar
+            </Button>
+          ) : (
+            <Button 
+              onClick={() => setShowCollageEditor(true)} 
+              size="sm" 
+              className="rounded-xl font-bold shadow-sm"
+              disabled={selectedPhotoIds.size < 2}
+            >
+              <LayoutTemplate className="h-4 w-4 mr-2" /> Comparar ({selectedPhotoIds.size}/4)
+            </Button>
+          )}
+
+          <Button onClick={() => fileInputRef.current?.click()} size="sm" className="rounded-xl font-bold shadow-sm bg-primary text-primary-foreground hover:bg-primary/90">
+            <Upload className="h-3.5 w-3.5 mr-2" /> Añadir Fotos
+          </Button>
+          <input ref={fileInputRef} type="file" multiple accept="image/*" className="hidden" onChange={handleFileSelect} />
+        </div>
+      </div>
+
+
+      {uploadModal}
+
       {groups.map((group) => {
         const isSinCita = group.key === "sin-cita";
         const collapsed = collapsedKeys.has(group.key);
@@ -321,9 +519,19 @@ export function PhotoGallery({ patientId }: Props) {
                 <div className="h-8 w-8 rounded-xl bg-primary/10 border border-primary/15 flex items-center justify-center shrink-0 group-hover:bg-primary/15 transition-colors">
                   <Camera className="h-4 w-4 text-primary" />
                 </div>
-                <div className="min-w-0">
-                  <p className="text-sm font-bold text-foreground leading-none truncate">{headerDate}</p>
-                  <p className="text-xs font-medium text-muted-foreground truncate">{sub}</p>
+                <div className="min-w-0 flex-1">
+                  {!isSinCita ? (
+                    <Link 
+                      href={`/appointments/${group.appointment_id}`} 
+                      onClick={(e) => e.stopPropagation()} 
+                      className="text-sm font-bold text-primary hover:underline leading-none truncate flex items-center gap-1.5"
+                    >
+                      {headerDate} <ExternalLink className="h-3 w-3 opacity-70 shrink-0" />
+                    </Link>
+                  ) : (
+                    <p className="text-sm font-bold text-foreground leading-none truncate">{headerDate}</p>
+                  )}
+                  <p className="text-xs font-medium text-muted-foreground truncate mt-1">{sub}</p>
                 </div>
               </div>
               <div className="flex items-center gap-2 shrink-0">
@@ -341,7 +549,7 @@ export function PhotoGallery({ patientId }: Props) {
             {!collapsed && (
               <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2 animate-in fade-in-0 duration-200">
                 {group.photos.map((photo, idx) => (
-                  <Thumbnail key={photo.id} photo={photo} onClick={() => handleThumbClick(group.key, idx)} />
+                  <Thumbnail key={photo.id} photo={photo} onClick={() => handleThumbClick(group.key, idx)} selectionMode={selectionMode} isSelected={selectedPhotoIds.has(photo.id)} onToggleSelect={() => toggleSelectPhoto(photo.id)} />
                 ))}
               </div>
             )}
@@ -365,6 +573,12 @@ export function PhotoGallery({ patientId }: Props) {
       )}
 
       <PhotoLightbox photos={activeGroupPhotos} index={activeIndex} onIndexChange={handleLightboxChange} />
+      {showCollageEditor && selectedPhotoIds.size >= 2 && (
+        <PhotoCollageEditor 
+          photos={getSelectedPhotosObjects()}
+          onClose={() => setShowCollageEditor(false)}
+        />
+      )}
     </div>
   );
 }
