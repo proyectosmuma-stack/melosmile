@@ -1869,7 +1869,7 @@ function toTitleCase(text: string): string {
         {/* GALERIA */}
         {activeTab === "galeria" && (
           <div className="p-0">
-            <PhotoGallery patientId={patient.id} />
+            <PhotoGallery patientId={patient.id} appointments={appointments} />
           </div>
         )}
       </div>

@@ -345,6 +345,7 @@ export function PhotoCollageEditor({ photos: initialPhotos, onClose }: Props) {
                         showGrid={false}
                         style={{
                           containerStyle: { width: '100%', height: '100%', position: 'absolute', top: 0, left: 0 },
+                          cropAreaStyle: { border: 'none', boxShadow: 'none', width: '100%', height: '100%' },
                         }}
                       />
                     </div>
