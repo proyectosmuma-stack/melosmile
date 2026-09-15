@@ -307,9 +307,20 @@ export async function upsertOdooPartner(patient: {
   }
 
   if (existingIds.length > 0) {
-    await odooExecute('res.partner', 'write', [[existingIds[0]], providedVals]);
-    return existingIds[0];
-  } else {
+    try {
+      await odooExecute('res.partner', 'write', [[existingIds[0]], providedVals]);
+      return existingIds[0];
+    } catch (error: any) {
+      if ((error.message && error.message.toLowerCase().includes('eliminado')) || (error.message && error.message.toLowerCase().includes('exist'))) {
+        console.warn(`Partner ID ${existingIds[0]} missing in Odoo. Falling back to recreate.`);
+        existingIds = []; // clear to force create below
+      } else {
+        throw error;
+      }
+    }
+  }
+  
+  if (existingIds.length === 0) {
     // Create needs all defaults + provided values
     const createVals: Record<string, unknown> = {
       ...providedVals,
