@@ -110,10 +110,20 @@ export function resolveDocumentUrl(
   const filePath = doc.file_path?.trim();
   if (!basePath || !filePath) return null;
 
-  const normalizedPath = filePath
-    .replace(/^melosmile\.com\//i, "")
-    .replace(/^\/+/, "");
+  let normalizedPath = filePath.replace(/^\/+/, "");
+  
+  let finalBase = basePath;
+  if (normalizedPath.toLowerCase().startsWith("melosmile.com/")) {
+    finalBase = "https://melosmile.com";
+    normalizedPath = normalizedPath.substring("melosmile.com/".length);
+  } else if (normalizedPath.toLowerCase().startsWith("mumaweb.com/")) {
+    finalBase = "https://mumaweb.com";
+    normalizedPath = normalizedPath.substring("mumaweb.com/".length);
+  }
+
+  // Soporte para rutas antiguas
+  normalizedPath = normalizedPath.replace(/^opt\/melosmile\/docs\/([^/]+)\/(.+)$/i, "pacientes/$1/docs/$2");
   if (!normalizedPath) return null;
 
-  return `${basePath.replace(/\/+$/, "")}/${normalizedPath}`;
+  return `${finalBase.replace(/\/+$/, "")}/${normalizedPath}`;
 }

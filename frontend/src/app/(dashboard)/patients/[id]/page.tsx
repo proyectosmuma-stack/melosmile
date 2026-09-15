@@ -7,10 +7,12 @@ import {
   Stethoscope, ArrowLeft, Clock, MapPin, Loader2, Building2, Edit3,
   Megaphone, Plus, Receipt, ChevronRight, X, UserCheck, Baby,
   BadgeCheck, Sparkles, ExternalLink, Tag as TagIcon, Save, Smile, MessageSquare,
-  Trash2, CheckSquare, Square, Image as ImageIcon, Camera, Send, Send as SendIcon, RefreshCw
+  Trash2, CheckSquare, Square, Image as ImageIcon, Camera, Send, Send as SendIcon, RefreshCw, Info
 } from "lucide-react";
 import Link from "next/link";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/lib/supabase/client";
@@ -23,7 +25,7 @@ import { NewReminderModal } from "@/components/reminders/new-reminder-modal";
 import { EditReminderModal } from "@/components/reminders/edit-reminder-modal";
 import { addSystemNotification } from "@/components/layout/notification-center";
 import { PhotoGallery } from "@/components/patients/photo-gallery";
-import { isImageDocument } from "@/lib/utils/document-utils";
+import { isImageDocument, resolveDocumentUrl } from "@/lib/utils/document-utils";
 import { getCleanNotesPreview } from "@/lib/appointments/notes-parser";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -182,42 +184,35 @@ function DocumentDropZone({ patientId, onUpload }: { patientId: string; onUpload
   const handleFiles = useCallback(async (files: FileList | null) => {
     if (!files || files.length === 0) return;
     setUploading(true);
-    for (const file of Array.from(files)) {
-      const ext = file.name.split(".").pop()?.toLowerCase() || "";
-      let docType: string = "otro";
-      if (["pdf"].includes(ext) && file.name.toLowerCase().includes("consentimiento")) docType = "consentimiento";
-      else if (["jpg","jpeg","png","webp"].includes(ext)) docType = "foto_clinica";
-      else if (["pdf"].includes(ext)) docType = "informe";
+    try {
+      for (const file of Array.from(files)) {
+        const ext = file.name.split(".").pop()?.toLowerCase() || "";
+        let docType: string = "otro";
+        if (["pdf"].includes(ext) && file.name.toLowerCase().includes("consentimiento")) docType = "consentimiento";
+        else if (["jpg", "jpeg", "png", "webp"].includes(ext)) docType = "foto_clinica";
+        else if (["pdf"].includes(ext)) docType = "informe";
 
-      const filePath = `/opt/melosmile/docs/${patientId}/${Date.now()}_${file.name}`;
-      const { data: newDoc, error } = await (supabase as any).from("documents").insert({
-        patient_id: patientId,
-        document_type: docType,
-        file_name: file.name,
-        file_path: filePath,
-        file_size_bytes: file.size,
-        mime_type: file.type,
-        uploaded_by: "Dra. Melo",
-        description: "Enviado a IA vectorizadora ⏳",
-      }).select("id").single();
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("patientId", patientId);
+        formData.append("documentType", docType);
 
-      if (newDoc && !error) {
-        // Trigger n8n vectorization
-        fetch("/api/documents/vectorize", {
+        const res = await fetch("/api/documents/upload", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            documentId: newDoc.id,
-            patientId,
-            fileName: file.name,
-            filePath,
-            documentType: docType,
-          }),
-        }).catch((e) => console.warn("Error enviando vectorización:", e));
+          body: formData,
+        });
+
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          console.error("Error al subir archivo:", errData.error || res.statusText);
+        }
       }
+    } catch (err) {
+      console.error("Error subiendo documentos:", err);
+    } finally {
+      setUploading(false);
+      onUpload();
     }
-    setUploading(false);
-    onUpload();
   }, [patientId, onUpload]);
 
   return (
@@ -254,6 +249,7 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
 
   const [activeTab, setActiveTab] = useState<ActiveTab>("historial");
   const [loading, setLoading] = useState(true);
+  const [deleteConfirmDocId, setDeleteConfirmDocId] = useState<string | null>(null);
   const [patient, setPatient] = useState<Patient | null>(null);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [billing, setBilling] = useState<BillingRecord[]>([]);
@@ -679,6 +675,18 @@ function toTitleCase(text: string): string {
     window.addEventListener("appointment-created", handleApptCreated);
     return () => window.removeEventListener("appointment-created", handleApptCreated);
   }, [fetchAll]);
+
+  const executeDeleteDocument = async (docId: string) => {
+    try {
+      const res = await fetch(`/api/documents/${docId}`, { method: "DELETE" });
+      if (res.ok) fetchAll();
+      else alert("No se pudo eliminar el documento");
+    } catch (e) {
+      alert("Error eliminando documento");
+    } finally {
+      setDeleteConfirmDocId(null);
+    }
+  };
 
   if (loading) {
     return (
@@ -1977,7 +1985,17 @@ function toTitleCase(text: string): string {
         <div className="flex items-center justify-between px-6 py-4 border-b border-border/60">
           <div className="flex items-center gap-2">
             <FileText className="h-5 w-5 text-primary" />
-            <h2 className="text-base font-bold text-foreground">Documentos y Consentimientos</h2>
+            <h2 className="text-base font-bold text-foreground flex items-center">
+              Documentos y Consentimientos
+              <Tooltip>
+                <TooltipTrigger className="cursor-help ml-2 inline-flex items-center border-none bg-transparent p-0">
+                  <Info className="h-4 w-4 text-muted-foreground" />
+                </TooltipTrigger>
+                <TooltipContent side="top" className="max-w-xs bg-gray-900 text-white border-gray-800 text-xs p-3 font-normal">
+                  <p>Los archivos PDF y documentos subidos aquí se procesan automáticamente (vectorización) por nuestro sistema n8n. Esto permite a Musly (el asistente IA) leer, analizar y responder preguntas usando el contenido exacto de estos archivos.</p>
+                </TooltipContent>
+              </Tooltip>
+            </h2>
             {(() => {
               const nonImg = documents.filter((d) => !isImageDocument({ file_name: d.file_name, document_type: d.document_type, mime_type: d.mime_type ?? null }));
               return nonImg.length > 0 ? (
@@ -1996,20 +2014,40 @@ function toTitleCase(text: string): string {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {nonImageDocs.map((doc) => {
                 const d = formatDate(doc.created_at);
+                const docUrl = resolveDocumentUrl({ file_url: doc.file_url, file_path: doc.file_path });
                 return (
-                  <div key={doc.id} className="flex items-center gap-3 p-3 rounded-xl border border-border/60 hover:border-primary/30 hover:bg-primary/10 transition-all cursor-pointer group">
+                  <div key={doc.id} className="flex items-center gap-3 p-3 rounded-xl border border-border/60 hover:border-primary/30 hover:bg-primary/10 transition-all group">
                     <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center shrink-0">
                       <FileText className="h-5 w-5 text-muted-foreground" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs font-bold text-foreground truncate group-hover:text-primary">{doc.file_name}</p>
+                      {docUrl ? (
+                        <a href={docUrl} target="_blank" rel="noopener noreferrer" className="text-xs font-bold text-foreground truncate group-hover:text-primary block hover:underline">
+                          {doc.file_name}
+                        </a>
+                      ) : (
+                        <p className="text-xs font-bold text-foreground truncate">{doc.file_name}</p>
+                      )}
                       <p className="text-[11px] text-muted-foreground">{DOC_TYPE_LABELS[doc.document_type] ?? doc.document_type} · {d.full}</p>
                     </div>
-                    {doc.file_url && (
-                      <a href={doc.file_url} target="_blank" rel="noopener noreferrer">
-                        <ExternalLink className="h-3.5 w-3.5 text-muted-foreground group-hover:text-primary" />
-                      </a>
-                    )}
+                    <div className="flex items-center gap-1 shrink-0">
+                      {docUrl && (
+                        <a href={docUrl} target="_blank" rel="noopener noreferrer" className="p-1.5 rounded-md hover:bg-primary/10 text-muted-foreground hover:text-primary transition-colors" title="Abrir documento">
+                          <ExternalLink className="h-3.5 w-3.5" />
+                        </a>
+                      )}
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setDeleteConfirmDocId(doc.id);
+                        }}
+                        className="p-1.5 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+                        title="Eliminar documento"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
                   </div>
                 );
               })}
@@ -2255,6 +2293,24 @@ function toTitleCase(text: string): string {
           </div>
         </div>
       )}
+
+      {/* Modal Confirmar Borrado Documento */}
+      <Dialog open={!!deleteConfirmDocId} onOpenChange={(open) => { if (!open) setDeleteConfirmDocId(null); }}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>Eliminar documento</DialogTitle>
+            <DialogDescription>
+              ¿Seguro que quieres eliminar este documento? Esta acción no se puede deshacer.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="mt-4">
+            <Button variant="outline" onClick={() => setDeleteConfirmDocId(null)}>Cancelar</Button>
+            <Button variant="destructive" onClick={() => {
+              if (deleteConfirmDocId) executeDeleteDocument(deleteConfirmDocId);
+            }}>Eliminar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

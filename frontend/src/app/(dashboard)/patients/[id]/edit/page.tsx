@@ -367,17 +367,57 @@ export default function EditPatientPage({ params }: { params: Promise<{ id: stri
             // No ha sido facturado nunca, solo guardar en local
             console.log("Datos de facturación guardados en Melosmile. Se sincronizarán con Odoo al registrar la primera factura.");
           } else {
+            const odooPayload = {
+              odoo_partner_id: pData?.odoo_partner_id,
+              full_name: `${newValues.first_name} ${newValues.last_name}`,
+              billing_name: newValues.billing_same_as_contact ? `${newValues.first_name} ${newValues.last_name}` : newValues.billing_name,
+              email: newValues.email || "",
+              phone: newValues.phone || "",
+              nif_cif: newValues.billing_same_as_contact ? newValues.dni_nie : newValues.nif_cif,
+              billing_address: newValues.billing_same_as_contact ? newValues.address : newValues.billing_address,
+              billing_address_2: newValues.billing_same_as_contact ? newValues.address_2 : newValues.billing_address_2,
+              billing_city: newValues.billing_same_as_contact ? newValues.city : newValues.billing_city,
+              billing_postal_code: newValues.billing_same_as_contact ? newValues.postal_code : newValues.billing_postal_code,
+              billing_province: newValues.billing_same_as_contact ? newValues.province : newValues.billing_province,
+              billing_country: newValues.billing_same_as_contact ? newValues.country : newValues.billing_country,
+              patient_id: patientId,
+            };
+
             const odooRes = await fetch('/api/odoo/partner', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ ...newValues, odoo_partner_id: pData?.odoo_partner_id }),
+              body: JSON.stringify(odooPayload),
             });
-            
-            if (!odooRes.ok) {
+
+            if (odooRes.status === 409) {
+              const confirmData = await odooRes.json();
+              // Ask if it's a first-time billing patient
+              const confirmed = window.confirm(
+                `⚠️ No encontramos a este paciente en el sistema de facturación (Odoo).\n\n` +
+                `¿Es la primera vez que vas a facturarle?\n\n` +
+                `• Pulsa ACEPTAR para crear su ficha en Odoo ahora.\n` +
+                `• Pulsa CANCELAR si crees que puede ser un error (tiene facturas previas).`
+              );
+              if (confirmed) {
+                const retryRes = await fetch('/api/odoo/partner', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ ...odooPayload, force_create: true }),
+                });
+                if (!retryRes.ok) {
+                  const errData = await retryRes.json();
+                  throw new Error(errData.error || `Error creando en Odoo`);
+                }
+                alert("✅ Ficha creada en Odoo y datos de facturación sincronizados correctamente.");
+              } else {
+                alert("ℹ️ Los datos se guardaron en Melosmile. La sincronización con Odoo se ha pospuesto.");
+              }
+            } else if (!odooRes.ok) {
               const errData = await odooRes.json();
               throw new Error(errData.error || `HTTP error ${odooRes.status}`);
+            } else {
+              alert("✅ Sincronización Odoo exitosa: Los datos de facturación del paciente se han sincronizado con Odoo.");
             }
-            alert("Sincronización Odoo exitosa: Los datos de facturación del paciente se han sincronizado con Odoo.");
           }
         } catch (odooError: any) {
           console.error("Error sincronizando con Odoo:", odooError);

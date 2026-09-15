@@ -218,16 +218,30 @@ export async function updatePricelistItem(pricelistId: number, productTmplId: nu
 /**
  * Search or create a customer (res.partner) in Odoo from a patient record
  */
+export class OdooPartnerNotFoundError extends Error {
+  code = 'PARTNER_NOT_FOUND';
+  odoo_partner_id?: number;
+  constructor(odooId: number) {
+    super(`No se encontró al paciente en el sistema de facturación (ID guardado: ${odooId}).`);
+    this.odoo_partner_id = odooId;
+  }
+}
+
 export async function upsertOdooPartner(patient: {
   full_name: string;
   nif_cif?: string;
   billing_name?: string;
   billing_address?: string;
+  billing_address_2?: string;
   billing_city?: string;
   billing_postal_code?: string;
+  billing_province?: string;
+  billing_country?: string;
   email?: string;
   phone?: string;
   odoo_partner_id?: number;
+  patient_id?: string; // Supabase patient UUID — used to self-heal the stale link
+  force_create?: boolean; // When true, create a new partner even if odoo_partner_id was previously set
 }) {
   const name = patient.billing_name || patient.full_name;
 
@@ -235,36 +249,31 @@ export async function upsertOdooPartner(patient: {
   // Avoids re-searching by VAT/email/name, which could hit the wrong partner
   // or create a duplicate — leaving the mapped partner's address stale.
   let existingIds: number[] = [];
+  let skipSearch = false;
   if (patient.odoo_partner_id) {
     existingIds = [patient.odoo_partner_id];
+    skipSearch = true;
   }
 
-  // Search by VAT/NIF first
-  if (existingIds.length === 0 && patient.nif_cif) {
-    existingIds = await odooExecute('res.partner', 'search', [
-      [['vat', '=', patient.nif_cif]],
-    ]);
-  }
+  const performSearch = async () => {
+    let ids: number[] = [];
+    if (patient.nif_cif) {
+      ids = await odooExecute('res.partner', 'search', [[['vat', '=', patient.nif_cif]]]);
+    }
+    if (ids.length === 0 && patient.email) {
+      ids = await odooExecute('res.partner', 'search', [[['email', '=', patient.email]]]);
+    }
+    if (ids.length === 0) {
+      ids = await odooExecute('res.partner', 'search', [[['name', 'ilike', name]]]);
+    }
+    if (ids.length === 0 && patient.full_name !== name) {
+      ids = await odooExecute('res.partner', 'search', [[['name', 'ilike', patient.full_name]]]);
+    }
+    return ids;
+  };
 
-  // Fallback to email if VAT not found
-  if (existingIds.length === 0 && patient.email) {
-    existingIds = await odooExecute('res.partner', 'search', [
-      [['email', '=', patient.email]],
-    ]);
-  }
-
-  // Fallback to exact name match if email also not found
-  if (existingIds.length === 0) {
-    existingIds = await odooExecute('res.partner', 'search', [
-      [['name', 'ilike', name]],
-    ]);
-  }
-
-  // Fallback to full_name if billing_name didn't match
-  if (existingIds.length === 0 && patient.full_name !== name) {
-    existingIds = await odooExecute('res.partner', 'search', [
-      [['name', 'ilike', patient.full_name]],
-    ]);
+  if (!skipSearch) {
+    existingIds = await performSearch();
   }
 
   // Only write fields the caller actually provided. This prevents a partial
@@ -273,15 +282,80 @@ export async function upsertOdooPartner(patient: {
   const providedVals: Record<string, unknown> = { name };
   if (patient.nif_cif) providedVals.vat = patient.nif_cif;
   if (patient.billing_address) providedVals.street = patient.billing_address;
+  if (patient.billing_address_2) providedVals.street2 = patient.billing_address_2;
   if (patient.billing_city) providedVals.city = patient.billing_city;
   if (patient.billing_postal_code) providedVals.zip = patient.billing_postal_code;
   if (patient.email) providedVals.email = patient.email;
   if (patient.phone) providedVals.phone = patient.phone;
 
+  // Resolve Country ID
+  let countryId = 68; // Default: 68 is España in Odoo
+  if (patient.billing_country) {
+    const countries = await odooExecute('res.country', 'search_read', [
+      [['name', 'ilike', patient.billing_country]],
+      ['id']
+    ]);
+    if (countries && countries.length > 0) {
+      countryId = countries[0].id;
+    }
+  }
+  providedVals.country_id = countryId;
+
+  // Resolve State ID
+  if (patient.billing_province) {
+    const states = await odooExecute('res.country.state', 'search_read', [
+      [['name', 'ilike', patient.billing_province], ['country_id', '=', countryId]],
+      ['id']
+    ]);
+    if (states && states.length > 0) {
+      providedVals.state_id = states[0].id;
+    }
+  }
+
   if (existingIds.length > 0) {
-    await odooExecute('res.partner', 'write', [[existingIds[0]], providedVals]);
-    return existingIds[0];
-  } else {
+    try {
+      await odooExecute('res.partner', 'write', [[existingIds[0]], providedVals]);
+      return existingIds[0];
+    } catch (error: any) {
+      const errMsg = (error.message || '').toLowerCase();
+      const isStaleId = errMsg.includes('eliminado') || errMsg.includes('exist') || errMsg.includes('deleted');
+      if (isStaleId) {
+        console.warn(`[Odoo] Stored partner ID ${existingIds[0]} is stale. Running deep search…`);
+        const foundIds = await performSearch();
+
+        if (foundIds.length > 0) {
+          const recoveredId = foundIds[0];
+          console.info(`[Odoo] Recovered partner ID ${recoveredId}. Updating Supabase reference…`);
+          await odooExecute('res.partner', 'write', [[recoveredId], providedVals]);
+
+          // Self-heal: update the stale odoo_partner_id in Supabase so this never happens again
+          if (patient.patient_id) {
+            const { createClient } = await import('@supabase/supabase-js');
+            const supa = createClient(
+              process.env.NEXT_PUBLIC_SUPABASE_URL!,
+              process.env.SUPABASE_SERVICE_ROLE_KEY!
+            );
+            await supa.from('patients').update({ odoo_partner_id: recoveredId }).eq('id', patient.patient_id);
+            console.info(`[Odoo] Self-healed: patients.odoo_partner_id updated to ${recoveredId}`);
+          }
+
+          return recoveredId;
+        }
+
+        // Not found anywhere. If force_create is set, fall through to create.
+        // Otherwise surface a typed error so the UI can ask the user.
+        if (!patient.force_create) {
+          throw new OdooPartnerNotFoundError(existingIds[0]);
+        }
+        // force_create=true: reset existingIds so the create block below runs.
+        existingIds = [];
+      } else {
+        throw error;
+      }
+    }
+  }
+  
+  if (existingIds.length === 0) {
     // Create needs all defaults + provided values
     const createVals: Record<string, unknown> = {
       ...providedVals,
@@ -289,7 +363,7 @@ export async function upsertOdooPartner(patient: {
       street: patient.billing_address || false,
       city: patient.billing_city || false,
       zip: patient.billing_postal_code || false,
-      country_id: 67, // Spain in Odoo
+      // country_id and state_id are already in providedVals
       email: patient.email || false,
       phone: patient.phone || false,
       customer_rank: 1,

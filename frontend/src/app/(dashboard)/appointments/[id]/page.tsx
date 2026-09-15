@@ -1,12 +1,13 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   User, Calendar as CalendarIcon, Clock, Building2, Stethoscope, FileText, Upload,
   CreditCard, MessageSquare, CheckCircle2, Save, Loader2, AlertCircle, ArrowLeft, Receipt,
   TrendingDown, TrendingUp, AlertTriangle, FlaskConical, Plus, Sparkles, ExternalLink,
-  Pill, Activity, ShieldAlert, ChevronRight, Check, Euro, Settings2, Trash2, Camera, Image as ImageIcon, UserCheck, Pencil, Bell, Send, Smartphone
+  Pill, Activity, ShieldAlert, ChevronRight, Check, Euro, Settings2, Trash2, Camera, Image as ImageIcon, UserCheck, Pencil, Bell, Send, Smartphone, Info
 } from "lucide-react";
 import { QRCodeCanvas } from "qrcode.react";
 import Link from "next/link";
@@ -134,6 +135,7 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
   const [qrModalOpen, setQrModalOpen] = useState(false);
   const [qrUrl, setQrUrl] = useState("");
   const [qrGenerating, setQrGenerating] = useState(false);
+  const [deleteConfirmDocId, setDeleteConfirmDocId] = useState<string | null>(null);
 
   useEffect(() => {
     const handleDragOver = (e: DragEvent) => e.preventDefault();
@@ -795,10 +797,7 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
     }
   };
 
-  const handleDeleteDocument = async (docId: string, e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (!confirm("¿Seguro que quieres eliminar este documento? Esta acción no se puede deshacer.")) return;
+  const executeDeleteDocument = async (docId: string) => {
     try {
       const res = await fetch(`/api/documents/${docId}`, { method: "DELETE" });
       if (!res.ok) throw new Error("Error al eliminar");
@@ -806,7 +805,15 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
     } catch (err) {
       console.error("Error eliminando documento:", err);
       alert("No se pudo eliminar el documento");
+    } finally {
+      setDeleteConfirmDocId(null);
     }
+  };
+
+  const handleDeleteDocument = (docId: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDeleteConfirmDocId(docId);
   };
 
   if (loading) {
@@ -1407,6 +1414,7 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                     {images.map((img, idx) => {
                       const imgUrl = img.file_url || resolveDocumentUrl({ file_url: img.file_url, file_path: img.file_path });
+                      const finalImgUrl = imgUrl ? `${imgUrl}?cb=${img.file_size_bytes || img.id}` : null;
                       return (
                         <div key={img.id} className="relative group rounded-xl border border-border overflow-hidden bg-muted aspect-square">
                           <button
@@ -1414,8 +1422,8 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
                             onClick={() => setLightboxIndex(idx)}
                             className="w-full h-full flex items-center justify-center cursor-zoom-in hover:opacity-90 transition-opacity"
                           >
-                            {imgUrl ? (
-                              <img src={imgUrl} alt={img.file_name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                            {finalImgUrl ? (
+                              <img src={finalImgUrl} alt={img.file_name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
                             ) : (
                               <div className="flex flex-col items-center p-2 text-center text-muted-foreground">
                                 <ImageIcon className="h-6 w-6 text-muted-foreground mb-1" />
@@ -1440,16 +1448,19 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
                   </div>
                   
                   <PhotoLightbox
-                    photos={images.map(d => ({
-                      id: d.id,
-                      url: d.file_url || resolveDocumentUrl({ file_url: d.file_url, file_path: d.file_path }),
-                      file_name: d.file_name,
-                      document_type: d.document_type,
-                      file_size_bytes: d.file_size_bytes ?? null,
-                      mime_type: d.mime_type ?? null,
-                      description: d.description,
-                      created_at: d.created_at
-                    }))}
+                    photos={images.map(d => {
+                      const base = d.file_url || resolveDocumentUrl({ file_url: d.file_url, file_path: d.file_path });
+                      return {
+                        id: d.id,
+                        url: base ? `${base}?cb=${d.file_size_bytes || d.id}` : null,
+                        file_name: d.file_name,
+                        document_type: d.document_type,
+                        file_size_bytes: d.file_size_bytes ?? null,
+                        mime_type: d.mime_type ?? null,
+                        description: d.description,
+                        created_at: d.created_at
+                      };
+                    })}
                     index={lightboxIndex}
                     onIndexChange={setLightboxIndex}
                   />
@@ -1462,7 +1473,16 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
           <Card className="border-0 shadow-md rounded-2xl bg-card">
             <CardHeader className="flex flex-row items-center justify-between pb-3 border-b border-border/60">
               <CardTitle className="text-base font-bold text-foreground flex items-center gap-2">
-                <FileText className="h-5 w-5 text-primary" /> Documentos & Informes (Vectorizados n8n)
+                <FileText className="h-5 w-5 text-primary" />
+                Documentos & Informes (Vectorizados n8n)
+                <Tooltip>
+                  <TooltipTrigger className="cursor-help ml-1 inline-flex items-center border-none bg-transparent p-0">
+                    <Info className="h-4 w-4 text-muted-foreground" />
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="max-w-xs bg-gray-900 text-white border-gray-800 text-xs p-3">
+                    <p>Los archivos PDF y documentos subidos aquí se procesan automáticamente (vectorización) por nuestro sistema n8n. Esto permite a Musly (el asistente IA) leer, analizar y responder preguntas usando el contenido exacto de estos archivos.</p>
+                  </TooltipContent>
+                </Tooltip>
               </CardTitle>
               <Button
                 size="sm"
@@ -1850,6 +1870,24 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
               Cerrar y Actualizar Fotos
             </Button>
           </div>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Modal Confirmar Borrado */}
+      <Dialog open={!!deleteConfirmDocId} onOpenChange={(open) => { if (!open) setDeleteConfirmDocId(null); }}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>Eliminar documento</DialogTitle>
+            <DialogDescription>
+              ¿Seguro que quieres eliminar este documento? Esta acción no se puede deshacer.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="mt-4">
+            <Button variant="outline" onClick={() => setDeleteConfirmDocId(null)}>Cancelar</Button>
+            <Button variant="destructive" onClick={() => {
+              if (deleteConfirmDocId) executeDeleteDocument(deleteConfirmDocId);
+            }}>Eliminar</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

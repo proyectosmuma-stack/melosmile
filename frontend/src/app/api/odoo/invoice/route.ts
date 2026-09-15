@@ -46,11 +46,15 @@ export async function POST(req: Request) {
       nif_cif: patientDetails.nifCif,
       billing_name: patientDetails.billingName,
       billing_address: patientDetails.billingAddress,
+      billing_address_2: patientDetails.billingAddress2,
       billing_city: patientDetails.billingCity,
       billing_postal_code: patientDetails.billingPostalCode,
+      billing_province: patientDetails.billingProvince,
+      billing_country: patientDetails.billingCountry,
       email: patientDetails.email,
       phone: patientDetails.phone,
       odoo_partner_id: mappedPartnerId || undefined,
+      patient_id: patientId,
     });
 
     // 2. Prepare Invoice Lines & References

@@ -10,9 +10,11 @@ import {
   ZoomIn,
   ZoomOut,
   RotateCcw,
+  Pencil,
 } from "lucide-react";
 import { DOC_TYPE_LABELS, formatBytes } from "@/lib/utils/document-utils";
 import { cn } from "@/lib/utils";
+import { PhotoEditor } from "@/components/patients/photo-editor";
 
 type LightboxPhoto = {
   id: string;
@@ -49,6 +51,8 @@ export function PhotoLightbox({ photos, index, onIndexChange }: Props) {
   const [scale, setScale] = React.useState(1);
   const [translate, setTranslate] = React.useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = React.useState(false);
+  const [editingPhoto, setEditingPhoto] = React.useState<{ id: string; src: string; fileName: string } | null>(null);
+  const [isSaving, setIsSaving] = React.useState(false);
   const dragStart = React.useRef({ x: 0, y: 0, tx: 0, ty: 0 });
 
   const imageRef = React.useRef<HTMLImageElement>(null);
@@ -146,6 +150,50 @@ export function PhotoLightbox({ photos, index, onIndexChange }: Props) {
   const total = photos.length;
   const currentIndex = index!;
 
+  const handleSave = async (dataUrl: string, fileName: string) => {
+    if (!editingPhoto) return;
+    setIsSaving(true);
+    try {
+      const res = await fetch(dataUrl);
+      const blob = await res.blob();
+      const file = new File([blob], fileName, { type: "image/jpeg" });
+      
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const updateRes = await fetch(`/api/documents/${editingPhoto.id}`, {
+        method: "PUT",
+        body: formData,
+      });
+
+      if (!updateRes.ok) {
+        throw new Error("No se pudo guardar la imagen");
+      }
+
+      setEditingPhoto(null);
+      // Reload page to see changes (could be optimized with a cache buster if we managed photos state)
+      window.location.reload();
+    } catch (err) {
+      console.error(err);
+      alert("Error al guardar la imagen. Revisa la consola.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Show photo editor overlay
+  if (editingPhoto) {
+    return (
+      <PhotoEditor
+        src={editingPhoto.src}
+        fileName={editingPhoto.fileName}
+        onClose={() => setEditingPhoto(null)}
+        onSave={handleSave}
+        isSaving={isSaving}
+      />
+    );
+  }
+
   return (
     <DialogPrimitive.Root open={isOpen} onOpenChange={(open) => !open && handleClose()}>
       <DialogPrimitive.Portal>
@@ -195,6 +243,17 @@ export function PhotoLightbox({ photos, index, onIndexChange }: Props) {
                 <RotateCcw className="h-4 w-4" />
               </button>
               <div className="w-px h-6 bg-white/15 mx-1 hidden sm:block" />
+              {current.url && (
+                <button
+                  type="button"
+                  aria-label="Editar imagen"
+                  onClick={() => setEditingPhoto({ id: current.id, src: `/api/proxy-image?url=${encodeURIComponent(current.url!)}`, fileName: current.file_name })}
+                  className="h-9 w-9 inline-flex items-center justify-center rounded-xl bg-white/10 hover:bg-white/15 border border-white/10 text-white transition-colors"
+                  title="Editar imagen"
+                >
+                  <Pencil className="h-4 w-4" />
+                </button>
+              )}
               <DialogPrimitive.Close
                 aria-label="Cerrar visor"
                 className="h-9 w-9 inline-flex items-center justify-center rounded-xl bg-white text-black hover:bg-white/90 transition-colors"
