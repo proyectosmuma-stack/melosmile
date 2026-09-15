@@ -7,9 +7,10 @@ import {
   Stethoscope, ArrowLeft, Clock, MapPin, Loader2, Building2, Edit3,
   Megaphone, Plus, Receipt, ChevronRight, X, UserCheck, Baby,
   BadgeCheck, Sparkles, ExternalLink, Tag as TagIcon, Save, Smile, MessageSquare,
-  Trash2, CheckSquare, Square, Image as ImageIcon, Camera, Send, Send as SendIcon, RefreshCw
+  Trash2, CheckSquare, Square, Image as ImageIcon, Camera, Send, Send as SendIcon, RefreshCw, Info
 } from "lucide-react";
 import Link from "next/link";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -1984,7 +1985,17 @@ function toTitleCase(text: string): string {
         <div className="flex items-center justify-between px-6 py-4 border-b border-border/60">
           <div className="flex items-center gap-2">
             <FileText className="h-5 w-5 text-primary" />
-            <h2 className="text-base font-bold text-foreground">Documentos y Consentimientos</h2>
+            <h2 className="text-base font-bold text-foreground flex items-center">
+              Documentos y Consentimientos
+              <Tooltip>
+                <TooltipTrigger className="cursor-help ml-2 inline-flex items-center border-none bg-transparent p-0">
+                  <Info className="h-4 w-4 text-muted-foreground" />
+                </TooltipTrigger>
+                <TooltipContent side="top" className="max-w-xs bg-gray-900 text-white border-gray-800 text-xs p-3 font-normal">
+                  <p>Los archivos PDF y documentos subidos aquí se procesan automáticamente (vectorización) por nuestro sistema n8n. Esto permite a Musly (el asistente IA) leer, analizar y responder preguntas usando el contenido exacto de estos archivos.</p>
+                </TooltipContent>
+              </Tooltip>
+            </h2>
             {(() => {
               const nonImg = documents.filter((d) => !isImageDocument({ file_name: d.file_name, document_type: d.document_type, mime_type: d.mime_type ?? null }));
               return nonImg.length > 0 ? (

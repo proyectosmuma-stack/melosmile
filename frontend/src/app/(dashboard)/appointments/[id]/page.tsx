@@ -2,11 +2,12 @@
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   User, Calendar as CalendarIcon, Clock, Building2, Stethoscope, FileText, Upload,
   CreditCard, MessageSquare, CheckCircle2, Save, Loader2, AlertCircle, ArrowLeft, Receipt,
   TrendingDown, TrendingUp, AlertTriangle, FlaskConical, Plus, Sparkles, ExternalLink,
-  Pill, Activity, ShieldAlert, ChevronRight, Check, Euro, Settings2, Trash2, Camera, Image as ImageIcon, UserCheck, Pencil, Bell, Send, Smartphone
+  Pill, Activity, ShieldAlert, ChevronRight, Check, Euro, Settings2, Trash2, Camera, Image as ImageIcon, UserCheck, Pencil, Bell, Send, Smartphone, Info
 } from "lucide-react";
 import { QRCodeCanvas } from "qrcode.react";
 import Link from "next/link";
@@ -1472,7 +1473,16 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
           <Card className="border-0 shadow-md rounded-2xl bg-card">
             <CardHeader className="flex flex-row items-center justify-between pb-3 border-b border-border/60">
               <CardTitle className="text-base font-bold text-foreground flex items-center gap-2">
-                <FileText className="h-5 w-5 text-primary" /> Documentos & Informes (Vectorizados n8n)
+                <FileText className="h-5 w-5 text-primary" />
+                Documentos & Informes (Vectorizados n8n)
+                <Tooltip>
+                  <TooltipTrigger className="cursor-help ml-1 inline-flex items-center border-none bg-transparent p-0">
+                    <Info className="h-4 w-4 text-muted-foreground" />
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="max-w-xs bg-gray-900 text-white border-gray-800 text-xs p-3">
+                    <p>Los archivos PDF y documentos subidos aquí se procesan automáticamente (vectorización) por nuestro sistema n8n. Esto permite a Musly (el asistente IA) leer, analizar y responder preguntas usando el contenido exacto de estos archivos.</p>
+                  </TooltipContent>
+                </Tooltip>
               </CardTitle>
               <Button
                 size="sm"
