@@ -1,6 +1,6 @@
-# 🏥 ESTADO DEL PROYECTO MELOSMILE — 16/09/2026: MOTOR DE RECORDATORIOS JIT ANTI-BAN
+# 🏥 ESTADO DEL PROYECTO MELOSMILE — 17/09/2026: REFACTORIZACIÓN CALENDARIO Y VISTA ANUAL
 
-> 🏁 **HITO 16/09 — Motor de copies dinámico JIT y tracking de etapas**: Se implementó un nuevo sistema dinámico de resolución de mensajes (JIT) para WhatsApp/Telegram que previene bloqueos por spam de Meta y evalúa las confirmaciones en tiempo real.
+> 🏁 **HITO 17/09 — Refactorización UI Calendario Dashboard**: Se implementó la vista anual, se arregló el comportamiento responsivo elástico de la cuadrícula mensual (sin scroll interno) y se mejoró la visualización de estados en la agenda lateral.
 
 ## 🔧 MEJORAS APLICADAS (Motor de Recordatorios JIT)
 **Síntoma previo**: Los textos de los recordatorios (1 semana, 2 días, mismo día) se generaban y "quemaban" en base de datos al momento de programarse (ej. un mes antes). Si el paciente confirmaba su cita, el mensaje de "2 días antes" seguía diciendo "Por favor confírmala" por estar estático en BD. Además, todos los mensajes tenían emojis y eran propensos a baneos por spam al ser textos exactos repetidos cientos de veces.
@@ -16,8 +16,24 @@
 
 
 
+## 🔧 MEJORAS APLICADAS (UI Calendario y Drag & Drop)
+**Síntoma previo**: La vista mensual del calendario en el dashboard sufría de "doble scroll" en pantallas de menor resolución (como laptops 13"-14") porque las celdas tenían una altura mínima de 105px. Además, al añadir muchos eventos en un mismo día, la cuadrícula se descuadraba. Faltaba también una vista de Año completo y los estados de citas en la agenda derecha eran texto simple y no resaltaban. Además, para reagendar citas había que abrir modales o editar manualmente.
+
+**Fix aplicado**:
+- **Vista Mes elástica**: Se eliminó el `min-h-[105px]` y el `overflow-y-auto` interno del grid, usando `auto-rows-fr` para que las celdas se estiren o encojan exactamente al alto de la ventana activa, emulando Apple Calendar.
+- **Límite Visual de Eventos**: Para prevenir descuadres en la cuadrícula al estirar celdas muy pequeñas, ahora solo se renderiza el primer evento (índice 0) y un contador `+ X más` para el resto.
+- **Vista Anual**: Se implementó la renderización de un panel de 12 meses usando `eachDayOfInterval`, con capacidad de navegación por año, indicadores de colores para citas y saltos directos a la vista Mes o Día haciendo clic.
+- **Etiquetas Visuales**: La agenda lateral ahora usa `stMeta.badgeCls` y `stMeta.dotCls` del helper existente para pintar el estado de la cita con color de fondo brillante (verde, rojo, etc.) haciéndolo más evidente.
+- **Reagendamiento Rápido Drag & Drop**:
+  - Se implementó `@dnd-kit/core` y `@dnd-kit/modifiers` permitiendo arrastrar citas desde la agenda lateral derecha hacia cualquier día del mes en la cuadrícula.
+  - Se desacopló `AgendaItemView` de `DraggableAgendaItem` para evitar colisiones de IDs duplicados en `DragOverlay`.
+  - Se configuró `snapCenterToCursor` y `collisionDetection={pointerWithin}` para que el elemento flote exactamente bajo el ratón y la detección de soltado sea 100% precisa.
+  - Al soltar la cita en el día destino, se abre el modal interactivo `RescheduleConfirmModal` preguntando si se mantiene la hora actual o si se desea cambiar antes de actualizar la base de datos vía API.
+
+> ✅ **Producción**: Todos estos cambios han sido integrados a `develop`, fusionados en `main` y desplegados por Vercel.
+
 ## 🎯 OBJETIVO ACTUAL (resuelto)
-Que Musly pueda mover TODAS las citas de un día a otra fecha/clínica en una sola llamada. Tras esto, continuar con el calendario Notion (Frente 4 Cuestionario = hoy).
+Refactorización de UI del Calendario, vista anual y Drag & Drop de reagendamiento completados y verificados. Pendientes de las próximas instrucciones de producto o IA.
 
 ### Causas raíz corregidas
 1. **Dispatcher PROD** (`5xjgNTJ86tMQ09rP`): respondía su JSON (finish_reason stop) sin invocar la tool, y exigía `patient_name` antes de transferir → no delegaba en bloque.
