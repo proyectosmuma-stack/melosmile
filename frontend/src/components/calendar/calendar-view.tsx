@@ -1,15 +1,16 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
-import { format, startOfWeek, addDays, subDays, addWeeks, subWeeks, startOfMonth, addMonths, subMonths, isSameMonth, isSameDay, eachDayOfInterval } from "date-fns";
+import { format, startOfWeek, addDays, subDays, addWeeks, subWeeks, startOfMonth, addMonths, subMonths, addYears, subYears, isSameMonth, isSameDay, eachDayOfInterval } from "date-fns";
 import { es } from "date-fns/locale";
 import { useDroppable, useDraggable, DndContext, DragEndEvent, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
-import { Sparkles, Building2, User, Stethoscope, Calculator, CalendarCheck, ChevronLeft, ChevronRight, Clock, CalendarDays, Calendar as CalendarIcon, Sun, FileText, Settings2, Phone, Mail } from "lucide-react";
+import { Sparkles, Building2, User, Stethoscope, Calculator, CalendarCheck, ChevronLeft, ChevronRight, Clock, CalendarDays, Calendar as CalendarIcon, Sun, FileText, Settings2, Phone, Mail, Loader2, Users, Plus, List } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/lib/supabase/client";
 import { AppointmentDetailDrawer } from "@/components/calendar/appointment-detail-drawer";
 import { triggerNewAppointmentModal } from "@/components/calendar/new-appointment-modal";
 import { AttachmentBadges } from "@/components/calendar/attachment-badges";
+import { AppointmentPopover } from "@/components/calendar/appointment-popover";
 import { isImageDocument } from "@/lib/utils/document-utils";
 import { getCleanNotesPreview } from "@/lib/appointments/notes-parser";
 
@@ -75,7 +76,7 @@ export const DEFAULT_CLINICS: Clinic[] = [
   },
 ];
 
-type ViewMode = "month" | "week" | "day";
+type ViewMode = "year" | "month" | "week" | "day";
 
 // 15-minute grid slots from 09:30 to 20:30 — clinic opening hours
 const TIME_SLOTS: string[] = [];
@@ -212,7 +213,7 @@ function getEventStatusMeta(rawStatus?: string) {
   };
 }
 
-// Draggable Event Box
+// Draggable Event Box (Notion/Apple Chip Style)
 function DraggableEvent({
   event,
   clinic,
@@ -244,6 +245,11 @@ function DraggableEvent({
   const hasAnyBadge = event.photoCount > 0 || event.docCount > 0 || event.hasNotes;
   const statusMeta = getEventStatusMeta(event.status);
 
+  // Derived styles for chip
+  const bgTranslucent = clinic.color.replace('bg-', 'bg-').replace('-600', '-600/15');
+  const borderLeft = clinic.borderColor.replace('border-', 'border-l-');
+  const textDark = clinic.color.replace('bg-', 'text-');
+
   return (
     <div
       ref={setNodeRef}
@@ -253,85 +259,64 @@ function DraggableEvent({
       onClick={(e) => onClick(event, e)}
       onDoubleClick={() => onDoubleClick?.(event)}
       className={cn(
-        "w-full rounded-lg px-2.5 py-1.5 flex flex-col justify-start text-white transition-all shadow-xs hover:shadow-md cursor-grab active:cursor-grabbing text-left select-none overflow-hidden",
-        clinic.color
+        "w-full rounded-[4px] px-2 py-1 flex flex-col justify-start transition-all cursor-grab active:cursor-grabbing text-left select-none overflow-hidden border-l-[3px]",
+        borderLeft,
+        bgTranslucent,
+        "hover:brightness-95 dark:hover:brightness-110"
       )}
     >
-      {/* Fila 1: Paciente + Badges + Hora */}
-      <div className="flex items-center justify-between gap-1.5 shrink-0">
-        <span className="font-bold text-xs sm:text-[13px] leading-tight truncate drop-shadow-xs">
-          {event.patient}
+      <div className="flex items-center gap-1.5 shrink-0 overflow-hidden">
+        <div className={cn("w-1.5 h-1.5 rounded-full shrink-0", statusMeta.dotCls)} title={`Estado: ${statusMeta.label}`} />
+        <span className={cn("font-semibold text-[11px] leading-tight truncate flex-1", textDark)}>
+          <span className="font-bold opacity-80">{event.startTime}</span> {event.patient}
         </span>
-        <div className="flex items-center gap-1.5 shrink-0">
-          {hasAnyBadge && (
-            <AttachmentBadges
-              photoCount={event.photoCount}
-              docCount={event.docCount}
-              hasNotes={event.hasNotes}
-              size="sm"
-            />
-          )}
-          <span className="text-[11px] opacity-90 shrink-0 font-semibold">{event.startTime}</span>
-        </div>
-      </div>
-
-      {/* Fila 2: Píldora de Estado de la Cita + Tratamiento */}
-      <div className="flex items-center gap-1.5 mt-1 overflow-hidden shrink-0">
-        <span
-          className={cn(
-            "inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] sm:text-[11px] leading-none select-none shrink-0 shadow-xs",
-            statusMeta.badgeCls
-          )}
-          title={`Estado de la cita: ${statusMeta.label}`}
-        >
-          <span className="text-[9px] leading-none font-bold">{statusMeta.icon}</span>
-          <span>{statusMeta.label}</span>
-        </span>
-        {event.title && event.title !== "Consulta" && (
-          <span className="text-[11px] text-white/85 truncate pointer-events-none font-medium">
-            · {event.title}
-          </span>
+        {hasAnyBadge && (
+           <div className="scale-75 origin-right">
+             <AttachmentBadges
+               photoCount={event.photoCount}
+               docCount={event.docCount}
+               hasNotes={event.hasNotes}
+               size="xs"
+             />
+           </div>
         )}
       </div>
-
-      {/* Fila 3: Notas de evolución clínica (anteriores y actuales) */}
-      {(() => {
-        const cleanPrev = getCleanNotesPreview(event.previousNotes);
-        const cleanCurr = getCleanNotesPreview(event.notes);
-        if (!cleanPrev && !cleanCurr) return null;
-        return (
-          <div className="mt-1 space-y-1 border-t border-white/25 pt-1 overflow-hidden">
-            {cleanPrev && (
-              <p className="text-[11px] sm:text-xs text-white/85 leading-snug truncate pointer-events-none flex items-center gap-1">
-                <span className="font-bold opacity-80 shrink-0">↩</span>
-                <span className="truncate">{cleanPrev}</span>
-              </p>
-            )}
-            {cleanCurr && (
-              <p
-                className={cn(
-                  "text-[11px] sm:text-xs text-white leading-snug font-medium pointer-events-none flex items-start gap-1",
-                  heightPx >= 70 && !cleanPrev ? "line-clamp-3" : heightPx >= 70 ? "line-clamp-2" : "truncate"
-                )}
-              >
-                <span className="font-bold text-white shrink-0 mt-0.5">→</span>
-                <span className={cn(heightPx >= 70 && !cleanPrev ? "line-clamp-3" : heightPx >= 70 ? "line-clamp-2" : "truncate")}>
-                  {cleanCurr}
-                </span>
-              </p>
-            )}
-          </div>
-        );
-      })()}
+      {heightPx >= 40 && (
+        <div className="flex items-center gap-1 mt-0.5 overflow-hidden shrink-0 text-muted-foreground">
+          <span className="text-[10px] leading-none font-medium truncate">
+            {statusMeta.icon} {statusMeta.label}
+            {event.title && event.title !== "Consulta" && ` · ${event.title}`}
+          </span>
+        </div>
+      )}
     </div>
   );
 }
 
-export function CalendarView({ selectedClinicId = "all" }: { selectedClinicId?: string }) {
+export function CalendarView({ 
+  selectedClinicId = "all",
+  stats,
+  loadingStats
+}: { 
+  selectedClinicId?: string;
+  stats?: { appointmentsToday: number; patientsThisMonth: number };
+  loadingStats?: boolean;
+}) {
   const [viewMode, setViewMode] = useState<ViewMode>("week");
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
   const [events, setEvents] = useState<AppointmentEvent[]>([]);
   const [clinics, setClinics] = useState<Clinic[]>(DEFAULT_CLINICS);
+  const [isMobile, setIsMobile] = useState(false);
+  const [selectedMonthDay, setSelectedMonthDay] = useState<Date>(new Date());
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -523,18 +508,21 @@ export function CalendarView({ selectedClinicId = "all" }: { selectedClinicId?: 
   // New/Edit Modal state
   const [selectedEvent, setSelectedEvent] = useState<AppointmentEvent | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [popoverState, setPopoverState] = useState<{ event: AppointmentEvent, clinic: Clinic, x: number, y: number } | null>(null);
 
   const currentWeekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(currentWeekStart, i));
 
   const handlePrev = () => {
-    if (viewMode === "month") setCurrentDate(subMonths(currentDate, 1));
+    if (viewMode === "year") setCurrentDate(subYears(currentDate, 1));
+    else if (viewMode === "month") setCurrentDate(subMonths(currentDate, 1));
     else if (viewMode === "week") setCurrentDate(subWeeks(currentDate, 1));
     else setCurrentDate(subDays(currentDate, 1));
   };
 
   const handleNext = () => {
-    if (viewMode === "month") setCurrentDate(addMonths(currentDate, 1));
+    if (viewMode === "year") setCurrentDate(addYears(currentDate, 1));
+    else if (viewMode === "month") setCurrentDate(addMonths(currentDate, 1));
     else if (viewMode === "week") setCurrentDate(addWeeks(currentDate, 1));
     else setCurrentDate(addDays(currentDate, 1));
   };
@@ -542,6 +530,68 @@ export function CalendarView({ selectedClinicId = "all" }: { selectedClinicId?: 
   const handleToday = () => {
     setCurrentDate(new Date());
   };
+
+  // Now Line functionality
+  const [nowTop, setNowTop] = useState<number>(-1);
+  const scrollRef = React.useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const updateNowLine = () => {
+      const now = new Date();
+      const hours = now.getHours();
+      const minutes = now.getMinutes();
+      const totalMinutes = hours * 60 + minutes;
+      
+      const startMinutes = 9 * 60 + 30; // 09:30
+      const endMinutes = 20 * 60 + 30;  // 20:30
+      
+      if (totalMinutes >= startMinutes && totalMinutes <= endMinutes) {
+        // Each 15 mins is 36px (from h-9 class). 36px / 15m = 2.4px per minute.
+        const offsetMinutes = totalMinutes - startMinutes;
+        const top = offsetMinutes * 2.4 + 56; // 56px is the height of the sticky header
+        setNowTop(top);
+      } else {
+        setNowTop(-1); // Outside of calendar grid hours
+      }
+    };
+
+    updateNowLine();
+    const interval = setInterval(updateNowLine, 60000);
+    
+    // Auto-scroll on mount if it's week/day view and now is within bounds
+    setTimeout(() => {
+      if (scrollRef.current && (viewMode === "week" || viewMode === "day")) {
+        const now = new Date();
+        const hours = now.getHours();
+        const minutes = now.getMinutes();
+        const totalMinutes = hours * 60 + minutes;
+        const startMinutes = 9 * 60 + 30;
+        
+        if (totalMinutes >= startMinutes) {
+          const offsetMinutes = totalMinutes - startMinutes;
+          // scroll to center the red line
+          scrollRef.current.scrollTo({
+            top: offsetMinutes * 2.4 - 100,
+            behavior: "smooth"
+          });
+        }
+      }
+    }, 500);
+
+    return () => clearInterval(interval);
+  }, [viewMode]);
+
+  // Listen for sidebar mini-calendar selection
+  useEffect(() => {
+    const handleSidebarSelect = (e: any) => {
+      if (e.detail?.date) {
+        setCurrentDate(e.detail.date);
+        setViewMode("day");
+      }
+    };
+    window.addEventListener("sidebar-date-select", handleSidebarSelect);
+    return () => window.removeEventListener("sidebar-date-select", handleSidebarSelect);
+  }, []);
 
   const getClinic = (id: string) => clinics.find((c) => c.id === id) || clinics[0];
 
@@ -554,8 +604,20 @@ export function CalendarView({ selectedClinicId = "all" }: { selectedClinicId?: 
 
   const handleEventClick = (e: AppointmentEvent, event: React.MouseEvent) => {
     event.stopPropagation();
-    setSelectedEvent(e);
-    setIsDetailOpen(true);
+    if (isMobile || (typeof window !== "undefined" && window.innerWidth < 768)) {
+      setSelectedEvent(e);
+      setIsDetailOpen(true);
+      return;
+    }
+    const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
+    const cl = getClinic(e.clinicId);
+    // Position popover at the bottom-center of the event chip
+    setPopoverState({ 
+      event: e, 
+      clinic: cl,
+      x: rect.left + rect.width / 2, 
+      y: rect.bottom 
+    });
   };
 
   const handleUpdateEvent = (updated: AppointmentEvent) => {
@@ -609,21 +671,149 @@ export function CalendarView({ selectedClinicId = "all" }: { selectedClinicId?: 
   });
 
   return (
-    <div className="w-full bg-card rounded-2xl border border-border/80 shadow-sm overflow-hidden">
-      {/* Toolbar Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between px-6 py-4 border-b border-border/60 gap-4">
+    <div className="w-full h-full flex flex-col relative">
+      {/* ---------------- MOBILE HEADER (Apple iOS Calendar Style) ---------------- */}
+      <div className="flex md:hidden flex-col gap-1 px-3 pt-2 pb-2 sticky top-0 z-20 bg-background/95 backdrop-blur-md border-b border-border/40">
+        {/* Row 1: Top Navigation & View Switcher */}
+        <div className="flex items-center justify-between">
+          {/* Back button or Month Navigator */}
+          {viewMode === "day" || viewMode === "week" ? (
+            <button
+              onClick={() => setViewMode("month")}
+              className="flex items-center gap-1 text-xs font-bold text-primary active:scale-95 transition-transform cursor-pointer py-1"
+            >
+              <ChevronLeft className="h-4 w-4" />
+              <span className="capitalize">{format(currentDate, "MMMM", { locale: es })}</span>
+            </button>
+          ) : (
+            <div className="flex items-center gap-1">
+              <button
+                onClick={handlePrev}
+                className="h-7 w-7 rounded-lg flex items-center justify-center hover:bg-muted active:scale-90 transition-all cursor-pointer"
+                title="Anterior"
+              >
+                <ChevronLeft className="h-4 w-4 text-muted-foreground" />
+              </button>
+              <button
+                onClick={handleNext}
+                className="h-7 w-7 rounded-lg flex items-center justify-center hover:bg-muted active:scale-90 transition-all cursor-pointer"
+                title="Siguiente"
+              >
+                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+              </button>
+              <span className="text-xs font-bold text-foreground capitalize ml-1">
+                {format(currentDate, "MMMM yyyy", { locale: es })}
+              </span>
+            </div>
+          )}
+
+          {/* Right Action Icons: View switcher & New appointment button */}
+          <div className="flex items-center gap-1.5">
+            <div className="flex items-center bg-muted/60 p-0.5 rounded-lg border border-border/40">
+              <button
+                onClick={() => setViewMode("year")}
+                className={cn(
+                  "px-2.5 py-1 rounded-md text-[11px] font-semibold transition-all cursor-pointer",
+                  viewMode === "year" ? "bg-card text-foreground shadow-xs" : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                Año
+              </button>
+              <button
+                onClick={() => setViewMode("month")}
+                className={cn(
+                  "px-2.5 py-1 rounded-md text-[11px] font-semibold transition-all cursor-pointer",
+                  viewMode === "month" ? "bg-card text-foreground shadow-xs" : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                Mes
+              </button>
+              <button
+                onClick={() => setViewMode("day")}
+                className={cn(
+                  "px-2.5 py-1 rounded-md text-[11px] font-semibold transition-all cursor-pointer",
+                  viewMode === "day" || viewMode === "week" ? "bg-card text-foreground shadow-xs" : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                Día
+              </button>
+            </div>
+
+            <button
+              onClick={() => triggerNewAppointmentModal({})}
+              className="h-7 w-7 rounded-lg bg-primary text-primary-foreground flex items-center justify-center shadow-xs active:scale-90 transition-transform cursor-pointer"
+              title="Nueva Cita"
+            >
+              <Plus className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+
+        {/* Row 2: Week Strip (Apple Calendar iOS style) - Shown when in Day / Week mode */}
+        {(viewMode === "day" || viewMode === "week") && (
+          <div className="pt-2">
+            <div className="grid grid-cols-7 text-center gap-1">
+              {weekDays.map((day) => {
+                const isSelected = isSameDay(day, currentDate);
+                const isToday = isSameDay(day, new Date());
+                const dayEvents = displayEvents.filter((e) => isSameDay(e.date, day));
+                return (
+                  <button
+                    key={day.toISOString()}
+                    onClick={() => {
+                      setCurrentDate(day);
+                      setViewMode("day");
+                    }}
+                    className="flex flex-col items-center gap-0.5 py-1 rounded-xl transition-all cursor-pointer active:scale-95"
+                  >
+                    <span className={cn(
+                      "text-[10px] font-bold uppercase",
+                      isToday ? "text-red-500 font-extrabold" : "text-muted-foreground"
+                    )}>
+                      {format(day, "EEEEE", { locale: es })}
+                    </span>
+                    <span className={cn(
+                      "h-7 w-7 flex items-center justify-center rounded-full text-xs font-bold transition-all",
+                      isSelected 
+                        ? "bg-red-500 text-white shadow-sm shadow-red-500/40" 
+                        : isToday 
+                          ? "text-red-500 font-bold border border-red-500/40" 
+                          : "text-foreground hover:bg-muted/50"
+                    )}>
+                      {format(day, "d")}
+                    </span>
+                    <div className="h-1 flex items-center gap-0.5 mt-0.5">
+                      {dayEvents.slice(0, 3).map((e, idx) => (
+                        <span key={idx} className={cn("h-1 w-1 rounded-full", getClinic(e.clinicId).color)} />
+                      ))}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Selected Day Label */}
+            <div className="text-center pt-1.5 pb-0.5 text-[11px] font-bold text-foreground/85 tracking-wide capitalize">
+              {format(currentDate, "EEEE – d 'de' MMMM yyyy", { locale: es })}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* ---------------- DESKTOP TOOLBAR HEADER (Notion/Apple style: flat, integrated) ---------------- */}
+      <div className="hidden md:flex flex-row items-center justify-between px-2 pt-3 sm:pt-4 pb-3 sm:pb-4 gap-4 sticky left-0 right-0 z-20 bg-background">
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 bg-muted/40 p-1 rounded-xl">
             <button
               onClick={handlePrev}
-              className="h-9 w-9 rounded-xl border border-border flex items-center justify-center hover:bg-muted transition-colors cursor-pointer"
+              className="h-8 w-8 rounded-lg flex items-center justify-center hover:bg-card hover:shadow-xs transition-all cursor-pointer"
               title="Anterior"
             >
               <ChevronLeft className="h-4 w-4 text-muted-foreground" />
             </button>
             <button
               onClick={handleNext}
-              className="h-9 w-9 rounded-xl border border-border flex items-center justify-center hover:bg-muted transition-colors cursor-pointer"
+              className="h-8 w-8 rounded-lg flex items-center justify-center hover:bg-card hover:shadow-xs transition-all cursor-pointer"
               title="Siguiente"
             >
               <ChevronRight className="h-4 w-4 text-muted-foreground" />
@@ -632,115 +822,421 @@ export function CalendarView({ selectedClinicId = "all" }: { selectedClinicId?: 
 
           <button
             onClick={handleToday}
-            className="flex items-center gap-1.5 text-xs font-bold px-3 py-2 rounded-xl bg-primary/10 text-primary border border-primary/30 hover:bg-primary/20 transition-colors shadow-xs cursor-pointer"
+            className="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-lg border hover:bg-muted/50 transition-colors cursor-pointer"
           >
-            <Sun className="h-3.5 w-3.5" />
             Hoy
           </button>
 
-          <h2 className="text-base font-bold text-foreground ml-2">
-            {format(currentDate, "MMMM yyyy", { locale: es }).toUpperCase()}
+          <h2 className="text-lg font-bold text-foreground ml-2 capitalize w-40">
+            {format(currentDate, "MMMM yyyy", { locale: es })}
           </h2>
         </div>
 
-        <div className="flex items-center gap-1 p-1 bg-muted rounded-xl">
+        <div className="flex items-center gap-2">
+          {/* KPI Blocks from Dashboard */}
+          {stats && (
+            <div className="hidden lg:flex items-center gap-2 mr-2">
+              <button
+                onClick={() => {
+                  setCurrentDate(new Date());
+                  setViewMode("day");
+                }}
+                className="flex items-center gap-2 px-2.5 py-1 rounded-lg border border-border/80 bg-card hover:bg-muted/50 transition-all shadow-sm cursor-pointer"
+              >
+                <CalendarIcon className="h-3.5 w-3.5 text-primary" />
+                <div className="text-left leading-tight">
+                  <p className="text-[9px] text-muted-foreground uppercase font-semibold tracking-wider">Citas (Hoy)</p>
+                  <p className="text-xs font-bold text-foreground">
+                    {loadingStats ? <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" /> : stats.appointmentsToday}
+                  </p>
+                </div>
+              </button>
+
+              <div className="flex items-center gap-2 px-2.5 py-1 rounded-lg border border-border/80 bg-card shadow-sm">
+                <Users className="h-3.5 w-3.5 text-info" />
+                <div className="text-left leading-tight">
+                  <p className="text-[9px] text-muted-foreground uppercase font-semibold tracking-wider">Pacientes (Mes)</p>
+                  <p className="text-xs font-bold text-foreground">
+                    {loadingStats ? <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" /> : stats.patientsThisMonth}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className="flex items-center gap-1 p-1 bg-muted/40 rounded-xl">
+            <button
+              onClick={() => setViewMode("year")}
+              className={cn(
+                "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer",
+                viewMode === "year" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              Año
+            </button>
+            <button
+              onClick={() => setViewMode("month")}
+              className={cn(
+                "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer",
+                viewMode === "month" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              Mes
+            </button>
+            <button
+              onClick={() => setViewMode("week")}
+              className={cn(
+                "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer",
+                viewMode === "week" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              Semana
+            </button>
+            <button
+              onClick={() => setViewMode("day")}
+              className={cn(
+                "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer",
+                viewMode === "day" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              Día
+            </button>
+          </div>
+          
           <button
-            onClick={() => setViewMode("month")}
-            className={cn(
-              "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer",
-              viewMode === "month" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
-            )}
+            onClick={() => triggerNewAppointmentModal({})}
+            className="ml-2 flex items-center gap-1.5 px-4 py-2 bg-primary text-primary-foreground font-bold text-xs rounded-xl shadow-md shadow-primary/20 hover:shadow-lg hover:shadow-primary/30 transition-all cursor-pointer"
           >
-            <CalendarDays className="h-3.5 w-3.5" />
-            Mes
-          </button>
-          <button
-            onClick={() => setViewMode("week")}
-            className={cn(
-              "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer",
-              viewMode === "week" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            <CalendarIcon className="h-3.5 w-3.5" />
-            Semana
-          </button>
-          <button
-            onClick={() => setViewMode("day")}
-            className={cn(
-              "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer",
-              viewMode === "day" ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            <Clock className="h-3.5 w-3.5" />
-            Día
+            <CalendarCheck className="h-4 w-4" />
+            <span className="hidden sm:inline">Nueva Cita</span>
           </button>
         </div>
       </div>
 
-      {/* ---------------- VISTA MENSUAL ---------------- */}
-      {viewMode === "month" && (
-        <div className="p-4">
-          <div className="grid grid-cols-7 text-center font-semibold text-xs text-muted-foreground py-2 border-b border-border/60">
-            {["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"].map((d) => (
-              <div key={d}>{d}</div>
-            ))}
-          </div>
-          <div className="grid grid-cols-7 auto-rows-fr gap-1 pt-2">
-            {eachDayOfInterval({
-              start: startOfWeek(startOfMonth(currentDate), { weekStartsOn: 1 }),
-              end: addDays(startOfWeek(startOfMonth(currentDate), { weekStartsOn: 1 }), 34),
-            }).map((day) => {
-              const dayEvents = displayEvents.filter((e) => isSameDay(e.date, day));
-              const isCurrentMonth = isSameMonth(day, currentDate);
-              const isToday = isSameDay(day, new Date());
-              return (
-                <div
-                  key={day.toISOString()}
+      {/* Main Grid Wrapper */}
+      <div 
+        ref={scrollRef} 
+        className={cn(
+          "flex-1 w-full pb-20 md:pb-0",
+          viewMode === "month" 
+            ? "bg-transparent" 
+            : "bg-card border border-border/80 shadow-xs sm:rounded-2xl overflow-y-auto overflow-x-auto"
+        )}
+      >
+        {/* ---------------- VISTA MENSUAL (Desktop) ---------------- */}
+        {viewMode === "month" && (
+          <div className="hidden md:flex flex-row p-4 gap-4 h-full min-h-0">
+            {/* Left: Month Grid */}
+            <div className="flex-1 flex flex-col min-h-0">
+              <div className="grid grid-cols-7 text-center font-semibold text-xs text-muted-foreground py-2 border-b border-border/60 shrink-0">
+                {["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"].map((d) => (
+                  <div key={d}>{d}</div>
+                ))}
+              </div>
+              <div className="grid grid-cols-7 auto-rows-fr gap-1 pt-2 flex-1 min-h-0">
+              {eachDayOfInterval({
+                start: startOfWeek(startOfMonth(currentDate), { weekStartsOn: 1 }),
+                end: addDays(startOfWeek(startOfMonth(currentDate), { weekStartsOn: 1 }), 34),
+              }).map((day) => {
+                const dayEvents = displayEvents.filter((e) => isSameDay(e.date, day));
+                const isCurrentMonth = isSameMonth(day, currentDate);
+                const isToday = isSameDay(day, new Date());
+                const isSelected = isSameDay(day, selectedMonthDay);
+                return (
+                  <div
+                    key={day.toISOString()}
+                    onClick={() => setSelectedMonthDay(day)}
+                    className={cn(
+                      "group h-full min-h-[50px] p-2 border rounded-xl cursor-pointer transition-all hover:border-primary/40 relative overflow-hidden",
+                      isCurrentMonth ? "bg-card border-border/60 shadow-sm hover:shadow-md" : "bg-muted/40 border-transparent text-muted-foreground/60",
+                      isToday && "ring-2 ring-primary bg-primary/10",
+                      isSelected && "ring-2 ring-primary bg-primary/5"
+                    )}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className={cn("text-xs font-bold", isToday ? "text-primary" : "text-foreground")}>
+                        {format(day, "d")}
+                      </span>
+                      <div className="flex items-center gap-1.5">
+                        {dayEvents.length > 0 && (
+                          <div className="flex gap-1 justify-center">
+                            {dayEvents.slice(0, 3).map((evt, idx) => (
+                              <div key={idx} className={cn("w-1.5 h-1.5 rounded-full", getClinic(evt.clinicId).color)} />
+                            ))}
+                            {dayEvents.length > 3 && <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground/50" />}
+                          </div>
+                        )}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            triggerNewAppointmentModal({
+                              date: format(day, "yyyy-MM-dd"),
+                              time: "09:30"
+                            });
+                          }}
+                          className="opacity-0 group-hover:opacity-100 p-0.5 rounded text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all cursor-pointer"
+                          title="Nueva cita"
+                        >
+                          <Plus className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                    <div className="space-y-1 mt-1.5 overflow-hidden">
+                      {dayEvents.slice(0, 1).map((evt) => {
+                        const cl = getClinic(evt.clinicId);
+                        const stMeta = getEventStatusMeta(evt.status);
+                        const bgTranslucent = cl.color.replace('bg-', 'bg-').replace('-600', '-600/20');
+                        const borderLeft = cl.borderColor.replace('border-', 'border-l-');
+                        const textDark = cl.color.replace('bg-', 'text-');
+                        return (
+                          <div
+                            key={evt.id}
+                            className={cn("text-[10px] px-1.5 py-0.5 rounded-[3px] font-semibold flex items-center justify-between gap-1 overflow-hidden border-l-2", borderLeft, bgTranslucent, textDark)}
+                          >
+                            <div className="flex items-center gap-1.5 truncate">
+                              <span className={cn("w-1.5 h-1.5 rounded-full shrink-0", stMeta.dotCls)} title={stMeta.label} />
+                              <span className="truncate">{evt.startTime} {evt.patient}</span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                      {dayEvents.length > 1 && (
+                        <div className="text-[10px] text-muted-foreground font-medium text-center mt-0.5">
+                          + {dayEvents.length - 1} más
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+              </div>
+            </div>
+
+            {/* Right: Agenda List for Selected Day */}
+            <div className="w-80 shrink-0 flex flex-col bg-card/60 rounded-2xl border border-border/60 shadow-xs p-3 min-h-0 overflow-hidden">
+              <div className="flex items-center justify-between pb-2 border-b border-border/40 shrink-0">
+                <h3 className="text-xs font-bold text-foreground capitalize">
+                  {format(selectedMonthDay, "EEEE, d 'de' MMMM", { locale: es })}
+                </h3>
+                <button
                   onClick={() => {
-                    setCurrentDate(day);
+                    setCurrentDate(selectedMonthDay);
                     setViewMode("day");
                   }}
-                  className={cn(
-                    "min-h-[95px] p-2 border rounded-xl cursor-pointer transition-all hover:border-primary/40",
-                    isCurrentMonth ? "bg-card border-border/60" : "bg-muted/40 border-transparent text-muted-foreground/60",
-                    isToday && "ring-2 ring-primary bg-primary/10"
-                  )}
+                  className="text-[11px] font-bold text-primary hover:underline cursor-pointer"
                 >
-                  <div className="flex items-center justify-between">
-                    <span className={cn("text-xs font-bold", isToday ? "text-primary" : "text-foreground")}>
-                      {format(day, "d")}
-                    </span>
-                    {dayEvents.length > 0 && (
-                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">
-                        {dayEvents.length}
-                      </span>
-                    )}
-                  </div>
-                  <div className="space-y-1 mt-1.5 overflow-hidden">
-                    {dayEvents.slice(0, 2).map((evt) => {
+                  Ver día completo →
+                </button>
+              </div>
+
+              {(() => {
+                const selectedDayEvents = displayEvents.filter((e) => isSameDay(e.date, selectedMonthDay));
+                if (selectedDayEvents.length === 0) {
+                  return (
+                    <div className="py-6 text-center text-xs text-muted-foreground">
+                      No hay citas programadas para este día
+                    </div>
+                  );
+                }
+                return (
+                  <div className="flex-1 overflow-y-auto mt-1 min-h-0 divide-y divide-border/30 pr-1">
+                    {selectedDayEvents.map((evt) => {
                       const cl = getClinic(evt.clinicId);
-                      const showMonthBadges = evt.photoCount > 0 || evt.docCount > 0 || evt.hasNotes;
                       const stMeta = getEventStatusMeta(evt.status);
                       return (
                         <div
                           key={evt.id}
-                          className={cn("text-[10px] px-1.5 py-0.5 rounded font-medium text-white flex items-center justify-between gap-1 overflow-hidden", cl.color)}
+                          onClick={() => {
+                            setSelectedEvent(evt);
+                            setIsDetailOpen(true);
+                          }}
+                          className="py-2.5 px-1.5 flex items-center justify-between gap-2.5 hover:bg-muted/40 rounded-xl transition-colors cursor-pointer"
                         >
-                          <div className="flex items-center gap-1 truncate">
-                            <span className={cn("h-1.5 w-1.5 rounded-full shrink-0 shadow-xs", stMeta.dotCls)} title={stMeta.label} />
-                            <span className="truncate">{evt.startTime} {evt.patient}</span>
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <span className={cn("w-2.5 h-2.5 rounded-full shrink-0 shadow-xs", cl.color)} />
+                            <div className="min-w-0">
+                              <p className="text-xs font-bold text-foreground truncate">{evt.patient}</p>
+                              <p className="text-[11px] text-muted-foreground truncate">{evt.title}</p>
+                            </div>
                           </div>
-                          {showMonthBadges && (
-                            <span className="shrink-0 flex items-center">
-                              <AttachmentBadges
-                                photoCount={evt.photoCount}
-                                docCount={evt.docCount}
-                                hasNotes={evt.hasNotes}
-                                size="xs"
-                              />
+                          <div className="text-right shrink-0 flex flex-col items-end gap-1">
+                            <span className="text-xs font-bold tabular-nums text-foreground">{evt.startTime}</span>
+                            <span className={cn("text-[9px] px-1.5 py-0.5 rounded-md text-center", stMeta.badgeCls)}>
+                              {stMeta.label}
                             </span>
-                          )}
+                          </div>
                         </div>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
+            </div>
+          </div>
+        )}
+
+        {/* ---------------- VISTA MENSUAL (Mobile Apple iOS Hybrid) ---------------- */}
+        {viewMode === "month" && (
+          <div className="block md:hidden p-3">
+            {/* Month Grid Header */}
+            <div className="grid grid-cols-7 text-center font-bold text-[11px] text-muted-foreground py-1.5 border-b border-border/40">
+              {["L", "M", "X", "J", "V", "S", "D"].map((d) => (
+                <div key={d}>{d}</div>
+              ))}
+            </div>
+
+            {/* Month Grid Days */}
+            <div className="grid grid-cols-7 gap-1 pt-2">
+              {eachDayOfInterval({
+                start: startOfWeek(startOfMonth(currentDate), { weekStartsOn: 1 }),
+                end: addDays(startOfWeek(startOfMonth(currentDate), { weekStartsOn: 1 }), 34),
+              }).map((day) => {
+                const dayEvents = displayEvents.filter((e) => isSameDay(e.date, day));
+                const isCurrentMonth = isSameMonth(day, currentDate);
+                const isToday = isSameDay(day, new Date());
+                const isSelected = isSameDay(day, selectedMonthDay);
+                return (
+                  <button
+                    key={day.toISOString()}
+                    onClick={() => setSelectedMonthDay(day)}
+                    className={cn(
+                      "h-11 flex flex-col items-center justify-center rounded-xl transition-all cursor-pointer relative",
+                      isSelected ? "bg-primary/15 ring-2 ring-primary" : "hover:bg-muted/40",
+                      !isCurrentMonth && "opacity-30"
+                    )}
+                  >
+                    <span className={cn(
+                      "text-xs font-bold leading-tight",
+                      isToday ? "text-red-500 font-extrabold" : (isSelected ? "text-primary" : "text-foreground")
+                    )}>
+                      {format(day, "d")}
+                    </span>
+                    <div className="flex gap-0.5 mt-1 h-1 items-center">
+                      {dayEvents.slice(0, 3).map((evt, idx) => (
+                        <span key={idx} className={cn("w-1 h-1 rounded-full", getClinic(evt.clinicId).color)} />
+                      ))}
+                      {dayEvents.length > 3 && <span className="w-1 h-1 rounded-full bg-muted-foreground/60" />}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Agenda List of Appointments for Selected Day (Apple iOS style) */}
+            <div className="mt-4 p-3 bg-card/60 backdrop-blur-sm rounded-2xl border border-border/60 shadow-xs">
+              <div className="flex items-center justify-between pb-2 border-b border-border/40">
+                <h3 className="text-xs font-bold text-foreground capitalize">
+                  {format(selectedMonthDay, "EEEE, d 'de' MMMM", { locale: es })}
+                </h3>
+                <button
+                  onClick={() => {
+                    setCurrentDate(selectedMonthDay);
+                    setViewMode("day");
+                  }}
+                  className="text-[11px] font-bold text-primary hover:underline cursor-pointer"
+                >
+                  Ver día completo →
+                </button>
+              </div>
+
+              {(() => {
+                const selectedDayEvents = displayEvents.filter((e) => isSameDay(e.date, selectedMonthDay));
+                if (selectedDayEvents.length === 0) {
+                  return (
+                    <div className="py-6 text-center text-xs text-muted-foreground">
+                      No hay citas programadas para este día
+                    </div>
+                  );
+                }
+                return (
+                  <div className="divide-y divide-border/30 mt-1">
+                    {selectedDayEvents.map((evt) => {
+                      const cl = getClinic(evt.clinicId);
+                      const stMeta = getEventStatusMeta(evt.status);
+                      return (
+                        <div
+                          key={evt.id}
+                          onClick={() => {
+                            setSelectedEvent(evt);
+                            setIsDetailOpen(true);
+                          }}
+                          className="py-2.5 px-1.5 flex items-center justify-between gap-2.5 hover:bg-muted/40 rounded-xl transition-colors cursor-pointer"
+                        >
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <span className={cn("w-2.5 h-2.5 rounded-full shrink-0 shadow-xs", cl.color)} />
+                            <div className="min-w-0">
+                              <p className="text-xs font-bold text-foreground truncate">{evt.patient}</p>
+                              <p className="text-[11px] text-muted-foreground truncate">{evt.title}</p>
+                            </div>
+                          </div>
+                          <div className="text-right shrink-0 flex flex-col items-end gap-1">
+                            <span className="text-xs font-bold tabular-nums text-foreground">{evt.startTime}</span>
+                            <span className={cn("text-[9px] px-1.5 py-0.5 rounded-md text-center", stMeta.badgeCls)}>
+                              {stMeta.label}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
+            </div>
+          </div>
+        )}
+
+        {/* ---------------- VISTA ANUAL ---------------- */}
+        {viewMode === "year" && (
+          <div className="p-4 grid grid-cols-1 md:grid-cols-3 xl:grid-cols-4 gap-x-8 gap-y-10">
+            {Array.from({ length: 12 }, (_, i) => {
+              const monthDate = new Date(currentDate.getFullYear(), i, 1);
+              const startDay = startOfWeek(monthDate, { weekStartsOn: 1 });
+              const days = eachDayOfInterval({
+                start: startDay,
+                end: addDays(startDay, 41) // 6 weeks per grid
+              });
+
+              return (
+                <div key={i} className="flex flex-col">
+                  <button 
+                    onClick={() => {
+                      setCurrentDate(monthDate);
+                      setViewMode("month");
+                    }}
+                    className="text-sm font-bold text-primary mb-3 text-left hover:underline capitalize"
+                  >
+                    {format(monthDate, "MMMM", { locale: es })}
+                  </button>
+                  <div className="grid grid-cols-7 gap-1 text-center text-[10px] text-muted-foreground font-semibold mb-2">
+                    {["L", "M", "X", "J", "V", "S", "D"].map((d) => (
+                      <div key={d}>{d}</div>
+                    ))}
+                  </div>
+                  <div className="grid grid-cols-7 gap-y-1 gap-x-1">
+                    {days.map((day, idx) => {
+                      const isCurrentMonth = isSameMonth(day, monthDate);
+                      const isToday = isSameDay(day, new Date());
+                      const hasEvent = displayEvents.some(e => isSameDay(e.date, day));
+
+                      return (
+                        <button
+                          key={idx}
+                          onClick={() => {
+                            setCurrentDate(day);
+                            setViewMode("day");
+                          }}
+                          className={cn(
+                            "h-7 w-7 rounded-full flex flex-col items-center justify-center text-xs transition-all mx-auto",
+                            isCurrentMonth ? "text-foreground hover:bg-muted" : "text-muted-foreground/30",
+                            isToday && "bg-red-500 text-white font-bold shadow-sm shadow-red-500/40 hover:bg-red-600",
+                            !isToday && hasEvent && isCurrentMonth && "font-bold text-primary"
+                          )}
+                        >
+                          {format(day, "d")}
+                          {!isToday && hasEvent && isCurrentMonth && (
+                            <div className="w-1 h-1 rounded-full bg-primary mt-[1px]" />
+                          )}
+                        </button>
                       );
                     })}
                   </div>
@@ -748,85 +1244,155 @@ export function CalendarView({ selectedClinicId = "all" }: { selectedClinicId?: 
               );
             })}
           </div>
-        </div>
-      )}
+        )}
 
-      {/* ---------------- VISTA SEMANAL / DÍA GRID (15-MIN SLOTS 07:00-23:45) ---------------- */}
-      {(viewMode === "week" || viewMode === "day") && (
-        <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
-          <div className="w-full">
-            <div
-              className="grid"
-              style={{
-                gridTemplateColumns: `70px repeat(${viewMode === "week" ? 7 : 1}, 1fr)`,
-                minWidth: viewMode === "week" ? 800 : 350,
-              }}
-            >
-              <div className="sticky top-0 z-10 bg-card border-b border-border/60 h-14" />
-              {(viewMode === "week" ? weekDays : [currentDate]).map((day) => (
-                <div
-                  key={day.toISOString()}
-                  className={cn(
-                    "sticky top-0 z-10 bg-card border-b border-border/60 h-14 flex flex-col items-center justify-center gap-0.5",
-                    isSameDay(day, new Date()) && "bg-primary/10"
-                  )}
-                >
-                  <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-                    {format(day, "EEEE", { locale: es })}
-                  </span>
-                  <span className={cn("text-base font-bold leading-none", isSameDay(day, new Date()) ? "text-primary" : "text-foreground")}>
-                    {format(day, "d MMM")}
-                  </span>
-                </div>
-              ))}
-
-              {TIME_SLOTS.map((slot) => (
-                <React.Fragment key={slot}>
-                  <div className="flex items-start justify-end pr-2.5 pt-0.5 border-r border-border/60 h-9 bg-muted/30">
-                    {slot.endsWith(":00") || slot.endsWith(":30") ? (
-                      <span className="text-[10px] text-muted-foreground font-semibold">{slot}</span>
-                    ) : null}
+        {/* ---------------- VISTA SEMANAL / DÍA GRID (15-MIN SLOTS 07:00-23:45) ---------------- */}
+        {(viewMode === "week" || viewMode === "day") && (
+          <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+            <div className="w-full">
+              <div
+                className="grid relative min-h-full"
+                style={{
+                  gridTemplateColumns: isMobile 
+                    ? "55px 1fr" 
+                    : `70px repeat(${viewMode === "week" ? 7 : 1}, 1fr)`,
+                  minWidth: isMobile ? "100%" : (viewMode === "week" ? 800 : 350),
+                }}
+              >
+                {/* NOW LINE (Apple Style) */}
+                {nowTop > 0 && (
+                  <div 
+                    className="absolute left-0 right-0 z-20 pointer-events-none flex items-center"
+                    style={{ top: `${nowTop}px` }}
+                  >
+                    <div className={cn(isMobile ? "w-[55px]" : "w-[70px]", "flex justify-end pr-1")}>
+                      <span className="bg-red-500 text-white text-[9px] md:text-[10px] font-bold px-1.5 py-0.5 rounded-full tabular-nums">
+                        {format(new Date(), "HH:mm")}
+                      </span>
+                    </div>
+                    <div className="flex-1 h-0.5 bg-red-500 shadow-[0_0_4px_rgba(239,68,68,0.5)]" />
                   </div>
+                )}
 
-                  {(viewMode === "week" ? weekDays : [currentDate]).map((day, dayIndex) => {
-                    const slotEvents = displayEvents.filter(
-                      (e) => isSameDay(e.date, day) && e.startTime === slot
-                    );
-const isToday = isSameDay(day, new Date());
-                    const cellId = `${format(day, "yyyy-MM-dd")}|${slot}`;
-                    return (
-                      <DroppableCell
-                        key={cellId}
-                        id={cellId}
-                        day={day}
-                        slot={slot}
-                        isToday={isToday}
-                        onCellClick={handleCellClick}
-                      >
-                        {slotEvents.map((evt) => {
-                          const cl = getClinic(evt.clinicId);
-                          const heightPx = Math.max(32, (evt.durationMinutes / 15) * 36 - 4);
-                          return (
-                            <DraggableEvent
-                              key={evt.id}
-                              event={evt}
-                              clinic={cl}
-                              heightPx={heightPx}
-                              onClick={handleEventClick}
-                              onDoubleClick={(e: any) => window.location.href = `/appointments/${e.id}`}
-                              viewMode={viewMode}
-                              dayIndex={dayIndex}
-                            />
-                          );
-                        })}
-                      </DroppableCell>
-                    );
-                  })}
-                </React.Fragment>
-              ))}
+                {/* Desktop Sticky Header - Hidden on mobile because Week Bar is in the header */}
+                <div className="hidden md:block sticky top-0 z-30 bg-card/80 backdrop-blur-sm border-b border-border/60 h-14" />
+                {(isMobile ? [currentDate] : (viewMode === "week" ? weekDays : [currentDate])).map((day) => (
+                  <div
+                    key={day.toISOString()}
+                    className={cn(
+                      "hidden md:flex sticky top-0 z-30 bg-card/80 backdrop-blur-sm border-b border-border/60 h-14 flex-col items-center justify-center gap-0.5"
+                    )}
+                  >
+                    <span className={cn("text-[11px] font-semibold uppercase tracking-wider", isSameDay(day, new Date()) ? "text-primary" : "text-muted-foreground")}>
+                      {format(day, "EEEE", { locale: es })}
+                    </span>
+                    <span className={cn("text-base font-bold leading-none h-7 w-7 flex items-center justify-center rounded-full", isSameDay(day, new Date()) ? "bg-primary text-primary-foreground shadow-sm" : "text-foreground")}>
+                      {format(day, "d")}
+                    </span>
+                  </div>
+                ))}
+
+                {TIME_SLOTS.map((slot) => (
+                  <React.Fragment key={slot}>
+                    <div className="flex items-start justify-end pr-1.5 md:pr-2.5 pt-0.5 border-r border-border/60 h-9 bg-muted/30">
+                      {slot.endsWith(":00") || slot.endsWith(":30") ? (
+                        <span className="text-[9px] md:text-[10px] text-muted-foreground font-semibold tabular-nums">{slot}</span>
+                      ) : null}
+                    </div>
+
+                    {(isMobile ? [currentDate] : (viewMode === "week" ? weekDays : [currentDate])).map((day, dayIndex) => {
+                      const slotEvents = displayEvents.filter(
+                        (e) => isSameDay(e.date, day) && e.startTime === slot
+                      );
+                      const isToday = isSameDay(day, new Date());
+                      const cellId = `${format(day, "yyyy-MM-dd")}|${slot}`;
+                      return (
+                        <DroppableCell
+                          key={cellId}
+                          id={cellId}
+                          day={day}
+                          slot={slot}
+                          isToday={isToday}
+                          onCellClick={handleCellClick}
+                        >
+                          {slotEvents.map((evt) => {
+                            const cl = getClinic(evt.clinicId);
+                            const heightPx = Math.max(32, (evt.durationMinutes / 15) * 36 - 4);
+                            return (
+                              <DraggableEvent
+                                key={evt.id}
+                                event={evt}
+                                clinic={cl}
+                                heightPx={heightPx}
+                                onClick={handleEventClick}
+                                onDoubleClick={(e: any) => window.location.href = `/appointments/${e.id}`}
+                                viewMode={isMobile ? "day" : viewMode}
+                                dayIndex={dayIndex}
+                              />
+                            );
+                          })}
+                        </DroppableCell>
+                      );
+                    })}
+                  </React.Fragment>
+                ))}
+              </div>
             </div>
-          </div>
-        </DndContext>
+          </DndContext>
+        )}
+      </div>
+
+      {/* ---------------- MOBILE FLOATING BOTTOM BAR (iOS Style) ---------------- */}
+      <div className="fixed bottom-4 left-4 right-4 z-40 flex items-center justify-between pointer-events-none md:hidden">
+        <button
+          onClick={handleToday}
+          className="pointer-events-auto bg-card/90 backdrop-blur-md border border-border/80 shadow-xl px-4 py-2 rounded-full text-xs font-bold text-foreground flex items-center gap-1.5 active:scale-95 transition-all cursor-pointer"
+        >
+          Hoy
+        </button>
+
+        <div className="pointer-events-auto bg-card/90 backdrop-blur-md border border-border/80 shadow-xl p-1 rounded-full flex items-center gap-1">
+          <button
+            onClick={() => setViewMode("month")}
+            className={cn(
+              "px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer",
+              viewMode === "month" ? "bg-primary text-primary-foreground shadow-xs" : "text-muted-foreground"
+            )}
+          >
+            Mes
+          </button>
+          <button
+            onClick={() => setViewMode("day")}
+            className={cn(
+              "px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer",
+              viewMode === "day" || viewMode === "week" ? "bg-primary text-primary-foreground shadow-xs" : "text-muted-foreground"
+            )}
+          >
+            Día
+          </button>
+          <button
+            onClick={() => triggerNewAppointmentModal({})}
+            className="h-7 w-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-xs active:scale-90 transition-transform cursor-pointer ml-1"
+            title="Nueva Cita"
+          >
+            <Plus className="h-4 w-4" />
+          </button>
+        </div>
+      </div>
+
+      {/* ---------------- APPOINTMENT POPOVER (Notion-style quick view) ---------------- */}
+      {popoverState && (
+        <AppointmentPopover
+          event={popoverState.event}
+          clinic={popoverState.clinic}
+          x={popoverState.x}
+          y={popoverState.y}
+          onClose={() => setPopoverState(null)}
+          onOpenDetails={(e) => {
+            setSelectedEvent(e);
+            setIsDetailOpen(true);
+          }}
+        />
       )}
 
       {/* ---------------- APPOINTMENT DETAIL DRAWER ---------------- */}

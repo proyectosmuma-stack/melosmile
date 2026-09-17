@@ -96,17 +96,14 @@ export default function DashboardPage() {
   }, [selectedClinicId]);
 
   return (
-    <div className="flex flex-col gap-8 max-w-[1600px] mx-auto relative min-h-[calc(100vh-100px)]">
+    <div className="flex flex-col gap-4 max-w-[1600px] mx-auto relative h-[calc(100vh-60px)]">
       
-      {/* Page Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      {/* Page Header (Desktop only - mobile uses native Apple Calendar header) */}
+      <div className="hidden md:flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">
+          <h1 className="text-xl font-bold tracking-tight text-foreground">
             Agenda Principal
           </h1>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            Gestiona citas, tratamientos y facturación integrada en lenguaje natural.
-          </p>
         </div>
 
         {/* Quick Clinic Filter Pills */}
@@ -137,66 +134,13 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Compact Metric Cards Row (3 widgets) */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-        {/* Clickable Citas Para Hoy -> switches calendar to Day View of Today */}
-        <Card
-          onClick={() => {
-            if (typeof window !== "undefined") {
-              window.dispatchEvent(new CustomEvent("switch-to-today-day-view"));
-            }
-          }}
-          className="rounded-xl border border-border/80 bg-card shadow-xs hover:shadow-md hover:border-primary/40 transition-all cursor-pointer group"
-          title="Haz clic para ver las citas de hoy en vista diaria"
-        >
-          <CardContent className="p-3.5 flex items-center gap-3">
-            <div className="h-9 w-9 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-bold shrink-0 group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
-              <CalendarIcon className="h-4 w-4" />
-            </div>
-            <div>
-              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Citas para Hoy</p>
-              <h3 className="text-lg font-bold text-foreground leading-tight flex items-center gap-2">
-                {loading ? <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" /> : `${stats.appointmentsToday} Citas`}
-              </h3>
-              <p className="text-[11px] text-primary font-semibold mt-0.5 group-hover:underline">Ver vista del día →</p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="rounded-xl border border-border/80 bg-card shadow-xs">
-          <CardContent className="p-3.5 flex items-center gap-3">
-            <div className="h-9 w-9 rounded-lg bg-success/10 text-success flex items-center justify-center font-bold shrink-0">
-              <TrendingUp className="h-4 w-4" />
-            </div>
-            <div>
-              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Facturado Este Mes</p>
-              <h3 className="text-lg font-bold text-foreground leading-tight flex items-center gap-2">
-                {loading ? <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" /> : `${stats.billedThisMonth.toLocaleString('es-ES')} €`}
-              </h3>
-              <p className="text-[11px] text-success font-semibold mt-0.5">Facturación activa</p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="rounded-xl border border-border/80 bg-card shadow-xs">
-          <CardContent className="p-3.5 flex items-center gap-3">
-            <div className="h-9 w-9 rounded-lg bg-info/10 text-info flex items-center justify-center font-bold shrink-0">
-              <Users className="h-4 w-4" />
-            </div>
-            <div>
-              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Pacientes Atendidos</p>
-              <h3 className="text-lg font-bold text-foreground leading-tight flex items-center gap-2">
-                {loading ? <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" /> : `${stats.patientsThisMonth} Pacientes`}
-              </h3>
-              <p className="text-[11px] text-muted-foreground font-medium mt-0.5">En el mes actual</p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
       {/* Calendar Section */}
-      <div className="w-full">
-        <CalendarView selectedClinicId={selectedClinicId} />
+      <div className="w-full flex-1 overflow-hidden">
+        <CalendarView 
+          selectedClinicId={selectedClinicId} 
+          stats={stats}
+          loadingStats={loading}
+        />
       </div>
     </div>
   );
