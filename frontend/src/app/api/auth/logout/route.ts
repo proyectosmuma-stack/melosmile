@@ -6,6 +6,7 @@ const AUTH_COOKIE_NAME = "melosmile_session";
 export async function POST() {
   const cookieStore = await cookies();
   cookieStore.delete(AUTH_COOKIE_NAME);
+  cookieStore.delete("melosmile_user");
 
   return NextResponse.json({ success: true, message: "Sesión cerrada correctamente." });
 }
@@ -13,6 +14,7 @@ export async function POST() {
 export async function GET() {
   const cookieStore = await cookies();
   cookieStore.delete(AUTH_COOKIE_NAME);
+  cookieStore.delete("melosmile_user");
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3028");
   const response = NextResponse.redirect(new URL("/login", appUrl));
