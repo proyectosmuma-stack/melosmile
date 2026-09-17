@@ -32,8 +32,18 @@
 
 > ✅ **Producción**: Todos estos cambios han sido integrados a `develop`, fusionados en `main` y desplegados por Vercel.
 
+## 🔐 MEJORAS APLICADAS (Autenticación Multi-usuario en Base de Datos)
+**Síntoma previo**: Las credenciales de acceso (`AUTH_USERNAME` y `AUTH_PASSWORD`) estaban gestionadas a través de variables de entorno estáticas en Vercel, lo que impedía el soporte multi-usuario y requería un redespliegue completo de la plataforma para cualquier cambio de credenciales. Además, en producción Vercel mantenía valores antiguos (`clinica` / `melosmile2024`), impidiendo el login con `Oslysmile` y `@Konnan1983`.
+
+**Fix aplicado**:
+- **Tabla `app_users` en Supabase**: Creada con RLS habilitado y restringido a `service_role`. Contiene `id`, `username`, `password_hash` (`bcrypt`), `name`, `role`, `is_active`.
+- **Seed de usuario inicial**: Usuario `Oslysmile` con hash `bcrypt` de `@Konnan1983`, rol `Administrador` y nombre `Dra. Osly Melo`. Aplicado y validado en Supabase Local, Staging (`amhfdzfcmpastmlsosou`) y Producción (`xylqytpudbdcsbuuwqpi`).
+- **Endpoint `/api/auth/login`**: Ahora consulta dinámicamente la tabla `app_users`, normaliza usuarios (insensible a mayúsculas/minúsculas y `trim`), valida contraseñas con `bcryptjs.compareSync` y conserva un mecanismo de fallback de emergencia en memoria.
+- **Gestión de Sesión**: Genera y persiste `melosmile_session` y `melosmile_user`, permitiendo identidad de usuario dinámica en `/api/auth/session` y limpieza completa en `/api/auth/logout`.
+- **Despliegue Multi-entorno**: Sincronizado en `develop` (Staging) y `main` (Producción `agenda.melosmile.com`), con pruebas HTTP 200 verificadas en vivo.
+
 ## 🎯 OBJETIVO ACTUAL (resuelto)
-Refactorización de UI del Calendario, vista anual y Drag & Drop de reagendamiento completados y verificados. Pendientes de las próximas instrucciones de producto o IA.
+Autenticación multi-usuario en base de datos completada y verificada en Producción, Staging y Local. Pendientes de las próximas instrucciones de producto o IA.
 
 ### Causas raíz corregidas
 1. **Dispatcher PROD** (`5xjgNTJ86tMQ09rP`): respondía su JSON (finish_reason stop) sin invocar la tool, y exigía `patient_name` antes de transferir → no delegaba en bloque.
