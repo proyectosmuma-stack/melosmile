@@ -1,21 +1,20 @@
-# 🏥 ESTADO DEL PROYECTO MELOSMILE — 14/09/2026: MUSLY CAMBIA DE CLÍNICA CONFIRMADO E2E
+# 🏥 ESTADO DEL PROYECTO MELOSMILE — 16/09/2026: MOTOR DE RECORDATORIOS JIT ANTI-BAN
 
-> 🏁 **HITO 14/09 2ª parte — Musly ya cambia citas de clínica**: fix desplegado en producción (`agenda.melosmile.com`) y **verificado de punta a punta**: revertí las 4 citas del 22/09 a Daniel Bustamante, Musly (por su flujo real n8n) las movió a Goya con `bulk_reschedule(source_date=22, target_date=22, clinic=Goya)`, y la DB de producción lo confirma (6/6 en Goya). Ejecución n8n PROD `4919` (d74hAW8IkmmCqoh5) muestra la tool llamada con su payload.
+> 🏁 **HITO 16/09 — Motor de copies dinámico JIT y tracking de etapas**: Se implementó un nuevo sistema dinámico de resolución de mensajes (JIT) para WhatsApp/Telegram que previene bloqueos por spam de Meta y evalúa las confirmaciones en tiempo real.
 
-## 🔧 BUG CORREGIDO (incidente Musly "confirma éxito sin persistir")
-**Síntoma**: Musly decía "Todas las citas han sido modificadas exitosamente" pero la clínica no cambiaba en producción.
-**Causa raíz** (en `frontend/src/app/api/appointments/update/route.ts`):
-1. `bulk_reschedule` solo actualizaba `appointment_date`; `clinic` era filtro del día origen → imposible mover de clínica.
-2. `bulk_reschedule` con `source_date == target_date` devolvía 400 (bloqueaba "mover a Goya en el mismo día").
-3. Rama de update ignoraba el parámetro `clinic` (nombre): solo aceptaba `clinic_id` UUID → confirmaba éxito sin tocar la clínica.
-**Fix aplicado (commit `e2ac083`, develop, NO pusheado)**:
-- `bulk_reschedule`: `clinic` = clínica **destino** (escribe `clinic_id`), permite misma fecha con cambio de clínica, añade `source_clinic` para filtrar origen, salta citas ya en destino.
-- Update individual: resuelve `clinic` por nombre → `clinic_id`.
-- n8n PROD `d74hAW8IkmmCqoh5` `Tool_Bulk_Reschedule`: descripción actualizada (clínica destino + misma fecha) y campo `source_clinic` añadido.
-- **Desplegado** directamente a Vercel `melosmile-production` (alias `agenda.melosmile.com`) desde copia limpia de `develop` (sin arrastrar otros cambios del working tree).
-- Verificación: smoke test (nuevo mensaje 400) + bulk real + confirmación en DB producción + ejecución n8n `4919`.
+## 🔧 MEJORAS APLICADAS (Motor de Recordatorios JIT)
+**Síntoma previo**: Los textos de los recordatorios (1 semana, 2 días, mismo día) se generaban y "quemaban" en base de datos al momento de programarse (ej. un mes antes). Si el paciente confirmaba su cita, el mensaje de "2 días antes" seguía diciendo "Por favor confírmala" por estar estático en BD. Además, todos los mensajes tenían emojis y eran propensos a baneos por spam al ser textos exactos repetidos cientos de veces.
 
-> ✅ **Musly reagenda en bloque y cambia de clínica**: verificado E2E real contra Supabase producción (22/09: las 6 citas quedaron en Goya).
+**Fix aplicado**:
+- **Nueva columna en BD (`reminders.stage`)**: Identifica si el mensaje es de Etapa 1 (semana), 2 (2 días) o 3 (día de cita). Migración ejecutada manualmente en producción.
+- **Módulo `copies.ts`**: Lógica que autogenera textos en tiempo real. Se eliminaron TODOS los emojis y el lenguaje sesgado por género ("lo gestionamos" en vez de "juntos"). Se cuenta con variaciones múltiples (A, B, C) para evadir las políticas anti-spam de Meta.
+- **Identificación de Primer Contacto**: `isFirstMessage` comprueba si el paciente ya tiene mensajes previos; de lo contrario, incluye presentación ("Hola, te escribimos de Melosmile").
+- **Despachador en Tiempo Real**: El cron `dispatch.ts` ahora intercepta el mensaje justo antes de enviarlo por Evolution/MTProto, lee el `stage`, genera el *copy* fresco (comprobando si la cita ya fue confirmada para agradecerle en vez de pedirle confirmar) y reescribe la BD para auditoría.
+- **Merge & Deploy**: Todo ha sido comiteado a `develop` (commit `5e4ec16`), mergeado a `main` y desplegado exitosamente en Vercel.
+
+> ✅ **Motor Activo**: Comprobado localmente, las variaciones dinámicas operan correctamente. Citas antiguas (con `stage` null) caen en gracia y usan el mensaje viejo para no fallar (compatibilidad hacia atrás total).
+
+
 
 ## 🎯 OBJETIVO ACTUAL (resuelto)
 Que Musly pueda mover TODAS las citas de un día a otra fecha/clínica en una sola llamada. Tras esto, continuar con el calendario Notion (Frente 4 Cuestionario = hoy).
@@ -57,7 +56,7 @@ Que Musly pueda mover TODAS las citas de un día a otra fecha/clínica en una so
 6. **Calendario Notion**: Frente 4 Cuestionario de primera visita (tabla `patient_intake_forms`, link público `/intake/[token]` 48h, webhook n8n). Luego Telegram, Contexto largo Musly.
 7. **Subagentes locales** (env-writer/coder-local) pueden estar caídos (Ollama MBP 2012 cold-start) → fallback determinista con scripts locales sin exponer secretos.
 8. Mantenimiento RAG: embeddings pendientes por cold-start (lecciones ya insertadas texto).
-9. **Configuración de credenciales de producción de Odoo**: Cargar y verificar las variables de producción (`ODOO_URL`, `ODOO_DB`, `ODOO_USER`, `ODOO_PASSWORD`/`ODOO_API_KEY`) en el proyecto Vercel `melosmile-production` para emisión real y sincronización contable/facturación.
+9. ~~**Configuración de credenciales de producción de Odoo**: Cargar y verificar las variables de producción (`ODOO_URL`, `ODOO_DB`, `ODOO_USER`, `ODOO_PASSWORD`/`ODOO_API_KEY`) en el proyecto Vercel `melosmile-production` para emisión real y sincronización contable/facturación.~~ (Realizado: guardado en `.env.vercel.production` y Vercel).
 
 
 ## 📦 HISTÓRICO CLAVE (resumen)

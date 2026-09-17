@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
@@ -18,9 +18,12 @@ import {
   PanelLeftOpen,
   LogOut,
   Megaphone,
+  X,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { useClinic } from "@/context/clinic-context";
+import { MiniCalendar } from "@/components/calendar/mini-calendar";
 
 
 
@@ -53,10 +56,40 @@ export function Sidebar() {
   const router = useRouter();
 
   const [isCollapsed, setIsCollapsed] = useState(true); // Collapsed by default as requested
+  const [mobileOpen, setMobileOpen] = useState(false);
   const isSettingsActive = pathname.startsWith("/settings");
   const [settingsOpen, setSettingsOpen] = useState(isSettingsActive);
 
+  useEffect(() => {
+    const handleToggle = () => setMobileOpen((prev) => !prev);
+    const handleClose = () => setMobileOpen(false);
+    window.addEventListener("toggle-mobile-sidebar", handleToggle);
+    window.addEventListener("close-mobile-sidebar", handleClose);
+    return () => {
+      window.removeEventListener("toggle-mobile-sidebar", handleToggle);
+      window.removeEventListener("close-mobile-sidebar", handleClose);
+    };
+  }, []);
 
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [pathname]);
+  
+  // Try to use clinic context if available (it might only be provided in some routes, but layout should have it)
+  // We'll wrap it in a try-catch or safe component if needed, but context is usually safe if wrapped at root.
+  let clinics: any[] = [];
+  let selectedClinicId = "all";
+  let setSelectedClinicId = (id: string) => {};
+  try {
+    const clinicContext = useClinic();
+    if (clinicContext) {
+      clinics = clinicContext.clinics || [];
+      selectedClinicId = clinicContext.selectedClinicId;
+      setSelectedClinicId = clinicContext.setSelectedClinicId;
+    }
+  } catch (e) {
+    // Context might not be available in some generic pages
+  }
 
   const handleLogout = async () => {
     try {
@@ -69,19 +102,40 @@ export function Sidebar() {
   };
 
   return (
-    <aside
-      className={cn(
-        "flex h-full flex-col bg-sidebar text-sidebar-foreground shadow-2xl relative z-30 border-r border-sidebar-border transition-all duration-300 ease-in-out shrink-0",
-        isCollapsed ? "w-20" : "w-72"
+    <>
+      {/* Mobile Backdrop */}
+      {mobileOpen && (
+        <div 
+          className="fixed inset-0 bg-black/60 backdrop-blur-xs z-40 md:hidden transition-opacity"
+          onClick={() => setMobileOpen(false)}
+        />
       )}
-    >
-      {/* Header / Brand & Collapse Toggle */}
-      <div
+
+      <aside
         className={cn(
-          "flex h-20 shrink-0 items-center border-b border-sidebar-border bg-sidebar/60 backdrop-blur-md px-4",
-          isCollapsed ? "justify-center" : "justify-between"
+          "flex h-full flex-col bg-sidebar text-sidebar-foreground shadow-2xl z-50 md:z-30 border-r border-sidebar-border transition-all duration-300 ease-in-out shrink-0",
+          "fixed md:relative inset-y-0 left-0",
+          mobileOpen ? "translate-x-0 w-72" : "-translate-x-full md:translate-x-0",
+          !mobileOpen && (isCollapsed ? "md:w-20" : "md:w-72")
         )}
       >
+        {/* Header / Brand & Collapse Toggle */}
+        <div
+          className={cn(
+            "flex h-20 shrink-0 items-center border-b border-sidebar-border bg-sidebar/60 backdrop-blur-md px-4",
+            isCollapsed && !mobileOpen ? "justify-center" : "justify-between"
+          )}
+        >
+          {/* Mobile close button when mobileOpen is true */}
+          {mobileOpen && (
+            <button
+              onClick={() => setMobileOpen(false)}
+              className="md:hidden p-1.5 rounded-lg text-sidebar-muted-foreground hover:text-white hover:bg-sidebar-accent mr-2 cursor-pointer"
+              title="Cerrar menú"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          )}
         {!isCollapsed ? (
           <>
             <div className="flex items-center gap-3 overflow-hidden">
@@ -121,17 +175,10 @@ export function Sidebar() {
         ) : (
           <button
             onClick={() => setIsCollapsed(false)}
-            className="h-10 w-10 rounded-xl bg-white/10 hover:bg-white/20 border border-white/10 flex items-center justify-center transition-colors cursor-pointer shadow-md p-2"
+            className="h-10 w-10 rounded-xl hover:bg-sidebar-accent border border-transparent hover:border-sidebar-border text-sidebar-muted-foreground hover:text-white flex items-center justify-center transition-colors cursor-pointer"
             title="Expandir menú sidebar"
           >
-            <Image
-              src="/brand/logo-color.svg"
-              alt="MeloSmile"
-              width={28}
-              height={28}
-              className="object-contain"
-              priority
-            />
+            <PanelLeftOpen className="h-5 w-5" />
           </button>
         )}
       </div>
@@ -152,6 +199,7 @@ export function Sidebar() {
               <li key={item.name} className="group relative flex items-center">
                 <Link
                   href={item.href}
+                  title={isCollapsed ? item.name : undefined}
                   className={cn(
                     "flex items-center rounded-xl py-3 text-sm font-semibold transition-all duration-200 w-full",
                     isCollapsed ? "justify-center px-0 h-11" : "px-3.5 gap-x-3.5",
@@ -172,13 +220,6 @@ export function Sidebar() {
                     <span className="ml-auto h-2 w-2 rounded-full bg-white animate-pulse" />
                   )}
                 </Link>
-
-                {/* Hover Tooltip when Collapsed — Escapes overflow clipping using fixed z-[9999] */}
-                {isCollapsed && (
-                  <div className="fixed left-24 ml-1 z-[9999] hidden group-hover:flex items-center bg-sidebar-accent text-white text-xs font-semibold px-3 py-2 rounded-xl shadow-2xl border border-sidebar-muted whitespace-nowrap pointer-events-none">
-                    {item.name}
-                  </div>
-                )}
               </li>
             );
           })}
@@ -190,6 +231,7 @@ export function Sidebar() {
                 if (isCollapsed) setIsCollapsed(false);
                 setSettingsOpen(!settingsOpen);
               }}
+              title={isCollapsed ? "Configuración" : undefined}
               className={cn(
                 "w-full flex items-center rounded-xl py-3 text-sm font-semibold transition-all duration-200 cursor-pointer",
                 isCollapsed ? "justify-center px-0 h-11" : "px-3.5 gap-x-3.5",
@@ -215,13 +257,6 @@ export function Sidebar() {
                 </span>
               )}
             </button>
-
-            {/* Hover Tooltip when Collapsed — Escapes overflow clipping using fixed z-[9999] */}
-            {isCollapsed && (
-              <div className="fixed left-24 ml-1 z-[9999] hidden group-hover:flex items-center bg-sidebar-accent text-white text-xs font-semibold px-3 py-2 rounded-xl shadow-2xl border border-sidebar-muted whitespace-nowrap pointer-events-none">
-                Configuración (Clínicas, Profesionales, Tratamientos)
-              </div>
-            )}
 
             {/* Sub-menu when expanded */}
             {settingsOpen && !isCollapsed && (
@@ -249,6 +284,24 @@ export function Sidebar() {
             )}
           </li>
         </ul>
+
+        {/* Mini Calendar when expanded */}
+        {!isCollapsed && (
+          <div className="mt-6 flex flex-col gap-4 px-1 animate-in fade-in duration-300">
+            {/* Mini Calendar */}
+            <div className="px-1 mt-2">
+              <MiniCalendar 
+                onSelectDate={(date) => {
+                  if (typeof window !== "undefined") {
+                    // Dispatch event for CalendarView to catch and navigate to Day View
+                    const event = new CustomEvent("sidebar-date-select", { detail: { date } });
+                    window.dispatchEvent(event);
+                  }
+                }}
+              />
+            </div>
+          </div>
+        )}
 
         {/* Spacer to push user footer down */}
         <div className="mt-auto" />
@@ -286,26 +339,16 @@ export function Sidebar() {
             >
               <LogOut className="h-4 w-4" />
             </button>
-          ) : null}
-
-          {/* Hover Tooltip when Collapsed — Escapes overflow clipping using fixed z-[9999] */}
-          {isCollapsed && (
-            <div className="fixed left-24 ml-1 z-[9999] hidden group-hover:flex items-center gap-3 bg-sidebar-accent text-white text-xs px-3 py-2 rounded-xl shadow-2xl border border-sidebar-muted whitespace-nowrap">
-              <div className="flex flex-col">
-                <span className="font-bold">Dra. Osly Melo (Oslysmile)</span>
-                <span className="text-[10px] text-sidebar-muted-foreground">Clic para cerrar sesión</span>
-              </div>
-              <button
-                onClick={handleLogout}
-                className="p-1 rounded bg-primary/30 hover:bg-primary text-primary-foreground hover:text-white transition-colors cursor-pointer"
-                title="Cerrar sesión"
-              >
-                <LogOut className="h-3.5 w-3.5" />
-              </button>
-            </div>
+          ) : (
+            <button
+              onClick={handleLogout}
+              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+              title="Cerrar sesión: Dra. Osly Melo"
+            />
           )}
         </div>
       </div>
     </aside>
+    </>
   );
 }

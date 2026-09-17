@@ -43,16 +43,7 @@ export function GlobalAIAgentModal() {
 
   return (
     <>
-      {/* Floating AI Agent Trigger Button (Available on all pages - Icon Only) */}
-      {!isOpen && (
-        <Button
-          onClick={() => setIsOpen(true)}
-          className="fixed bottom-6 right-6 h-14 w-14 p-0 rounded-full shadow-2xl bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white z-50 flex items-center justify-center border-2 border-white/20 transition-transform hover:scale-110 active:scale-95 cursor-pointer"
-          title="Abrir Musly (⌘K)"
-        >
-          <Sparkles className="h-6 w-6 animate-pulse" />
-        </Button>
-      )}
+      {/* Floating AI Agent Trigger Button Removed as per request */}
 
       {/* Centered Large AI Agent Modal Overlay */}
       {isOpen && (
