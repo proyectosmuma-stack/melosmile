@@ -3,11 +3,13 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { format, startOfWeek, addDays, subDays, addWeeks, subWeeks, startOfMonth, addMonths, subMonths, addYears, subYears, isSameMonth, isSameDay, eachDayOfInterval } from "date-fns";
 import { es } from "date-fns/locale";
-import { useDroppable, useDraggable, DndContext, DragEndEvent, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
+import { useDroppable, useDraggable, DndContext, DragEndEvent, DragStartEvent, DragOverlay, PointerSensor, useSensor, useSensors, pointerWithin } from "@dnd-kit/core";
+import { snapCenterToCursor } from "@dnd-kit/modifiers";
 import { Sparkles, Building2, User, Stethoscope, Calculator, CalendarCheck, ChevronLeft, ChevronRight, Clock, CalendarDays, Calendar as CalendarIcon, Sun, FileText, Settings2, Phone, Mail, Loader2, Users, Plus, List } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/lib/supabase/client";
 import { AppointmentDetailDrawer } from "@/components/calendar/appointment-detail-drawer";
+import { RescheduleConfirmModal } from "@/components/calendar/reschedule-confirm-modal";
 import { triggerNewAppointmentModal } from "@/components/calendar/new-appointment-modal";
 import { AttachmentBadges } from "@/components/calendar/attachment-badges";
 import { AppointmentPopover } from "@/components/calendar/appointment-popover";
@@ -485,6 +487,46 @@ export function CalendarView({
     }
   }, []);
 
+  const handleRescheduleConfirm = async (newTime: string) => {
+    if (!rescheduleModal.evt || !rescheduleModal.targetDate) return;
+    
+    const { evt, targetDate } = rescheduleModal;
+    setRescheduleModal({ isOpen: false, evt: null, targetDate: null });
+
+    const newDate = new Date(targetDate);
+    const [hh, mm] = newTime.split(":");
+    newDate.setHours(parseInt(hh, 10), parseInt(mm, 10), 0, 0);
+
+    // Update state optimistically
+    setEvents(prev => prev.map(e => {
+      if (e.id === evt.id) {
+        return { ...e, date: newDate, startTime: newTime };
+      }
+      return e;
+    }));
+
+    try {
+      // Call Supabase API
+      const tzOffset = newDate.getTimezoneOffset() * 60000;
+      const localISOTime = new Date(newDate.getTime() - tzOffset).toISOString();
+      const updatedDateOnly = localISOTime.split("T")[0];
+
+      await fetch("/api/appointments/update", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          appointmentId: evt.id,
+          updates: {
+            appointment_date: updatedDateOnly,
+            appointment_time: newTime + ":00"
+          }
+        })
+      });
+    } catch (error) {
+      console.error("Error updating appointment via DND:", error);
+    }
+  };
+
   useEffect(() => {
     fetchAppointments();
 
@@ -509,6 +551,10 @@ export function CalendarView({
   const [selectedEvent, setSelectedEvent] = useState<AppointmentEvent | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [popoverState, setPopoverState] = useState<{ event: AppointmentEvent, clinic: Clinic, x: number, y: number } | null>(null);
+
+  // DND State for Rescheduling
+  const [activeDragEvt, setActiveDragEvt] = useState<AppointmentEvent | null>(null);
+  const [rescheduleModal, setRescheduleModal] = useState<{ isOpen: boolean, evt: AppointmentEvent | null, targetDate: Date | null }>({ isOpen: false, evt: null, targetDate: null });
 
   const currentWeekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(currentWeekStart, i));
@@ -625,9 +671,36 @@ export function CalendarView({
     setSelectedEvent(updated);
   };
 
+  const handleDragStart = (eventDrag: DragStartEvent) => {
+    const id = String(eventDrag.active.id);
+    if (id.startsWith("agenda-evt-")) {
+      const evtData = eventDrag.active.data.current?.evt as AppointmentEvent;
+      setActiveDragEvt(evtData);
+    }
+  };
+
   const handleDragEnd = async (eventDrag: DragEndEvent) => {
+    setActiveDragEvt(null);
     const { active, over } = eventDrag;
-    if (!over) return;
+    console.log("=== DRAG END ===");
+    console.log("Active ID:", active?.id);
+    console.log("Over ID:", over?.id);
+
+    if (!over) {
+      console.log("Drag cancelled: no drop target (over is null)");
+      return;
+    }
+
+    // Reschedule from Agenda to Month Grid
+    if (String(active.id).startsWith("agenda-evt-") && String(over.id).startsWith("month-day-")) {
+      const targetDateStr = String(over.id).replace("month-day-", "");
+      const targetDate = new Date(targetDateStr);
+      const evtData = active.data.current?.evt as AppointmentEvent;
+      if (evtData) {
+        setRescheduleModal({ isOpen: true, evt: evtData, targetDate });
+      }
+      return;
+    }
 
     const eventId = active.id as string;
     const dropData = over.id as string; // Format: "YYYY-MM-DD|HH:mm"
@@ -914,15 +987,16 @@ export function CalendarView({
       </div>
 
       {/* Main Grid Wrapper */}
-      <div 
-        ref={scrollRef} 
-        className={cn(
-          "flex-1 w-full pb-20 md:pb-0",
-          viewMode === "month" 
-            ? "bg-transparent" 
-            : "bg-card border border-border/80 shadow-xs sm:rounded-2xl overflow-y-auto overflow-x-auto"
-        )}
-      >
+      <DndContext sensors={sensors} collisionDetection={pointerWithin} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+        <div 
+          ref={scrollRef} 
+          className={cn(
+            "flex-1 w-full pb-20 md:pb-0",
+            viewMode === "month" 
+              ? "bg-transparent" 
+              : "bg-card border border-border/80 shadow-xs sm:rounded-2xl overflow-y-auto overflow-x-auto"
+          )}
+        >
         {/* ---------------- VISTA MENSUAL (Desktop) ---------------- */}
         {viewMode === "month" && (
           <div className="hidden md:flex flex-row p-4 gap-4 h-full min-h-0">
@@ -943,70 +1017,23 @@ export function CalendarView({
                 const isToday = isSameDay(day, new Date());
                 const isSelected = isSameDay(day, selectedMonthDay);
                 return (
-                  <div
+                  <DroppableMonthDayCell
                     key={day.toISOString()}
+                    day={day}
+                    isCurrentMonth={isCurrentMonth}
+                    isToday={isToday}
+                    isSelected={isSelected}
+                    dayEvents={dayEvents}
+                    getClinic={getClinic}
+                    getEventStatusMeta={getEventStatusMeta}
                     onClick={() => setSelectedMonthDay(day)}
-                    className={cn(
-                      "group h-full min-h-[50px] p-2 border rounded-xl cursor-pointer transition-all hover:border-primary/40 relative overflow-hidden",
-                      isCurrentMonth ? "bg-card border-border/60 shadow-sm hover:shadow-md" : "bg-muted/40 border-transparent text-muted-foreground/60",
-                      isToday && "ring-2 ring-primary bg-primary/10",
-                      isSelected && "ring-2 ring-primary bg-primary/5"
-                    )}
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className={cn("text-xs font-bold", isToday ? "text-primary" : "text-foreground")}>
-                        {format(day, "d")}
-                      </span>
-                      <div className="flex items-center gap-1.5">
-                        {dayEvents.length > 0 && (
-                          <div className="flex gap-1 justify-center">
-                            {dayEvents.slice(0, 3).map((evt, idx) => (
-                              <div key={idx} className={cn("w-1.5 h-1.5 rounded-full", getClinic(evt.clinicId).color)} />
-                            ))}
-                            {dayEvents.length > 3 && <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground/50" />}
-                          </div>
-                        )}
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            triggerNewAppointmentModal({
-                              date: format(day, "yyyy-MM-dd"),
-                              time: "09:30"
-                            });
-                          }}
-                          className="opacity-0 group-hover:opacity-100 p-0.5 rounded text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all cursor-pointer"
-                          title="Nueva cita"
-                        >
-                          <Plus className="h-3.5 w-3.5" />
-                        </button>
-                      </div>
-                    </div>
-                    <div className="space-y-1 mt-1.5 overflow-hidden">
-                      {dayEvents.slice(0, 1).map((evt) => {
-                        const cl = getClinic(evt.clinicId);
-                        const stMeta = getEventStatusMeta(evt.status);
-                        const bgTranslucent = cl.color.replace('bg-', 'bg-').replace('-600', '-600/20');
-                        const borderLeft = cl.borderColor.replace('border-', 'border-l-');
-                        const textDark = cl.color.replace('bg-', 'text-');
-                        return (
-                          <div
-                            key={evt.id}
-                            className={cn("text-[10px] px-1.5 py-0.5 rounded-[3px] font-semibold flex items-center justify-between gap-1 overflow-hidden border-l-2", borderLeft, bgTranslucent, textDark)}
-                          >
-                            <div className="flex items-center gap-1.5 truncate">
-                              <span className={cn("w-1.5 h-1.5 rounded-full shrink-0", stMeta.dotCls)} title={stMeta.label} />
-                              <span className="truncate">{evt.startTime} {evt.patient}</span>
-                            </div>
-                          </div>
-                        );
-                      })}
-                      {dayEvents.length > 1 && (
-                        <div className="text-[10px] text-muted-foreground font-medium text-center mt-0.5">
-                          + {dayEvents.length - 1} más
-                        </div>
-                      )}
-                    </div>
-                  </div>
+                    onNewAppointment={() => {
+                      triggerNewAppointmentModal({
+                        date: format(day, "yyyy-MM-dd"),
+                        time: "09:30"
+                      });
+                    }}
+                  />
                 );
               })}
               </div>
@@ -1044,28 +1071,16 @@ export function CalendarView({
                       const cl = getClinic(evt.clinicId);
                       const stMeta = getEventStatusMeta(evt.status);
                       return (
-                        <div
+                        <DraggableAgendaItem
                           key={evt.id}
+                          evt={evt}
                           onClick={() => {
                             setSelectedEvent(evt);
                             setIsDetailOpen(true);
                           }}
-                          className="py-2.5 px-1.5 flex items-center justify-between gap-2.5 hover:bg-muted/40 rounded-xl transition-colors cursor-pointer"
-                        >
-                          <div className="flex items-center gap-2.5 min-w-0">
-                            <span className={cn("w-2.5 h-2.5 rounded-full shrink-0 shadow-xs", cl.color)} />
-                            <div className="min-w-0">
-                              <p className="text-xs font-bold text-foreground truncate">{evt.patient}</p>
-                              <p className="text-[11px] text-muted-foreground truncate">{evt.title}</p>
-                            </div>
-                          </div>
-                          <div className="text-right shrink-0 flex flex-col items-end gap-1">
-                            <span className="text-xs font-bold tabular-nums text-foreground">{evt.startTime}</span>
-                            <span className={cn("text-[9px] px-1.5 py-0.5 rounded-md text-center", stMeta.badgeCls)}>
-                              {stMeta.label}
-                            </span>
-                          </div>
-                        </div>
+                          getClinic={getClinic}
+                          getEventStatusMeta={getEventStatusMeta}
+                        />
                       );
                     })}
                   </div>
@@ -1154,28 +1169,16 @@ export function CalendarView({
                       const cl = getClinic(evt.clinicId);
                       const stMeta = getEventStatusMeta(evt.status);
                       return (
-                        <div
+                        <DraggableAgendaItem
                           key={evt.id}
+                          evt={evt}
                           onClick={() => {
                             setSelectedEvent(evt);
                             setIsDetailOpen(true);
                           }}
-                          className="py-2.5 px-1.5 flex items-center justify-between gap-2.5 hover:bg-muted/40 rounded-xl transition-colors cursor-pointer"
-                        >
-                          <div className="flex items-center gap-2.5 min-w-0">
-                            <span className={cn("w-2.5 h-2.5 rounded-full shrink-0 shadow-xs", cl.color)} />
-                            <div className="min-w-0">
-                              <p className="text-xs font-bold text-foreground truncate">{evt.patient}</p>
-                              <p className="text-[11px] text-muted-foreground truncate">{evt.title}</p>
-                            </div>
-                          </div>
-                          <div className="text-right shrink-0 flex flex-col items-end gap-1">
-                            <span className="text-xs font-bold tabular-nums text-foreground">{evt.startTime}</span>
-                            <span className={cn("text-[9px] px-1.5 py-0.5 rounded-md text-center", stMeta.badgeCls)}>
-                              {stMeta.label}
-                            </span>
-                          </div>
-                        </div>
+                          getClinic={getClinic}
+                          getEventStatusMeta={getEventStatusMeta}
+                        />
                       );
                     })}
                   </div>
@@ -1248,99 +1251,106 @@ export function CalendarView({
 
         {/* ---------------- VISTA SEMANAL / DÍA GRID (15-MIN SLOTS 07:00-23:45) ---------------- */}
         {(viewMode === "week" || viewMode === "day") && (
-          <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
-            <div className="w-full">
-              <div
-                className="grid relative min-h-full"
-                style={{
-                  gridTemplateColumns: isMobile 
-                    ? "55px 1fr" 
-                    : `70px repeat(${viewMode === "week" ? 7 : 1}, 1fr)`,
-                  minWidth: isMobile ? "100%" : (viewMode === "week" ? 800 : 350),
-                }}
-              >
-                {/* NOW LINE (Apple Style) */}
-                {nowTop > 0 && (
-                  <div 
-                    className="absolute left-0 right-0 z-20 pointer-events-none flex items-center"
-                    style={{ top: `${nowTop}px` }}
-                  >
-                    <div className={cn(isMobile ? "w-[55px]" : "w-[70px]", "flex justify-end pr-1")}>
-                      <span className="bg-red-500 text-white text-[9px] md:text-[10px] font-bold px-1.5 py-0.5 rounded-full tabular-nums">
-                        {format(new Date(), "HH:mm")}
-                      </span>
-                    </div>
-                    <div className="flex-1 h-0.5 bg-red-500 shadow-[0_0_4px_rgba(239,68,68,0.5)]" />
-                  </div>
-                )}
-
-                {/* Desktop Sticky Header - Hidden on mobile because Week Bar is in the header */}
-                <div className="hidden md:block sticky top-0 z-30 bg-card/80 backdrop-blur-sm border-b border-border/60 h-14" />
-                {(isMobile ? [currentDate] : (viewMode === "week" ? weekDays : [currentDate])).map((day) => (
-                  <div
-                    key={day.toISOString()}
-                    className={cn(
-                      "hidden md:flex sticky top-0 z-30 bg-card/80 backdrop-blur-sm border-b border-border/60 h-14 flex-col items-center justify-center gap-0.5"
-                    )}
-                  >
-                    <span className={cn("text-[11px] font-semibold uppercase tracking-wider", isSameDay(day, new Date()) ? "text-primary" : "text-muted-foreground")}>
-                      {format(day, "EEEE", { locale: es })}
-                    </span>
-                    <span className={cn("text-base font-bold leading-none h-7 w-7 flex items-center justify-center rounded-full", isSameDay(day, new Date()) ? "bg-primary text-primary-foreground shadow-sm" : "text-foreground")}>
-                      {format(day, "d")}
+          <div className="w-full">
+            <div
+              className="grid relative min-h-full"
+              style={{
+                gridTemplateColumns: isMobile 
+                  ? "55px 1fr" 
+                  : `70px repeat(${viewMode === "week" ? 7 : 1}, 1fr)`,
+                minWidth: isMobile ? "100%" : (viewMode === "week" ? 800 : 350),
+              }}
+            >
+              {/* NOW LINE (Apple Style) */}
+              {nowTop > 0 && (
+                <div 
+                  className="absolute left-0 right-0 z-20 pointer-events-none flex items-center"
+                  style={{ top: `${nowTop}px` }}
+                >
+                  <div className={cn(isMobile ? "w-[55px]" : "w-[70px]", "flex justify-end pr-1")}>
+                    <span className="bg-red-500 text-white text-[9px] md:text-[10px] font-bold px-1.5 py-0.5 rounded-full tabular-nums">
+                      {format(new Date(), "HH:mm")}
                     </span>
                   </div>
-                ))}
+                  <div className="flex-1 h-0.5 bg-red-500 shadow-[0_0_4px_rgba(239,68,68,0.5)]" />
+                </div>
+              )}
 
-                {TIME_SLOTS.map((slot) => (
-                  <React.Fragment key={slot}>
-                    <div className="flex items-start justify-end pr-1.5 md:pr-2.5 pt-0.5 border-r border-border/60 h-9 bg-muted/30">
-                      {slot.endsWith(":00") || slot.endsWith(":30") ? (
-                        <span className="text-[9px] md:text-[10px] text-muted-foreground font-semibold tabular-nums">{slot}</span>
-                      ) : null}
-                    </div>
+              {/* Desktop Sticky Header - Hidden on mobile because Week Bar is in the header */}
+              <div className="hidden md:block sticky top-0 z-30 bg-card/80 backdrop-blur-sm border-b border-border/60 h-14" />
+              {(isMobile ? [currentDate] : (viewMode === "week" ? weekDays : [currentDate])).map((day) => (
+                <div
+                  key={day.toISOString()}
+                  className={cn(
+                    "hidden md:flex sticky top-0 z-30 bg-card/80 backdrop-blur-sm border-b border-border/60 h-14 flex-col items-center justify-center gap-0.5"
+                  )}
+                >
+                  <span className={cn("text-[11px] font-semibold uppercase tracking-wider", isSameDay(day, new Date()) ? "text-primary" : "text-muted-foreground")}>
+                    {format(day, "EEEE", { locale: es })}
+                  </span>
+                  <span className={cn("text-base font-bold leading-none h-7 w-7 flex items-center justify-center rounded-full", isSameDay(day, new Date()) ? "bg-primary text-primary-foreground shadow-sm" : "text-foreground")}>
+                    {format(day, "d")}
+                  </span>
+                </div>
+              ))}
 
-                    {(isMobile ? [currentDate] : (viewMode === "week" ? weekDays : [currentDate])).map((day, dayIndex) => {
-                      const slotEvents = displayEvents.filter(
-                        (e) => isSameDay(e.date, day) && e.startTime === slot
-                      );
-                      const isToday = isSameDay(day, new Date());
-                      const cellId = `${format(day, "yyyy-MM-dd")}|${slot}`;
-                      return (
-                        <DroppableCell
-                          key={cellId}
-                          id={cellId}
-                          day={day}
-                          slot={slot}
-                          isToday={isToday}
-                          onCellClick={handleCellClick}
-                        >
-                          {slotEvents.map((evt) => {
-                            const cl = getClinic(evt.clinicId);
-                            const heightPx = Math.max(32, (evt.durationMinutes / 15) * 36 - 4);
-                            return (
-                              <DraggableEvent
-                                key={evt.id}
-                                event={evt}
-                                clinic={cl}
-                                heightPx={heightPx}
-                                onClick={handleEventClick}
-                                onDoubleClick={(e: any) => window.location.href = `/appointments/${e.id}`}
-                                viewMode={isMobile ? "day" : viewMode}
-                                dayIndex={dayIndex}
-                              />
-                            );
-                          })}
-                        </DroppableCell>
-                      );
-                    })}
-                  </React.Fragment>
-                ))}
-              </div>
+              {TIME_SLOTS.map((slot) => (
+                <React.Fragment key={slot}>
+                  <div className="flex items-start justify-end pr-1.5 md:pr-2.5 pt-0.5 border-r border-border/60 h-9 bg-muted/30">
+                    {slot.endsWith(":00") || slot.endsWith(":30") ? (
+                      <span className="text-[9px] md:text-[10px] text-muted-foreground font-semibold tabular-nums">{slot}</span>
+                    ) : null}
+                  </div>
+
+                  {(isMobile ? [currentDate] : (viewMode === "week" ? weekDays : [currentDate])).map((day, dayIndex) => {
+                    const slotEvents = displayEvents.filter(
+                      (e) => isSameDay(e.date, day) && e.startTime === slot
+                    );
+                    const isToday = isSameDay(day, new Date());
+                    const cellId = `${format(day, "yyyy-MM-dd")}|${slot}`;
+                    return (
+                      <DroppableCell
+                        key={cellId}
+                        id={cellId}
+                        day={day}
+                        slot={slot}
+                        isToday={isToday}
+                        onCellClick={handleCellClick}
+                      >
+                        {slotEvents.map((evt) => {
+                          const cl = getClinic(evt.clinicId);
+                          const heightPx = Math.max(32, (evt.durationMinutes / 15) * 36 - 4);
+                          return (
+                            <DraggableEvent
+                              key={evt.id}
+                              event={evt}
+                              clinic={cl}
+                              heightPx={heightPx}
+                              onClick={handleEventClick}
+                              onDoubleClick={(e: any) => window.location.href = `/appointments/${e.id}`}
+                              viewMode={isMobile ? "day" : viewMode}
+                              dayIndex={dayIndex}
+                            />
+                          );
+                        })}
+                      </DroppableCell>
+                    );
+                  })}
+                </React.Fragment>
+              ))}
             </div>
-          </DndContext>
+          </div>
         )}
-      </div>
+        </div>
+
+        <DragOverlay modifiers={[snapCenterToCursor]} dropAnimation={null}>
+          {activeDragEvt ? (
+            <div className="w-72 bg-card rounded-xl shadow-2xl border border-primary/50">
+              <AgendaItemView evt={activeDragEvt} getClinic={getClinic} getEventStatusMeta={getEventStatusMeta} />
+            </div>
+          ) : null}
+        </DragOverlay>
+      </DndContext>
 
       {/* ---------------- MOBILE FLOATING BOTTOM BAR (iOS Style) ---------------- */}
       <div className="fixed bottom-4 left-4 right-4 z-40 flex items-center justify-between pointer-events-none md:hidden">
@@ -1403,6 +1413,129 @@ export function CalendarView({
         onUpdateEvent={handleUpdateEvent}
         clinics={clinics}
       />
+
+      <RescheduleConfirmModal 
+        isOpen={rescheduleModal.isOpen}
+        onClose={() => setRescheduleModal({ isOpen: false, evt: null, targetDate: null })}
+        onConfirm={handleRescheduleConfirm}
+        targetDate={rescheduleModal.targetDate}
+        originalTime={rescheduleModal.evt?.startTime || "09:00"}
+        patientName={rescheduleModal.evt?.patient || ""}
+      />
+    </div>
+  );
+}
+
+export function AgendaItemView({ evt, getClinic, getEventStatusMeta, isDragging, onClick }: any) {
+  const cl = getClinic(evt.clinicId);
+  const stMeta = getEventStatusMeta(evt.status);
+  
+  return (
+    <div
+      onClick={onClick}
+      className={cn(
+        "py-2.5 px-1.5 flex items-center justify-between gap-2.5 hover:bg-muted/40 rounded-xl transition-colors cursor-pointer touch-none",
+        isDragging && "opacity-50 border-dashed border-2 border-primary bg-primary/5"
+      )}
+    >
+      <div className="flex items-center gap-2.5 min-w-0">
+        <span className={cn("w-2.5 h-2.5 rounded-full shrink-0 shadow-xs", cl.color)} />
+        <div className="min-w-0">
+          <p className="text-xs font-bold text-foreground truncate">{evt.patient}</p>
+          <p className="text-[11px] text-muted-foreground truncate">{evt.title}</p>
+        </div>
+      </div>
+      <div className="text-right shrink-0 flex flex-col items-end gap-1">
+        <span className="text-xs font-bold tabular-nums text-foreground">{evt.startTime}</span>
+        <span className={cn("text-[9px] px-1.5 py-0.5 rounded-md text-center", stMeta.badgeCls)}>
+          {stMeta.label}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+export function DraggableAgendaItem({ evt, onClick, getClinic, getEventStatusMeta }: any) {
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+    id: `agenda-evt-${evt.id}`,
+    data: { evt }
+  });
+
+  return (
+    <div ref={setNodeRef} {...listeners} {...attributes} style={{ touchAction: 'none' }}>
+      <AgendaItemView 
+        evt={evt} 
+        getClinic={getClinic} 
+        getEventStatusMeta={getEventStatusMeta} 
+        isDragging={isDragging} 
+        onClick={onClick} 
+      />
+    </div>
+  );
+}
+
+export function DroppableMonthDayCell({ day, isCurrentMonth, isToday, isSelected, dayEvents, getClinic, getEventStatusMeta, onClick, onNewAppointment }: any) {
+  const { isOver, setNodeRef } = useDroppable({
+    id: `month-day-${format(day, 'yyyy-MM-dd')}`
+  });
+
+  return (
+    <div
+      ref={setNodeRef}
+      onClick={onClick}
+      className={cn(
+        "group h-full min-h-[50px] p-2 border rounded-xl cursor-pointer transition-all hover:border-primary/40 relative overflow-hidden",
+        isCurrentMonth ? "bg-card border-border/60 shadow-sm hover:shadow-md" : "bg-muted/40 border-transparent text-muted-foreground/60",
+        isToday && "ring-2 ring-primary bg-primary/10",
+        isSelected && "ring-2 ring-primary bg-primary/5",
+        isOver && "ring-2 ring-primary bg-primary/20"
+      )}
+    >
+      <div className="flex items-center justify-between">
+        <div className={cn(
+          "w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold",
+          isToday ? "bg-primary text-primary-foreground shadow-sm shadow-primary/30" : "text-foreground"
+        )}>
+          {format(day, "d")}
+        </div>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onNewAppointment();
+            }}
+            className="opacity-0 group-hover:opacity-100 p-0.5 rounded text-muted-foreground hover:text-primary hover:bg-primary/10 transition-all cursor-pointer"
+            title="Nueva cita"
+          >
+            <Plus className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      </div>
+      <div className="space-y-1 mt-1.5 overflow-hidden pointer-events-none">
+        {dayEvents.slice(0, 1).map((evt: any) => {
+          const cl = getClinic(evt.clinicId);
+          const stMeta = getEventStatusMeta(evt.status);
+          const bgTranslucent = cl.color.replace('bg-', 'bg-').replace('-600', '-600/20');
+          const borderLeft = cl.borderColor.replace('border-', 'border-l-');
+          const textDark = cl.color.replace('bg-', 'text-');
+          return (
+            <div
+              key={evt.id}
+              className={cn("text-[10px] px-1.5 py-0.5 rounded-[3px] font-semibold flex items-center justify-between gap-1 overflow-hidden border-l-2", borderLeft, bgTranslucent, textDark)}
+            >
+              <div className="flex items-center gap-1.5 truncate">
+                <span className={cn("w-1.5 h-1.5 rounded-full shrink-0", stMeta.dotCls)} title={stMeta.label} />
+                <span className="truncate">{evt.startTime} {evt.patient}</span>
+              </div>
+            </div>
+          );
+        })}
+        {dayEvents.length > 1 && (
+          <div className="text-[10px] text-muted-foreground font-medium text-center mt-0.5">
+            + {dayEvents.length - 1} más
+          </div>
+        )}
+      </div>
     </div>
   );
 }

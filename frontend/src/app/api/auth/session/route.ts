@@ -9,13 +9,21 @@ export async function GET() {
   const sessionToken = cookieStore.get(AUTH_COOKIE_NAME)?.value;
 
   if (sessionToken === AUTH_TOKEN_VALUE) {
+    let user = {
+      username: "Oslysmile",
+      name: "Dra. Osly Melo",
+      role: "Administrador",
+    };
+    try {
+      const userCookie = cookieStore.get("melosmile_user")?.value;
+      if (userCookie) {
+        user = JSON.parse(userCookie);
+      }
+    } catch {}
+
     return NextResponse.json({
       authenticated: true,
-      user: {
-        username: "Oslysmile",
-        name: "Dra. Osly Melo",
-        role: "Administrador",
-      },
+      user,
     });
   }
 
