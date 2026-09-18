@@ -52,3 +52,6 @@ frontend/scratch/
 logs/
 audit_results/
 
+# Estado de proyecto contiene JWT/credenciales n8n - mantener local
+.opencode/ESTADO_PROYECTO.md
+
