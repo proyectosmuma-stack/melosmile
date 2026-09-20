@@ -1,10 +1,7 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/server";
-import { processDueReminders } from "@/lib/reminders/scheduler";
 
 export async function GET(request: Request) {
-  let remindersResult = null;
-  let remindersError: string | null = null;
   try {
     // 1. Check Vercel Cron authorization
     const authHeader = request.headers.get("authorization");
@@ -33,20 +30,12 @@ export async function GET(request: Request) {
       );
     }
 
-    // 3. Procesar recordatorios vencidos (cron unificado para plan Hobby: keepalive + reminders)
-    try {
-      remindersResult = await processDueReminders(15);
-    } catch (remindErr: any) {
-      console.error("Keepalive Process Reminders Error:", remindErr);
-      remindersError = remindErr?.message || "Error al procesar recordatorios";
-    }
+    // Nota: el despacho de recordatorios se gestiona en /api/cron/reminders (worker n8n).
 
     return NextResponse.json({
       success: true,
       message: "Supabase keepalive ping successful",
       pingedAt: new Date().toISOString(),
-      reminders: remindersResult,
-      remindersError,
     });
   } catch (error: any) {
     console.error("Keepalive Endpoint Error:", error);
