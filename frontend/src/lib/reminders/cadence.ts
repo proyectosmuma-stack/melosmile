@@ -1,5 +1,40 @@
 import { supabaseAdmin as supabase } from "@/lib/supabase/server";
 
+/**
+ * Offset (ms) de Europe/Madrid para un instante dado (calcula DST de forma dinámica).
+ */
+function getMadridOffsetMs(date: Date): number {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Europe/Madrid",
+    timeZoneName: "longOffset",
+    hour12: false,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  }).formatToParts(date);
+  const map: Record<string, string> = {};
+  for (const p of parts) map[p.type] = p.value;
+  const m = /GMT([+-])(\d{2}):(\d{2})/.exec(map.timeZoneName || "");
+  if (!m) return 0;
+  const sign = m[1] === "-" ? -1 : 1;
+  return sign * (parseInt(m[2], 10) * 3600 + parseInt(m[3], 10) * 60) * 1000;
+}
+
+/**
+ * Devuelve el instante UTC correspondiente a las HH:00 de Europe/Madrid
+ * del día (en Madrid) de `base` desplazado `dayShiftDays` días.
+ */
+function madridHourDate(base: Date, hour: number, dayShiftDays = 0): Date {
+  const dayStr = base.toLocaleDateString("en-CA", { timeZone: "Europe/Madrid" }); // YYYY-MM-DD en Madrid
+  const [y, m, d] = dayStr.split("-").map(Number);
+  const utcDay = Date.UTC(y, m - 1, d) + dayShiftDays * 86_400_000;
+  const candidate = new Date(utcDay + hour * 3_600_000); // tentativo UTC+0
+  return new Date(candidate.getTime() - getMadridOffsetMs(candidate));
+}
+
 export interface CreateCadenceOptions {
   appointmentId: string;
   patientId: string;
@@ -14,9 +49,9 @@ export interface CreateCadenceOptions {
 
 /**
  * Genera la cadencia automática de 3 recordatorios de cita:
- * 1) 1 semana antes (7 días antes a las 09:00): Recordatorio con link de confirmación
- * 2) 2 días antes (48 horas antes a las 09:00): Si confirmado -> recordatorio amistoso; si no confirmado -> link de confirmación
- * 3) El día de la cita (a las 08:30): Recordatorio de cortesía del mismo día
+ * 1) 1 semana antes (7 días antes a las 13:00): Recordatorio con link de confirmación
+ * 2) 2 días antes (48 horas antes a las 13:00): Si confirmado -> recordatorio amistoso; si no confirmado -> link de confirmación
+ * 3) El día de la cita (a las 13:00, o 1h antes si la cita es antes de las 13:00): Recordatorio de cortesía del mismo día
  */
 export async function createAutomaticAppointmentReminders(options: CreateCadenceOptions) {
   const {
@@ -53,9 +88,8 @@ export async function createAutomaticAppointmentReminders(options: CreateCadence
 
   const stages = [];
 
-  // Etapa 1: 1 semana antes (7 días antes a las 10:00)
-  const weekBefore = new Date(apptDateObj.getTime() - 7 * 24 * 60 * 60 * 1000);
-  weekBefore.setHours(10, 0, 0, 0);
+  // Etapa 1: 1 semana antes (7 días antes a las 13:00, hora de Madrid)
+  const weekBefore = madridHourDate(apptDateObj, 13, -7);
   if (weekBefore > now) {
     stages.push({
       stage: 1,
@@ -65,9 +99,8 @@ export async function createAutomaticAppointmentReminders(options: CreateCadence
     });
   }
 
-  // Etapa 2: 2 días antes (48 horas antes a las 10:00)
-  const twoDaysBefore = new Date(apptDateObj.getTime() - 2 * 24 * 60 * 60 * 1000);
-  twoDaysBefore.setHours(10, 0, 0, 0);
+  // Etapa 2: 2 días antes (48 horas antes a las 13:00, hora de Madrid)
+  const twoDaysBefore = madridHourDate(apptDateObj, 13, -2);
   if (twoDaysBefore > now) {
     stages.push({
       stage: 2,
@@ -77,13 +110,16 @@ export async function createAutomaticAppointmentReminders(options: CreateCadence
     });
   }
 
-  // Etapa 3: El día de la cita (a las 10:00 o 1h antes si es antes de las 11:00)
-  const sameDay = new Date(apptDateObj);
-  if (apptDateObj.getHours() < 11) {
-    sameDay.setTime(apptDateObj.getTime() - 60 * 60 * 1000); // 1 hora antes
-  } else {
-    sameDay.setHours(10, 0, 0, 0);
-  }
+  // Etapa 3: El día de la cita (a las 13:00 Madrid, o 1h antes si la cita es antes de las 13:00)
+  const apptHourMadrid = Number(
+    apptDateObj
+      .toLocaleTimeString("en-GB", { timeZone: "Europe/Madrid", hour: "2-digit", minute: "2-digit" })
+      .slice(0, 2)
+  );
+  const sameDay =
+    apptHourMadrid < 13
+      ? new Date(madridHourDate(apptDateObj, Math.max(apptHourMadrid - 1, 0), 0).getTime() - 60 * 60 * 1000)
+      : madridHourDate(apptDateObj, 13, 0);
 
   if (sameDay > now && sameDay < apptDateObj) {
     stages.push({
