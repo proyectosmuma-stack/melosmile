@@ -3,6 +3,7 @@ import { processDueReminders, getDueReminders } from "@/lib/reminders/scheduler"
 import { dispatchReminder } from "@/lib/reminders/dispatch";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 60;
 
 function isAuthorized(request: Request): boolean {
   const authHeader = request.headers.get("authorization");
@@ -135,6 +136,10 @@ export async function POST(request: Request) {
 
     // Despacho de UN recordatorio (worker n8n)
     if (body?.reminderId) {
+      // Jitter humano: retardo aleatorio (0-30s) para romper cualquier patrón de envío detectable.
+      // El tick del worker es de 60s, así que los intervalos reales quedan entre 30 y 90s (aleatorio).
+      const jitterMs = Math.floor(Math.random() * 30000);
+      if (jitterMs > 0) await new Promise((r) => setTimeout(r, jitterMs));
       const result = await dispatchReminder(body.reminderId);
       return NextResponse.json(result, { status: result.success ? 200 : 400 });
     }

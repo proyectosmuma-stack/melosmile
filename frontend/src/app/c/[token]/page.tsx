@@ -102,9 +102,9 @@ export default function MobileUploadPage() {
           <div className="mx-auto w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mb-4">
             <Camera className="w-8 h-8 text-primary" />
           </div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Subir Fotos Clínicas</h1>
+          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Subir Fotos a la Cita</h1>
           <p className="text-slate-500 text-sm px-4">
-            Selecciona fotos de tu galería o toma una nueva foto para enviarla directamente a la ficha del paciente.
+            Personal de clínica: selecciona fotos o haz una nueva para adjuntarlas directamente a la ficha del paciente.
           </p>
         </div>
 
