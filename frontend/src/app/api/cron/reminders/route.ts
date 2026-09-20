@@ -29,6 +29,66 @@ export async function GET(request: Request) {
       return NextResponse.json({ success: true, count: data.length, items: data });
     }
 
+    // Modo ALERTAS: recordatorios fallidos o atascados (para el avisador n8n)
+    if (searchParams.get("mode") === "alerts") {
+      const cutoff = new Date(Date.now() - 30 * 60 * 1000).toISOString();
+      const supabase = (await import("@/lib/supabase/server")).supabaseAdmin as any;
+
+      const { data: errored } = await supabase
+        .from("reminders")
+        .select("id, patient_id, scheduled_at, status, error_message, patients(first_name, last_name, phone)")
+        .eq("status", "error")
+        .order("scheduled_at", { ascending: true })
+        .limit(50);
+
+      const { data: overdue } = await supabase
+        .from("reminders")
+        .select("id, patient_id, scheduled_at, status, patients(first_name, last_name, phone)")
+        .eq("status", "pendiente")
+        .lt("scheduled_at", cutoff)
+        .order("scheduled_at", { ascending: true })
+        .limit(50);
+
+      const candidates = [...(errored || []), ...(overdue || [])];
+      let items: any[] = candidates;
+
+      if (candidates.length > 0) {
+        const ids = candidates.map((r: any) => r.id);
+        const { data: events } = await supabase
+          .from("reminder_events")
+          .select("reminder_id, created_at")
+          .eq("event_type", "alert_sent")
+          .in("reminder_id", ids)
+          .order("created_at", { ascending: false });
+
+        const lastAlert = new Map<string, number>();
+        for (const e of events || []) {
+          const t = new Date(e.created_at).getTime();
+          const prev = lastAlert.get(e.reminder_id);
+          if (prev === undefined || t > prev) lastAlert.set(e.reminder_id, t);
+        }
+
+        const cooldownMs = 6 * 60 * 60 * 1000;
+        const now = Date.now();
+        items = candidates.filter((r: any) => {
+          const last = lastAlert.get(r.id);
+          return last === undefined || now - last > cooldownMs;
+        });
+
+        if (items.length > 0) {
+          await supabase.from("reminder_events").insert(
+            items.map((r: any) => ({
+              reminder_id: r.id,
+              event_type: "alert_sent",
+              description: `Aviso de fallo emitido (estado=${r.status})`,
+            }))
+          );
+        }
+      }
+
+      return NextResponse.json({ success: true, count: items.length, items });
+    }
+
     // Modo BATCH (compatibilidad): procesa todos los vencidos en una sola invocación
     const result = await processDueReminders(15);
     return NextResponse.json(result);
