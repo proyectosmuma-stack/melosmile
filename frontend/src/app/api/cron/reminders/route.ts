@@ -29,31 +29,59 @@ export async function GET(request: Request) {
       return NextResponse.json({ success: true, count: data.length, items: data });
     }
 
-    // Modo ALERTAS: recordatorios fallidos o atascados (para el avisador n8n)
+    // Modo ALERTAS: fallos de envío, atascados y datos incompletos (avisador n8n)
     if (searchParams.get("mode") === "alerts") {
-      const cutoff = new Date(Date.now() - 30 * 60 * 1000).toISOString();
       const supabase = (await import("@/lib/supabase/server")).supabaseAdmin as any;
+      const fresh = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+      const horizon = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
 
+      // 1) Fallos de envío de las últimas 24h
       const { data: errored } = await supabase
         .from("reminders")
-        .select("id, patient_id, scheduled_at, status, error_message, patients(first_name, last_name, phone)")
+        .select("id, patient_id, scheduled_at, status, error_message, patients(first_name, last_name, phone), appointments(appointment_date)")
         .eq("status", "error")
+        .gte("scheduled_at", fresh)
         .order("scheduled_at", { ascending: true })
         .limit(50);
 
-      const { data: overdue } = await supabase
+      // 2) Pendientes de los próximos 14 días (para detectar datos incompletos y atascados)
+      const { data: pending } = await supabase
         .from("reminders")
-        .select("id, patient_id, scheduled_at, status, patients(first_name, last_name, phone)")
+        .select("id, patient_id, scheduled_at, status, patients(first_name, last_name, phone), appointments(appointment_date)")
         .eq("status", "pendiente")
-        .lt("scheduled_at", cutoff)
+        .gte("scheduled_at", fresh)
+        .lte("scheduled_at", horizon)
         .order("scheduled_at", { ascending: true })
-        .limit(50);
+        .limit(100);
 
-      const candidates = [...(errored || []), ...(overdue || [])];
-      let items: any[] = candidates;
+      const rows = [...(errored || []), ...(pending || [])];
+      const classified = rows
+        .map((r: any) => {
+          const apptDate = r.appointments?.appointment_date ? new Date(r.appointments.appointment_date) : null;
+          if (apptDate && apptDate.getTime() < Date.now()) return null; // citas ya pasadas: no alertar
+          const hasPhone = Boolean(r.patients?.phone);
+          let type: string | null = null;
+          if (r.status === "error") type = hasPhone ? "send_error" : "missing_phone";
+          else if (!hasPhone) type = "missing_phone";
+          else if (new Date(r.scheduled_at).getTime() < Date.now() - 30 * 60 * 1000) type = "stuck";
+          if (!type) return null;
+          return {
+            id: r.id,
+            type,
+            patient_id: r.patient_id,
+            patient: `${r.patients?.first_name || ""} ${r.patients?.last_name || ""}`.trim() || "Paciente",
+            phone: r.patients?.phone || null,
+            scheduled_at: r.scheduled_at,
+            appointment_date: r.appointments?.appointment_date || null,
+            error_message: r.error_message || null,
+          };
+        })
+        .filter(Boolean);
 
-      if (candidates.length > 0) {
-        const ids = candidates.map((r: any) => r.id);
+      // Dedup: no repetir el aviso del mismo recordatorio antes de 6h
+      let items = classified;
+      if (classified.length > 0) {
+        const ids = classified.map((r: any) => r.id);
         const { data: events } = await supabase
           .from("reminder_events")
           .select("reminder_id, created_at")
@@ -70,7 +98,7 @@ export async function GET(request: Request) {
 
         const cooldownMs = 6 * 60 * 60 * 1000;
         const now = Date.now();
-        items = candidates.filter((r: any) => {
+        items = classified.filter((r: any) => {
           const last = lastAlert.get(r.id);
           return last === undefined || now - last > cooldownMs;
         });
@@ -80,7 +108,7 @@ export async function GET(request: Request) {
             items.map((r: any) => ({
               reminder_id: r.id,
               event_type: "alert_sent",
-              description: `Aviso de fallo emitido (estado=${r.status})`,
+              description: `Aviso emitido (${r.type})`,
             }))
           );
         }
