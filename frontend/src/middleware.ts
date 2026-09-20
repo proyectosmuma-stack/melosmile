@@ -23,7 +23,7 @@ export function middleware(request: NextRequest) {
     pathname.startsWith("/api/dispatcher") ||
     pathname.startsWith("/api/billing/document-cleaner") ||
     pathname.startsWith("/api/calendar/ical") ||
-    pathname.startsWith("/api/mobile-upload") ||
+    pathname.startsWith("/api/mobile-upload/upload") ||
     pathname.startsWith("/confirmar/") ||
     pathname.includes("/confirm") || // API pública de confirmación de cita del paciente
     pathname.startsWith("/c/") ||
