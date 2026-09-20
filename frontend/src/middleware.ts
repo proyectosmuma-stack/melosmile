@@ -6,6 +6,13 @@ const AUTH_TOKEN_VALUE = "valid_melosmile_session_token_oslysmile";
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  if (pathname.startsWith("/c/")) {
+    const seg = pathname.slice(3);
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(seg);
+    if (isUUID) {
+      return NextResponse.redirect(new URL(`/confirmar/${seg}`, request.url));
+    }
+  }
 
   // Allow static assets, Next.js internal paths, public auth & AI context/webhook endpoints, and patient confirmation links
   if (
@@ -17,8 +24,9 @@ export function middleware(request: NextRequest) {
     pathname.startsWith("/api/billing/document-cleaner") ||
     pathname.startsWith("/api/calendar/ical") ||
     pathname.startsWith("/api/mobile-upload") ||
+    pathname.startsWith("/confirmar/") ||
+    pathname.includes("/confirm") || // API pública de confirmación de cita del paciente
     pathname.startsWith("/c/") ||
-    pathname.includes("/confirm") ||
     pathname.includes(".") || // static files like favicon.ico, images, etc.
     pathname === "/favicon.ico"
   ) {

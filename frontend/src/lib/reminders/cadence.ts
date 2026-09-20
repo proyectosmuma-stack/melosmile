@@ -84,7 +84,7 @@ export async function createAutomaticAppointmentReminders(options: CreateCadence
 
   const rawUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "https://agenda.melosmile.com");
   const baseUrl = (rawUrl.includes("localhost") || rawUrl.includes("127.0.0.1")) ? "https://agenda.melosmile.com" : rawUrl;
-  const confirmUrl = `${baseUrl.replace(/\/$/, '')}/c/${appointmentId}`;
+   const confirmUrl = `${baseUrl.replace(/\/$/, '')}/confirmar/${appointmentId}`;
 
   const stages = [];
 
