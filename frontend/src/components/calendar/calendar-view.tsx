@@ -357,6 +357,8 @@ export function CalendarView({
 
   const fetchAppointments = useCallback(async () => {
     try {
+      const { start, end } = getDateRangeForView(currentDate, viewMode);
+
       // Fetch real clinics from database
       const { data: dbClinics } = await (supabase as any)
         .from("clinics")
@@ -389,7 +391,9 @@ export function CalendarView({
           clinics ( id, name ),
           professionals ( first_name, last_name ),
           patients ( id, first_name, last_name, historia_id, phone, email )
-        `);
+        `)
+        .gte("appointment_date", start.toISOString())
+        .lte("appointment_date", end.toISOString());
 
       if (!error && data) {
         // --- Adjuntos: una sola query extra para todas las citas ---
@@ -473,6 +477,7 @@ export function CalendarView({
           const { data: prevData } = await (supabase as any)
             .from("appointments")
             .select("id, patient_id, appointment_date, notes")
+            .gte("appointment_date", subDays(new Date(), 90).toISOString())
             .in("patient_id", uniquePatientIds);
 
           if (prevData) {
@@ -512,7 +517,7 @@ export function CalendarView({
     } catch (err) {
       console.error("Error cargando citas de Supabase:", err);
     }
-  }, []);
+  }, [currentDate, viewMode]);
 
   const handleRescheduleConfirm = async (newTime: string) => {
     if (!rescheduleModal.evt || !rescheduleModal.targetDate) return;
