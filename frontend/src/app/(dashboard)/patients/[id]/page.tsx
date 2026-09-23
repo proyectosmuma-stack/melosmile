@@ -7,7 +7,7 @@ import {
   Stethoscope, ArrowLeft, Clock, MapPin, Loader2, Building2, Edit3,
   Megaphone, Plus, Receipt, ChevronRight, X, UserCheck, Baby,
   BadgeCheck, Sparkles, ExternalLink, Tag as TagIcon, Save, Smile, MessageSquare,
-  Trash2, CheckSquare, Square, Image as ImageIcon, Camera, Send, Send as SendIcon, RefreshCw, Info
+  Trash2, CheckSquare, Square, Image as ImageIcon, Camera, Send, Send as SendIcon, RefreshCw, Info, ChevronDown
 } from "lucide-react";
 import Link from "next/link";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -252,6 +252,8 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
   const [deleteConfirmDocId, setDeleteConfirmDocId] = useState<string | null>(null);
   const [patient, setPatient] = useState<Patient | null>(null);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [visibleAppointments, setVisibleAppointments] = useState<number>(30);
+  const listSentinelRef = useRef<HTMLDivElement>(null);
   const [billing, setBilling] = useState<BillingRecord[]>([]);
   const [patientClinics, setPatientClinics] = useState<PatientClinic[]>([]);
   const [reminders, setReminders] = useState<Reminder[]>([]);
@@ -540,6 +542,7 @@ function toTitleCase(text: string): string {
             treatmentName: a.treatments?.service_name ?? "—",
           };
         }));
+        setVisibleAppointments(30); // reset paginación visual tras recarga
 
         // Consolidate Odontogram across all appointments (chronological from oldest to newest)
         let mergedOdonto: OdontogramData = {};
@@ -675,6 +678,22 @@ function toTitleCase(text: string): string {
     window.addEventListener("appointment-created", handleApptCreated);
     return () => window.removeEventListener("appointment-created", handleApptCreated);
   }, [fetchAll]);
+
+  // Infinite scroll: carga 30 más cuando el sentinel entra en viewport
+  useEffect(() => {
+    const el = listSentinelRef.current;
+    if (!el || activeTab !== "historial") return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          setVisibleAppointments((prev) => Math.min(prev + 30, appointments.length));
+        }
+      },
+      { rootMargin: "200px" }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [activeTab, appointments.length]);
 
   const executeDeleteDocument = async (docId: string) => {
     try {
@@ -1344,7 +1363,7 @@ function toTitleCase(text: string): string {
               </div>
             ) : (
               <div className="divide-y divide-border">
-                {appointments.map((app) => {
+                {appointments.slice(0, visibleAppointments).map((app) => {
                   const d = formatDate(app.appointment_date);
                   const isSelected = selectedAppointmentIds.includes(app.id);
                   return (
@@ -1449,6 +1468,17 @@ function toTitleCase(text: string): string {
                     </div>
                   );
                 })}
+                {appointments.length > visibleAppointments && (
+                  <div ref={listSentinelRef} className="px-5 py-3 flex flex-col items-center gap-2">
+                    <button
+                      onClick={() => setVisibleAppointments((prev) => Math.min(prev + 30, appointments.length))}
+                      className="inline-flex items-center gap-1.5 text-xs font-bold text-primary hover:bg-primary/5 rounded-xl px-4 py-2 border border-primary/25 transition-colors cursor-pointer"
+                    >
+                      <ChevronDown className="h-3.5 w-3.5" />
+                      Ver más citas ({appointments.length - visibleAppointments} restantes)
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </div>

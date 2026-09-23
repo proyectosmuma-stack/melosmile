@@ -124,19 +124,20 @@ function getDateRangeForView(currentDate: Date, viewMode: ViewMode): { start: Da
       };
     case "week":
       return {
-        start: subDays(startOfWeek(center, { weekStartsOn: 1 }), 7),
-        end: addDays(endOfWeek(center, { weekStartsOn: 1 }), 7),
+        start: startOfWeek(center, { weekStartsOn: 1 }),
+        end: endOfWeek(center, { weekStartsOn: 1 }),
       };
     case "month":
+      // Rango del grid visible: cubre el mes completo + días grises colindantes de la primera/last fila
       return {
-        start: subDays(startOfMonth(center), 7),
-        end: addDays(endOfMonth(center), 7),
+        start: startOfWeek(startOfMonth(center), { weekStartsOn: 1 }),
+        end: endOfWeek(endOfMonth(center), { weekStartsOn: 1 }),
       };
     case "year":
     default:
       return {
-        start: subDays(new Date(center.getFullYear(), center.getMonth(), 1), 45),
-        end: addDays(new Date(center.getFullYear(), center.getMonth() + 1, 0), 45),
+        start: subDays(startOfMonth(center), 45),
+        end: addDays(endOfMonth(center), 45),
       };
   }
 }
@@ -331,7 +332,7 @@ export function CalendarView({
   stats?: { appointmentsToday: number; patientsThisMonth: number };
   loadingStats?: boolean;
 }) {
-  const [viewMode, setViewMode] = useState<ViewMode>("week");
+  const [viewMode, setViewMode] = useState<ViewMode>("month");
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
   const [events, setEvents] = useState<AppointmentEvent[]>([]);
   const [clinics, setClinics] = useState<Clinic[]>(DEFAULT_CLINICS);
@@ -770,10 +771,12 @@ export function CalendarView({
     }
   };
 
-  const displayEvents = events.filter((e) => {
-    if (!selectedClinicId || selectedClinicId === "all") return true;
-    return e.clinicId === selectedClinicId;
-  });
+  const displayEvents = events
+    .filter((e) => {
+      if (!selectedClinicId || selectedClinicId === "all") return true;
+      return e.clinicId === selectedClinicId;
+    })
+    .sort((a, b) => a.date.getTime() - b.date.getTime());
 
   return (
     <div className="w-full h-full flex flex-col relative">
