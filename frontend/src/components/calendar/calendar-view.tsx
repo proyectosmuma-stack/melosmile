@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
-import { format, startOfWeek, addDays, subDays, addWeeks, subWeeks, startOfMonth, addMonths, subMonths, addYears, subYears, isSameMonth, isSameDay, eachDayOfInterval } from "date-fns";
+import { format, startOfWeek, addDays, subDays, addWeeks, subWeeks, startOfMonth, addMonths, subMonths, addYears, subYears, isSameMonth, isSameDay, eachDayOfInterval, endOfWeek, endOfMonth } from "date-fns";
 import { es } from "date-fns/locale";
 import { useDroppable, useDraggable, DndContext, DragEndEvent, DragStartEvent, DragOverlay, PointerSensor, useSensor, useSensors, pointerWithin } from "@dnd-kit/core";
 import { snapCenterToCursor } from "@dnd-kit/modifiers";
@@ -112,6 +112,33 @@ function roundToNearestSlot(d: Date): string {
   const hh = String(finalHours).padStart(2, "0");
   const mm = String(finalMins).padStart(2, "0");
   return `${hh}:${mm}`;
+}
+
+function getDateRangeForView(currentDate: Date, viewMode: ViewMode): { start: Date; end: Date } {
+  const center = currentDate || new Date();
+  switch (viewMode) {
+    case "day":
+      return {
+        start: new Date(center.getFullYear(), center.getMonth(), center.getDate()),
+        end: new Date(center.getFullYear(), center.getMonth(), center.getDate(), 23, 59, 59, 999),
+      };
+    case "week":
+      return {
+        start: subDays(startOfWeek(center, { weekStartsOn: 1 }), 7),
+        end: addDays(endOfWeek(center, { weekStartsOn: 1 }), 7),
+      };
+    case "month":
+      return {
+        start: subDays(startOfMonth(center), 7),
+        end: addDays(endOfMonth(center), 7),
+      };
+    case "year":
+    default:
+      return {
+        start: subDays(new Date(center.getFullYear(), center.getMonth(), 1), 45),
+        end: addDays(new Date(center.getFullYear(), center.getMonth() + 1, 0), 45),
+      };
+  }
 }
 
 // Droppable Cell for DnD
