@@ -43,7 +43,9 @@ export default function DashboardPage() {
         // Appointments today (filtered by clinic if selected)
         let apptQuery = (supabase as any)
           .from("appointments")
-          .select("id, status, appointment_date, clinic_id");
+          .select("id, status, appointment_date, clinic_id")
+          .gte("appointment_date", `${todayStr}T00:00:00.000Z`)
+          .lte("appointment_date", `${todayStr}T23:59:59.999Z`);
 
         if (selectedClinicId && selectedClinicId !== "all") {
           apptQuery = apptQuery.eq("clinic_id", selectedClinicId);
@@ -51,11 +53,7 @@ export default function DashboardPage() {
 
         const { data: apptData } = await apptQuery;
 
-        const appointmentsCount = (apptData || []).filter((a: any) => {
-          if (!a.appointment_date) return false;
-          const isNotCancelled = a.status !== "Cancelada" && a.status !== "cancelada";
-          return isNotCancelled && a.appointment_date.startsWith(todayStr);
-        }).length;
+        const appointmentsCount = (apptData || []).filter((a: any) => a.status !== "Cancelada" && a.status !== "cancelada").length;
           
         // Billed this month (from billing_records)
         // Columns: calculated_total, created_at (no clinic_id in this table)
