@@ -6,7 +6,7 @@ const DISPATCHER_PATH = "/webhook/melosmile-dispatcher";
 
 function extractCleanText(raw: any): { intent: string; entities: any; summary: string } {
   if (!raw) {
-    return { intent: "general_query", entities: {}, summary: "Sin respuesta del servidor." };
+    return { intent: "general_query", entities: {}, summary: "Musly no devolvio respuesta (cuerpo vacio). Revisa el workflow [MELOSMILE] AI Dispatcher en n8n." };
   }
 
   let item = Array.isArray(raw) ? raw[0] : raw;
@@ -70,7 +70,7 @@ export async function POST(req: NextRequest) {
         "Content-Type": "application/json",
         ...(process.env.N8N_API_KEY ? { "X-N8N-API-KEY": process.env.N8N_API_KEY } : {}),
       },
-      body: JSON.stringify({ ...body, message: finalMessage }), // Send the injected message to Musly
+      body: JSON.stringify({ ...body, message: finalMessage, chatInput: finalMessage }), // Send the injected message to Musly
       signal: AbortSignal.timeout(30_000),
     });
 
@@ -85,6 +85,20 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    if (n8nRes.ok && !text.trim()) {
+      console.error(
+        `[dispatcher] n8n devolvio HTTP ${n8nRes.status} con cuerpo vacio. len=${text.length}. body=${text.slice(0, 300)}`
+      );
+      return NextResponse.json(
+        {
+          intent: "error",
+          summary:
+            "Musly no devolvio ninguna respuesta. Se ha registrado el error tecnico; revisa el workflow [MELOSMILE] AI Dispatcher en n8n (ejecuciones en error) antes de reintentar.",
+          error: `Empty body from n8n with HTTP ${n8nRes.status}`,
+        },
+        { status: 502 }
+      );
+    }
     if (!n8nRes.ok) {
       return NextResponse.json(
         {
