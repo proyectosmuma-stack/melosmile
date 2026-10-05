@@ -102,7 +102,7 @@ export function NewReminderModal({
 
     const isLocal = typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1");
     const baseUrl = isLocal ? "https://agenda.melosmile.com" : (typeof window !== "undefined" ? window.location.origin : "https://agenda.melosmile.com");
-    const confirmLink = appt ? `${baseUrl}/c/${appt.id}` : `${baseUrl}/c/confirmar`;
+    const confirmLink = appt ? `${baseUrl}/confirmar/${appt.id}` : `${baseUrl}/confirmar`;
 
     if (type === "recordatorio_cita") {
       setSubject(`Recordatorio de tu cita en Melosmile`);

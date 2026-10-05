@@ -30,6 +30,8 @@ export async function GET(request: Request) {
       );
     }
 
+    // Nota: el despacho de recordatorios se gestiona en /api/cron/reminders (worker n8n).
+
     return NextResponse.json({
       success: true,
       message: "Supabase keepalive ping successful",

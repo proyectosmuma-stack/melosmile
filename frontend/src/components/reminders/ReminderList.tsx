@@ -2,8 +2,7 @@
 
 import React, { useState, useMemo } from "react";
 import Link from "next/link";
-import { format, isToday, isTomorrow } from "date-fns";
-import { es } from "date-fns/locale";
+
 import { useReminders } from "@/hooks/use-reminders";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -204,13 +203,20 @@ export function ReminderList({ patientId }: ReminderListProps) {
     try {
       const d = new Date(dateStr);
       if (isNaN(d.getTime())) return dateStr;
-      if (isToday(d)) {
-        return `Hoy, ${format(d, "HH:mm", { locale: es })}`;
-      }
-      if (isTomorrow(d)) {
-        return `Mañana, ${format(d, "HH:mm", { locale: es })}`;
-      }
-      return format(d, "d 'de' MMM, HH:mm", { locale: es });
+      const tz = "Europe/Madrid";
+      const getPart = (dt: Date, type: string) =>
+        new Intl.DateTimeFormat("en-CA", { timeZone: tz, year: "numeric", month: "2-digit", day: "2-digit" })
+          .formatToParts(dt).find((p) => p.type === type)?.value;
+      const ymdNow = `${getPart(new Date(), "year")}-${getPart(new Date(), "month")}-${getPart(new Date(), "day")}`;
+      const ymdD = `${getPart(d, "year")}-${getPart(d, "month")}-${getPart(d, "day")}`;
+      const timeTxt = d.toLocaleTimeString("es-ES", { timeZone: tz, hour: "2-digit", minute: "2-digit", hour12: false });
+      if (ymdNow === ymdD) return `Hoy, ${timeTxt}`;
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      const ymdT = `${getPart(tomorrow, "year")}-${getPart(tomorrow, "month")}-${getPart(tomorrow, "day")}`;
+      if (ymdD === ymdT) return `Mañana, ${timeTxt}`;
+      const dateTxt = d.toLocaleDateString("es-ES", { timeZone: tz, day: "numeric", month: "short" });
+      return `${dateTxt}, ${timeTxt}`;
     } catch {
       return dateStr;
     }

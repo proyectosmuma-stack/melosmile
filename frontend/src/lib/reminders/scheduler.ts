@@ -16,6 +16,18 @@ export interface ProcessDueResult {
   }>;
 }
 
+export async function getDueReminders(limit = 15) {
+  const nowIso = new Date().toISOString();
+  const { data, error } = await (supabase as any)
+    .from("reminders")
+    .select("id, patient_id, appointment_id, channel, scheduled_at, status")
+    .eq("status", "pendiente")
+    .lte("scheduled_at", nowIso)
+    .order("scheduled_at", { ascending: true })
+    .limit(limit);
+  return { data: data || [], error };
+}
+
 /**
  * Procesa y despacha recordatorios que hayan alcanzado su fecha/hora programada
  * (scheduled_at <= NOW() y status = 'pendiente'), respetando estrictamente:
