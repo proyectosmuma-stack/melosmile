@@ -42,12 +42,23 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { session_id, message, active_context } = body;
     
+    // Historial reciente de la conversación (para que el LLM resuelva referencias sin re-preguntar)
+    const historyArr: Array<{ role?: string; content?: string }> = Array.isArray(body.history) ? body.history : [];
+    const historyText = historyArr
+      .filter((h) => h && typeof h.content === "string" && h.content.trim().length > 0)
+      .slice(-8)
+      .map((h) => `${h.role === "assistant" ? "Musly" : "Usuario"}: ${String(h.content).trim()}`)
+      .join("\n");
+
     // Inject Context & Guardrail
     let finalMessage = message;
+    if (historyText) {
+      finalMessage = `${finalMessage}\n\n[HISTORIAL RECIENTE DE LA CONVERSACIÓN (úsalo para resolver a qué paciente y, solo si el usuario ya lo mencionó, a qué clínica se refiere, SIN volver a preguntar):\n${historyText}]`;
+    }
     if (active_context?.patient_id) {
-       finalMessage = `${message}\n\n[SYSTEM CONTEXT INVISIBLE: El usuario está viendo actualmente la ficha del paciente con ID de base de datos: ${active_context.patient_id}. Si el usuario pide resumir, buscar, facturar o gestionar algo y no menciona un nombre, asume implícitamente que se refiere a este paciente y filtra tus búsquedas con este patient_id.]`;
+       finalMessage = `${finalMessage}\n\n[SYSTEM CONTEXT INVISIBLE: El usuario está viendo actualmente la ficha del paciente con ID de base de datos: ${active_context.patient_id}. Si el usuario pide resumir, buscar, facturar o gestionar algo y no menciona un nombre, asume implícitamente que se refiere a este paciente y filtra tus búsquedas con este patient_id.]`;
     } else {
-       finalMessage = `${message}\n\n[SYSTEM GUARDRAIL ESTRICTO: El usuario NO está en la ficha de ningún paciente (está en el menú global). Si la solicitud del usuario implica leer historiales, buscar documentos, generar facturas o acceder a datos personales y NO ha mencionado claramente el nombre de un paciente, TIENES PROHIBIDO realizar búsquedas ciegas. Debes detenerte y preguntarle al usuario: "¿De qué paciente estamos hablando?" antes de continuar.]`;
+       finalMessage = `${finalMessage}\n\n[SYSTEM GUARDRAIL ESTRICTO: El usuario NO está en la ficha de ningún paciente (está en el menú global). ANTES de pedir el nombre del paciente, revisa el mensaje actual y el HISTORIAL RECIENTE. Si el paciente ya está identificado en cualquiera de los dos, NO vuelvas a preguntar su nombre: actúa o confirma directamente (la clínica, si no consta en el hilo, confírmala aparte). Solo si NO puedes identificar al paciente, y la solicitud implica leer historiales, buscar documentos, generar facturas o acceder a datos personales, detente y pregunta: '¿De qué paciente estamos hablando?']`;
     }
 
     // Log user message asynchronously (keep the original visual message for the UI logs)
