@@ -4,6 +4,7 @@ import { createAutomaticAppointmentReminders } from "@/lib/reminders/cadence";
 import { getDateRange } from "@/lib/utils/date-parser";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 60;
 
 function resolveChannel(patient: { phone?: string; email?: string }): "whatsapp" | "email" | null {
   const digits = (patient?.phone || "").replace(/\D/g, "");
@@ -120,7 +121,6 @@ export async function POST(req: Request) {
     }
 
     let createdReminders = 0;
-    const detailedWarnings: Array<{ patient_name: string; appointment_id: string; reason: string }> = [];
 
     for (const appt of appointments) {
       const patient = appt.patients || {};
@@ -128,7 +128,7 @@ export async function POST(req: Request) {
       const channel = resolveChannel(patient);
 
       if (!channel) {
-        detailedWarnings.push({ patient_name: patientName, appointment_id: String(appt.id), reason: "no_contact_info" });
+        warnings.push(`Paciente ${patientName} (cita ${String(appt.id)}): sin teléfono ni email válido para notificar.`);
         continue;
       }
 
@@ -152,7 +152,7 @@ export async function POST(req: Request) {
       });
 
       if (!created || created.length === 0) {
-        detailedWarnings.push({ patient_name: patientName, appointment_id: String(appt.id), reason: "all_stages_passed" });
+        warnings.push(`Paciente ${patientName} (cita ${String(appt.id)}): las fechas de los recordatorios ya pasaron.`);
       } else {
         createdReminders += created.length;
       }
@@ -162,7 +162,7 @@ export async function POST(req: Request) {
       success: true,
       processed_appointments: appointments.length,
       created_reminders: createdReminders,
-      warnings: detailedWarnings,
+      warnings,
     });
   } catch (error: any) {
     console.error("[schedule-cadence] Error:", error?.message || error);
