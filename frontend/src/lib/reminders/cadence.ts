@@ -27,11 +27,11 @@ function getMadridOffsetMs(date: Date): number {
  * Devuelve el instante UTC correspondiente a las HH:00 de Europe/Madrid
  * del día (en Madrid) de `base` desplazado `dayShiftDays` días.
  */
-function madridHourDate(base: Date, hour: number, dayShiftDays = 0): Date {
+function madridHourDate(base: Date, hour: number, dayShiftDays = 0, minute = 0): Date {
   const dayStr = base.toLocaleDateString("en-CA", { timeZone: "Europe/Madrid" }); // YYYY-MM-DD en Madrid
   const [y, m, d] = dayStr.split("-").map(Number);
   const utcDay = Date.UTC(y, m - 1, d) + dayShiftDays * 86_400_000;
-  const candidate = new Date(utcDay + hour * 3_600_000); // tentativo UTC+0
+  const candidate = new Date(utcDay + hour * 3_600_000 + minute * 60_000); // tentativo UTC+0
   return new Date(candidate.getTime() - getMadridOffsetMs(candidate));
 }
 
@@ -110,16 +110,28 @@ export async function createAutomaticAppointmentReminders(options: CreateCadence
     });
   }
 
-  // Etapa 3: El día de la cita (a las 13:00 Madrid, o 1h antes si la cita es antes de las 13:00)
+  // Etapa 3: El día de la cita a las 13:00 Madrid, o exactamente 1 hora antes si la cita es antes de las 13:00.
+  // Si ese aviso caería antes de las 09:00 Madrid, se adelanta a la noche anterior a las 19:30 Madrid.
   const apptHourMadrid = Number(
     apptDateObj
       .toLocaleTimeString("en-GB", { timeZone: "Europe/Madrid", hour: "2-digit", minute: "2-digit" })
       .slice(0, 2)
   );
-  const sameDay =
-    apptHourMadrid < 13
-      ? new Date(madridHourDate(apptDateObj, Math.max(apptHourMadrid - 1, 0), 0).getTime() - 60 * 60 * 1000)
-      : madridHourDate(apptDateObj, 13, 0);
+
+  let sameDay: Date;
+  if (apptHourMadrid < 13) {
+    const oneHourBefore = new Date(apptDateObj.getTime() - 60 * 60 * 1000);
+    const reminderHourMadrid = Number(
+      oneHourBefore
+        .toLocaleTimeString("en-GB", { timeZone: "Europe/Madrid", hour: "2-digit", minute: "2-digit" })
+        .slice(0, 2)
+    );
+    sameDay = reminderHourMadrid < 9
+      ? madridHourDate(apptDateObj, 19, -1, 30)
+      : oneHourBefore;
+  } else {
+    sameDay = madridHourDate(apptDateObj, 13, 0);
+  }
 
   if (sameDay > now && sameDay < apptDateObj) {
     stages.push({

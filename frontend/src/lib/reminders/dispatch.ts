@@ -22,7 +22,7 @@ export async function dispatchReminder(reminderId: string): Promise<DispatchRemi
       .select(`
         *,
         patients ( first_name, last_name, phone, email, historia_id, telegram_chat_id ),
-        appointments ( appointment_date, reason, status, clinics(name) )
+        appointments ( appointment_date, reason, status, clinics(name, address) )
       `)
       .eq("id", reminderId)
       .single();
@@ -125,7 +125,8 @@ export async function dispatchReminder(reminderId: string): Promise<DispatchRemi
         firstName: patient?.first_name ? patient.first_name.split(" ")[0] : "Paciente",
         fullDateLabel,
         timeStr,
-        reason: appointment?.reason || "Consulta Odontológica",
+        clinicName: appointment?.clinics?.name || "Melosmile",
+        clinicAddress: appointment?.clinics?.address || null,
         confirmUrl,
         dayOfWeek
       });
