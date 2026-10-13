@@ -152,19 +152,6 @@
           "name": "Melosmile Backend x-api-key (JWT Prod)"
         }
       }
-    },
-    {
-      "parameters": {
-        "sessionId": "={{ $json.body?.sessionId || $json.sessionId || 'default' }}"
-      },
-      "id": "memory_1",
-      "name": "Window Buffer Memory",
-      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
-      "typeVersion": 1.2,
-      "position": [
-        450,
-        150
-      ]
     }
   ],
   "connections": {
@@ -219,17 +206,6 @@
             "index": 0,
             "node": "Agent_Clinical",
             "type": "ai_tool"
-          }
-        ]
-      ]
-    },
-    "Window Buffer Memory": {
-      "ai_memory": [
-        [
-          {
-            "node": "Agent_Clinical",
-            "type": "ai_memory",
-            "index": 0
           }
         ]
       ]
