@@ -10,7 +10,8 @@ try {
   console.warn('Could not read mcp_config.json', e.message);
 }
 
-const N8N_URL = 'https://n8nv2.mumaweb.com';
+const N8N_URL = process.env.N8N_URL || 'https://n8n.mumaweb.com';
+const FRONTEND_BASE_URL = process.env.FRONTEND_BASE_URL || 'https://staging.melosmile.com';
 
 async function fetchWorkflow(id) {
   const res = await fetch(`${N8N_URL}/api/v1/workflows/${id}`, {
@@ -42,6 +43,23 @@ async function run() {
   console.log('🚀 Updating n8nv2 Sub-agents and Dispatcher...');
   console.log(`Using n8n API Key: ${N8N_API_KEY.slice(0, 15)}...`);
 
+  // Guard duro para garantizar la separación de entornos
+  if (N8N_URL.includes('n8nv2')) {
+    if (FRONTEND_BASE_URL !== 'https://agenda.melosmile.com') {
+      console.error(`❌ ERROR: N8N_URL apunta a PRODUCCIÓN (${N8N_URL}), pero FRONTEND_BASE_URL no es 'https://agenda.melosmile.com' (es '${FRONTEND_BASE_URL}'). Abortando.`);
+      process.exit(1);
+    }
+  } else if (N8N_URL.includes('n8n.mumaweb.com')) {
+    if (FRONTEND_BASE_URL !== 'https://staging.melosmile.com') {
+      console.error(`❌ ERROR: N8N_URL apunta a DESARROLLO (${N8N_URL}), pero FRONTEND_BASE_URL no es 'https://staging.melosmile.com' (es '${FRONTEND_BASE_URL}'). Abortando.`);
+      process.exit(1);
+    }
+  } else {
+    console.error(`❌ ERROR: N8N_URL no reconocida: '${N8N_URL}'. Abortando.`);
+    process.exit(1);
+  }
+  console.log(`✅ Entornos verificados: N8N_URL=${N8N_URL}, FRONTEND_BASE_URL=${FRONTEND_BASE_URL}`);
+
   // 1. UPDATE SUB-AGENT CLINICAL (WNViucEUuhzigYtE)
   console.log('Updating Sub-Agent Clinical (WNViucEUuhzigYtE)...');
   const clinicalWf = await fetchWorkflow('WNViucEUuhzigYtE');
@@ -63,7 +81,7 @@ async function run() {
       parameters: {
         description: 'Busca pacientes por nombre, apellido, código PAC-### o teléfono. Devuelve teléfono, email, ID y datos de contacto de la ficha.',
         method: 'GET',
-        url: "https://melosmile-staging-git-develop-proyectosmuma-stacks-projects.vercel.app/api/patients/search?q={{ $fromAI('query', 'Nombre, apellido o teléfono del paciente a buscar') }}",
+        url: `${FRONTEND_BASE_URL}/api/patients/search?q={{ $fromAI('query', 'Nombre, apellido o teléfono del paciente a buscar') }}`,
         sendHeaders: true,
         headerParameters: {
           parameters: [
@@ -184,7 +202,7 @@ REGLA DE CONTEXTO TEMPORAL:
   // Update Tool_List_Appointments parameter description
   const listApptsNode = schedWf.nodes.find(n => n.name === 'Tool_List_Appointments');
   if (listApptsNode) {
-    listApptsNode.parameters.url = "https://melosmile-staging-git-develop-proyectosmuma-stacks-projects.vercel.app/api/appointments/list?date={{ $fromAI('date_range', 'Período o término a consultar: próximas, recientes, semana pasada, esta semana, próxima semana, hoy, mañana, este mes, o nombre de paciente') }}&clinic={{ $fromAI('clinic', 'Nombre de la clínica si fue mencionada, ej: Goya') }}";
+    listApptsNode.parameters.url = `${FRONTEND_BASE_URL}/api/appointments/list?date={{ $fromAI('date_range', 'Período o término a consultar: próximas, recientes, semana pasada, esta semana, próxima semana, hoy, mañana, este mes, o nombre de paciente') }}&clinic={{ $fromAI('clinic', 'Nombre de la clínica si fue mencionada, ej: Goya') }}`;
   }
 
   await updateWorkflow('d74hAW8IkmmCqoh5', schedWf);
