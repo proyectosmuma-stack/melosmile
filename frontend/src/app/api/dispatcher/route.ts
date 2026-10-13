@@ -93,28 +93,68 @@ export async function POST(req: NextRequest) {
 
     let data: any = null;
     let cleaned: { intent: string; entities: any; summary: string };
+    let pollingResult: { content: string, intent: string | null, entities: any } | null = null;
 
-    if (n8nRes.ok && text.trim()) {
-      try {
-        data = JSON.parse(text);
-      } catch {
-        data = { summary: text };
+
+
+    // --- Polling logic starts here, for both initial non-blocking responses or actual responses ---
+    console.warn("[dispatcher] n8n initial responded (ok: %s, text_len: %d). Initiating polling...", n8nRes.ok, text.length);
+
+    const pollingAttempts = 30; // Approx 50 seconds (30 * 1.5s)
+
+    for (let i = 0; i < pollingAttempts; i++) {
+      await new Promise(r => setTimeout(r, 1500)); // Esperar 1.5 segundos
+
+      const { data, error: pollError } = await supabase
+        .from("ai_conversation_history")
+        .select("content,intent,entities")
+        .eq("session_id", session_id)
+        .eq("role", "assistant")
+        .gte("created_at", reqStart)
+        .order("created_at", { ascending: false })
+        .limit(1);
+
+      if (pollError) {
+        console.error("Error during polling for conversation history:", pollError);
       }
-      cleaned = extractCleanText(data);
 
-      // Log assistant message asynchronously
+      if (data && data.length > 0 && data[0].content) {
+        pollingResult = data[0];
+        break;
+      }
+    }
+
+    if (pollingResult) {
+      cleaned = {
+        intent: pollingResult.intent || "general_query",
+        entities: pollingResult.entities || {},
+        summary: pollingResult.content,
+      };
+
+      // Log assistant message asynchronously (only if it wasn't already logged by n8n callback)
+      // This is a safeguard if n8n webhook somehow fails to insert
       if (session_id && cleaned.summary) {
         try {
-          await (supabase as any).from("ai_conversation_history").insert({
-            session_id,
-            role: "assistant",
-            content: cleaned.summary,
-            intent: cleaned.intent,
-            entities: cleaned.entities,
-            is_test: String(session_id || "").startsWith("test-")
-          }).select();
+          const { data: existing, error: fetchError } = await (supabase as any).from("ai_conversation_history")
+            .select("id")
+            .eq("session_id", session_id)
+            .eq("role", "assistant")
+            .eq("content", cleaned.summary)
+            .gte("created_at", reqStart)
+            .limit(1);
+
+          if (!fetchError && (!existing || existing.length === 0)) {
+            await (supabase as any).from("ai_conversation_history").insert({
+              session_id,
+              role: "assistant",
+              content: cleaned.summary,
+              intent: cleaned.intent,
+              entities: cleaned.entities,
+              is_test: String(session_id || "").startsWith("test-")
+            }).select();
+          }
         } catch (err: any) {
-          console.warn("Assistant conversation history log warning:", err?.message);
+          console.warn("Assistant conversation history log warning (polling fallback):", err?.message);
         }
       }
 
@@ -123,70 +163,30 @@ export async function POST(req: NextRequest) {
         extracted_entities: cleaned.entities,
         summary: cleaned.summary
       });
-
-    } else {
-      // Si n8n responde OK pero con cuerpo vacío, o responde con error
-      console.warn("[dispatcher] n8n inicial responded (ok: %s, text_len: %d). Initiating polling...", n8nRes.ok, text.length);
-
-      let pollingResult: { content: string, intent: string | null, entities: any } | null = null;
-      const pollingAttempts = 30; // Approx 50 seconds (30 * 1.5s)
-
-      for (let i = 0; i < pollingAttempts; i++) {
-        await new Promise(r => setTimeout(r, 1500)); // Esperar 1.5 segundos
-
-        const { data, error: pollError } = await supabase
-          .from("ai_conversation_history")
-          .select("content,intent,entities")
-          .eq("session_id", session_id)
-          .eq("role", "assistant")
-          .gte("created_at", reqStart)
-          .order("created_at", { ascending: false })
-          .limit(1);
-
-        if (pollError) {
-          console.error("Error during polling for conversation history:", pollError);
-        }
-
-        if (data && data.length > 0 && data[0].content) {
-          pollingResult = data[0];
-          break;
-        }
+    } else if (n8nRes.ok && text.trim() && !text.includes("Workflow was started")) {
+      // Fallback: If polling times out but n8n had a synchronous, non-ack response
+      try {
+        data = JSON.parse(text);
+      } catch {
+        data = { summary: text };
       }
-
-      if (pollingResult) {
-        cleaned = {
-          intent: pollingResult.intent || "general_query",
-          entities: pollingResult.entities || {},
-          summary: pollingResult.content,
-        };
-        return NextResponse.json({
-          intent: cleaned.intent,
-          extracted_entities: cleaned.entities,
-          summary: cleaned.summary
-        });
-      } else if (!n8nRes.ok) {
-        return NextResponse.json(
-          {
-            intent: "error",
-            summary: `Musly respondió con un error (${n8nRes.status}). Inténtalo en unos segundos.`,
-            error: text,
-          },
-          { status: n8nRes.status }
-        );
-      } else {
-        console.error("[dispatcher] Polling timed out for session_id:", session_id);
-        return NextResponse.json(
-          {
-            intent: "error",
-            summary:
-              "Musly tardó demasiado en responder (>50s). Es posible que la API de Gemini esté saturada o n8n no procesó la solicitud a tiempo.",
-            error: "Polling timed out after multiple attempts.",
-          },
-          { status: 502 }
-        );
-      }
-    }
-  } catch (err: unknown) {
+      cleaned = extractCleanText(data);
+      return NextResponse.json({
+        intent: cleaned.intent,
+        extracted_entities: cleaned.entities,
+        summary: cleaned.summary
+      });
+    } else if (!n8nRes.ok) {
+      return NextResponse.json(
+        {
+          intent: "error",
+          summary: `Musly respondió con un error (${n8nRes.status}). Inténtalo en unos segundos.`,
+          error: text,
+        },
+        { status: n8nRes.status }
+      );
+    } // Cierra el else del polling
+  } catch (err: unknown) { // Este catch debe cerrar el try de la linea 43
     const isTimeout = err instanceof Error && err.name === "TimeoutError";
 
     return NextResponse.json(
