@@ -20,12 +20,20 @@ const rootDir = fs.existsSync(path.join(process.cwd(), 'frontend'))
   ? process.cwd()
   : path.resolve(process.cwd(), '..');
 
-// Cargar variables de entorno (.env.local o .env.remote)
-const envPaths = [
-  path.join(rootDir, 'frontend', '.env.local'),
-  path.join(rootDir, 'frontend', '.env.remote'),
-  path.join(rootDir, '.env.local')
-];
+// Cargar variables de entorno: por defecto producción (.env.remote), o staging con flag --staging
+const useStaging = process.argv.includes('--staging');
+const envPaths = useStaging
+  ? [
+      path.join(rootDir, 'frontend', '.env.local'),
+      path.join(rootDir, '.env.local'),
+      path.join(rootDir, 'frontend', '.env.remote')
+    ]
+  : [
+      path.join(rootDir, 'frontend', '.env.remote'),
+      path.join(rootDir, 'frontend', '.env.production.local'),
+      path.join(rootDir, 'frontend', '.env.local'),
+      path.join(rootDir, '.env.local')
+    ];
 
 let envVars = {};
 for (const p of envPaths) {
@@ -40,7 +48,7 @@ for (const p of envPaths) {
   }
 }
 
-const supabaseUrl = envVars.NEXT_PUBLIC_SUPABASE_URL || 'https://amhfdzfcmpastmlsosou.supabase.co';
+const supabaseUrl = envVars.NEXT_PUBLIC_SUPABASE_URL || 'https://xylqytpudbdcsbuuwqpi.supabase.co';
 const supabaseKey = envVars.SUPABASE_SERVICE_ROLE_KEY || envVars.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
 if (!supabaseKey) {

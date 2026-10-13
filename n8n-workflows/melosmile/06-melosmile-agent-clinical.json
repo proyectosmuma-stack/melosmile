@@ -1,34 +1,45 @@
 {
+  "updatedAt": "2026-09-24T10:38:46.835Z",
+  "createdAt": "2026-09-02T20:21:37.190Z",
+  "id": "WNViucEUuhzigYtE",
   "name": "[MELOSMILE] Sub-Agent: Clinico",
+  "description": null,
+  "active": true,
+  "isArchived": false,
   "nodes": [
     {
-      "id": "1",
-      "name": "Webhook_Clinical",
-      "onError": "continueRegularOutput",
+      "id": "trigger-1",
+      "name": "Execute_Workflow_Trigger",
       "parameters": {
-        "httpMethod": "POST",
-        "options": {},
-        "path": "melosmile-agent-clinical",
-        "responseMode": "responseNode"
+        "inputSource": "passthrough"
       },
       "position": [
         250,
         300
       ],
-      "type": "n8n-nodes-base.webhook",
-      "typeVersion": 2.1
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1
     },
     {
+      "credentials": {
+        "openRouterApi": {
+          "id": "gUxVRtGMJgLk9JTl",
+          "name": "OpenRouter account"
+        }
+      },
       "id": "2",
-      "name": "Gemini_Chat_Model",
+      "name": "OpenRouter_Chat_Model",
       "parameters": {
-        "modelName": "models/gemini-2.0-flash"
+        "model": "openai/gpt-4o-mini",
+        "options": {
+          "temperature": 0
+        }
       },
       "position": [
         450,
         450
       ],
-      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
       "typeVersion": 1
     },
     {
@@ -36,10 +47,10 @@
       "name": "Agent_Clinical",
       "parameters": {
         "options": {
-          "systemMessage": "Role: Eres el Sub-agente Especialista Clínico de Melosmile.\n\nObjective: Responder consultas sobre el historial médico del paciente, notas de evolución por cita, anamnesis, alergias y generar síntesis técnicas verificadas.\n\nApproach Step-by-Step:\n1. Analizar el paciente o sesión solicitada.\n2. Invocación de 'Tool_Clinical_Context' para recuperar el historial médico real y tratamientos realizados.\n3. Si el usuario requiere sintetizar la ficha médica, invocar 'Tool_Patient_Summary'.\n4. Formatear la respuesta clínica en markdown profesional con alertas médicas (alergias a antibióticos, antecedentes) claramente destacadas.\n\nConstraints:\n- Prohibido alucinar diagnósticos o tratamientos no registrados en la ficha.\n\nREGLA ANTI-ALUCINACIÓN — OBLIGATORIA:\nCuando NO entiendas claramente la intención del usuario o faltan datos necesarios:\n1. NUNCA ejecutes una herramienta con datos inventados o incorrectos.\n2. NUNCA generes una respuesta de contenido que no haya sido devuelta por una herramienta.\n3. EN SU LUGAR, pregunta al usuario para confirmar usando opciones concretas.\n   Ejemplos de cómo pedir aclaración:\n   - \"¿Me puedes aclarar si quieres [opción A] o [opción B]?\"\n   - \"Entiendo que quieres [X], ¿es correcto? Necesito también [dato que falta].\"\n   - \"No he reconocido bien la petición. ¿Te refieres a [X] o a [Y]?\"\n4. Cada aclaración del profesional es aprendizaje: úsala para interpretar mejor sus próximas expresiones similares."
+          "systemMessage": "Role: Eres el Sub-agente Especialista en Pacientes y Fichas Clínicas de Melosmile. Eres la mano derecha del doctor y del equipo de la clínica para cualquier dato de pacientes.\n\nObjetivo: Proporcionar información completa de pacientes y fichas clínicas: datos de contacto (teléfono, email, dirección, DNI), datos filiativos, historial médico, tratamientos realizados, notas de evolución por cita, anamnesis, alergias y síntesis clínica.\n\nHERRAMIENTAS DISPONIBLES:\n1. 'Tool_Search_Patients': Busca pacientes por nombre, apellido, código PAC-### o teléfono. Devuelve teléfono, email, ID y datos principales de la ficha. Úsala SIEMPRE que te pidan buscar a un paciente, su teléfono, su email o sus datos de contacto.\n2. 'Tool_Clinical_Context': Obtiene el contexto clínico completo (alergias, antecedentes, medicación y notas de citas previas) pasando el ID o nombre del paciente.\n3. 'Tool_Patient_Summary': Obtiene una síntesis técnica del paciente.\n\nREGLA DE ORO — INFORMACIÓN DE CONTACTO Y FICHAS (OBLIGATORIA):\n- Si el usuario te pide el teléfono, email, datos de contacto o datos de la ficha de un paciente (ej: \"telefono de Munir Callaos\", \"contacto de Claire\"), DEBES EJECUTAR INMEDIATAMENTE 'Tool_Search_Patients' o 'Tool_Clinical_Context' con el nombre del paciente y responder con su teléfono y datos de forma clara y directa.\n- PROHIBICIÓN ABSOLUTA: Queda terminantemente PROHIBIDO decir que tu función se limita a datos clínicos o que no puedes dar datos de contacto. Tienes acceso y autorización total para consultar y entregar el teléfono, email y toda información de la ficha del paciente.\n\nREGLAS DE CLÍNICA Y TRATAMIENTOS:\n- Si el usuario pregunta qué tratamiento tiene o qué notas clínicas tiene un paciente (ej: \"qué tratamiento tiene Munir?\", \"historial de Munir\"), EJECUTA INMEDIATAMENTE 'Tool_Clinical_Context' pasando el nombre del paciente (ej: patient_id = \"Munir Callaos\").\n- Prohibido responder con texto vacío o decir que no puedes proporcionar información sin haber ejecutado la herramienta.\n- Destaca siempre alergias y alertas médicas de forma visible si están presentes."
         },
         "promptType": "define",
-        "text": "={{ (() => { const rawHistory = $json.body?.history || $json.history || []; const filteredHistory = rawHistory.filter(h => { const content = (h.content || '').trim(); return !(h.role !== 'user' && (content.includes('Hola 👋 Soy Musly') || content.includes('Puedo agendar citas'))); }); const currentMessage = $json.body?.message || $json.message || $json.query || ''; const now = $now.setZone('Europe/Madrid').format('cccc, d [de] MMMM [de] yyyy, HH:mm'); return filteredHistory.length ? 'FECHA Y HORA ACTUAL EN ESPAÑA: ' + now + '\\n\\nHISTORIAL PREVIO DE LA CONVERSACIÓN:\\n' + filteredHistory.map(h => (h.role === 'user' ? 'Usuario' : 'Musly') + ': ' + h.content).join('\\n') + '\\n\\nSOLICITUD ACTUAL DEL USUARIO:\\n' + currentMessage : 'FECHA Y HORA ACTUAL EN ESPAÑA: ' + now + '\\n\\nSOLICITUD ACTUAL DEL USUARIO:\\n' + currentMessage; })() }}"
+        "text": "={{ (() => {\n  const rawHistory = $json.body?.history || $json.history || [];\n  const filteredHistory = rawHistory.filter(h => {\n    const content = (h.content || '').trim();\n    return !(h.role !== 'user' && (content.includes('Hola 👋 Soy Musly') || content.includes('Puedo agendar citas')));\n  });\n  const currentMessage = $json.body?.message || $json.message || $json.query || '';\n  const now = $now.setZone('Europe/Madrid').format('cccc, d [de] MMMM [de] yyyy, HH:mm');\n  const promptBody = filteredHistory.length\n    ? 'FECHA Y HORA ACTUAL EN ESPAÑA: ' + now + '\\n\\nHISTORIAL PREVIO DE LA CONVERSACIÓN:\\n' + filteredHistory.map(h => (h.role === 'user' ? 'Usuario' : 'Musly') + ': ' + h.content).join('\\n') + '\\n\\nSOLICITUD ACTUAL DEL USUARIO:\\n' + currentMessage\n    : 'FECHA Y HORA ACTUAL EN ESPAÑA: ' + now + '\\n\\nSOLICITUD ACTUAL DEL USUARIO:\\n' + currentMessage;\n  return promptBody + '\\n\\nINSTRUCCIÓN CRÍTICA: Si el usuario solicita teléfono, email o contacto de un paciente, EJECUTA Tool_Search_Patients. Si solicita tratamientos, notas clínicas, alergias o historial de un paciente, EJECUTA Tool_Clinical_Context pasando el nombre del paciente. Prohibido decir que no tienes acceso.';\n})() }}"
       },
       "position": [
         450,
@@ -52,68 +63,129 @@
       "id": "4",
       "name": "Tool_Clinical_Context",
       "parameters": {
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
         "method": "GET",
-        "toolDescription": "Obtiene el contexto médico completo de la clínica (catalogo de tratamientos, reglas clínicas e historial de pacientes).",
-        "url": "https://melosmile.app/api/ai-context"
+        "placeholderDefinitions": {
+          "values": [
+            {
+              "description": "ID UUID o código PAC-### del paciente",
+              "name": "patient_id",
+              "type": "string"
+            }
+          ]
+        },
+        "url": "https://agenda.melosmile.com/api/patients/{patient_id}/clinical"
       },
       "position": [
         700,
         200
       ],
       "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
-      "typeVersion": 1.1
+      "typeVersion": 1.1,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "yNN9yI21gnAAlo2p",
+          "name": "Melosmile Backend x-api-key (JWT Prod)"
+        }
+      }
     },
     {
       "id": "5",
       "name": "Tool_Patient_Summary",
       "parameters": {
-        "jsonBody": "={{ JSON.stringify({ patient_id: $json.patient_id }) }}",
-        "method": "POST",
-        "sendBody": true,
-        "toolDescription": "Genera una síntesis técnica clínica en el perfil del paciente basada en sus notas de citas reales.",
-        "url": "https://melosmile.app/api/ai/patient-summary"
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "method": "GET",
+        "placeholderDefinitions": {
+          "values": [
+            {
+              "description": "ID UUID o código PAC-### del paciente",
+              "name": "patient_id",
+              "type": "string"
+            }
+          ]
+        },
+        "url": "https://agenda.melosmile.com/api/patients/{patient_id}/summary"
       },
       "position": [
         700,
         400
       ],
       "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
-      "typeVersion": 1.1
+      "typeVersion": 1.1,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "yNN9yI21gnAAlo2p",
+          "name": "Melosmile Backend x-api-key (JWT Prod)"
+        }
+      }
     },
     {
-      "id": "6",
-      "name": "Respond_to_Webhook",
+      "id": "tool-search-patients",
+      "name": "Tool_Search_Patients",
       "parameters": {
-        "options": {},
-        "respondWith": "allIncomingItems"
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "method": "GET",
+        "parametersQuery": {
+          "values": [
+            {
+              "name": "q",
+              "valueProvider": "modelRequired"
+            }
+          ]
+        },
+        "sendQuery": true,
+        "specifyQuery": "keypair",
+        "url": "https://agenda.melosmile.com/api/patients/search"
       },
       "position": [
-        950,
-        300
+        700,
+        50
       ],
-      "type": "n8n-nodes-base.respondToWebhook",
-      "typeVersion": 1.5
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "yNN9yI21gnAAlo2p",
+          "name": "Melosmile Backend x-api-key (JWT Prod)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionId": "={{ $json.body?.sessionId || $json.sessionId || 'default' }}"
+      },
+      "id": "memory_1",
+      "name": "Window Buffer Memory",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.2,
+      "position": [
+        450,
+        150
+      ]
     }
   ],
   "connections": {
-    "Webhook_Clinical": {
+    "Execute_Workflow_Trigger": {
       "main": [
         [
           {
+            "index": 0,
             "node": "Agent_Clinical",
-            "type": "main",
-            "index": 0
+            "type": "main"
           }
         ]
       ]
     },
-    "Gemini_Chat_Model": {
+    "OpenRouter_Chat_Model": {
       "ai_languageModel": [
         [
           {
+            "index": 0,
             "node": "Agent_Clinical",
-            "type": "ai_languageModel",
-            "index": 0
+            "type": "ai_languageModel"
           }
         ]
       ]
@@ -122,9 +194,9 @@
       "ai_tool": [
         [
           {
+            "index": 0,
             "node": "Agent_Clinical",
-            "type": "ai_tool",
-            "index": 0
+            "type": "ai_tool"
           }
         ]
       ]
@@ -133,29 +205,67 @@
       "ai_tool": [
         [
           {
+            "index": 0,
             "node": "Agent_Clinical",
-            "type": "ai_tool",
-            "index": 0
+            "type": "ai_tool"
           }
         ]
       ]
     },
-    "Agent_Clinical": {
-      "main": [
+    "Tool_Search_Patients": {
+      "ai_tool": [
         [
           {
-            "node": "Respond_to_Webhook",
-            "type": "main",
-            "index": 0
+            "index": 0,
+            "node": "Agent_Clinical",
+            "type": "ai_tool"
           }
         ]
       ]
     },
-    "Respond_to_Webhook": {
-      "main": []
+    "Window Buffer Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "Agent_Clinical",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
-  "tags": [
-    "Melosmile"
-  ]
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "meta": null,
+  "nodeGroups": [],
+  "pinData": null,
+  "versionId": "03bdb0bb-c3d2-4878-922e-e88c48a7ea4c",
+  "activeVersionId": "03bdb0bb-c3d2-4878-922e-e88c48a7ea4c",
+  "versionCounter": 27,
+  "triggerCount": 0,
+  "sourceWorkflowId": null,
+  "shared": [
+    {
+      "updatedAt": "2026-09-02T20:21:37.190Z",
+      "createdAt": "2026-09-02T20:21:37.190Z",
+      "role": "workflow:owner",
+      "workflowId": "WNViucEUuhzigYtE",
+      "projectId": "WKY5YjPydrHV2q5k",
+      "project": {
+        "updatedAt": "2026-09-02T17:28:37.287Z",
+        "createdAt": "2026-09-01T19:32:31.545Z",
+        "id": "WKY5YjPydrHV2q5k",
+        "name": "Munir Callaos <proyectos.muma@gmail.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "customTelemetryTags": [],
+        "creatorId": "f4ba8d81-81ab-4784-b291-954fc9adb7d4"
+      }
+    }
+  ],
+  "tags": []
 }

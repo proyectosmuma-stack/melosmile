@@ -27,6 +27,10 @@ Este proyecto utiliza el agente `melosmile-backend`, con acceso a código base, 
 - **Prohibición de Duplicación Multicanal**: Queda estrictamente prohibido crear recordatorios duplicados en varias plataformas a la vez (Telegram, Email, SMS). Solo se utilizarán otros canales si el usuario, doctor o paciente lo pide explícitamente.
 - **Instrucción para Musly (Asistente IA)**: Cuando Musly procese solicitudes de agendamiento, confirmación o recordatorios, debe asignar siempre `channel: "whatsapp"` a menos que el usuario indique otro medio expresamente.
 
+## Regla de Creación de Citas y Clínicas Obligatorias (Goya / Getafe)
+- **Clínicas Principales de Agendamiento Directo**: Por lo general, las citas que se crean y gestionan directamente en Melosmile corresponden a **Clínica Goya** o **Clínica Montaño - Getafe**. Las demás clínicas (Daniel Bustamante, RyA, Las Rozas, etc.) tienen su propio sistema de citas externo y se gestionan por ellos mismos (en Melosmile solo existen para control de historias clínicas de los pacientes).
+- **Confirmación de Clínica Obligatoria**: Si el usuario pide agendar o crear una nueva cita y **no especifica la clínica**, el agente **NUNCA** debe crear la cita a ciegas ni asumir una por defecto. **Debe preguntar obligatoriamente antes** en qué clínica se desea agendar, indicando como opciones habituales: ¿Goya o Getafe?. Solo cuando el usuario confirme o aclare la clínica se ejecuta la creación de la cita.
+
 ## Flujo de Trabajo de Sesión del Agente (Comandos de Chat)
 
 ### Comando: "Inicia Sesión"

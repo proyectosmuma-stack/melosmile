@@ -1,0 +1,148 @@
+{
+  "name": "[MELOSMILE] Sub-Agent: Contabilidad",
+  "description": "Fuente DEV (n8n.mumaweb.com). Subagente de facturacion compatible con toolWorkflow: executeWorkflowTrigger + memoria con sessionKey. Las tools de escritura (Odoo/reminders) estan DESHABILITADAS por seguridad: /api/odoo/invoice escribe en el ERP y /api/reminders/send-now envia mensajes a pacientes, y ninguna de esas rutas tiene autenticacion.",
+  "nodes": [
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "id": "billing-trigger-1",
+      "name": "Execute_Workflow_Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -300,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "model": "google/gemini-2.5-flash",
+        "options": {
+          "temperature": 0
+        }
+      },
+      "id": "billing-model-1",
+      "name": "OpenRouter_Chat_Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        -100,
+        -180
+      ],
+      "credentials": {
+        "openRouterApi": {
+          "id": "4nco5fDnIohG6g9f",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ 'billing-' + $execution.id }}",
+        "contextWindowLength": 5
+      },
+      "id": "billing-memory-1",
+      "name": "Window Buffer Memory",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.2,
+      "position": [
+        -100,
+        180
+      ]
+    },
+    {
+      "parameters": {
+        "agent": "toolsAgent",
+        "promptType": "define",
+        "text": "={{ (() => { const rawHistory = $json.body?.history || $json.history || []; const filteredHistory = rawHistory.filter(h => { const content = (h.content || '').trim(); return !(h.role !== 'user' && (content.includes('Hola 👋 Soy Musly') || content.includes('Puedo agendar citas'))); }); const currentMessage = $json.body?.message || $json.message || $json.query || ''; const now = $now.setZone('Europe/Madrid').format('cccc, d [de] MMMM [de] yyyy, HH:mm'); return filteredHistory.length ? 'FECHA Y HORA ACTUAL EN ESPAÑA: ' + now + '\\n\\nHISTORIAL PREVIO DE LA CONVERSACIÓN:\\n' + filteredHistory.map(h => (h.role === 'user' ? 'Usuario' : 'Musly') + ': ' + h.content).join('\\n') + '\\n\\nSOLICITUD ACTUAL DEL USUARIO:\\n' + currentMessage : 'FECHA Y HORA ACTUAL EN ESPAÑA: ' + now + '\\n\\nSOLICITUD ACTUAL DEL USUARIO:\\n' + currentMessage; })() }}",
+        "hasOutputParser": false,
+        "options": {
+          "systemMessage": "Role: Eres Musly, el Sub-agente Especialista en Facturación y Contabilidad de la clínica dental Melosmile.\n\nObjetivo: resolver dudas de facturación, precios, planes de pago, cuotas, formas de pago, seguros y facturación de tratamientos.\n\nMODO DESARROLLO (OBLIGATORIO):\nEste workflow corre en un entorno de DESARROLLO. Las herramientas que emiten facturas en el ERP y las que envían recordatorios a pacientes están DESHABILITADAS de forma intencionada.\n- NUNCA inventes confirmaciones de que se ha emitido una factura, registrado un cobro o enviado un aviso a un paciente.\n- Si te piden emitir una factura, registrar un cobro o enviar un recordatorio, explica con educación que esa acción está deshabilitada en modo desarrollo y ofrece la alternativa de consultarlo con administración.\n- NUNCA expongas ni solicites credenciales, tokens o datos bancarios.\n\nCÁLCULOS Y PLANES DE PAGO:\n- Si el usuario plantea un total y un número de cuotas, calcula y devuelve el importe exacto de cada cuota y el total, de forma explícita.\n- Si el total no es divisible de forma exacta, indícalo con claridad.\n\nFORMATO DE RESPUESTA:\nResponde siempre en español, de forma clara, breve y profesional."
+        }
+      },
+      "id": "billing-agent-1",
+      "name": "Agent_Billing",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        160,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsonBody": "={{ JSON.stringify({ patient_id: $json.patient_id, billing_record_ids: $json.billing_record_ids }) }}",
+        "method": "POST",
+        "sendBody": true,
+        "toolDescription": "Emite facturas agrupadas en Odoo ERP (res.partner y account.move) para los cobros seleccionados de un paciente.",
+        "url": "https://staging.melosmile.com/api/odoo/invoice"
+      },
+      "id": "billing-tool-odoo",
+      "name": "Tool_Odoo_Invoice",
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "position": [
+        160,
+        260
+      ],
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "jsonBody": "={{ JSON.stringify({ patient_id: $json.patient_id, type: \"billing_reminder\", channel: \"whatsapp\" }) }}",
+        "method": "POST",
+        "sendBody": true,
+        "toolDescription": "Despacha avisos de cobro y recordatorios de pago por WhatsApp, Email o SMS al paciente.",
+        "url": "https://staging.melosmile.com/api/reminders/send-now"
+      },
+      "id": "billing-tool-reminders",
+      "name": "Tool_Reminders_Dispatcher",
+      "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
+      "typeVersion": 1.1,
+      "position": [
+        160,
+        380
+      ],
+      "disabled": true
+    }
+  ],
+  "connections": {
+    "Execute_Workflow_Trigger": {
+      "main": [
+        [
+          {
+            "node": "Agent_Billing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter_Chat_Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Agent_Billing",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Window Buffer Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "Agent_Billing",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {},
+  "staticData": null
+}

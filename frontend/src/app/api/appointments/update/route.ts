@@ -335,8 +335,10 @@ export async function POST(req: Request) {
         if (matchedClinic) c_id = matchedClinic.id;
       }
       if (!c_id || !UUID_REGEX.test(c_id)) {
-        const { data: clinics } = await dbClient.from("clinics").select("id").limit(1).single();
-        if (clinics) c_id = clinics.id;
+        return NextResponse.json(
+          { error: "Debe especificar la clínica (habitualmente Goya o Getafe) para crear la cita." },
+          { status: 400 }
+        );
       }
 
       // Resolve professional
