@@ -44,16 +44,17 @@ export async function POST(req: Request) {
     const selectCols = "id, appointment_date, reason, status, patient_id, clinic_id, patients(id, first_name, last_name, phone, email), clinics(name)";
 
     let appointments: any[] = [];
+    const warnings: string[] = []; // Declaración única de warnings
 
     if (appointmentIds.length > 0) {
-      const { data, error } = await (supabase as any)
+      const { data: appointmentData, error: appointmentError } = await (supabase as any)
         .from("appointments")
         .select(selectCols)
         .in("id", appointmentIds)
         .neq("status", "Cancelada")
         .order("appointment_date", { ascending: true });
-      if (error) throw error;
-      appointments = data || [];
+      if (appointmentError) throw appointmentError;
+      appointments = appointmentData || [];
     } else {
       let query = (supabase as any)
         .from("appointments")
@@ -69,18 +70,28 @@ export async function POST(req: Request) {
 
       if (patientNames.length > 0) {
         const matchedIds = new Set<string>();
+        const norm = (s:string) => (s||"").normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase();
+
+        const { data: allPats, error: patErr } = await (supabase as any)
+          .from("patients")
+          .select("id, first_name, last_name");
+        if (patErr) throw patErr;
+
         for (const name of patientNames) {
-          const term = name.trim();
-          if (term.length < 2) continue;
-          const { data: pats, error: patErr } = await (supabase as any)
-            .from("patients")
-            .select("id")
-            .or(`first_name.ilike.%${term}%,last_name.ilike.%${term}%`);
-          if (patErr) throw patErr;
-          for (const p of pats || []) matchedIds.add(String(p.id));
+          const tokens = norm(name).split(/\s+/).filter(t => t.length >= 2);
+          if (tokens.length === 0) continue;
+
+          const matchingPatients = (allPats || []).filter((p: any) => {
+            const fullDbName = norm(`${p.first_name || ""} ${p.last_name || ""}`);
+            return tokens.every(t => fullDbName.includes(t));
+          });
+
+          for (const p of matchingPatients) matchedIds.add(String(p.id));
         }
+
         if (matchedIds.size === 0) {
-          return NextResponse.json({ success: true, processed_appointments: 0, created_reminders: 0, warnings: [] });
+          warnings.push(`Ningún paciente coincide con: ${patientNames.join(", ")}`);
+          return NextResponse.json({ success: true, processed_appointments: 0, created_reminders: 0, warnings });
         }
         query = query.in("patient_id", Array.from(matchedIds));
       }
@@ -93,18 +104,23 @@ export async function POST(req: Request) {
         if (cErr) throw cErr;
         const clinicIds = (clinics || []).map((c: any) => String(c.id));
         if (clinicIds.length === 0) {
-          return NextResponse.json({ success: true, processed_appointments: 0, created_reminders: 0, warnings: [] });
+          warnings.push("No se encontró la clínica indicada.");
+          return NextResponse.json({ success: true, processed_appointments: 0, created_reminders: 0, warnings });
         }
         query = query.in("clinic_id", clinicIds);
       }
 
-      const { data, error } = await query;
-      if (error) throw error;
-      appointments = data || [];
+      const { data: queryData, error: queryError } = await query;
+      if (queryError) throw queryError;
+      appointments = queryData || [];
+      if (appointments.length === 0 && (date || patientNames.length > 0 || clinicName)) {
+        warnings.push("No se encontraron citas para los criterios indicados.");
+        return NextResponse.json({ success: true, processed_appointments: 0, created_reminders: 0, warnings });
+      }
     }
 
     let createdReminders = 0;
-    const warnings: Array<{ patient_name: string; appointment_id: string; reason: string }> = [];
+    const detailedWarnings: Array<{ patient_name: string; appointment_id: string; reason: string }> = [];
 
     for (const appt of appointments) {
       const patient = appt.patients || {};
@@ -112,7 +128,7 @@ export async function POST(req: Request) {
       const channel = resolveChannel(patient);
 
       if (!channel) {
-        warnings.push({ patient_name: patientName, appointment_id: String(appt.id), reason: "no_contact_info" });
+        detailedWarnings.push({ patient_name: patientName, appointment_id: String(appt.id), reason: "no_contact_info" });
         continue;
       }
 
@@ -136,7 +152,7 @@ export async function POST(req: Request) {
       });
 
       if (!created || created.length === 0) {
-        warnings.push({ patient_name: patientName, appointment_id: String(appt.id), reason: "all_stages_passed" });
+        detailedWarnings.push({ patient_name: patientName, appointment_id: String(appt.id), reason: "all_stages_passed" });
       } else {
         createdReminders += created.length;
       }
@@ -146,7 +162,7 @@ export async function POST(req: Request) {
       success: true,
       processed_appointments: appointments.length,
       created_reminders: createdReminders,
-      warnings,
+      warnings: detailedWarnings,
     });
   } catch (error: any) {
     console.error("[schedule-cadence] Error:", error?.message || error);
