@@ -3,9 +3,6 @@
   "version": "1.0.0",
   "private": true,
   "description": "Melosmile Root Project Proxy Scripts for OpenCode & Antigravity",
-  "dependencies": {
-    "next": "16.2.11"
-  },
   "scripts": {
     "dev": "npm --prefix frontend run dev",
     "db:sync": "npm --prefix frontend run db:sync",
