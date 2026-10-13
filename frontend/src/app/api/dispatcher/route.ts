@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin as supabase } from "@/lib/supabase/server";
 
+export const maxDuration = 60;
+
 const N8N_BASE = process.env.N8N_WEBHOOK_BASE_URL ?? "https://n8nv2.mumaweb.com";
 const DISPATCHER_PATH = "/webhook/melosmile-dispatcher";
 
@@ -82,7 +84,7 @@ export async function POST(req: NextRequest) {
         ...(process.env.N8N_API_KEY ? { "X-N8N-API-KEY": process.env.N8N_API_KEY } : {}),
       },
       body: JSON.stringify({ ...body, message: finalMessage, chatInput: finalMessage }), // Send the injected message to Musly
-      signal: AbortSignal.timeout(30_000),
+      signal: AbortSignal.timeout(55_000),
     });
 
     const text = await n8nRes.text();

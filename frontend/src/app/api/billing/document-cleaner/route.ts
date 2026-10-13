@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import * as xlsx from 'xlsx';
+export const maxDuration = 60;
 import { supabaseAdmin } from '@/lib/supabase/server';
 
 const N8N_WEBHOOK_URL = process.env.N8N_WEBHOOK_URL || 'https://n8nv2.mumaweb.com/webhook/document-cleaner';
