@@ -1,169 +1,34 @@
+import { createInvoiceFromBilling } from "@/lib/odoo/create-invoice";
 import { NextResponse } from "next/server";
-import { upsertOdooPartner, createOdooInvoice, confirmOdooInvoice, getOdooInvoice, registerOdooPayment } from "@/lib/odoo/client";
-import { supabase } from "@/lib/supabase/client";
+
+export const maxDuration = 60; // This can be increased if needed
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const {
+    const { patientId, patientDetails, billingRecordIds, items, billingRecordId, treatmentName, price } = body;
+
+    if (!patientId) {
+      return NextResponse.json({ success: false, error: "patientId es requerido" }, { status: 400 });
+    }
+
+    if (!patientDetails || !patientDetails.nifCif) {
+      return NextResponse.json({ success: false, error: "patientDetails.nifCif es requerido" }, { status: 400 });
+    }
+
+    const result = await createInvoiceFromBilling({
       patientId,
-      billingRecordId,
+      patientDetails,
       billingRecordIds,
       items,
-      patientDetails,
+      billingRecordId,
       treatmentName,
       price,
-    } = body;
-
-    if (!patientId || !patientDetails) {
-      return NextResponse.json(
-        { success: false, error: "patientId y patientDetails son requeridos" },
-        { status: 400 }
-      );
-    }
-
-    if (!patientDetails.nifCif) {
-      return NextResponse.json(
-        { success: false, error: "Faltan datos fiscales obligatorios (NIF/CIF). Por favor, actualiza la ficha del paciente o usa los datos de un representante para poder facturar en Odoo." },
-        { status: 400 }
-      );
-    }
-
-    // 1. Upsert Partner in Odoo
-    // Target the already-mapped partner (patient.odoo_partner_id) when it exists
-    // so address/fiscal updates land on the correct record instead of a
-    // re-search that could hit the wrong partner or create a duplicate.
-    let mappedPartnerId: number | null = null;
-    const { data: patientRow } = await (supabase as any)
-      .from("patients")
-      .select("odoo_partner_id")
-      .eq("id", patientId)
-      .maybeSingle();
-    if (patientRow?.odoo_partner_id) mappedPartnerId = patientRow.odoo_partner_id;
-
-    const partnerId = await upsertOdooPartner({
-      full_name: (patientDetails.firstName || "") + " " + (patientDetails.lastName || ""),
-      nif_cif: patientDetails.nifCif,
-      billing_name: patientDetails.billingName,
-      billing_address: patientDetails.billingAddress,
-      billing_address_2: patientDetails.billingAddress2,
-      billing_city: patientDetails.billingCity,
-      billing_postal_code: patientDetails.billingPostalCode,
-      billing_province: patientDetails.billingProvince,
-      billing_country: patientDetails.billingCountry,
-      email: patientDetails.email,
-      phone: patientDetails.phone,
-      odoo_partner_id: mappedPartnerId || undefined,
-      patient_id: patientId,
-      force_create: true,
     });
 
-    // 2. Prepare Invoice Lines & References
-    let invoiceLines: { name: string; quantity: number; price_unit: number }[] = [];
-    let recordIdsToUpdate: string[] = [];
-    let refText = `Melosmile: ${patientDetails.historiaId || "PAC"}`;
-
-    if (items && Array.isArray(items) && items.length > 0) {
-      invoiceLines = items.map((it: any) => ({
-        name: it.name || it.appointment_reason || "Servicio Odontológico",
-        quantity: 1,
-        price_unit: parseFloat(it.price || it.custom_price || 0),
-      }));
-      recordIdsToUpdate = items.map((it: any) => it.id).filter(Boolean);
-      refText += ` - ${items.length} cobros agrupados`;
-    } else if (billingRecordIds && Array.isArray(billingRecordIds) && billingRecordIds.length > 0) {
-      recordIdsToUpdate = billingRecordIds;
-      // Fetch details from DB
-      // El motivo del tratamiento llega por join anidado (billing_records no tiene
-      // appointment_reason ni total_amount; el importe real es calculated_total).
-      const { data: records } = await (supabase as any)
-        .from("billing_records")
-        .select("id, custom_price, calculated_total, appointments(reason)")
-        .in("id", billingRecordIds);
-
-      if (records && records.length > 0) {
-        invoiceLines = records.map((r: any) => ({
-          name: r.appointments?.reason || "Servicio Odontológico",
-          quantity: 1,
-          price_unit: parseFloat(r.custom_price || r.calculated_total || 0),
-        }));
-      }
-      refText += ` - ${billingRecordIds.length} cobros`;
-    } else {
-      // Single item fallback
-      const singlePrice = parseFloat(price || 0);
-      const singleName = treatmentName || "Tratamiento Dental";
-      invoiceLines = [{ name: singleName, quantity: 1, price_unit: singlePrice }];
-      if (billingRecordId) recordIdsToUpdate = [billingRecordId];
-      refText += ` - ${singleName}`;
-    }
-
-    // 3. Create Draft Invoice in Odoo
-    const invoiceId = await createOdooInvoice({
-      partner_id: partnerId,
-      ref: refText,
-      invoice_lines: invoiceLines,
-    });
-
-    // 4. Confirm the invoice to generate a real invoice number
-    await confirmOdooInvoice(invoiceId);
-    
-    // 5. Fetch the confirmed invoice details
-    const odooInv = await getOdooInvoice(invoiceId);
-    
-    if (!odooInv || odooInv.state !== 'posted') {
-      throw new Error("Odoo no pudo confirmar la factura. Verifica que los datos fiscales en Odoo estén correctos.");
-    }
-    const odooInvoiceNumber = odooInv.name;
-
-    // 6. Check if billing records are "Pagado" or "Aconto" to register payment
-    if (recordIdsToUpdate.length > 0) {
-      const { data: bRecs } = await (supabase as any)
-        .from("billing_records")
-        .select("status")
-        .in("id", recordIdsToUpdate);
-        
-      const hasPaid = bRecs && bRecs.some((b: any) => b.status === "Pagado" || b.status === "Aconto");
-      if (hasPaid) {
-        await registerOdooPayment(invoiceId);
-      }
-    }
-
-    // 7. Update Supabase billing record(s) & patient with Odoo references
-    if (recordIdsToUpdate.length > 0) {
-      const { error: billingErr } = await (supabase as any)
-        .from("billing_records")
-        .update({
-          odoo_invoice_id: invoiceId,
-          odoo_invoice_number: odooInvoiceNumber,
-          status: "Facturado Odoo",
-        })
-        .in("id", recordIdsToUpdate);
-
-      if (billingErr) console.error("Error updating billing records:", billingErr);
-    }
-
-    const { error: patientErr } = await (supabase as any)
-      .from("patients")
-      .update({
-        odoo_partner_id: partnerId,
-      })
-      .eq("id", patientId);
-
-    if (patientErr) console.error("Error updating patient partner_id:", patientErr);
-
-    return NextResponse.json({
-      success: true,
-      invoiceId,
-      invoiceNumber: odooInvoiceNumber,
-      partnerId,
-      updatedCount: recordIdsToUpdate.length,
-    });
+    return NextResponse.json(result, { status: 200 });
   } catch (error: any) {
     console.error("Error creating Odoo invoice:", error);
-    return NextResponse.json(
-      { success: false, error: error.message || "Error al conectar con Odoo" },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
