@@ -6,8 +6,15 @@ export const maxDuration = 60;
 
 export async function POST(req: Request) {
   try {
-    const body = await req.json();
-    const { patientId, billingRecordIds } = body;
+    const body = await req.json().catch(() => ({} as any));
+    // Acepta también los argumentos por query string (para la tool n8n de Musly,
+    // que declara sus parámetros de forma fiable como query params).
+    const url = new URL(req.url);
+    const patientId = body.patientId ?? url.searchParams.get("patientId");
+    const rawIds = body.billingRecordIds ?? url.searchParams.get("billingRecordIds");
+    const billingRecordIds: string[] = (Array.isArray(rawIds) ? rawIds : String(rawIds ?? "").split(","))
+      .map((s) => String(s).replace(/[[\]"' ]/g, ""))
+      .filter(Boolean);
 
     if (!patientId) {
       return NextResponse.json({ success: false, error: "patientId es requerido" }, { status: 400 });
