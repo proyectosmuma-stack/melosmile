@@ -11,6 +11,7 @@ export async function GET(req: Request) {
     let query = supabaseAdmin
       .from('reminders')
       .select('id, patient_id, appointment_id, reminder_type, status, scheduled_at, sent_at, message, subject, channel, patient:patients(id, first_name, last_name, phone), appointment:appointments(id, appointment_date)')
+      .is('archived_at', null)
       .order('scheduled_at', { ascending: false });
 
     if (patientId) {

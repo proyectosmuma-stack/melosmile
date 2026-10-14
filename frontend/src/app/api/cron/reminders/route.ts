@@ -41,6 +41,7 @@ export async function GET(request: Request) {
         .from("reminders")
         .select("id, patient_id, scheduled_at, status, error_message, patients(first_name, last_name, phone), appointments(appointment_date)")
         .eq("status", "error")
+        .is("archived_at", null)
         .gte("scheduled_at", fresh)
         .order("scheduled_at", { ascending: true })
         .limit(50);
@@ -50,6 +51,7 @@ export async function GET(request: Request) {
         .from("reminders")
         .select("id, patient_id, scheduled_at, status, patients(first_name, last_name, phone), appointments(appointment_date)")
         .eq("status", "pendiente")
+        .is("archived_at", null)
         .gte("scheduled_at", fresh)
         .lte("scheduled_at", horizon)
         .order("scheduled_at", { ascending: true })
