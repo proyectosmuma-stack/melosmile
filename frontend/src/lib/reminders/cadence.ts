@@ -232,6 +232,58 @@ export interface SyncCadenceResult {
 }
 
 /**
+ * Avisa al doctor (campanita del sistema / `system_notifications`) de que un paciente
+ * NO tiene datos de contacto válidos y, por tanto, no recibirá los recordatorios de su cita.
+ *
+ * Deduplicación determinista: mientras exista una alerta SIN LEER para la misma ficha de
+ * paciente (`link`), no se vuelve a insertar. Así funciona en altas, reprogramaciones y
+ * backfills sin inundar la campanita.
+ *
+ * @returns true si se insertó una nueva alerta; false si ya existía o hubo error.
+ */
+export async function notifyMissingContact(
+  patient: { id?: string | null; first_name?: string | null; last_name?: string | null } | null | undefined
+): Promise<boolean> {
+  try {
+    const patientId = patient?.id;
+    if (!patientId) return false;
+
+    const linkPath = `/patients/${patientId}`;
+
+    // 1. ¿Ya hay una alerta PENDIENTE para este paciente? -> no duplicar.
+    const { data: existing } = await (supabase as any)
+      .from("system_notifications")
+      .select("id")
+      .eq("link", linkPath)
+      .eq("type", "warning")
+      .eq("read", false)
+      .limit(1);
+
+    if (existing && existing.length > 0) return false;
+
+    // 2. Insertar la alerta.
+    const name = `${patient?.first_name || ""} ${patient?.last_name || ""}`.trim() || "un paciente";
+    const { error } = await (supabase as any).from("system_notifications").insert({
+      title: "Datos de contacto incompletos",
+      message: `Falta un teléfono o email válido para ${name}. Sin esta información el paciente no recibirá los recordatorios de su cita. Complétalos en su ficha.`,
+      type: "warning",
+      link: linkPath,
+      created_by: "system_contact_alert",
+      read: false,
+    });
+
+    if (error) {
+      console.warn("[notifyMissingContact] Error:", error.message);
+      return false;
+    }
+    return true;
+  } catch (e: any) {
+    console.warn("[notifyMissingContact] Error:", e?.message || e);
+    return false;
+  }
+}
+
+/**
  * Sincroniza la cadencia de una cita: cancela los pendientes previos y regenera
  * las etapas vigentes (1 semana / 2 días / día de la cita). Idempotente y determinista:
  * cualquier alta, reprogramación o cambio de estado puede invocarlo sin duplicar envíos.
@@ -263,7 +315,11 @@ export async function syncAppointmentCadence(
     // 3. Canal válido obligatorio
     const patient = appt.patients || {};
     const channel = resolveReminderChannel(patient);
-    if (!channel) return { created: 0, cancelled, skipped: "paciente sin teléfono ni email" };
+    if (!channel) {
+      // Sin contacto no hay recordatorio posible -> avisar al doctor para que complete la ficha.
+      await notifyMissingContact(patient);
+      return { created: 0, cancelled, skipped: "paciente sin teléfono ni email" };
+    }
 
     // 4. Regenerar cadencia
     const created = await createAutomaticAppointmentReminders({
