@@ -53,13 +53,40 @@ export async function POST(req: NextRequest) {
       .join("\n");
 
     // Inject Context & Guardrail
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = (now.getMonth() + 1).toString().padStart(2, '0');
+    const day = now.getDate().toString().padStart(2, '0');
+    const dayOfWeek = new Intl.DateTimeFormat('es-ES', { weekday: 'long' }).format(now);
+    const hours = now.getHours().toString().padStart(2, '0');
+    const minutes = now.getMinutes().toString().padStart(2, '0');
+
     let finalMessage = message;
+
+    // Tarea 2a: Inyección de fecha real
+    finalMessage = `${finalMessage}\n\n[CONTEXTO SISTEMA — FECHA REAL] Hoy es ${year}-${month}-${day} (${dayOfWeek}) ${hours}:${minutes}. Resuelve TODA fecha relativa (mañana, próximo martes, "el 20") contra ESTA fecha. Prohibido usar meses/años del historial.`;
     if (historyText) {
       finalMessage = `${finalMessage}\n\n[HISTORIAL RECIENTE DE LA CONVERSACIÓN (úsalo para resolver a qué paciente y, solo si el usuario ya lo mencionó, a qué clínica se refiere, SIN volver a preguntar):\n${historyText}]`;
     }
     if (active_context?.patient_id) {
        finalMessage = `${finalMessage}\n\n[SYSTEM CONTEXT INVISIBLE: El usuario está viendo actualmente la ficha del paciente con ID de base de datos: ${active_context.patient_id}. Si el usuario pide resumir, buscar, facturar o gestionar algo y no menciona un nombre, asume implícitamente que se refiere a este paciente y filtra tus búsquedas con este patient_id.]`;
-    } else {
+    }
+
+    // Tarea 2b: Inyección de conversation_state
+    if (body.conversation_state) {
+      const { paciente, clinica, rango_fechas, accion_pendiente } = body.conversation_state;
+      const state_parts = [];
+      if (paciente) state_parts.push(`paciente=${paciente}`);
+      if (clinica) state_parts.push(`clinica=${clinica}`);
+      if (rango_fechas) state_parts.push(`rango_fechas=${rango_fechas}`);
+      if (accion_pendiente) state_parts.push(`accion_pendiente=${accion_pendiente}`);
+      if (state_parts.length > 0) {
+        finalMessage = `${finalMessage}\n\n[ESTADO ACTIVO] ${state_parts.join(' | ')}`;
+      }
+    }
+    
+    // Tarea 2c: Mantiene el guardrail si no hay patient_id
+    if (!active_context?.patient_id) {
        finalMessage = `${finalMessage}\n\n[SYSTEM GUARDRAIL ESTRICTO: El usuario NO está en la ficha de ningún paciente (está en el menú global). ANTES de pedir el nombre del paciente, revisa el mensaje actual y el HISTORIAL RECIENTE. Si el paciente ya está identificado en cualquiera de los dos, NO vuelvas a preguntar su nombre: actúa o confirma directamente (la clínica, si no consta en el hilo, confírmala aparte). Solo si NO puedes identificar al paciente, y la solicitud implica leer historiales, buscar documentos, generar facturas o acceder a datos personales, detente y pregunta: '¿De qué paciente estamos hablando?']`;
     }
 

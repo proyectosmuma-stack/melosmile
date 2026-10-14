@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import {
   Sparkles,
   Send,
@@ -422,25 +422,43 @@ function UserBubble({ msg }: { msg: Message }) {
 export function AIAgentBar({ fullHeight = false }: { fullHeight?: boolean }) {
   const [prompt, setPrompt] = useState("");
   const [suggestions, setSuggestions] = useState<Array<{ text: string; isLearned?: boolean }>>([]);
+  const [showNewConversationConfirm, setShowNewConversationConfirm] = useState(false);
 
-  const [sessionId, setSessionId] = useState<string>("");
-
-  useEffect(() => {
-    if (typeof window === "undefined") {
-      return;
+  const [sessionId, setSessionId] = useState<string>(() => {
+    if (typeof window !== "undefined") {
+      const KEY = "musly_active_session";
+      const existing = localStorage.getItem(KEY);
+      if (existing) {
+        return existing;
+      } else {
+        const fresh = uid() + uid();
+        localStorage.setItem(KEY, fresh);
+        return fresh;
+      }
     }
-    const KEY = "musly_active_session";
-    const existing = localStorage.getItem(KEY);
-    if (existing) {
-      setSessionId(existing);
-    } else {
-      const fresh = uid() + uid();
-      localStorage.setItem(KEY, fresh);
-      setSessionId(fresh);
-    }
-  }, []);
+    return ""; // Default value for SSR
+  });
 
-  const [messages, setMessages] = useState<Message[]>([]);
+  // Estado mínimo a conservar
+  const [retainedConversationState, setRetainedConversationState] = useState<any>(null);
+
+
+
+  const [messages, setMessages] = useState<Message[]>(() => {
+    return [
+      {
+        id: uid(),
+        role: "assistant",
+        text: "Hola 👋 Soy Musly, tu asistente IA. Puedo agendar citas, consultar la agenda del día, gestionar pacientes y facturación. ¿En qué te ayudo hoy?",
+        timestamp: new Date(),
+        payload: {
+          intent: "general_query",
+          summary:
+            "Hola 👋 Soy Musly, tu asistente IA. Puedo agendar citas, consultar la agenda del día, gestionar pacientes y facturación. ¿En qué te ayudo hoy?",
+        },
+      },
+    ];
+  });
 
   const handleActionComplete = (msgId: string, result: string) => {
     setMessages((prev) =>
@@ -489,6 +507,28 @@ export function AIAgentBar({ fullHeight = false }: { fullHeight?: boolean }) {
               },
             },
           ]);
+          // Tarea 4: Primer mensaje de contexto si hay estado retenido
+          if (retainedConversationState) {
+            const { paciente, clinica, accion_pendiente } = retainedConversationState;
+            const contextParts: string[] = [];
+            if (paciente) contextParts.push(`Paciente: ${paciente}`);
+            if (clinica) contextParts.push(`Clínica: ${clinica}`);
+            if (accion_pendiente) contextParts.push(`Acción pendiente: ${accion_pendiente}`);
+
+            if (contextParts.length > 0) {
+              setMessages((prev) => [
+                ...prev,
+                {
+                  id: uid(),
+                  role: "assistant",
+                  text: `Retomo: ${contextParts.join(" · ")}. ¿Continuamos?`,
+                  timestamp: new Date(),
+                  payload: { intent: "general_query", summary: `Retomo: ${contextParts.join(" · ")}. ¿Continuamos?` },
+                  isLoading: false, // This message is not loading, it's a context message
+                },
+              ]);
+            }
+          }
         }
       } catch (error) {
         console.error("Error loading conversation history:", error);
@@ -521,7 +561,89 @@ export function AIAgentBar({ fullHeight = false }: { fullHeight?: boolean }) {
         }
       })
       .catch(() => {});
-  }, [sessionId]);
+  }, [sessionId, retainedConversationState]);
+
+
+
+  const handleClearConversation = useCallback(async () => {
+    if (messages.some((m) => m.isLoading)) return;
+
+    try {
+      await fetch(`/api/ai/history/session?session_id=${sessionId}`, { method: "DELETE" });
+    } catch (error) {
+      console.error("Error deleting old session history:", error);
+    }
+
+    setMessages([
+      {
+        id: uid(),
+        role: "assistant",
+        text: "Hola 👋 Soy Musly, tu asistente IA. Puedo agendar citas, consultar la agenda del día, gestionar pacientes y facturación. ¿En qué te ayudo hoy?",
+        timestamp: new Date(),
+        payload: {
+          intent: "general_query",
+          summary:
+            "Hola 👋 Soy Musly, tu asistente IA. Puedo agendar citas, consultar la agenda del día, gestionar pacientes y facturación. ¿En qué te ayudo hoy?",
+        },
+      },
+    ]);
+    setReportFeedback("Pantalla limpia. Sigo recordando tu paciente, clínica y última gestión pendiente.");
+    setTimeout(() => setReportFeedback(null), 6000);
+  }, [sessionId, messages]);
+
+  useEffect(() => {
+    window.addEventListener("clear-ai-agent-conversation", handleClearConversation);
+    return () => {
+      window.removeEventListener("clear-ai-agent-conversation", handleClearConversation);
+    };
+  }, [handleClearConversation]);
+
+  const handleNewConversation = async () => {
+    if (messages.some((m) => m.isLoading)) return; // Prevent starting new conversation while processing
+
+    // Tarea 4: Extraer estado mínimo a retener
+    const currentPatient = messages.find(m => m.role === "assistant" && m.payload?.extracted_entities?.patient)?.payload?.extracted_entities?.patient;
+    const currentClinic = messages.find(m => m.role === "assistant" && m.payload?.extracted_entities?.clinic)?.payload?.extracted_entities?.clinic;
+    const currentRange = messages.find(m => m.role === "assistant" && m.payload?.extracted_entities?.date)?.payload?.extracted_entities?.date; // This is a simplification, a real system would parse date ranges
+    const currentPendingAction = messages.find(m => m.role === "assistant" && m.pendingAction)?.payload?.intent; // Simplified
+
+    setRetainedConversationState({
+      paciente: currentPatient || null,
+      clinica: currentClinic || null,
+      rango_fechas: currentRange || null,
+      accion_pendiente: currentPendingAction || null,
+    });
+
+    // Delete old session history
+    try {
+      await fetch(`/api/ai/history/session?session_id=${sessionId}`, {
+        method: "DELETE",
+      });
+    } catch (error) {
+      console.error("Error deleting old session history:", error);
+    }
+
+    // Generate new session ID
+    const newSessionId = uid() + uid();
+    localStorage.setItem("musly_active_session", newSessionId);
+    setSessionId(newSessionId);
+
+    // Reset messages and show confirmation
+    setMessages([
+      {
+        id: uid(),
+        role: "assistant",
+        text: "Listo. Sigo recordando tu paciente, clínica y última gestión pendiente.",
+        timestamp: new Date(),
+        payload: {
+          intent: "general_query",
+          summary:
+            "Listo. Sigo recordando tu paciente, clínica y última gestión pendiente.",
+        },
+      },
+    ]);
+    setShowNewConversationConfirm(false);
+  };
 
   // Report error modal state
   const [reportModalOpen, setReportModalOpen] = useState(false);
@@ -630,11 +752,21 @@ export function AIAgentBar({ fullHeight = false }: { fullHeight?: boolean }) {
 
       // If memory history is sparse but we have a loaded history, use that as fallback
       if (memoryHistory.length < 3 && dbLoadedHistory.length > 0) {
-        // Use the loaded DB history directly if memory is sparse
+        const initialMessage: Message = {
+          id: uid(),
+          role: "assistant",
+          text: "Hola 👋 Soy Musly, tu asistente IA. Puedo agendar citas, consultar la agenda del día, gestionar pacientes y facturación. ¿En qué te ayudo hoy?",
+          timestamp: new Date(),
+          payload: {
+            intent: "general_query",
+            summary:
+              "Hola 👋 Soy Musly, tu asistente IA. Puedo agendar citas, consultar la agenda del día, gestionar pacientes y facturación. ¿En qué te ayudo hoy?",
+          },
+        };
         const dbFallbackHistory = dbLoadedHistory
           .filter((m) => !(m.role === "assistant" && m.text.includes("Hola 👋 Soy Musly")))
-          .slice(-10); // Still respect the 10-message limit
-        historySnapshot.splice(0, historySnapshot.length, ...dbFallbackHistory.map((m) => ({
+          .slice(-9); // Leave space for initial message
+        historySnapshot.splice(0, historySnapshot.length, { role: initialMessage.role, content: initialMessage.text }, ...dbFallbackHistory.map((m) => ({
           role: m.role,
           content: m.payload?.summary ?? m.text,
         })));
@@ -659,6 +791,7 @@ export function AIAgentBar({ fullHeight = false }: { fullHeight?: boolean }) {
           session_id: sessionId,
           history: historySnapshot,
           active_context: activeContext,
+          ...(retainedConversationState && { conversation_state: retainedConversationState }),
         }),
       });
 
@@ -803,7 +936,16 @@ export function AIAgentBar({ fullHeight = false }: { fullHeight?: boolean }) {
             <Sparkles className="h-3 w-3 text-violet-400" />
             Acciones frecuentes y sugeridas
           </span>
-          <span className="text-[9px] lowercase font-normal opacity-60">se adapta a tu uso</span>
+            <span className="text-[9px] lowercase font-normal opacity-60">se adapta a tu uso</span>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleNewConversation}
+            className="text-xs font-semibold text-primary hover:text-primary/80 h-auto p-1"
+            disabled={isProcessing}
+          >
+            Nueva conversación
+          </Button>
         </div>
         <div className="flex gap-2 flex-wrap">
           {suggestions.map((item) => (
@@ -851,24 +993,29 @@ export function AIAgentBar({ fullHeight = false }: { fullHeight?: boolean }) {
           />
         </div>
 
-        <Button
-          type="submit"
-          disabled={isProcessing || !prompt.trim()}
-          className="h-12 px-5 rounded-2xl bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white font-semibold shadow-lg shadow-indigo-500/20 shrink-0 self-end disabled:opacity-40 cursor-pointer"
-        >
-          {isProcessing ? (
-            <Loader2 className="h-5 w-5 animate-spin" />
-          ) : (
-            <div className="flex items-center gap-2">
-              <span className="text-xs">Enviar</span>
-              <Send className="h-4 w-4" />
-            </div>
-          )}
-        </Button>
-      </form>
+          <Button
+            type="submit"
+            disabled={isProcessing || !prompt.trim()}
+            className="h-12 px-5 rounded-2xl bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white font-semibold shadow-lg shadow-indigo-500/20 shrink-0 self-end disabled:opacity-40 cursor-pointer"
+          >
+            {isProcessing ? (
+              <Loader2 className="h-5 w-5 animate-spin" />
+            ) : (
+              <div className="flex items-center gap-2">
+                <span className="text-xs">Enviar</span>
+                <Send className="h-4 w-4" />
+              </div>
+            )}
+          </Button>
+        </form>
 
-      {/* ── Modal / Dialog Reportar Error de Agente ── */}
-      <Dialog open={reportModalOpen} onOpenChange={setReportModalOpen}>
+        {/* Tarea 4: Botón y lógica de "Nueva conversación" */}
+        <div className="absolute top-0 right-5 py-2.5">
+
+        </div>
+
+        {/* ── Modal / Dialog Reportar Error de Agente ── */}
+        <Dialog open={reportModalOpen} onOpenChange={setReportModalOpen}>
         <DialogContent className="sm:max-w-md bg-sidebar-accent border border-sidebar-border text-sidebar-foreground rounded-2xl p-6 shadow-2xl">
           <DialogHeader>
             <DialogTitle className="text-base font-bold flex items-center gap-2 text-primary">

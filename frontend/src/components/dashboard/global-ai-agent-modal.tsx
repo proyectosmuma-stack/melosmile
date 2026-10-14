@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Sparkles, X, Maximize2, Minimize2 } from "lucide-react";
+import { Sparkles, X, Maximize2, Minimize2, Eraser } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AIAgentBar } from "@/components/dashboard/ai-agent-bar";
 
@@ -78,6 +78,15 @@ export function GlobalAIAgentModal() {
                 <kbd className="hidden md:inline-flex items-center px-2 py-0.5 rounded bg-sidebar-accent text-sidebar-muted-foreground text-[10px] font-mono border border-sidebar-border">
                   Esc para cerrar
                 </kbd>
+                                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => window.dispatchEvent(new CustomEvent("clear-ai-agent-conversation"))}
+                  className="h-8 w-8 rounded-lg text-sidebar-muted-foreground hover:text-sidebar-foreground hover:bg-sidebar-accent"
+                  title="Limpiar conversación (no borra la memoria)"
+                >
+                  <Eraser className="h-4 w-4" />
+                </Button>
                 <Button
                   variant="ghost"
                   size="icon"
