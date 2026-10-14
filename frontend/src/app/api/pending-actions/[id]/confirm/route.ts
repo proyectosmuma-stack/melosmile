@@ -43,12 +43,17 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
 
     // 3) Ejecución determinista por tipo
     let result: any;
-    if (claimed.action_type === "emitir_factura") {
-      result = await executeInvoice(claimed.patient_id, claimed.payload?.billingRecordIds || []);
-    } else {
-      // Revierte el claim (aún no implementado) para no dejar la acción bloqueada.
+    try {
+      if (claimed.action_type === "emitir_factura") {
+        result = await executeInvoice(claimed.patient_id, claimed.payload?.billingRecordIds || []);
+      } else {
+        await db.from("pending_actions").update({ status: "pending" }).eq("id", id);
+        return NextResponse.json({ success: false, error: `Tipo de acción no implementado: ${claimed.action_type}` }, { status: 501 });
+      }
+    } catch (execErr: any) {
+      // Revierte el claim para que el doctor pueda reintentar (la acción no se ejecutó).
       await db.from("pending_actions").update({ status: "pending" }).eq("id", id);
-      return NextResponse.json({ success: false, error: `Tipo de acción no implementado: ${claimed.action_type}` }, { status: 501 });
+      return NextResponse.json({ success: false, error: execErr.message }, { status: 502 });
     }
 
     // 4) Marcar ejecutada
