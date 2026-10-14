@@ -639,6 +639,7 @@ function toTitleCase(text: string): string {
         .from("reminders")
         .select("id, reminder_type, channel, scheduled_at, subject, message, status, error_message")
         .eq("patient_id", p.id)
+        .is("archived_at", null)
         .order("scheduled_at", { ascending: true });
 
       if (remindersData) setReminders(remindersData as unknown as Reminder[]);

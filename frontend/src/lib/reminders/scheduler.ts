@@ -22,6 +22,7 @@ export async function getDueReminders(limit = 15) {
     .from("reminders")
     .select("id, patient_id, appointment_id, channel, scheduled_at, status")
     .eq("status", "pendiente")
+    .is("archived_at", null)
     .lte("scheduled_at", nowIso)
     .order("scheduled_at", { ascending: true })
     .limit(limit);
@@ -43,6 +44,7 @@ export async function processDueReminders(limit = 15): Promise<ProcessDueResult>
     .from("reminders")
     .select("id, patient_id, appointment_id, channel, scheduled_at, status")
     .eq("status", "pendiente")
+    .is("archived_at", null)
     .lte("scheduled_at", nowIso)
     .order("scheduled_at", { ascending: true })
     .limit(limit);
