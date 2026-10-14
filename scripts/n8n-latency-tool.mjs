@@ -59,7 +59,7 @@ async function trigger(env, workflowId, bodyJson) {
       status: "ok",
       http_status: res.status,
       elapsed_ms: elapsed,
-      response_text: text.slice(0, 200)
+      response_text: text.slice(0, 4000)
     }));
     process.exit(0);
   } catch (error) {
@@ -125,7 +125,7 @@ async function apply(env, workflowId, dryRun) {
     if (node.type === "@n8n/n8n-nodes-langchain.agent") {
       node.parameters = node.parameters || {};
       node.parameters.options = node.parameters.options || {};
-      node.parameters.options.maxIterations = 3;
+      node.parameters.options.maxIterations = 6;
       agentPatched++;
     } else if (node.type.startsWith("@n8n/n8n-nodes-langchain.tool")) {
       node.retryOnFail = false;
@@ -164,7 +164,7 @@ async function apply(env, workflowId, dryRun) {
     
     for (const node of updatedWorkflow.nodes) {
       if (node.type === "@n8n/n8n-nodes-langchain.agent") {
-        if (node.parameters?.options?.maxIterations !== 3) {
+        if (node.parameters?.options?.maxIterations !== 6) {
           verifyOk = false;
           break;
         }
@@ -210,7 +210,7 @@ async function verify(env, workflowId) {
 
     for (const node of workflow.nodes) {
       if (node.type === "@n8n/n8n-nodes-langchain.agent") {
-        if (node.parameters?.options?.maxIterations !== 3) {
+        if (node.parameters?.options?.maxIterations !== 6) {
           allAgentsOk = false;
         }
       } else if (node.type.startsWith("@n8n/n8n-nodes-langchain.tool")) {
@@ -233,6 +233,36 @@ async function verify(env, workflowId) {
   }
 }
 
+async function setMax(env, workflowId, value) {
+  const n = parseInt(value, 10);
+  if (!Number.isFinite(n)) {
+    console.error(JSON.stringify({ status: "error", message: "valor maxIterations inválido" }));
+    process.exit(1);
+  }
+  try {
+    const workflow = await callN8nApi(env, 'GET', `/api/v1/workflows/${workflowId}`);
+    let agentPatched = 0;
+    for (const node of workflow.nodes) {
+      if (node.type === "@n8n/n8n-nodes-langchain.agent") {
+        node.parameters = node.parameters || {};
+        node.parameters.options = node.parameters.options || {};
+        node.parameters.options.maxIterations = n;
+        agentPatched++;
+      }
+    }
+    await callN8nApi(env, 'PUT', `/api/v1/workflows/${workflowId}`, {
+      name: workflow.name,
+      nodes: workflow.nodes,
+      connections: workflow.connections,
+      settings: workflow.settings
+    });
+    console.log(JSON.stringify({ status: "ok", env, workflowId, maxIterations: n, agents_patched: agentPatched }));
+  } catch (error) {
+    console.error(JSON.stringify({ status: "error", message: error.message }));
+    process.exit(1);
+  }
+}
+
 const [,, command, env, workflowId, bodyJsonArg] = process.argv;
   const dryRun = bodyJsonArg === '--dry-run';
 
@@ -244,11 +274,14 @@ if (command === 'summary') {
   verify(env, workflowId);
 } else if (command === 'trigger') {
   trigger(env, workflowId, bodyJsonArg);
+} else if (command === 'setmax') {
+  setMax(env, workflowId, bodyJsonArg);
 } else {
   console.log("Usage:");
   console.log("  node n8n-latency-tool.mjs summary <env> <workflowId>");
   console.log("  node n8n-latency-tool.mjs apply <env> <workflowId> [--dry-run]");
   console.log("  node n8n-latency-tool.mjs verify <env> <workflowId>");
   console.log("  node n8n-latency-tool.mjs trigger <env> <webhookPath> <bodyJson>");
+  console.log("  node n8n-latency-tool.mjs setmax <env> <workflowId> <n>");
   process.exit(1);
 }
