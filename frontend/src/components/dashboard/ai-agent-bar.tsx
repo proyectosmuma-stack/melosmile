@@ -65,6 +65,7 @@ interface Message {
   timestamp: Date;
   payload?: AssistantPayload;
   isLoading?: boolean;
+  pendingAction?: { id: string };
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -223,7 +224,6 @@ function FormattedResponse({ text }: { text: string }) {
       headerLines.push(line);
     }
   });
-
   if (appointmentMatches.length > 0) {
     return (
       <div className="space-y-3">
@@ -257,15 +257,35 @@ function FormattedResponse({ text }: { text: string }) {
 function AssistantBubble({
   msg,
   onReportError,
+  onActionComplete,
 }: {
   msg: Message;
   onReportError?: (msgId: string) => void;
+  onActionComplete: (msgId: string, result: string) => void;
 }) {
   const [showDetails, setShowDetails] = useState(false);
   const payload = msg.payload;
   const intent = payload?.intent ?? "general_query";
   const entities = payload?.extracted_entities ?? {};
   const hasEntities = Object.values(entities).some(Boolean);
+
+  const handlePendingAction = async (action: "confirm" | "cancel") => {
+    if (!msg.pendingAction) return;
+
+    const res = await fetch(
+      `/api/pending-actions/${msg.pendingAction.id}/${action}`,
+      {
+        method: "POST",
+      }
+    );
+    const data = await res.json();
+
+    if (res.ok) {
+      onActionComplete(msg.id, data.result || `${action}ación exitosa.`);
+    } else {
+      onActionComplete(msg.id, `Error al ${action}ar: ${data.error || res.statusText}`);
+    }
+  };
 
   const ENTITY_LABELS: Record<string, string> = {
     patient: "Paciente",
@@ -334,19 +354,42 @@ function AssistantBubble({
               )}
             </div>
 
-            {/* Timestamp & Report Button */}
-            <div className="flex items-center justify-between pl-1 pt-0.5">
-              <span className="text-[10px] text-sidebar-muted-foreground">{formatTime(msg.timestamp)}</span>
-              <button
-                type="button"
-                onClick={() => onReportError?.(msg.id)}
-                className="flex items-center gap-1 text-[10px] font-semibold text-primary/80 hover:text-primary hover:bg-primary/10 px-2 py-0.5 rounded-lg transition-colors cursor-pointer border border-primary/20"
-                title="Reportar fallo de lógica o contexto en esta respuesta"
-              >
-                <AlertTriangle className="h-3 w-3 text-primary/80" />
-                <span>Reportar error / contexto</span>
-              </button>
-            </div>
+              {/* Timestamp & Report Button */}
+              <div className="flex items-center justify-between pl-1 pt-0.5">
+                <span className="text-[10px] text-sidebar-muted-foreground">
+                  {formatTime(msg.timestamp)}
+                </span>
+                {msg.pendingAction ? (
+                  <div className="flex items-center gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handlePendingAction("confirm")}
+                      className="h-7 text-xs rounded-xl border-green-500/30 text-green-400 hover:bg-green-500/10"
+                    >
+                      Confirmar
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handlePendingAction("cancel")}
+                      className="h-7 text-xs rounded-xl border-red-500/30 text-red-400 hover:bg-red-500/10"
+                    >
+                      Cancelar
+                    </Button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => onReportError?.(msg.id)}
+                    className="flex items-center gap-1 text-[10px] font-semibold text-primary/80 hover:text-primary hover:bg-primary/10 px-2 py-0.5 rounded-lg transition-colors cursor-pointer border border-primary/20"
+                    title="Reportar fallo de lógica o contexto en esta respuesta"
+                  >
+                    <AlertTriangle className="h-3 w-3 text-primary/80" />
+                    <span>Reportar error / contexto</span>
+                  </button>
+                )}
+              </div>
           </>
         )}
       </div>
@@ -398,6 +441,17 @@ export function AIAgentBar({ fullHeight = false }: { fullHeight?: boolean }) {
   }, []);
 
   const [messages, setMessages] = useState<Message[]>([]);
+
+  const handleActionComplete = (msgId: string, result: string) => {
+    setMessages((prev) =>
+      prev.map((msg) =>
+        msg.id === msgId
+          ? { ...msg, pendingAction: undefined, text: `${msg.text}\n\n_${result}_` }
+          : msg
+      )
+    );
+  };
+
   const [dbLoadedHistory, setDbLoadedHistory] = useState<Message[]>([]);
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -630,9 +684,11 @@ export function AIAgentBar({ fullHeight = false }: { fullHeight?: boolean }) {
         };
       }
 
+      let assistantResponseMsg: Message;
+
       // Replace loading bubble with real response
-      setMessages((prev) =>
-        prev.map((m) =>
+      setMessages((prev) => {
+        const updatedMessages = prev.map((m) =>
           m.id === loadingMsg.id
             ? {
                 ...m,
@@ -642,8 +698,36 @@ export function AIAgentBar({ fullHeight = false }: { fullHeight?: boolean }) {
                 payload,
               }
             : m
-        )
-      );
+        );
+        assistantResponseMsg = updatedMessages.find((m) => m.id === loadingMsg.id) as Message;
+        return updatedMessages;
+      });
+
+      // Check for pending actions after dispatcher response
+      try {
+        const pendingActionsRes = await fetch(
+          `/api/pending-actions?session_id=${sessionId}&status=pending`
+        );
+        const pendingActionsData = await pendingActionsRes.json();
+
+        if (pendingActionsData.actions && pendingActionsData.actions.length > 0) {
+          const firstPendingAction = pendingActionsData.actions[0];
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === assistantResponseMsg.id
+                ? {
+                    ...m,
+                    pendingAction: { id: firstPendingAction.id },
+                  }
+                : m
+            )
+          );
+        }
+      } catch (pendingActionsError) {
+        console.error("Error fetching pending actions:", pendingActionsError);
+      }
+
+
 
       // Learn from this user prompt to adapt dynamic suggestions
       trackUserAction(trimmed, payload.intent);
@@ -703,6 +787,7 @@ export function AIAgentBar({ fullHeight = false }: { fullHeight?: boolean }) {
               key={msg.id}
               msg={msg}
               onReportError={handleOpenReportModal}
+              onActionComplete={handleActionComplete}
             />
           ) : (
             <UserBubble key={msg.id} msg={msg} />
