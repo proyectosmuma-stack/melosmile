@@ -1,18 +1,36 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, after } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/server';
+import { runReminderMaintenance } from '@/lib/reminders/maintenance';
+
+export const maxDuration = 60;
 
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const patientId = searchParams.get('patientId');
+    // archived: undefined (solo activos) | 'only' (solo archivados) | 'include' (todos)
+    const archivedParam = searchParams.get('archived');
 
-    const now = new Date();
+    // Mantenimiento determinista en segundo plano (sin cron):
+    // archiva recordatorios caducados + asegura cadencias de citas próximas.
+    after(async () => {
+      try {
+        await runReminderMaintenance();
+      } catch (e: any) {
+        console.warn('[reminders maintenance]', e?.message || e);
+      }
+    });
 
     let query = supabaseAdmin
       .from('reminders')
-      .select('id, patient_id, appointment_id, reminder_type, status, scheduled_at, sent_at, message, subject, channel, patient:patients(id, first_name, last_name, phone), appointment:appointments(id, appointment_date)')
-      .is('archived_at', null)
+      .select('id, patient_id, appointment_id, reminder_type, status, scheduled_at, sent_at, archived_at, message, subject, channel, patient:patients(id, first_name, last_name, phone), appointment:appointments(id, appointment_date)')
       .order('scheduled_at', { ascending: false });
+
+    if (archivedParam === 'only') {
+      query = query.not('archived_at', 'is', null);
+    } else if (archivedParam !== 'include') {
+      query = query.is('archived_at', null);
+    }
 
     if (patientId) {
       query = query.eq('patient_id', patientId);

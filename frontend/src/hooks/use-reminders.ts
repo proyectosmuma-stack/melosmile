@@ -19,10 +19,18 @@ const fetcher = (url: string) => fetch(url).then((res) => {
   return res.json();
 });
 
-export function useReminders(patientId?: string) {
-  const queryParam = patientId ? `?patientId=${patientId}` : '';
+export function useReminders(
+  patientId?: string,
+  opts?: { archivedOnly?: boolean; enabled?: boolean }
+) {
+  const params = new URLSearchParams();
+  if (patientId) params.set('patientId', patientId);
+  if (opts?.archivedOnly) params.set('archived', 'only');
+  const qs = params.toString();
+  const enabled = opts?.enabled !== false;
+
   const { data, error, isLoading, mutate } = useSWR<ReminderWithPatient[]>(
-    `/api/reminders${queryParam}`,
+    enabled ? `/api/reminders${qs ? `?${qs}` : ''}` : null,
     fetcher
   );
 

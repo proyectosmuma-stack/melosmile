@@ -22,7 +22,8 @@ import {
   Mail, 
   Smartphone, 
   Send, 
-  AlertCircle 
+  AlertCircle,
+  Archive
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -39,7 +40,10 @@ interface PatientGroup {
 
 export function ReminderList({ patientId }: ReminderListProps) {
   const { reminders, isLoading, isError, cancelReminder } = useReminders(patientId);
-  const [activeTab, setActiveTab] = useState<"pendientes" | "historial">("pendientes");
+  const { reminders: archivedReminders, isLoading: archivedLoading } = useReminders(patientId, {
+    archivedOnly: true,
+  });
+  const [activeTab, setActiveTab] = useState<"pendientes" | "historial" | "archivados">("pendientes");
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [cancelling, setCancelling] = useState(false);
@@ -92,8 +96,16 @@ export function ReminderList({ patientId }: ReminderListProps) {
     });
   }, [reminders]);
 
+  // 3. Archived reminders: citas ya transcurridas (archivado automático determinista)
+  const archivedList = useMemo(() => archivedReminders || [], [archivedReminders]);
+
   // Reminders for current active tab
-  const currentTabReminders = activeTab === "pendientes" ? pendingReminders : historyReminders;
+  const currentTabReminders =
+    activeTab === "pendientes"
+      ? pendingReminders
+      : activeTab === "historial"
+      ? historyReminders
+      : archivedList;
 
   // 3. Group current tab reminders by patient
   const groupedByPatient = useMemo(() => {
@@ -318,7 +330,7 @@ export function ReminderList({ patientId }: ReminderListProps) {
     );
   }
 
-  if (isLoading) {
+  if (isLoading || (activeTab === "archivados" && archivedLoading)) {
     return (
       <div className="space-y-4">
         <div className="flex items-center justify-between">
@@ -373,6 +385,24 @@ export function ReminderList({ patientId }: ReminderListProps) {
             activeTab === "historial" ? "bg-primary-foreground/20 text-primary-foreground" : "bg-muted text-muted-foreground"
           }`}>
             {historyReminders.length}
+          </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab("archivados")}
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
+            activeTab === "archivados"
+              ? "bg-primary text-primary-foreground shadow-sm"
+              : "text-muted-foreground hover:text-foreground hover:bg-muted"
+          }`}
+        >
+          <Archive className="w-4 h-4" />
+          <span>Archivados</span>
+          <span className={`text-xs px-2 py-0.5 rounded-full font-extrabold ${
+            activeTab === "archivados" ? "bg-primary-foreground/20 text-primary-foreground" : "bg-muted text-muted-foreground"
+          }`}>
+            {archivedList.length}
           </span>
         </button>
       </div>
@@ -432,12 +462,16 @@ export function ReminderList({ patientId }: ReminderListProps) {
             <h3 className="text-lg font-bold text-foreground">
               {activeTab === "pendientes" 
                 ? "No hay recordatorios pendientes programados" 
-                : "No hay recordatorios en el historial"}
+                : activeTab === "historial"
+                ? "No hay recordatorios en el historial"
+                : "No hay recordatorios archivados"}
             </h3>
             <p className="text-sm text-muted-foreground mt-1 max-w-md">
               {activeTab === "pendientes" 
                 ? "No tienes mensajes pendientes de envío. Los recordatorios ya enviados o vencidos están guardados en la pestaña 'Historial y Enviados'."
-                : "No hay registros históricos de recordatorios enviados o cancelados."}
+                : activeTab === "historial"
+                ? "No hay registros históricos de recordatorios enviados o cancelados."
+                : "Aquí aparecen los recordatorios de citas ya transcurridas, archivados automáticamente."}
             </p>
 
             {activeTab === "pendientes" && historyReminders.length > 0 && (
@@ -572,7 +606,11 @@ export function ReminderList({ patientId }: ReminderListProps) {
                                 </Button>
                               ) : (
                                 <span className="text-xs text-muted-foreground italic pr-2">
-                                  {reminder.sent_at ? `Enviado ${formatScheduledDate(reminder.sent_at)}` : "Completado"}
+                                  {(reminder as any).archived_at
+                                    ? "Archivado"
+                                    : reminder.sent_at
+                                    ? `Enviado ${formatScheduledDate(reminder.sent_at)}`
+                                    : "Completado"}
                                 </span>
                               )}
                             </TableCell>

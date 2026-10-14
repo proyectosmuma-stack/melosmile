@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabaseAdmin as supabase } from "@/lib/supabase/server";
-import { createAutomaticAppointmentReminders } from "@/lib/reminders/cadence";
+import { syncAppointmentCadence } from "@/lib/reminders/cadence";
 
 export const dynamic = "force-dynamic";
 
@@ -19,52 +18,23 @@ export async function POST(
       );
     }
 
-    // 1. Obtener cita y datos del paciente
-    const { data: appt, error: apptErr } = await (supabase as any)
-      .from("appointments")
-      .select(`
-        id, appointment_date, reason, status,
-        patients ( id, first_name, last_name, phone, email, telegram_chat_id )
-      `)
-      .eq("id", appointmentId)
-      .single();
+    // Idempotente: cancela los pendientes previos y regenera la cadencia vigente.
+    const result = await syncAppointmentCadence(appointmentId, "generación manual de cadencia");
 
-    if (apptErr || !appt) {
-      return NextResponse.json(
-        { success: false, error: "Cita no encontrada" },
-        { status: 404 }
-      );
+    if (result.skipped && result.created === 0) {
+      return NextResponse.json({
+        success: true,
+        count: 0,
+        reminders: [],
+        message: `Cadencia no generada (${result.skipped}).`,
+      });
     }
-
-    const patient = appt.patients;
-    const patientName = patient ? `${patient.first_name || ""} ${patient.last_name || ""}`.trim() : "Paciente";
-
-    // Canal por defecto: Únicamente WhatsApp (a menos que se especifique lo contrario en la petición)
-    let channels: string[] = ["whatsapp"];
-    try {
-      const body = await req.json().catch(() => null);
-      if (body?.channels && Array.isArray(body.channels) && body.channels.length > 0) {
-        channels = body.channels;
-      }
-    } catch (_) {}
-
-    const created = await createAutomaticAppointmentReminders({
-      appointmentId: appt.id,
-      patientId: patient.id,
-      patientName,
-      patientPhone: patient.phone,
-      patientEmail: patient.email,
-      appointmentDate: appt.appointment_date,
-      reason: appt.reason || "Consulta Odontológica",
-      isConfirmed: appt.status === "Confirmada",
-      channels,
-    });
 
     return NextResponse.json({
       success: true,
-      count: created.length,
-      reminders: created,
-      message: `Cadencia de ${created.length} recordatorio(s) programada exitosamente (1 semana, 2 días y día de la cita).`,
+      count: result.created,
+      cancelled: result.cancelled,
+      message: `Cadencia de ${result.created} recordatorio(s) programada exitosamente (1 semana, 2 días y día de la cita).`,
     });
   } catch (err: any) {
     console.error("[Appointment Cadence Error]:", err);
