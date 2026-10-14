@@ -3,10 +3,11 @@ export const fetchCache = "force-no-store";
 export const revalidate = 0;
 export const runtime = "nodejs";
 
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/server";
 import { parseAppointmentDate } from "@/lib/utils/date-parser";
 import { getNextHistoriaId } from "@/lib/utils/patient-id";
+import { syncAppointmentCadence } from "@/lib/reminders/cadence";
 
 
 function toTitleCase(text: string): string {
@@ -372,6 +373,9 @@ export async function POST(req: Request) {
         }
 
         const updatedRecord = Array.isArray(updateRes.data) ? updateRes.data[0] : (updateRes.data || existingAppt);
+        if (existingAppt?.id) {
+          after(() => syncAppointmentCadence(String(existingAppt.id), "unificación de cita"));
+        }
         return NextResponse.json({
           success: true,
           unified: true,
@@ -422,6 +426,12 @@ export async function POST(req: Request) {
       } catch (bErr: any) {
         console.warn("Billing record insert notice:", bErr);
       }
+    }
+
+    // Cadencia automática de recordatorios (1 semana / 2 días / día de la cita),
+    // generada por el propio sistema tras crear la cita (no depende de n8n/Musly).
+    if (newAppt?.id) {
+      after(() => syncAppointmentCadence(String(newAppt.id), "alta de cita"));
     }
 
     return NextResponse.json({ success: true, data: newAppt });

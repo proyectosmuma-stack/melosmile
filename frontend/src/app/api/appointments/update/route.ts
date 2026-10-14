@@ -3,10 +3,11 @@ export const fetchCache = "force-no-store";
 export const revalidate = 0;
 export const runtime = "nodejs";
 
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/server";
 import { parseAppointmentDate } from "@/lib/utils/date-parser";
 import { parseRequestBody } from "@/lib/utils/parse-body";
+import { syncAppointmentCadence, cancelPendingAppointmentReminders } from "@/lib/reminders/cadence";
 
 
 
@@ -30,6 +31,12 @@ function scorePatientMatch(patient: any, targetQuery: string): number {
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 async function deleteAppointmentAndBilling(dbClient: any, appointmentId: string) {
+  // Cancelar los recordatorios pendientes ANTES del borrado: el FK es ON DELETE SET NULL,
+  // por lo que tras eliminar la cita perderíamos el vínculo para poder cancelarlos.
+  try {
+    await cancelPendingAppointmentReminders(appointmentId, "cita eliminada");
+  } catch (_e) {}
+
   // Limpiar billing_records NO facturados (status Pendiente) que referencian la cita (evita FK violation)
   const { error: cleanupBillingErr } = await dbClient
     .from("billing_records")
@@ -66,6 +73,12 @@ async function cancelAppointmentAndBilling(dbClient: any, appointmentId: string)
     .select();
 
   if (error) throw error;
+
+  // La cita ya no se celebrará: cancelar sus recordatorios pendientes.
+  try {
+    await cancelPendingAppointmentReminders(appointmentId, "cita cancelada");
+  } catch (_e) {}
+
   return { success: true, action: "cancelled", count: data?.length || 0, data };
 }
 
@@ -255,6 +268,14 @@ export async function POST(req: Request) {
         } catch (e: any) {
           errores.push({ id: appt.id, error: e.message });
         }
+      }
+
+      if (citasMovidas.length > 0) {
+        after(async () => {
+          for (const c of citasMovidas) {
+            await syncAppointmentCadence(String(c.id), "reagenda masiva");
+          }
+        });
       }
 
       return NextResponse.json({
@@ -460,6 +481,10 @@ export async function POST(req: Request) {
         } catch (bErr: any) {
           console.warn("Billing record notice:", bErr);
         }
+      }
+
+      if (newAppt?.id) {
+        after(() => syncAppointmentCadence(String(newAppt.id), "alta de cita"));
       }
 
       return NextResponse.json({ success: true, action: "created", data: [newAppt] });
@@ -729,6 +754,12 @@ export async function POST(req: Request) {
         .select();
 
       if (error) throw error;
+
+      // Reprogramación o cambio de estado -> resincronizar la cadencia de recordatorios.
+      if (updates.appointment_date || updates.status) {
+        after(() => syncAppointmentCadence(String(targetId), "actualización de cita"));
+      }
+
       return NextResponse.json({ success: true, action: "updated", count: data?.length || 0, data });
     }
 
@@ -817,6 +848,11 @@ export async function POST(req: Request) {
         .select();
 
       if (error) throw error;
+
+      // Reprogramación o cambio de estado -> resincronizar la cadencia de recordatorios.
+      if (updates.appointment_date || updates.status) {
+        after(() => syncAppointmentCadence(String(soleAppointment.id), "actualización de cita"));
+      }
 
       return NextResponse.json({
         success: true,

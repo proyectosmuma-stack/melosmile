@@ -176,3 +176,111 @@ export async function createAutomaticAppointmentReminders(options: CreateCadence
 
   return created;
 }
+
+/** Resuelve el canal preferente: WhatsApp si hay teléfono (>=9 dígitos), si no email válido. */
+export function resolveReminderChannel(
+  patient: { phone?: string | null; email?: string | null } | null | undefined
+): "whatsapp" | "email" | null {
+  const digits = (patient?.phone || "").replace(/\D/g, "");
+  if (digits.length >= 9) return "whatsapp";
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (patient?.email && emailRegex.test(patient.email)) return "email";
+  return null;
+}
+
+/**
+ * Cancela (y archiva) los recordatorios de cita aún PENDIENTES de una cita.
+ * Los ya enviados/leídos/erróneos NUNCA se tocan (histórico inmutable).
+ * Devuelve el número de recordatorios cancelados.
+ */
+export async function cancelPendingAppointmentReminders(
+  appointmentId: string,
+  reason: string
+): Promise<number> {
+  const nowIso = new Date().toISOString();
+  const { data, error } = await (supabase as any)
+    .from("reminders")
+    .update({ status: "cancelado", archived_at: nowIso })
+    .eq("appointment_id", appointmentId)
+    .eq("reminder_type", "recordatorio_cita")
+    .eq("status", "pendiente")
+    .is("archived_at", null)
+    .select("id");
+
+  if (error) {
+    console.warn("[cancelPendingAppointmentReminders] Error:", error.message);
+    return 0;
+  }
+
+  const ids: string[] = (data || []).map((r: any) => r.id);
+  if (ids.length > 0) {
+    await (supabase as any).from("reminder_events").insert(
+      ids.map((id: string) => ({
+        reminder_id: id,
+        event_type: "cancelled",
+        description: `Cancelado automáticamente (${reason})`,
+      }))
+    );
+  }
+  return ids.length;
+}
+
+export interface SyncCadenceResult {
+  created: number;
+  cancelled: number;
+  skipped?: string;
+}
+
+/**
+ * Sincroniza la cadencia de una cita: cancela los pendientes previos y regenera
+ * las etapas vigentes (1 semana / 2 días / día de la cita). Idempotente y determinista:
+ * cualquier alta, reprogramación o cambio de estado puede invocarlo sin duplicar envíos.
+ */
+export async function syncAppointmentCadence(
+  appointmentId: string,
+  reason = "sincronización de cita"
+): Promise<SyncCadenceResult> {
+  try {
+    const { data: appt, error } = await (supabase as any)
+      .from("appointments")
+      .select(
+        "id, appointment_date, reason, status, patient_id, patients(id, first_name, last_name, phone, email)"
+      )
+      .eq("id", appointmentId)
+      .maybeSingle();
+
+    if (error || !appt) return { created: 0, cancelled: 0, skipped: "cita no encontrada" };
+
+    // 1. Limpiar siempre los pendientes previos (idempotencia)
+    const cancelled = await cancelPendingAppointmentReminders(appointmentId, reason);
+
+    // 2. No generar cadencia para citas pasadas o canceladas
+    const apptMs = appt.appointment_date ? new Date(appt.appointment_date).getTime() : 0;
+    if (!apptMs || apptMs <= Date.now() || appt.status === "Cancelada") {
+      return { created: 0, cancelled, skipped: "cita pasada o cancelada" };
+    }
+
+    // 3. Canal válido obligatorio
+    const patient = appt.patients || {};
+    const channel = resolveReminderChannel(patient);
+    if (!channel) return { created: 0, cancelled, skipped: "paciente sin teléfono ni email" };
+
+    // 4. Regenerar cadencia
+    const created = await createAutomaticAppointmentReminders({
+      appointmentId: appt.id,
+      patientId: appt.patient_id || patient.id,
+      patientName: `${patient.first_name || ""} ${patient.last_name || ""}`.trim() || "Paciente",
+      patientPhone: patient.phone || undefined,
+      patientEmail: patient.email || undefined,
+      appointmentDate: appt.appointment_date,
+      reason: appt.reason || "Consulta Odontológica",
+      isConfirmed: appt.status === "Confirmada",
+      channels: [channel],
+    });
+
+    return { created: created.length, cancelled };
+  } catch (e: any) {
+    console.warn("[syncAppointmentCadence] Error:", e?.message || e);
+    return { created: 0, cancelled: 0, skipped: e?.message || "error" };
+  }
+}
