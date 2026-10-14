@@ -263,6 +263,80 @@ async function setMax(env, workflowId, value) {
   }
 }
 
+async function setNode(env, workflowId, nodeName, jsonFile) {
+  try {
+    const patch = JSON.parse(fs.readFileSync(jsonFile, 'utf8'));
+    const workflow = await callN8nApi(env, 'GET', `/api/v1/workflows/${workflowId}`);
+    const node = workflow.nodes.find((n) => n.name === nodeName);
+    if (!node) {
+      console.error(JSON.stringify({ status: "error", message: `nodo ${nodeName} no encontrado` }));
+      process.exit(1);
+    }
+    const backupDir = path.join(os.homedir(), 'Antigravity Projects/melosmile/scratch/n8n-backups');
+    fs.mkdirSync(backupDir, { recursive: true });
+    const ts = new Date().toISOString().replace(/:/g, '-');
+    fs.writeFileSync(path.join(backupDir, `${env}-${workflowId}-${ts}.json`), JSON.stringify(workflow, null, 2));
+    if (patch.parameters) node.parameters = patch.parameters;
+    if (patch.credentials) node.credentials = patch.credentials;
+    if (patch.disabled !== undefined) node.disabled = patch.disabled;
+    await callN8nApi(env, 'PUT', `/api/v1/workflows/${workflowId}`, {
+      name: workflow.name,
+      nodes: workflow.nodes,
+      connections: workflow.connections,
+      settings: workflow.settings
+    });
+    const upd = await callN8nApi(env, 'GET', `/api/v1/workflows/${workflowId}`);
+    const u = upd.nodes.find((n) => n.name === nodeName);
+    console.log(JSON.stringify({
+      status: "ok", env, workflowId, node: nodeName,
+      method: u?.parameters?.method ?? null,
+      url: u?.parameters?.url ?? null,
+      cred: u?.credentials?.httpHeaderAuth?.id ?? null,
+      disabled: u?.disabled ?? false
+    }));
+  } catch (error) {
+    console.error(JSON.stringify({ status: "error", message: error.message }));
+    process.exit(1);
+  }
+}
+
+async function appendPrompt(env, workflowId, nodeName, textFile) {
+  try {
+    const text = fs.readFileSync(textFile, 'utf8').trim();
+    const workflow = await callN8nApi(env, 'GET', `/api/v1/workflows/${workflowId}`);
+    const node = workflow.nodes.find((n) => n.name === nodeName);
+    if (!node) {
+      console.error(JSON.stringify({ status: "error", message: `nodo ${nodeName} no encontrado` }));
+      process.exit(1);
+    }
+    node.parameters = node.parameters || {};
+    node.parameters.options = node.parameters.options || {};
+    const cur = node.parameters.options.systemMessage || "";
+    if (cur.includes(text)) {
+      console.log(JSON.stringify({ status: "ok", node: nodeName, already: true, systemMessage_len: cur.length }));
+      process.exit(0);
+    }
+    node.parameters.options.systemMessage = (cur.trim() + "\n\n" + text);
+    const backupDir = path.join(os.homedir(), 'Antigravity Projects/melosmile/scratch/n8n-backups');
+    fs.mkdirSync(backupDir, { recursive: true });
+    const ts = new Date().toISOString().replace(/:/g, '-');
+    fs.writeFileSync(path.join(backupDir, `${env}-${workflowId}-${ts}.json`), JSON.stringify(workflow, null, 2));
+    await callN8nApi(env, 'PUT', `/api/v1/workflows/${workflowId}`, {
+      name: workflow.name,
+      nodes: workflow.nodes,
+      connections: workflow.connections,
+      settings: workflow.settings
+    });
+    const upd = await callN8nApi(env, 'GET', `/api/v1/workflows/${workflowId}`);
+    const u = upd.nodes.find((n) => n.name === nodeName);
+    const len = (u?.parameters?.options?.systemMessage || "").length;
+    console.log(JSON.stringify({ status: "ok", env, workflowId, node: nodeName, systemMessage_len: len, applied: true }));
+  } catch (error) {
+    console.error(JSON.stringify({ status: "error", message: error.message }));
+    process.exit(1);
+  }
+}
+
 const [,, command, env, workflowId, bodyJsonArg] = process.argv;
   const dryRun = bodyJsonArg === '--dry-run';
 
@@ -276,6 +350,10 @@ if (command === 'summary') {
   trigger(env, workflowId, bodyJsonArg);
 } else if (command === 'setmax') {
   setMax(env, workflowId, bodyJsonArg);
+} else if (command === 'setnode') {
+  setNode(env, workflowId, bodyJsonArg, process.argv[6]);
+} else if (command === 'appendprompt') {
+  appendPrompt(env, workflowId, bodyJsonArg, process.argv[6]);
 } else {
   console.log("Usage:");
   console.log("  node n8n-latency-tool.mjs summary <env> <workflowId>");
@@ -283,5 +361,7 @@ if (command === 'summary') {
   console.log("  node n8n-latency-tool.mjs verify <env> <workflowId>");
   console.log("  node n8n-latency-tool.mjs trigger <env> <webhookPath> <bodyJson>");
   console.log("  node n8n-latency-tool.mjs setmax <env> <workflowId> <n>");
+  console.log("  node n8n-latency-tool.mjs setnode <env> <workflowId> <nodeName> <jsonFile>");
+  console.log("  node n8n-latency-tool.mjs appendprompt <env> <workflowId> <nodeName> <textFile>");
   process.exit(1);
 }
