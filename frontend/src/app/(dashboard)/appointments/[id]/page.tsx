@@ -108,6 +108,7 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
   const [showGuestPanel, setShowGuestPanel] = useState(false);
 
   const [appt, setAppt] = useState<AppointmentData | null>(null);
+  const [billingRecord, setBillingRecord] = useState<any>(null);
   const [treatmentsList, setTreatmentsList] = useState<TreatmentOption[]>([]);
   const [apptDocs, setApptDocs] = useState<ApptDocument[]>([]);
   const [procedures, setProcedures] = useState<ProcedureItem[]>([]);
@@ -260,6 +261,7 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
           .select("*")
           .eq("appointment_id", a.id)
           .maybeSingle();
+        setBillingRecord(bData ?? null);
 
         const { data: tData } = await (supabase as any)
           .from("treatments")
@@ -1709,6 +1711,7 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
               appointments={[{ id: appt.id, reason: appt.reason, appointment_date: appt.appointment_date }]}
               defaultAppointmentId={appt.id}
               defaultAmount={totals.totalPrice}
+              editingRecord={billingRecord as any}
               paidAppointmentIds={appt.billingId && (appt.paymentStatus === "Pagado" || appt.paymentStatus === "Facturado Odoo") ? [appt.id] : []}
               onSuccess={() => fetchAppointment()}
               patientDetails={{
