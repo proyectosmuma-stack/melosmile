@@ -269,6 +269,7 @@ export default function PatientProfilePage({ params }: { params: Promise<{ id: s
   const [selectedBillingIds, setSelectedBillingIds] = useState<string[]>([]);
   const [generatingInvoice, setGeneratingInvoice] = useState(false);
   const [sendingInvoiceEmailId, setSendingInvoiceEmailId] = useState<string | null>(null);
+  const [sendingInvoiceWhatsappId, setSendingInvoiceWhatsappId] = useState<string | null>(null);
   const [generatingAiSummary, setGeneratingAiSummary] = useState(false);
 
   // Bulk appointment selection
@@ -1685,32 +1686,65 @@ function toTitleCase(text: string): string {
                                     <Receipt className="h-3 w-3 text-violet-600" /> Facturada ({invoiceRef})
                                   </span>
                                   {b.odoo_invoice_id && (
-                                    <button
-                                      onClick={async () => {
-                                        try {
-                                          setSendingInvoiceEmailId(b.id);
-                                          const res = await fetch('/api/odoo/invoice/email', {
-                                            method: 'POST',
-                                            headers: { 'Content-Type': 'application/json' },
-                                            body: JSON.stringify({ invoiceId: b.odoo_invoice_id })
-                                          });
-                                          const json = await res.json();
-                                          if (json.success) {
-                                            alert("Email programado para enviarse al paciente desde Odoo");
-                                          } else {
-                                            throw new Error(json.error || "Error al enviar email");
+                                    <>
+                                      <button
+                                        onClick={async () => {
+                                          try {
+                                            setSendingInvoiceEmailId(b.id);
+                                            const res = await fetch('/api/odoo/invoice/email', {
+                                              method: 'POST',
+                                              headers: { 'Content-Type': 'application/json' },
+                                              body: JSON.stringify({ invoiceId: b.odoo_invoice_id })
+                                            });
+                                            const json = await res.json();
+                                            if (json.success) {
+                                              alert("Email programado para enviarse al paciente desde Odoo");
+                                            } else {
+                                              throw new Error(json.error || "Error al enviar email");
+                                            }
+                                          } catch (e: any) {
+                                            alert(`Error: ${e.message}`);
+                                          } finally {
+                                            setSendingInvoiceEmailId(null);
                                           }
-                                        } catch (e: any) {
-                                          alert(`Error: ${e.message}`);
-                                        } finally {
-                                          setSendingInvoiceEmailId(null);
-                                        }
-                                      }}
-                                      disabled={sendingInvoiceEmailId === b.id}
-                                      className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full font-bold bg-blue-100 text-blue-800 border border-blue-200 hover:bg-blue-200 transition-colors disabled:opacity-50"
-                                    >
-                                      {sendingInvoiceEmailId === b.id ? <Loader2 className="h-3 w-3 animate-spin text-blue-600" /> : <Mail className="h-3 w-3 text-blue-600" />} Email
-                                    </button>
+                                        }}
+                                        disabled={sendingInvoiceEmailId === b.id}
+                                        className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full font-bold bg-blue-100 text-blue-800 border border-blue-200 hover:bg-blue-200 transition-colors disabled:opacity-50"
+                                      >
+                                        {sendingInvoiceEmailId === b.id ? <Loader2 className="h-3 w-3 animate-spin text-blue-600" /> : <Mail className="h-3 w-3 text-blue-600" />} Email
+                                      </button>
+                                      <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        disabled={sendingInvoiceWhatsappId === b.id || !patient.phone}
+                                        title={!patient.phone ? "Paciente sin teléfono" : "Enviar Factura por WhatsApp"}
+                                        onClick={async () => {
+                                          setSendingInvoiceWhatsappId(b.id);
+                                          try {
+                                            const res = await fetch('/api/odoo/invoice/whatsapp', {
+                                              method: 'POST',
+                                              headers: { 'Content-Type': 'application/json' },
+                                              body: JSON.stringify({ invoiceId: b.odoo_invoice_id, phone: patient.phone, invoiceNumber: b.odoo_invoice_number })
+                                            });
+                                            const json = await res.json();
+                                            if (json.success) {
+                                              alert("Factura enviada correctamente por WhatsApp");
+                                            } else {
+                                              throw new Error(json.error || "Error al enviar por WhatsApp");
+                                            }
+                                          } catch (error: any) {
+                                            alert("Error enviando factura por WhatsApp: " + error.message);
+                                          } finally {
+                                            setSendingInvoiceWhatsappId(null);
+                                          }
+                                        }}
+                                        className="h-7 px-2 text-[11px] font-bold text-green-700 bg-green-100 hover:bg-green-200 border-green-200 rounded-lg gap-1 cursor-pointer"
+                                      >
+                                        {sendingInvoiceWhatsappId === b.id ? <Loader2 className="h-3.5 w-3.5 animate-spin text-green-600" /> : <MessageSquare className="h-3.5 w-3.5" />}
+                                        WhatsApp
+                                      </Button>
+                                    </>
                                   )}
                                 </div>
                               ) : (

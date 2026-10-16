@@ -424,3 +424,68 @@ export async function setWhatsAppProxy(
     };
   }
 }
+
+export async function sendWhatsAppDocument(options: {
+  phone: string;
+  fileName: string;
+  mediaBase64: string;
+  caption?: string;
+  instanceName?: string;
+}): Promise<{ success: boolean; messageId?: string; status?: string; error?: string }> {
+  const { phone, fileName, mediaBase64, caption, instanceName } = options;
+
+  if (!phone) {
+    return { success: false, error: "El paciente no tiene número de teléfono registrado." };
+  }
+
+  // 1. Limpiar y normalizar el número (sólo dígitos, con prefijo 34 para España por defecto si tiene 9 dígitos)
+  let clean = phone.replace(/\D/g, "");
+  if (clean.length === 9) {
+    clean = `34${clean}`;
+  }
+
+  const config = await getEvolutionConfig();
+  const instance = instanceName || config.instance;
+
+  // Verificar estado de conexión previo para evitar bloqueos
+  const status = await getWhatsAppStatus(instance);
+  if (!status.isConnected) {
+    return {
+      success: false,
+      error: "WhatsApp no está vinculado. Escanea el código QR en Ajustes > Mensajería.",
+    };
+  }
+
+  try {
+    const res = await evolutionRequest(`/message/sendMedia/${instance}`, {
+      method: "POST",
+      body: {
+        number: clean,
+        mediatype: "document",
+        fileName,
+        caption: caption || "",
+        media: mediaBase64,
+        delay: 2000,
+      },
+    });
+
+    if (res.ok && res.data) {
+      return {
+        success: true,
+        messageId: res.data?.key?.id || res.data?.id,
+        status: res.data?.status || "PENDING",
+      };
+    }
+
+    const errMsg = res.data?.response?.message || res.data?.message || `Error HTTP ${res.status} en Evolution API`;
+    return {
+      success: false,
+      error: errMsg,
+    };
+  } catch (err: any) {
+    return {
+      success: false,
+      error: err.message || "Error al conectar con el servidor de WhatsApp",
+    };
+  }
+}
