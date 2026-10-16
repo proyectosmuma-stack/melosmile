@@ -1679,7 +1679,17 @@ function toTitleCase(text: string): string {
 
                           <div>
                             <div className="flex items-center gap-2">
-                              <p className="font-bold text-foreground text-sm capitalize">{b.appointment_reason}</p>
+                              {b.appointment_id ? (
+                                <Link
+                                  href={`/appointments/${b.appointment_id}`}
+                                  className="font-bold text-foreground text-sm capitalize hover:text-violet-600 hover:underline inline-flex items-center gap-1"
+                                  title="Ir a la cita"
+                                >
+                                  {b.appointment_reason} <ChevronRight className="h-3 w-3 text-muted-foreground" />
+                                </Link>
+                              ) : (
+                                <p className="font-bold text-foreground text-sm capitalize">{b.appointment_reason}</p>
+                              )}
                               {isFacturado ? (
                                 <div className="flex items-center gap-2">
                                   <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full font-bold bg-violet-100 text-violet-800 border border-violet-200">
@@ -1687,6 +1697,13 @@ function toTitleCase(text: string): string {
                                   </span>
                                   {b.odoo_invoice_id && (
                                     <>
+                                      <button
+                                        onClick={() => window.open(`/api/odoo/invoice/pdf?invoiceId=${b.odoo_invoice_id}`, '_blank')}
+                                        className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full font-bold bg-white text-violet-700 border border-violet-300 hover:bg-violet-50 transition-colors"
+                                        title="Ver / Descargar PDF"
+                                      >
+                                        <FileText className="h-3 w-3 text-violet-600" /> PDF
+                                      </button>
                                       <button
                                         onClick={async () => {
                                           try {
