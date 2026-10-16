@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   User, Calendar as CalendarIcon, Clock, Building2, Stethoscope, FileText, Upload,
-  CreditCard, MessageSquare, CheckCircle2, Save, Loader2, AlertCircle, ArrowLeft, Receipt,
+  CreditCard, MessageSquare, Mail, CheckCircle2, Save, Loader2, AlertCircle, ArrowLeft, Receipt,
   TrendingDown, TrendingUp, AlertTriangle, FlaskConical, Plus, Sparkles, ExternalLink,
   Pill, Activity, ShieldAlert, ChevronRight, Check, Euro, Settings2, Trash2, Camera, Image as ImageIcon, UserCheck, Pencil, Bell, Send, Smartphone, Info
 } from "lucide-react";
@@ -102,6 +102,8 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [syncingOdoo, setSyncingOdoo] = useState(false);
+  const [sendingInvoiceEmail, setSendingInvoiceEmail] = useState(false);
+  const [sendingInvoiceWhatsapp, setSendingInvoiceWhatsapp] = useState(false);
   const [uploadingDoc, setUploadingDoc] = useState(false);
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [showFinancials, setShowFinancials] = useState(false);
@@ -1662,19 +1664,82 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
                   )}
 
                   {appt.odooInvoiceNumber ? (
-                    <div className="flex items-center gap-2">
-                      <div className="flex-1 p-3 rounded-xl bg-purple-950/80 border border-purple-800 text-center">
-                        <p className="text-xs font-bold text-purple-300 flex items-center justify-center gap-1.5">
-                          <Receipt className="h-4 w-4" /> Factura: {appt.odooInvoiceNumber}
-                        </p>
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 p-3 rounded-xl bg-purple-950/80 border border-purple-800 text-center">
+                          <p className="text-xs font-bold text-purple-300 flex items-center justify-center gap-1.5">
+                            <Receipt className="h-4 w-4" /> Factura: {appt.odooInvoiceNumber}
+                          </p>
+                        </div>
+                        <Button
+                          onClick={() => window.open(`/api/odoo/invoice/pdf?invoiceId=${appt.odooInvoiceId}`, '_blank')}
+                          className="bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs h-[46px] px-3 rounded-xl shadow-md cursor-pointer"
+                          title="Descargar PDF de Odoo"
+                        >
+                          Descargar PDF
+                        </Button>
                       </div>
-                      <Button
-                        onClick={() => window.open(`/api/odoo/invoice/pdf?invoiceId=${appt.odooInvoiceId}`, '_blank')}
-                        className="bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs h-[46px] px-3 rounded-xl shadow-md cursor-pointer"
-                        title="Descargar PDF de Odoo"
-                      >
-                        Descargar PDF
-                      </Button>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          disabled={sendingInvoiceEmail}
+                          onClick={async () => {
+                            setSendingInvoiceEmail(true);
+                            try {
+                              const res = await fetch('/api/odoo/invoice/email', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ invoiceId: appt.odooInvoiceId })
+                              });
+                              const json = await res.json();
+                              if (json.success) {
+                                alert("Email programado para enviarse al paciente desde Odoo");
+                              } else {
+                                throw new Error(json.error || "Error al enviar email");
+                              }
+                            } catch (error: any) {
+                              alert("Error enviando email: " + error.message);
+                            } finally {
+                              setSendingInvoiceEmail(false);
+                            }
+                          }}
+                          className="flex-1 h-9 text-xs font-bold text-blue-300 bg-blue-950/60 hover:bg-blue-900 border-blue-800 rounded-xl gap-1 cursor-pointer"
+                        >
+                          {sendingInvoiceEmail ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Mail className="h-3.5 w-3.5" />} Email
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          disabled={sendingInvoiceWhatsapp || !appt.patientPhone}
+                          title={!appt.patientPhone ? "Paciente sin teléfono" : "Enviar Factura por WhatsApp"}
+                          onClick={async () => {
+                            setSendingInvoiceWhatsapp(true);
+                            try {
+                              const res = await fetch('/api/odoo/invoice/whatsapp', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ invoiceId: appt.odooInvoiceId, phone: appt.patientPhone, invoiceNumber: appt.odooInvoiceNumber })
+                              });
+                              const json = await res.json();
+                              if (json.success) {
+                                alert("Factura enviada correctamente por WhatsApp");
+                              } else {
+                                throw new Error(json.error || "Error al enviar por WhatsApp");
+                              }
+                            } catch (error: any) {
+                              alert("Error enviando factura por WhatsApp: " + error.message);
+                            } finally {
+                              setSendingInvoiceWhatsapp(false);
+                            }
+                          }}
+                          className="flex-1 h-9 text-xs font-bold text-emerald-300 bg-emerald-950/60 hover:bg-emerald-900 border-emerald-800 rounded-xl gap-1 cursor-pointer"
+                        >
+                          {sendingInvoiceWhatsapp ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <MessageSquare className="h-3.5 w-3.5" />} WhatsApp
+                        </Button>
+                      </div>
                     </div>
                   ) : (
                     <Button
