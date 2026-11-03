@@ -75,6 +75,7 @@ type ApptDocument = {
   document_type: string;
   file_path?: string;
   file_url?: string;
+  resolved_url?: string | null;
   description: string | null;
   created_at: string;
   file_size_bytes?: number | null;
@@ -291,12 +292,17 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
           setTreatmentsList(finalTreatmentsList);
         }
 
-        const { data: dData } = await (supabase as any)
-          .from("documents")
-          .select("id, file_name, document_type, file_path, file_url, description, created_at, file_size_bytes, mime_type")
-          .eq("appointment_id", a.id)
-          .order("created_at", { ascending: false });
-        if (dData) setApptDocs(dData);
+        try {
+          const docRes = await fetch(`/api/documents?appointmentId=${targetId}`);
+          if (docRes.ok) {
+            const docData = await docRes.json();
+            if (Array.isArray(docData.documents)) {
+              setApptDocs(docData.documents);
+            }
+          }
+        } catch (docErr) {
+          console.error("Error cargando documentos de la cita:", docErr);
+        }
 
         const p = a.patients as any;
         const prof = a.professionals as any;
@@ -784,14 +790,19 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
         formData.append("appointmentDate", appt.appointment_date);
         if (forceImage) formData.append("documentType", "foto_clinica");
 
-        await fetch("/api/documents/upload", {
+        const res = await fetch("/api/documents/upload", {
           method: "POST",
           body: formData,
         });
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.error || `Error ${res.status} al subir archivo`);
+        }
       }
       await fetchAppointment();
-    } catch (err) {
+    } catch (err: any) {
       console.error("Error subiendo archivo al VPS:", err);
+      alert(`Error al subir archivo: ${err?.message || "Error desconocido"}`);
     } finally {
       setUploadingDoc(false);
     }
@@ -1438,7 +1449,7 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
                   </div>
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                     {images.map((img, idx) => {
-                      const imgUrl = img.file_url || resolveDocumentUrl({ file_url: img.file_url, file_path: img.file_path });
+                      const imgUrl = img.resolved_url || img.file_url || resolveDocumentUrl({ file_url: img.file_url, file_path: img.file_path });
                       const finalImgUrl = imgUrl ? `${imgUrl}?cb=${img.file_size_bytes || img.id}` : null;
                       return (
                         <div key={img.id} className="relative group rounded-xl border border-border overflow-hidden bg-muted aspect-square">
@@ -1474,7 +1485,7 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
                   
                   <PhotoLightbox
                     photos={images.map(d => {
-                      const base = d.file_url || resolveDocumentUrl({ file_url: d.file_url, file_path: d.file_path });
+                      const base = d.resolved_url || d.file_url || resolveDocumentUrl({ file_url: d.file_url, file_path: d.file_path });
                       return {
                         id: d.id,
                         url: base ? `${base}?cb=${d.file_size_bytes || d.id}` : null,
@@ -1533,7 +1544,7 @@ export default function AppointmentDetailPage({ params }: { params: Promise<{ id
               {nonImageDocs.length > 0 && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {nonImageDocs.map((doc) => {
-                    const docUrl = doc.file_url || resolveDocumentUrl({ file_url: doc.file_url, file_path: doc.file_path });
+                    const docUrl = doc.resolved_url || doc.file_url || resolveDocumentUrl({ file_url: doc.file_url, file_path: doc.file_path });
                     return (
                       <div key={doc.id} className="flex items-center gap-3 p-3 rounded-xl border border-border/60 bg-muted/40 hover:border-primary/40 transition-colors">
                         <FileText className="h-5 w-5 text-primary shrink-0" />

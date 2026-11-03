@@ -31,6 +31,9 @@ Este proyecto utiliza el agente `melosmile-backend`, con acceso a código base, 
 - **Clínicas Principales de Agendamiento Directo**: Por lo general, las citas que se crean y gestionan directamente en Melosmile corresponden a **Clínica Goya** o **Clínica Montaño - Getafe**. Las demás clínicas (Daniel Bustamante, RyA, Las Rozas, etc.) tienen su propio sistema de citas externo y se gestionan por ellos mismos (en Melosmile solo existen para control de historias clínicas de los pacientes).
 - **Confirmación de Clínica Obligatoria**: Si el usuario pide agendar o crear una nueva cita y **no especifica la clínica**, el agente **NUNCA** debe crear la cita a ciegas ni asumir una por defecto. **Debe preguntar obligatoriamente antes** en qué clínica se desea agendar, indicando como opciones habituales: ¿Goya o Getafe?. Solo cuando el usuario confirme o aclare la clínica se ejecuta la creación de la cita.
 
+## Regla Anti-Simulación de Herramientas y Subagentes
+- **Prohibida la Falsa Delegación**: Queda estrictamente prohibido simular la ejecución de herramientas, llamadas a subagentes o comandos escribiendo bloques Markdown con JSONs (`{ "tool": "subagent", ... }`) o prometer acciones en texto sin haber disparado la llamada nativa (`tool_calls`). Toda acción debe ejecutarse mediante tool calls reales.
+
 ## Flujo de Trabajo de Sesión del Agente (Comandos de Chat)
 
 ### Comando: "Inicia Sesión"
