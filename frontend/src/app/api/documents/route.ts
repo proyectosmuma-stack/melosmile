@@ -44,6 +44,8 @@ interface ApiDocument {
   reason_cita: string | null;
   document_type: string | null;
   file_name: string;
+  file_path?: string | null;
+  file_url?: string | null;
   file_size_bytes: number | null;
   mime_type: string | null;
   description: string | null;
@@ -94,19 +96,28 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
 
     const patientId = searchParams.get("patientId");
-    if (!patientId) {
+    const appointmentId = searchParams.get("appointmentId");
+
+    if (!patientId && !appointmentId) {
       return NextResponse.json(
-        { error: "patientId es requerido" },
+        { error: "patientId o appointmentId es requerido" },
         { status: 400 }
       );
     }
-    if (
-      !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
-        patientId
-      )
-    ) {
+
+    const uuidRegex =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+    if (patientId && !uuidRegex.test(patientId)) {
       return NextResponse.json(
         { error: "patientId debe ser un UUID válido" },
+        { status: 400 }
+      );
+    }
+
+    if (appointmentId && !uuidRegex.test(appointmentId)) {
+      return NextResponse.json(
+        { error: "appointmentId debe ser un UUID válido" },
         { status: 400 }
       );
     }
@@ -135,8 +146,14 @@ export async function GET(req: Request) {
 
     let query = supabase
       .from("documents")
-      .select(columns, { count: "exact" })
-      .eq("patient_id", patientId);
+      .select(columns, { count: "exact" });
+
+    if (patientId) {
+      query = query.eq("patient_id", patientId);
+    }
+    if (appointmentId) {
+      query = query.eq("appointment_id", appointmentId);
+    }
 
     if (docTypeFilter) {
       query = query.eq("document_type", docTypeFilter);
@@ -181,6 +198,8 @@ export async function GET(req: Request) {
           reason_cita: aptInfo.reason_cita,
           document_type: row.document_type,
           file_name: row.file_name,
+          file_path: row.file_path,
+          file_url: row.file_url,
           file_size_bytes: row.file_size_bytes,
           mime_type: row.mime_type,
           description: row.description,

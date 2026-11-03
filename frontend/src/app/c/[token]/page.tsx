@@ -16,6 +16,7 @@ export default function MobileUploadPage() {
   const [status, setStatus] = useState<"idle" | "success" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
 
   // We decode the JWT token (base64) to show the date/patient if we want,
   // but it's not strictly necessary as it's handled server-side.
@@ -116,13 +117,33 @@ export default function MobileUploadPage() {
               <Button 
                 size="lg" 
                 className="w-full h-14 rounded-2xl text-base font-semibold shadow-md shadow-primary/20 transition-transform active:scale-[0.98]"
+                onClick={() => cameraInputRef.current?.click()}
+                disabled={uploading}
+              >
+                <Camera className="mr-2 h-5 w-5" />
+                Hacer Foto con Cámara
+              </Button>
+
+              <Button 
+                size="lg" 
+                variant="outline"
+                className="w-full h-14 rounded-2xl text-base font-semibold transition-transform active:scale-[0.98]"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={uploading}
               >
                 <ImageIcon className="mr-2 h-5 w-5" />
-                Seleccionar Fotos
+                Seleccionar de Galería
               </Button>
               
+              <input
+                ref={cameraInputRef}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                className="hidden"
+                onChange={handleFileChange}
+              />
+
               <input
                 ref={fileInputRef}
                 type="file"
