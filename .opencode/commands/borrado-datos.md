@@ -11,5 +11,5 @@
    DELETE FROM documents WHERE patient_id NOT IN (SELECT id FROM patients WHERE first_name ILIKE '%Munir%' OR last_name ILIKE '%Callaos%');
    DELETE FROM reminders WHERE patient_id NOT IN (SELECT id FROM patients WHERE first_name ILIKE '%Munir%' OR last_name ILIKE '%Callaos%');
    DELETE FROM patients WHERE first_name NOT ILIKE '%Munir%' AND last_name NOT ILIKE '%Callaos%';
-2. Execute `node scripts/clean_remote_db.js` in `frontend/` to clean Supabase Cloud.
-3. Run `npm run db:sync` in `frontend/`.
+2. Execute `npm run clean:cloud` (or `node scripts/db/clean_remote_db.js`) to clean Supabase Cloud.
+3. Run `npm run db:sync`.

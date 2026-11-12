@@ -19,4 +19,4 @@ curl -s -o /dev/null -w "%{http_code}" -L http://localhost:3028 && curl -s -o /d
   - Ejecutar: `supabase start`
 
 - **Si el servidor local (3028) no responde HTTP 200**:
-  - Ejecutar: `npm --prefix frontend run dev`
+  - Ejecutar: `npm run dev`

@@ -48,9 +48,13 @@ supabase/seed.cloud.sql
 # Scratch directories and temporary scripts
 scratch/
 frontend/scratch/
+agenda/scratch/
 *.log
 logs/
 audit_results/
+
+# Proyectos desacoplados
+web/
 
 # Estado de proyecto contiene JWT/credenciales n8n - mantener local
 .opencode/ESTADO_PROYECTO.md

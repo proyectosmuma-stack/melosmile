@@ -44,11 +44,11 @@ Cuando el usuario diga **"Inicia Sesión"** o ejecute `/inicia-sesion`:
    - **Si ambos responden HTTP 200 (salida 200200)**: Omitir el reinicio de servidores, cargar el contexto (`context.md`, `roadmap.md`, `Walkthrough.md`) y responder inmediatamente: `"✅ Entorno local y Supabase activos y listos para trabajar."`
 2. **Contexto**: Leer exhaustivamente los documentos `context.md`, `roadmap.md` y `Walkthrough.md` para ponerse en contexto completo con el estado actual del proyecto y las tareas planificadas.
 3. **Supabase & Redundancia**: Si Supabase Local no está activo, ejecutar `supabase start` para iniciar los contenedores de Supabase Local con los datos de prueba locales.
-4. **Servidor Web**: Si el servidor en `http://localhost:3028` no está activo, iniciarlo ejecutando `npm --prefix frontend run dev`.
+4. **Servidor Web**: Si el servidor en `http://localhost:3028` no está activo, iniciarlo ejecutando `npm run dev`.
 
 ### Comando: "Actualiza datos"
 Cuando el usuario diga **"Actualiza datos"** o similar:
-1. **Sincronización**: Ejecutar exclusivamente `npm run db:sync` desde la carpeta `frontend` para descargar y aplicar todos los datos recientes de Supabase Cloud a la base de datos local.
+1. **Sincronización**: Ejecutar exclusivamente `npm run db:sync` desde la raíz del proyecto para descargar y aplicar todos los datos recientes de Supabase Cloud a la base de datos local.
 2. **Notificación**: Confirmar al usuario el número de registros y tablas actualizadas en local.
 
 ### Comando: "Borra datos" / Protocolo de Borrado de Base de Datos
@@ -66,7 +66,7 @@ Cuando el usuario pida **"Borra datos"**, **"Limpia la base de datos"** o simila
    - `DELETE FROM patients WHERE first_name NOT ILIKE '%Munir%' AND last_name NOT ILIKE '%Callaos%';`
 2. **Ejecución Dual (Local & Cloud)**:
    - Ejecutar la limpieza en **Supabase Local** (vía PostgreSQL / CLI).
-   - Ejecutar la limpieza en **Supabase Cloud** (vía `node scripts/clean_remote_db.js`).
+   - Ejecutar la limpieza en **Supabase Cloud** (vía `npm run clean:cloud` o `node scripts/db/clean_remote_db.js`).
 3. **Confirmación**: Reportar los contadores de registros restantes (dejando únicamente la ficha de Munir y la base limpia).
 
 ### Comando: "Cierra sesión"
@@ -96,9 +96,9 @@ Cuando el usuario diga **/stop-monitor**, **"Deten monitoreo"**, **"Pausa monito
 Cuando el usuario diga **"Revisa los reportes"**, **"Fallos de Musly"**, **"Log de errores de Musly"** o similar:
 1. **Identidad de Musly**: Musly es el **asistente de IA integrado en el sistema MeloSmile** (barra y modal `⌘K` del dashboard), que orquesta los subagentes de agendamiento (`03`), historial clínico (`02`), facturación (`07`) y notas clínicas (`05`). NUNCA confundir con librerías externas ni buscar fuera del proyecto.
 2. **Fuente de Verdad Única (SSOT)**: La tabla **`ai_agent_reports` en Supabase Cloud** es la fuente centralizada de todos los reportes emitidos desde localhost, staging o producción.
-3. **Comando de Consulta Rápida**: Ejecutar `npm run reports` (o `node scripts/sync_reports.js`) para ver los reportes pendientes directamente desde Supabase sin gastar tokens.
+3. **Comando de Consulta Rápida**: Ejecutar `npm run reports` (o `node scripts/reports/sync_reports.js`) para ver los reportes pendientes directamente desde Supabase sin gastar tokens.
 4. **Sincronización Canónica de Archivo**: Ejecutar `npm run reports:sync` para descargar y regenerar `logs/agent_reports.log` con el historial 100% fiel de Supabase.
-5. **Cierre de Incidencias**: Una vez resuelto el bug con el CTO/programador, marcar el reporte como resuelto con `node scripts/sync_reports.js --resolve <id> --notes "Fix aplicado en..."`.
+5. **Cierre de Incidencias**: Una vez resuelto el bug con el CTO/programador, marcar el reporte como resuelto con `node scripts/reports/sync_reports.js --resolve <id> --notes "Fix aplicado en..."`.
 
 ---
 

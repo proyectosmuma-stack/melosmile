@@ -1,6 +1,6 @@
 const path = require("path");
-require("dotenv").config({ path: path.join(__dirname, "../../../../frontend/.env.remote") });
-require("dotenv").config({ path: path.join(__dirname, "../../../../frontend/.env.local") });
+require("dotenv").config({ path: path.join(__dirname, "../../../../.env.remote") });
+require("dotenv").config({ path: path.join(__dirname, "../../../../.env.local") });
 const { createClient } = require("@supabase/supabase-js");
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://amhfdzfcmpastmlsosou.supabase.co";

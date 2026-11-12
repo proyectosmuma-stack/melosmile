@@ -20,7 +20,7 @@ Cuando el usuario ejecute `/cierra-sesion` o diga "Cierra sesión":
      deno run -A ~/.config/opencode/scripts/memory-bridge.ts save-session antigravity "<FECHA>-<proyecto>" "<resumen 1 línea>"
      ```
 
-3. **Redundancia & Respaldo**: Ejecutar `npm run db:sync` en `frontend`.
+3. **Redundancia & Respaldo**: Ejecutar `npm run db:sync` desde la raíz.
 
 4. **Git y Vercel**: Preguntar al usuario si desea realizar `git commit` y `git push` a la rama `develop`.
 
