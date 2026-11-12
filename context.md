@@ -66,7 +66,7 @@ ODOO_USER=gestion@melosmile.com
 |---|---|
 | **Rama Git** | `develop` |
 | **Proyecto Vercel** | `melosmile-staging` (PRJ: `prj_qP5or4gNukJS9w8PTXeiL5vHI02t`) |
-| **Root Directory** | `/` (raíz del repositorio tras unificación de `AGENDA-melosmile`) |
+| **Root Directory** | `/` (raíz del repositorio tras unificación del proyecto) |
 | **App Web** | `https://staging.melosmile.com` |
 | **Supabase Staging** | `https://amhfdzfcmpastmlsosou.supabase.co` |
 | **n8n (prod)** | `https://n8nv2.mumaweb.com` |

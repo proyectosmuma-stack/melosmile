@@ -7,7 +7,7 @@
 ## ⚡ Arquitectura del Proyecto
 
 ```
-melosmile/ (AGENDA-melosmile)
+melosmile/
 ├── 🚀 src/                    # Aplicación Next.js 16 (React 19, Tailwind v4, shadcn)
 │   ├── app/                   # App Router: (dashboard), confirmar, c, login, api
 │   ├── components/            # UI Components (Calendario, Odontograma, Modales)
