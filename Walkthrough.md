@@ -1,29 +1,38 @@
-# Walkthrough - Sesión 12/11/2026: Separación de Agenda y Web + Purga de Archivos
+# Walkthrough - Sesión 12/11/2026: Separación de Agenda y Web + Unificación Raíz + Purga de Archivos
 
 ## 1. Resumen de Tareas Realizadas
 
 En esta sesión se abordó la solicitud del usuario de separar el **sistema de agenda** del **proyecto de la página web**, aplicando nombres cortos y sin caracteres latinos, además de desacoplar completamente la web comercial de la agenda clínica y purgar la deuda técnica acumulada:
 
 ### A. Desacoplamiento Total entre Agenda y Web
-* **Agenda Clínica (`agenda/`):** Se migró el contenido de `frontend/` a `agenda/` (Next.js 16 + Supabase + Odoo ERP) con `package.json` y `vercel.json` ajustados a los nuevos paths.
-* **Página Web Comercial (`web/`):** Se creó la carpeta `web/` como un proyecto WordPress CMS 100% independiente (con su propio `docker-compose.yml`, tema `melosmile/`, assets y scripts de despliegue a Plesk/VPS). No comparte base de datos con Supabase ni infraestructura con Vercel.
-* **Aislamiento en Git:** Se añadió `/web/` a `.gitignore` del repositorio de la agenda para que el desarrollo de la web no contamine ni interfiera en el control de versiones ni en los despliegues de la agenda.
+* **Agenda Clínica (`melosmile/`):** Se unificó Next.js 16 directamente en la raíz de `melosmile/` (eliminando la subcarpeta intermedia `frontend/`). Toda la configuración (`src/`, `package.json`, `vercel.json`, `tsconfig.json`) opera en la raíz.
+* **Página Web Comercial (`WEB-melosmile/`):** Se creó como un proyecto independiente en `/Users/munircallaos/Antigravity Projects/WEB-melosmile` basado en WordPress CMS (con su propio `docker-compose.yml`, tema a medida `melosmile/`, assets y scripts). No comparte base de datos con Supabase ni infraestructura con Vercel ni control de versiones Git con la agenda.
+* **Eliminación de Alias Redundantes:** Se eliminó el enlace simbólico `AGENDA-melosmile` para mantener el nombre canónico y único `melosmile/`.
 
 ### B. Nombres Cortos y sin Caracteres Latinos
-* Se aplicó la nomenclatura limpia en minúsculas ASCII:
-  * `agenda/`: Sistema de citas y gestión clínica.
-  * `web/`: Página web WordPress.
-  * `supabase/`: Base de datos de la agenda.
+* Se aplicó la nomenclatura limpia en minúsculas ASCII en la raíz de `melosmile/`:
+  * `src/`: Aplicación Next.js 16 (App router, componentes, lib).
+  * `supabase/`: Base de datos PostgreSQL y migraciones de la agenda.
   * `n8n/`: Flujos de agentes IA de la agenda (reemplaza `n8n-workflows/`).
-  * `data/`: Datos históricos de migración y hojas de cálculo (consolida `datos-prueba/` y `excel/`).
-  * `docs/`: Documentación técnica.
-  * `scripts/`: Scripts de soporte y DevOps.
+  * `data/`: Datos históricos de migración y muestras (consolida `datos-prueba/` y `excel/`).
+  * `docs/`: Documentación técnica estructurada en módulos temáticos.
+  * `scripts/`: Scripts operativos clasificados en `db/`, `n8n/`, `odoo/`, `auth/`, `reports/`, `ops/`, `testing/`, `archive/`.
 
-### C. Purga Masiva de Temporales (300+ ficheros)
+### C. Purga Masiva de Temporales (310+ ficheros)
 * Se eliminaron por completo los directorios temporales `scratch/` (215 ficheros) y `frontend/scratch/` (98 ficheros).
 * Se eliminaron scripts de prueba huérfanos en la raíz (`patch_delete_modal*.js`, `patient_data_audit.ts`, `test_upload.js`, `test.pdf`, `dummy.pdf`, `AGENTS.md.bak`).
 * Se eliminaron scripts de prueba sueltos en la raíz de la app (`test-odoo-*.ts`, `test-ftp-*.js`, `clean_appointment.ts`, etc.).
 * Se movieron documentos de análisis antiguos de la raíz a `docs/archive/`.
+* Se documentó la decisión arquitectónica en la memoria RAG de Supabase.
+
+### D. Certificación de Estabilidad y Despliegue en Staging y Producción
+* **TypeScript & Next.js Build:** `tsc --noEmit` con 0 errores y build de producción Turbopack completado con éxito (58/58 páginas y endpoints).
+* **Vitest:** 14/14 tests unitarios pasando.
+* **Vercel Cloud:** Configurado `rootDirectory: null` tanto en `melosmile-staging` como en `melosmile-production`.
+* **Verificación en Vivo:**
+  - `https://staging.melosmile.com/login`: `HTTP 200 OK`
+  - `https://agenda.melosmile.com/login`: `HTTP 200 OK`
+* **Ramas Git:** `develop` y `main` unificadas en `c79199b` con tags de retorno seguro `pre-reorg-main-stable` y `pre-reorg-stable`.
 
 ---
 
