@@ -26,7 +26,7 @@ description: (SEGURO) Borra todos los datos de prueba dejando la ficha PAC-001. 
    - `DELETE FROM patients WHERE first_name NOT ILIKE \"%Munir%\" AND last_name NOT ILIKE \"%Callaos%\";`
 
 2. **Borrado Cloud (Supabase)**:
-   Ejecutar `node scripts/clean_remote_db.js` desde `frontend`.
+   Ejecutar `npm run clean:cloud` (o `node scripts/db/clean_remote_db.js`) desde la raíz.
 
 3. **Re-Sincronización**:
-   Ejecutar `npm run db:sync` desde `frontend`.
+   Ejecutar `npm run db:sync` desde la raíz.

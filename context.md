@@ -12,7 +12,8 @@
 
 ## 🛠️ Stack Tecnológico
 
-- **Frontend**: Next.js 16 (App Router), React 19, TypeScript, `xlsx` (parsing nativo de archivos Excel).
+- **Frontend**: Next.js 16 (App Router en carpeta `agenda/`), React 19, TypeScript, `xlsx` (parsing nativo de archivos Excel).
+- **Web Corporativa**: WordPress CMS desacoplado en carpeta `web/` (independiente de Git y de la BD de la agenda).
 - **Hosting & CI/CD**: Vercel (`melosmile-production`), rama `main` → Producción, rama `develop` → Preview/Staging.
 - **Estilos y UI**: TailwindCSS 4, Shadcn UI, Lucide Icons, `@dnd-kit/core` (Drag & Drop).
 - **Backend & Base de Datos**: Supabase Cloud (múltiples proyectos por entorno — ver sección Infraestructura).
@@ -39,10 +40,10 @@
 | **Supabase Anon Key** | JWT demo estándar de Supabase CLI |
 | **Supabase Service Role** | JWT demo estándar de Supabase CLI |
 | **n8n (dev)** | `https://n8n.mumaweb.com` |
-| **Fichero env** | `frontend/.env.local` |
-| **Iniciar** | `npm --prefix frontend run dev` |
+| **Fichero env** | `.env.local` |
+| **Iniciar** | `npm run dev` |
 | **Iniciar Supabase Local** | `supabase start` |
-| **Sincronizar datos (Cloud → Local)** | `npm --prefix frontend run db:sync` (solo con `/actualiza-datos`) |
+| **Sincronizar datos (Cloud → Local)** | `npm run db:sync` (solo con `/actualiza-datos`) |
 
 **Variables `.env.local`:**
 ```env
@@ -65,13 +66,13 @@ ODOO_USER=gestion@melosmile.com
 |---|---|
 | **Rama Git** | `develop` |
 | **Proyecto Vercel** | `melosmile-staging` (PRJ: `prj_qP5or4gNukJS9w8PTXeiL5vHI02t`) |
-| **Root Directory** | `frontend` (configurado vía API para resolver el monorepo) |
+| **Root Directory** | `/` (raíz del repositorio tras unificación de `AGENDA-melosmile`) |
 | **App Web** | `https://staging.melosmile.com` |
 | **Supabase Staging** | `https://amhfdzfcmpastmlsosou.supabase.co` |
 | **n8n (prod)** | `https://n8nv2.mumaweb.com` |
-| **Fichero env** | `frontend/.env.remote` |
-| **Sincronizar datos** | `npm --prefix frontend run db:sync` |
-| **Despliegue** | `cd frontend && vercel --prod=false --yes` (desde `frontend/` que tiene `.vercel` linkeado a `melosmile-staging`) |
+| **Fichero env** | `.env.remote` |
+| **Sincronizar datos** | `npm run db:sync` |
+| **Despliegue** | `vercel --prod=false --yes` desde la raíz |
 
 > ⚠️ **Política de despliegue**: por defecto SIEMPRE se despliega a staging (`develop`). Producción (`main`) solo cuando el usuario lo pida explícitamente tras aprobar el desarrollo.
 >

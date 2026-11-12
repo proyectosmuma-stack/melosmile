@@ -9,6 +9,12 @@ Este documento establece el plan de desarrollo y próximas tareas activas para l
 
 ## 📍 Estado Actual: Rama `develop` (Entorno `melosmile-staging`) / `main` (`agenda.melosmile.com`)
 
+- ✅ **Reorganización Estructural y Desacoplamiento Agenda vs Web (2026-11-12):**
+  - Desacoplamiento total del sistema de gestión médica (`agenda.melosmile.com`) y la web comercial (`melosmile.com`).
+  - Nombres cortos y limpios en minúsculas ASCII (`agenda/`, `web/`, `supabase/`, `n8n/`, `data/`, `docs/`, `scripts/`).
+  - Purga masiva de más de 300 archivos temporales en `scratch/` y scripts de prueba.
+  - Aislamiento de `web/` (WordPress CMS) fuera del Git de la agenda mediante `.gitignore`.
+  - Configuración de CI/CD en `vercel.json` y `package.json` actualizada a `agenda/`.
 - ✅ **Fusión a Producción y Migración de Datos Reales (2026-08-23):** Fusión de `develop` a `main` con despliegue en Vercel Producción (`https://agenda.melosmile.com`). Migración completa de Notion a Supabase Cloud de 66 pacientes reales (`PAC-001` a `PAC-066`), 81 citas históricas, 28 registros de facturación y 88 fotografías clínicas almacenadas en Supabase Storage (`patient-documents`).
 - ✅ **Sincronización Supabase Local ← Cloud:** Local y Cloud 100% sincronizados con esquema y datos reales.
 - ✅ **Infraestructura Staging:** Dominio `https://staging.melosmile.com` asignado a `melosmile-staging` en rama `develop`.

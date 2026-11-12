@@ -63,8 +63,8 @@ supabase db reset
 ## 3. Aislamiento de Entornos (Local vs Vercel / Nube)
 
 ### Estructura de Archivos `.env`
-1. **`frontend/.env.remote`**: Respaldo de las llaves de Supabase Cloud.
-2. **`frontend/.env.local`**: Configuración exclusiva de desarrollo local:
+1. **`.env.remote`**: Respaldo de las llaves de Supabase Cloud.
+2. **`.env.local`**: Configuración exclusiva de desarrollo local:
    ```env
    NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
    NEXT_PUBLIC_SUPABASE_ANON_KEY=<LOCAL_ANON_KEY_DE_SUPABASE_STATUS>
@@ -81,7 +81,7 @@ Modificar el script `dev` en `package.json` para que al ejecutar `npm run dev`, 
 
 ```json
 "scripts": {
-  "dev": "supabase start -w ../ && next dev -p 3028",
+  "dev": "supabase start && next dev -p 3028",
   "typegen": "supabase gen types typescript --local > src/types/supabase.ts"
 }
 ```
@@ -90,12 +90,12 @@ Modificar el script `dev` en `package.json` para que al ejecutar `npm run dev`, 
 
 ## 5. Protocolo de Flujo de Sesión (Reglas para AGENTS.md)
 
-En el archivo `.agents/AGENTS.md` del proyecto, registrar los siguientes comandos:
+En el archivo `AGENTS.md` del proyecto, registrar los siguientes comandos:
 
 ### Comando: "Inicia Sesión"
 1. **Contexto**: Leer `context.md`, `roadmap.md` y `Walkthrough.md`.
 2. **Supabase & Redundancia**: `npm run db:sync` y `supabase start`.
-3. **Servidor Web**: `npm run dev` en `frontend`.
+3. **Servidor Web**: `npm run dev` desde la raíz.
 
 ### Comando: "Actualiza datos"
 1. **Sincronización**: Ejecutar `npm run db:sync` desde la carpeta `frontend` para traer de inmediato los datos de Supabase Cloud a Supabase Local.
